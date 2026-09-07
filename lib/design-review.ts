@@ -9,7 +9,7 @@ export type ModuleReview = {
   updatedAt: string;
 };
 export type Reviews = Partial<Record<ModuleId, ModuleReview>>;
-export const REVIEW_KEY = 'f9.elevator.design.review.v02';
+export const REVIEW_KEY = 'f9.elevator.design.review.v03';
 export const emptyReview = (): ModuleReview => ({
   status: 'pending',
   notes: '',

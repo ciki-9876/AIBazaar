@@ -1,4 +1,4 @@
-export const DESIGN_VERSION = '0.2';
+export const DESIGN_VERSION = '0.3';
 export const MODULES = [
   {
     id: 'overview',
@@ -60,7 +60,7 @@ export const MODULES = [
     en: 'COMBAT SYSTEM',
     short: '让每件卡牌按自己的时间行动',
     summary:
-      '保留物品独立冷却、十格构筑和相邻联动。在楼层中明确区分搜刮、鉴定、换装和战斗的时机。',
+      '三路九格、四格起步。让天气改变布局与卡牌联动，并与独立的共享供能方案进行对照。',
   },
   {
     id: 'survivors',

@@ -35,7 +35,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Progress } from '@/components/ui/progress';
 import { MODULES, moduleHref, DESIGN_VERSION } from '@/lib/design-data';
 import type { ModuleId } from '@/lib/design-data';
-import { SPECS } from '@/lib/design-specs';
+import { SPECS } from '@/lib/design-specs-v03';
 import {
   REVIEW_KEY,
   emptyReview,
@@ -44,7 +44,8 @@ import {
   exportReviews,
 } from '@/lib/design-review';
 import type { Reviews, ModuleReview, ReviewStatus } from '@/lib/design-review';
-import DesignPrototype, { DataTable } from './prototypes';
+import { DataTable } from './prototypes';
+import DesignPrototype from './prototypes-v03';
 const STATUS: Record<ReviewStatus, string> = {
   pending: '待验收',
   changes: '需修改',
@@ -202,7 +203,7 @@ export default function DesignWorkspace({ moduleId }: { moduleId: ModuleId }) {
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = 'f9-elevator-design-review-v02.json';
+    a.download = 'f9-elevator-design-review-v03.json';
     document.body.appendChild(a);
     a.click();
     a.remove();
@@ -330,6 +331,10 @@ export default function DesignWorkspace({ moduleId }: { moduleId: ModuleId }) {
               <a href="#rules">02 PRD 规则</a>
               <a href="#decisions">03 设计决策</a>
               <a href="#review">04 验收确认</a>
+            </div>
+            <div className="v3-review-banner">
+              <b>v0.3 · 验收修订版</b>
+              　已整合上一版全部意见及后续确认。新增数值和取舍请逐项确认；旧版记录仍保留，新版单独保存。
             </div>
             <section className="ds-section" id="prototype">
               <div className="ds-section-title">
@@ -611,7 +616,7 @@ export default function DesignWorkspace({ moduleId }: { moduleId: ModuleId }) {
               )}
             </div>
             <footer className="ds-footer">
-              <span>F9 / ELEVATOR SURVIVOR · SYSTEM DESIGN v0.2</span>
+              <span>F9 / ELEVATOR SURVIVOR · SYSTEM DESIGN v0.3</span>
               <span>设定依据：本次讨论 · 所有平衡数值均为设计建议</span>
             </footer>
           </div>
