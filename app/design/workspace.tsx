@@ -1,7 +1,8 @@
 'use client';
+/* eslint-disable next/no-html-link-for-pages -- Static export has no server for client RSC navigation. */
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { flushSync } from 'react-dom';
-import Link from 'next/link';
+// Static hosting serves HTML documents; module navigation must use native anchors.
 import {
   ArrowUpRight,
   ArrowRight,
@@ -219,9 +220,9 @@ export default function DesignWorkspace({ moduleId }: { moduleId: ModuleId }) {
       <SidebarProvider key={moduleId} className="ds-provider">
         <Sidebar className="ds-sidebar">
           <SidebarHeader>
-            <Link href="/design/" className="ds-brand">
+            <a href="/design/" className="ds-brand">
               f9<span>design office</span>
-            </Link>
+            </a>
             <div className="ds-project">
               PROJECT / 002<strong>电梯幸存者</strong>
               <small>系统设计与交互验收</small>
@@ -233,7 +234,12 @@ export default function DesignWorkspace({ moduleId }: { moduleId: ModuleId }) {
               {MODULES.map((m) => (
                 <SidebarMenuItem key={m.id}>
                   <SidebarMenuButton
-                    render={<Link href={moduleHref(m.id)} />}
+                    render={
+                      <a
+                        href={moduleHref(m.id)}
+                        aria-label={`${m.no} ${m.title}`}
+                      />
+                    }
                     isActive={moduleId === m.id}
                     className="ds-nav-item"
                   >
@@ -274,9 +280,9 @@ export default function DesignWorkspace({ moduleId }: { moduleId: ModuleId }) {
               <br />
               <span>原型数值为建议值，等待逐项验收。</span>
             </div>
-            <Link className="ds-old-link" href="/">
+            <a className="ds-old-link" href="/">
               打开上一版战斗原型 <ArrowUpRight />
-            </Link>
+            </a>
           </SidebarFooter>
         </Sidebar>
         <main className="ds-main">
@@ -356,7 +362,7 @@ export default function DesignWorkspace({ moduleId }: { moduleId: ModuleId }) {
                 </div>
                 <div className="ds-module-grid">
                   {MODULES.slice(1).map((m) => (
-                    <Link href={moduleHref(m.id)} key={m.id}>
+                    <a href={moduleHref(m.id)} key={m.id}>
                       <span>
                         {m.no} / {m.en}
                       </span>
@@ -368,7 +374,7 @@ export default function DesignWorkspace({ moduleId }: { moduleId: ModuleId }) {
                       <small>
                         {STATUS[reviews[m.id]?.status || 'pending']}
                       </small>
-                    </Link>
+                    </a>
                   ))}
                 </div>
               </section>
@@ -439,10 +445,10 @@ export default function DesignWorkspace({ moduleId }: { moduleId: ModuleId }) {
                   {spec.depends.map((id) => {
                     const m = MODULES.find((x) => x.id === id)!;
                     return (
-                      <Link key={id} href={moduleHref(id)}>
+                      <a key={id} href={moduleHref(id)}>
                         {m.no} {m.title}
                         <ArrowUpRight />
-                      </Link>
+                      </a>
                     );
                   })}
                 </div>
@@ -581,14 +587,14 @@ export default function DesignWorkspace({ moduleId }: { moduleId: ModuleId }) {
             </section>
             <div className="ds-page-navigation">
               {index > 0 ? (
-                <Link href={moduleHref(MODULES[index - 1].id)}>
+                <a href={moduleHref(MODULES[index - 1].id)}>
                   ← {MODULES[index - 1].title}
-                </Link>
+                </a>
               ) : (
                 <span />
               )}
               {next ? (
-                <Link className="ds-next-page" href={moduleHref(next.id)}>
+                <a className="ds-next-page" href={moduleHref(next.id)}>
                   <span>
                     下一模块
                     <strong>
@@ -596,7 +602,7 @@ export default function DesignWorkspace({ moduleId }: { moduleId: ModuleId }) {
                     </strong>
                   </span>
                   <ArrowRight />
-                </Link>
+                </a>
               ) : (
                 <button className="ds-button" onClick={download}>
                   <Download />
