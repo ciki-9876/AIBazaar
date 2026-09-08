@@ -1,0 +1,170 @@
+{
+  "schemaVersion": 1,
+  "documentVersion": "0.3",
+  "exportedAt": "2026-09-07T17:56:30.018Z",
+  "storage": "browser-local",
+  "modules": [
+    {
+      "moduleId": "overview",
+      "title": "协议与核心循环",
+      "status": "approved",
+      "notes": "",
+      "checks": [
+        0,
+        1,
+        2,
+        3,
+        4
+      ],
+      "decisions": {
+        "sleep-recovery": "有补给恢复 50，无补给恢复 15（样例）",
+        "run-budget": "首个十层小样配额不可再生（建议）"
+      },
+      "updatedAt": "2026-09-07T17:45:51.083Z"
+    },
+    {
+      "moduleId": "world",
+      "title": "世界与楼层生成",
+      "status": "approved",
+      "notes": "",
+      "checks": [
+        0,
+        1,
+        2,
+        3,
+        4
+      ],
+      "decisions": {
+        "weather-period": "同层同日固定，次日按预报更新（建议）",
+        "terrain-layout": "天气约束组合，位置可变化（建议）"
+      },
+      "updatedAt": "2026-09-07T17:47:08.467Z"
+    },
+    {
+      "moduleId": "expedition",
+      "title": "探索与撤离",
+      "status": "approved",
+      "notes": "",
+      "checks": [
+        0,
+        1,
+        2,
+        3,
+        4
+      ],
+      "decisions": {
+        "loss-scope": "保留装备与基地，仅丢普通探索包（建议）",
+        "rescue-cost": "连续救援成本逐次提高"
+      },
+      "updatedAt": "2026-09-07T17:48:36.346Z"
+    },
+    {
+      "moduleId": "inventory",
+      "title": "背包与实体鉴定",
+      "status": "approved",
+      "notes": "",
+      "checks": [
+        0,
+        1,
+        2,
+        3,
+        4
+      ],
+      "decisions": {
+        "secure-cap": "随电梯等级少量扩容",
+        "bag-top": "12 → 16 → 20（建议）"
+      },
+      "updatedAt": "2026-09-07T17:49:29.397Z"
+    },
+    {
+      "moduleId": "cards",
+      "title": "卡牌与增量养成",
+      "status": "approved",
+      "notes": "奇迹品质带来超出线性幅度的数值提升以及一个额外特殊效果词条",
+      "checks": [
+        0,
+        1,
+        2,
+        3,
+        4
+      ],
+      "decisions": {
+        "quality-steps": "基础 / 精制 / 大师三层（建议）",
+        "rarity-power": "有限初始与成长系数（建议）"
+      },
+      "updatedAt": "2026-09-07T17:52:15.644Z"
+    },
+    {
+      "moduleId": "base",
+      "title": "电梯基地与生存",
+      "status": "approved",
+      "notes": "电梯的原型不对吧？怎么没有建造模块了。而且当前电梯基地建设玩法有点单薄，设施类型、效果、数值类型都比较单一，可玩性较低，需要扩充设计",
+      "checks": [
+        0,
+        1,
+        2,
+        3,
+        4
+      ],
+      "decisions": {
+        "terminal-slot": "终端为基础设施，不占模块槽（建议）",
+        "production-cap": "每日主动领取一次（样例）"
+      },
+      "updatedAt": "2026-09-07T17:54:52.378Z"
+    },
+    {
+      "moduleId": "combat",
+      "title": "战斗与构筑衔接",
+      "status": "approved",
+      "notes": "原型中未看到敌人的九宫格及卡牌？供能机制我认为可以作为一种流派的卡牌体系，不用作为常驻机制",
+      "checks": [
+        0,
+        1,
+        2,
+        3,
+        4
+      ],
+      "decisions": {
+        "primary-mode": "三路＋天气（当前主方案）",
+        "slot-size": "保留多格卡，但不能跨路"
+      },
+      "updatedAt": "2026-09-07T17:44:55.027Z"
+    },
+    {
+      "moduleId": "survivors",
+      "title": "幸存者与共享楼层",
+      "status": "approved",
+      "notes": "",
+      "checks": [
+        0,
+        1,
+        2,
+        3,
+        4
+      ],
+      "decisions": {
+        "sealed-result": "强制回收扣配额，仅胜者继续（建议）",
+        "bot-budget": "与玩家相同（建议）"
+      },
+      "updatedAt": "2026-09-07T17:55:56.862Z"
+    },
+    {
+      "moduleId": "ranking",
+      "title": "结算与验收路线",
+      "status": "approved",
+      "notes": "",
+      "checks": [
+        0,
+        1,
+        2,
+        3,
+        4
+      ],
+      "decisions": {
+        "final-fail": "扣配额并回收，剩余配额允许再试（建议）",
+        "first-content": "先用八张样卡验证，再扩充（建议）"
+      },
+      "updatedAt": "2026-09-07T17:56:26.905Z"
+    }
+  ]
+}

@@ -35,7 +35,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Progress } from '@/components/ui/progress';
 import { MODULES, moduleHref, DESIGN_VERSION } from '@/lib/design-data';
 import type { ModuleId } from '@/lib/design-data';
-import { SPECS } from '@/lib/design-specs-v03';
+import { SPECS } from '@/lib/design-specs-v04';
 import {
   REVIEW_KEY,
   emptyReview,
@@ -45,7 +45,7 @@ import {
 } from '@/lib/design-review';
 import type { Reviews, ModuleReview, ReviewStatus } from '@/lib/design-review';
 import { DataTable } from './prototypes';
-import DesignPrototype from './prototypes-v03';
+import DesignPrototype from './prototypes-v04';
 const STATUS: Record<ReviewStatus, string> = {
   pending: '待验收',
   changes: '需修改',
@@ -203,7 +203,7 @@ export default function DesignWorkspace({ moduleId }: { moduleId: ModuleId }) {
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = 'f9-elevator-design-review-v03.json';
+    a.download = 'f9-elevator-design-review-v04.json';
     document.body.appendChild(a);
     a.click();
     a.remove();
@@ -333,7 +333,7 @@ export default function DesignWorkspace({ moduleId }: { moduleId: ModuleId }) {
               <a href="#review">04 验收确认</a>
             </div>
             <div className="v3-review-banner">
-              <b>v0.3 · 验收修订版</b>
+              <b>v0.4 · 建造与构筑修订版</b>
               　已整合上一版全部意见及后续确认。新增数值和取舍请逐项确认；旧版记录仍保留，新版单独保存。
             </div>
             <section className="ds-section" id="prototype">
@@ -616,7 +616,7 @@ export default function DesignWorkspace({ moduleId }: { moduleId: ModuleId }) {
               )}
             </div>
             <footer className="ds-footer">
-              <span>F9 / ELEVATOR SURVIVOR · SYSTEM DESIGN v0.3</span>
+              <span>F9 / ELEVATOR SURVIVOR · SYSTEM DESIGN v0.4</span>
               <span>设定依据：本次讨论 · 所有平衡数值均为设计建议</span>
             </footer>
           </div>

@@ -1,4 +1,4 @@
-export const DESIGN_VERSION = '0.3';
+export const DESIGN_VERSION = '0.4';
 export const MODULES = [
   {
     id: 'overview',
@@ -60,7 +60,7 @@ export const MODULES = [
     en: 'COMBAT SYSTEM',
     short: '让每件卡牌按自己的时间行动',
     summary:
-      '三路九格、四格起步。让天气改变布局与卡牌联动，并与独立的共享供能方案进行对照。',
+      '三路九格、四格起步。多格卡不能跨路，敌我布局完整可见；供能成为与天气并存的一种卡牌流派。',
   },
   {
     id: 'survivors',

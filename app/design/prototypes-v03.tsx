@@ -2,6 +2,14 @@
 import { useState, useMemo, useEffect } from 'react';
 import LegacyPrototype from './prototypes';
 import {
+  newDay,
+  dayAction,
+  newBots,
+  botDay,
+  rescueCost,
+  safeCapacity,
+} from '@/lib/prototype-v04';
+import {
   Play,
   Pause,
   RotateCcw,
@@ -25,12 +33,8 @@ import {
   START_BOARD,
   duel,
   terrainFor,
-  newDay,
-  dayAction,
   newCargo,
   cargoV03,
-  newBots,
-  botDay,
 } from '@/lib/prototype-v03';
 import { createWorld, rankEntries } from '@/lib/design-model';
 import type { ModuleId } from '@/lib/design-data';
@@ -282,7 +286,7 @@ function DayDemo({ moduleId }: { moduleId: ModuleId }) {
             <Stats
               items={[
                 ['普通包物资', `${s.loot} 件 / ${s.loot * 2 + 2} 容积`],
-                ['安全容器', `${s.safe * 2} / 2`],
+                ['安全容器', `${s.safe * 2} / ${safeCapacity(s.slots)}`],
                 ['本次通关', s.objective ? '待撤回' : '未完成'],
               ]}
             />
@@ -292,7 +296,9 @@ function DayDemo({ moduleId }: { moduleId: ModuleId }) {
               </button>
               <button
                 className="ds-ghost"
-                disabled={s.loot === 0 || s.safe > 0}
+                disabled={
+                  s.loot === 0 || (s.safe + 1) * 2 > safeCapacity(s.slots)
+                }
                 onClick={() => go('secure')}
               >
                 移入安全容器
@@ -301,7 +307,7 @@ function DayDemo({ moduleId }: { moduleId: ModuleId }) {
                 常规撤回 · 8 精力
               </button>
               <button className="ds-ghost ds-danger" onClick={() => go('fail')}>
-                验收：战败救援 · 3 配额
+                验收：战败救援 · {rescueCost(s.streak)} 配额
               </button>
             </div>
           </>
