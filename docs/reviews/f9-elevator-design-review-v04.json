@@ -1,0 +1,170 @@
+{
+  "schemaVersion": 1,
+  "documentVersion": "0.4",
+  "exportedAt": "2026-09-08T17:47:48.057Z",
+  "storage": "browser-local",
+  "modules": [
+    {
+      "moduleId": "overview",
+      "title": "协议与核心循环",
+      "status": "approved",
+      "notes": "",
+      "checks": [
+        0,
+        1,
+        2,
+        3,
+        4
+      ],
+      "decisions": {
+        "budget-v04": "保持 12 配额，提高失败压力",
+        "first-closed-loop": "完成十层共享存档闭环（建议）"
+      },
+      "updatedAt": "2026-09-08T17:29:53.072Z"
+    },
+    {
+      "moduleId": "world",
+      "title": "世界与楼层生成",
+      "status": "approved",
+      "notes": "",
+      "checks": [
+        0,
+        1,
+        2,
+        3,
+        4
+      ],
+      "decisions": {
+        "forecast-range": "下一天天气与路线建议（建议）",
+        "forecast-cost": "免费观测，建造成本提高"
+      },
+      "updatedAt": "2026-09-08T17:32:24.269Z"
+    },
+    {
+      "moduleId": "expedition",
+      "title": "探索与撤离",
+      "status": "approved",
+      "notes": "楼层节点怎么只剩主目标了？",
+      "checks": [
+        0,
+        1,
+        2,
+        3,
+        4
+      ],
+      "decisions": {
+        "rescue-reset": "任何成功正常撤回即重置（样例）",
+        "rescue-ceiling": "3 / 5 / 7，此后继续递增"
+      },
+      "updatedAt": "2026-09-08T17:33:58.612Z"
+    },
+    {
+      "moduleId": "inventory",
+      "title": "背包与实体鉴定",
+      "status": "approved",
+      "notes": "背包需要支持查看物品详情，上阵卡组本身也相当于一个容器，可以把卡牌布阵上去腾出背包格子，这些操作界面（包括安全格）处于同一个界面（或同一个系统模块做界面切换）",
+      "checks": [
+        0,
+        1,
+        2,
+        3,
+        4
+      ],
+      "decisions": {
+        "secure-curve": "电梯等级 1 / 3 / 5：2 / 4 / 6 容积（样例）",
+        "secure-item": "允许部分稀有工具，但禁止任务核心"
+      },
+      "updatedAt": "2026-09-08T17:37:11.730Z"
+    },
+    {
+      "moduleId": "cards",
+      "title": "卡牌与增量养成",
+      "status": "approved",
+      "notes": "",
+      "checks": [
+        0,
+        1,
+        2,
+        3,
+        4
+      ],
+      "decisions": {
+        "miracle-affix": "固定回响，先验证可解释性（建议）",
+        "miracle-scaling": "基础 ×2.4 / 成长 ×2.8（本版）"
+      },
+      "updatedAt": "2026-09-08T17:38:58.002Z"
+    },
+    {
+      "moduleId": "base",
+      "title": "电梯基地与生存",
+      "status": "approved",
+      "notes": "",
+      "checks": [
+        0,
+        1,
+        2,
+        3,
+        4
+      ],
+      "decisions": {
+        "daily-facility": "每设施每日一次（本版建议）",
+        "demolition": "返还 50% 材料，当日使用记录保留（样例）"
+      },
+      "updatedAt": "2026-09-08T17:42:05.532Z"
+    },
+    {
+      "moduleId": "combat",
+      "title": "战斗与构筑衔接",
+      "status": "approved",
+      "notes": "更改布局为上下布局，敌方上，我方下，敌方主体在卡牌区上方，我方主体在卡牌区下方，同时卡牌发动效果时，如果是数值类效果（比如伤害、治疗，需要在对应目标区域随机处飘字）",
+      "checks": [
+        0,
+        1,
+        2,
+        3,
+        4
+      ],
+      "decisions": {
+        "multi-cell": "1 / 2 / 3 格，均不可跨路（样例）",
+        "energy-order": "按上中下、左到右（样例）"
+      },
+      "updatedAt": "2026-09-08T17:45:52.182Z"
+    },
+    {
+      "moduleId": "survivors",
+      "title": "幸存者与共享楼层",
+      "status": "approved",
+      "notes": "机器人淘汰算法不够真实，我尝试推进了很多天，结果在大约6~7天有机器人会在第三层被淘汰，很不合理",
+      "checks": [
+        0,
+        1,
+        2,
+        3,
+        4
+      ],
+      "decisions": {
+        "sealed-result": "强制回收扣配额，仅胜者继续（建议）",
+        "bot-budget": "与玩家相同（建议）"
+      },
+      "updatedAt": "2026-09-08T17:47:16.653Z"
+    },
+    {
+      "moduleId": "ranking",
+      "title": "结算与验收路线",
+      "status": "approved",
+      "notes": "",
+      "checks": [
+        0,
+        1,
+        2,
+        3,
+        4
+      ],
+      "decisions": {
+        "final-fail": "扣配额并回收，剩余配额允许再试（建议）",
+        "first-content": "先用八张样卡验证，再扩充（建议）"
+      },
+      "updatedAt": "2026-09-08T17:47:47.272Z"
+    }
+  ]
+}

@@ -282,7 +282,7 @@ export default function DesignWorkspace({ moduleId }: { moduleId: ModuleId }) {
               <span>原型数值为建议值，等待逐项验收。</span>
             </div>
             <a className="ds-old-link" href="/">
-              打开上一版战斗原型 <ArrowUpRight />
+              游玩完整 Demo 1.0 <ArrowUpRight />
             </a>
           </SidebarFooter>
         </Sidebar>
