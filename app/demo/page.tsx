@@ -270,6 +270,7 @@ export default function Demo() {
                   return (
                     <button
                       key={at}
+                      style={{ gridColumn: col + 1 }}
                       className={
                         'ed-slot ' + (locked.includes(at) ? 'locked' : '')
                       }
@@ -446,7 +447,8 @@ export default function Demo() {
           <p>
             选择物品查看详情，再点击空格布阵。
             <br />
-            每路从左到右：前排 → 后排。卡牌无血量，受击经护甲减伤后传给宿主。
+            我方每路从右到左：前排 →
+            后排。卡牌无血量，受击经护甲减伤后传给宿主。
           </p>
         </div>
         <div className="ed-inventory-layout">
@@ -1188,15 +1190,37 @@ export default function Demo() {
             {frame.time.toFixed(2)}s
           </span>
         </div>
-        {actor(1, frame)}
-        {cardGrid(run.duel.enemy, true, frame)}
-        <div className="ed-versus">
-          <span />
-          <b>{frame.time >= 40 ? '空间坍缩' : '↑'}</b>
-          <span />
-        </div>
-        {cardGrid(run.duel.player, false, frame)}
-        {actor(0, frame)}
+        <section
+          className="ed-battle-scroll"
+          aria-label="左右对战棋盘，可横向滚动"
+          // oxlint-disable-next-line jsx-a11y/no-noninteractive-tabindex -- Keyboard users need to focus this horizontal scroll region.
+          tabIndex={0}
+        >
+          <div className="ed-horizontal-battle">
+            {actor(0, frame)}
+            <div className="ed-battle-half">
+              <div className="ed-facing">我方 · 后排 → 前排</div>
+              {cardGrid(run.duel.player, false, frame)}
+            </div>
+            <div className="ed-lane-bridge">
+              <div className="ed-facing">
+                {frame.time >= 40 ? '坍缩' : '交锋'}
+              </div>
+              {[0, 1, 2].map((lane) => (
+                <div key={lane}>
+                  <b>{['上路', '中路', '下路'][lane]}</b>
+                  <span>↔</span>
+                  <small>{terrain[lane]}</small>
+                </div>
+              ))}
+            </div>
+            <div className="ed-battle-half">
+              <div className="ed-facing">敌方 · 前排 → 后排</div>
+              {cardGrid(run.duel.enemy, true, frame)}
+            </div>
+            {actor(1, frame)}
+          </div>
+        </section>
         <div className="ed-battle-controls">
           <button onClick={() => setPlaying((x) => !x)}>
             {playing ? <Pause size={16} /> : <Play size={16} />}{' '}
@@ -1211,7 +1235,7 @@ export default function Demo() {
             跳至结果
           </button>
           <span>
-            每路左前右后 · 命中卡牌 → 护甲 → 宿主护盾 / 生命 · 空路直击
+            双方前排朝中央 · 命中卡牌 → 护甲 → 宿主护盾 / 生命 · 空路直击
           </span>
         </div>
         {(enemyDetail || viewed) && (
@@ -1582,7 +1606,7 @@ export default function Demo() {
             <p>
               伤害默认命中同路前排卡牌，空路直击宿主。卡牌只有护甲，没有生命值，不会被打掉；减伤公式为原始伤害
               × 100 ÷（100 +
-              护甲），之后扣宿主护盾与生命。治疗、护盾仍给宿主。脉冲线圈明确攻击其他路后排；多格卡算一个完整目标。每路左侧是前排，右侧是后排。40
+              护甲），之后扣宿主护盾与生命。治疗、护盾仍给宿主。脉冲线圈明确攻击其他路后排；多格卡算一个完整目标。我方右侧为前排，敌方左侧为前排，双方前排在中央相对。40
               秒后空间坍缩属于环境伤害，绕过卡牌护甲与宿主护盾。
             </p>
           </div>
