@@ -74,7 +74,39 @@ export type Bot = {
   status: string;
   plan: number;
 };
+export const RESOURCE_LEVEL: Record<string, number> = {
+  supply: 1,
+  material: 1,
+  medicine: 2,
+  scrap: 2,
+  power: 3,
+  fuel: 3,
+  scanner: 3,
+};
+export const FACILITY_LEVEL: Record<string, number> = {
+  clinic: 2,
+  recycle: 2,
+  generator: 3,
+  workshop: 3,
+  storage: 3,
+  grow: 4,
+  weather: 4,
+  adapt: 5,
+};
+export const LEVEL_GUIDE = [
+  '活下去：补给用于出勤和睡眠。带回实体，在桌面免费鉴定。',
+  '学会利用剩余物资：材料培养卡牌，废料回收为材料，药品恢复精力。',
+  '把电带进门外：燃料发电，电力补充鉴定电荷，带上便携鉴定仪。',
+  '建立稳定补给：电力与材料种植补给，观测天气再选择路线。',
+  '为危险做准备：用材料与电力制作地形适应装备，降低探索消耗。',
+  '完整构筑：九格战斗布局，围绕天气、护甲和弹道组织卡牌。',
+];
+export const unlockedItem = (s: Run, id: string) =>
+  s.level >= (RESOURCE_LEVEL[id] ?? 1);
+export const checkpoint = (s: Run) => s.stopFloor ?? s.best;
 export type Run = {
+  stopFloor?: number;
+  departureFloor?: number;
   interaction?: 'search' | 'trade' | null;
   version: 1;
   seed: number;
@@ -218,6 +250,8 @@ export function newRun(seed = Date.now() >>> 0): Run {
   });
   return {
     version: 1,
+    stopFloor: 0,
+    departureFloor: 0,
     seed,
     phase: 'intro',
     day: 1,
@@ -308,8 +342,12 @@ export const searchCost = (s: Run) =>
 export function puzzle(s: Run) {
   return puzzleSpec(s.seed, s.floor, s.node);
 }
-export const eventAt = (s: Run) =>
-  eventSpec(s.seed, s.floor, s.node, currentFloor(s).name);
+export const eventAt = (s: Run) => {
+  const spec = eventSpec(s.seed, s.floor, s.node, currentFloor(s).name);
+  return spec.kind === 1 && s.level < 3
+    ? { ...spec, kind: 2, alt: '用 2 材料修复通路，恢复 6 精力' }
+    : spec;
+};
 export const nodeTitle = (s: Run, index = s.node) =>
   sceneTitle(currentFloor(s).name, currentFloor(s).nodes[index] ?? 'exit');
 export const sellPrice = (x: Item) =>
@@ -354,7 +392,9 @@ export function merchantOffers(s: Run) {
     ),
   );
   return choices.filter(
-    (x) => !(currentFloor(s).soldOffers ?? []).includes(x.uid),
+    (x) =>
+      unlockedItem(s, x.id) &&
+      !(currentFloor(s).soldOffers ?? []).includes(x.uid),
   );
 }
 function say(s: Run, text: string) {
@@ -592,9 +632,11 @@ function rescue(s: Run, reason: string) {
   s.objective = false;
   s.duel = null;
   finishBots(s);
+  s.floor = s.departureFloor ?? checkpoint(s);
+  s.stopFloor = s.floor;
   say(
     s,
-    `${reason}。强制回收消耗 ${cost} 配额，普通背包丢失，上阵卡、安全格和基地保留。`,
+    `${reason}，返回 ${s.floor} 层停靠点。强制回收消耗 ${cost} 配额，普通背包丢失，上阵卡、安全格和基地保留。`,
   );
   endIfNeeded(s);
 }
@@ -652,6 +694,9 @@ export function makeDuel(s: Run, kind: 'guardian' | 'survivor'): Duel {
 }
 export function act(old: Run, a: Action): Run {
   const s = structuredClone(old);
+  s.stopFloor ??= s.best;
+  s.departureFloor ??= s.stopFloor;
+  if (s.phase === 'base') s.floor = s.stopFloor;
   need(s.phase !== 'ended', '本局已结算，请重新开始');
   if (a.type === 'begin') {
     need(s.phase === 'intro', '协议已确认');
@@ -671,11 +716,10 @@ export function act(old: Run, a: Action): Run {
       shelter,
       makeItem('apple', 'apple', 'tool'),
       makeItem('lighter', 'lighter', 'tool'),
-      makeItem('scanner', 'scanner', 'tool'),
     ];
     say(
       s,
-      '协议生效：100 名幸存者各自困于电梯。终端已鉴定水果刀，并通过送物口发放导电索、遮雨棚与便携鉴定仪。当前开放前十层。',
+      '协议生效：100 名幸存者各自困于电梯。终端已鉴定水果刀，并通过送物口发放导电索与遮雨棚。门外只能向上；未通关撤离会回到原停靠点。',
     );
     return s;
   }
@@ -737,6 +781,7 @@ export function act(old: Run, a: Action): Run {
     const x = s.items.find((x) => x.uid === a.id);
     need(x && x.type === 'physical', '请选择未鉴定实体');
     if (s.phase === 'floor') {
+      need(s.level >= 3, '电梯 Lv.3 解锁便携鉴定');
       need(x.zone === 'bag' || x.zone === 'safe', '只能鉴定随身携带的实体');
       need(
         hasTool(s, 'scanner') && s.charges > 0,
@@ -779,6 +824,7 @@ export function act(old: Run, a: Action): Run {
   }
   if (a.type === 'recycle') {
     need(s.phase === 'base', '请回基地回收');
+    need(s.level >= 2, '电梯 Lv.2 解锁分解回收');
     const x = s.items.find((x) => x.uid === a.id);
     need(x && x.zone !== 'board', '请先卸下物品');
     s.material += 2 + x.level * 2 + x.quality * 2;
@@ -788,6 +834,7 @@ export function act(old: Run, a: Action): Run {
   }
   if (a.type === 'grow' || a.type === 'refine') {
     need(s.phase === 'base', '请回终端培养');
+    need(s.level >= 2, '电梯 Lv.2 解锁卡牌培养');
     const x = s.items.find((x) => x.uid === a.id);
     need(x && x.type === 'card', '请选择卡牌');
     const cost = a.type === 'grow' ? 3 + x.level * 2 : 5 + x.quality * 4;
@@ -846,8 +893,14 @@ export function act(old: Run, a: Action): Run {
       need(s.level < 6 && s.material >= cost, `升级需 ${cost} 材料，上限 Lv.6`);
       s.material -= cost;
       s.level++;
+      if (s.level === 3 && !s.items.some((x) => x.id === 'scanner'))
+        s.items.push(makeItem('scanner', 'scanner', 'tool', 'warehouse'));
     } else {
       need(f, '未知设施');
+      need(
+        s.level >= FACILITY_LEVEL[f.id] || s.installed.includes(f.id),
+        `电梯 Lv.${FACILITY_LEVEL[f.id]} 解锁此设施`,
+      );
       if (a.type === 'build') {
         need(
           !s.installed.includes(f.id) && moduleUsed(s) + f.slots <= s.moduleCap,
@@ -921,7 +974,7 @@ export function act(old: Run, a: Action): Run {
     say(
       s,
       a.type === 'upgrade'
-        ? `电梯升至 Lv.${s.level}，战斗格与容器容量已同步。`
+        ? `电梯升至 Lv.${s.level}。${LEVEL_GUIDE[s.level - 1]}${s.level === 3 ? '便携鉴定仪已送入仓库，终端已解封电力与燃料库存。' : ''}`
         : a.type === 'expand'
           ? '电梯扩建完成。'
           : `${f!.name} · ${a.type === 'build' ? '建造完成' : a.type === 'remove' ? '拆除返还一半材料，当日使用记录保留' : '今日处理完成'}`,
@@ -936,6 +989,7 @@ export function act(old: Run, a: Action): Run {
   }
   if (a.type === 'craft-scanner') {
     need(s.phase === 'base', '需要回到终端');
+    need(s.level >= 3, '电梯 Lv.3 解锁便携鉴定');
     need(
       !s.items.some((x) => x.id === 'scanner'),
       '已经拥有鉴定仪，可从仓库取回',
@@ -952,13 +1006,14 @@ export function act(old: Run, a: Action): Run {
     need(s.phase === 'base' && !s.used, '每天只能出勤一次，睡眠后恢复');
     need(
       Number.isInteger(a.floor) &&
-        a.floor! >= Math.max(1, s.floor) &&
+        a.floor! >= Math.max(1, checkpoint(s)) &&
         a.floor! <= 10,
       '电梯只能向上，或重试当前层',
     );
     need(s.supply >= 1 && s.stamina >= 12, '出勤需 1 补给和至少 12 精力');
     need(playerCards(s).length > 0, '请至少上阵一张卡');
     planBots(s);
+    s.departureFloor = checkpoint(s);
     s.floor = a.floor!;
     if (
       !currentFloor(s).routeVersion &&
@@ -997,6 +1052,7 @@ export function act(old: Run, a: Action): Run {
     need(s.interaction === 'search', '请在搜查状态中拾取物资');
     const x = floor.stock.find((x) => x.uid === a.id);
     need(x, '这件物资已被拿走');
+    need(unlockedItem(s, x.id), '电梯升级后可识别这类物资');
     s.items.push({ ...x, zone: 'bag', at: undefined });
     validateItems(s);
     floor.stock = floor.stock.filter((i) => i.uid !== x.uid);
@@ -1025,10 +1081,17 @@ export function act(old: Run, a: Action): Run {
         ? `已撤回，通关记录 ${s.best} 层。${firstClear ? `首次通关奖励 ${4 + Math.ceil(s.floor / 2)} 材料、2 补给。` : '本层奖励已领取，不重复发放。'}`
         : '提前撤离，保住随身物资；本层未计入通关高度。',
     );
+    if (s.objective) s.stopFloor = Math.max(checkpoint(s), s.floor);
     if (s.objective && s.floor === 10) {
       s.phase = 'ended';
       s.ending = '十层幸存者协议完成';
     }
+    s.floor = checkpoint(s);
+    if (!s.objective)
+      say(
+        s,
+        `提前撤离，返回 ${s.floor} 层停靠点；保住随身物资，未提交新高度。`,
+      );
     return s;
   }
   if (a.type === 'rescue') {
@@ -1087,7 +1150,7 @@ export function act(old: Run, a: Action): Run {
   if (a.type === 'rest') {
     need(node === 'rest', '当前不是休整点');
     if (a.choice === 1) {
-      need(s.medicine > 0, '需要 1 药品');
+      need(s.level >= 2 && s.medicine > 0, '需要 Lv.2 与 1 药品');
       s.medicine--;
       s.stamina = Math.min(100, s.stamina + 25);
     } else s.stamina = Math.min(100, s.stamina + 8);
@@ -1098,7 +1161,7 @@ export function act(old: Run, a: Action): Run {
   if (a.type === 'hazard') {
     need(node === 'hazard', '当前不是危险区域');
     if (a.choice === 1) {
-      need(s.power >= 2, '需要 2 电力');
+      need(s.level >= 3 && s.power >= 2, '需要 Lv.3 与 2 电力');
       s.power -= 2;
     } else {
       need(s.stamina >= 8, '穿越危险区域需要 8 精力');
@@ -1117,7 +1180,7 @@ export function act(old: Run, a: Action): Run {
         s.stamina = Math.min(100, s.stamina + 8);
       }
       if (spec.kind === 1) {
-        need(s.power >= 2, '需要 2 电力');
+        need(s.level >= 3 && s.power >= 2, '需要 Lv.3 与 2 电力');
         s.power -= 2;
         s.stamina = Math.min(100, s.stamina + 12);
       }
@@ -1144,7 +1207,7 @@ export function act(old: Run, a: Action): Run {
     s.interaction = 'search';
     say(
       s,
-      `正在搜查，发现 ${currentFloor(s).stock.length} 件剩余物资。拾取后立即进入右侧背包；整理完成后再前往下个目的地。`,
+      `正在搜查，发现 ${currentFloor(s).stock.filter((x) => unlockedItem(s, x.id)).length} 件可用物资。拾取后立即进入右侧背包；整理完成后再前往下个目的地。`,
     );
     return s;
   }
@@ -1187,6 +1250,12 @@ export function validSave(value: unknown): value is Run {
   try {
     const s = value as Run;
     need(s && s.version === 1 && Number.isInteger(s.seed), '存档版本不支持');
+    for (const height of [s.stopFloor, s.departureFloor])
+      need(
+        height === undefined ||
+          (Number.isInteger(height) && height >= 0 && height <= s.best),
+        '停靠点无效',
+      );
     need(
       ['intro', 'base', 'floor', 'combat', 'ended'].includes(s.phase),
       '阶段无效',
@@ -1355,6 +1424,13 @@ export function validSave(value: unknown): value is Run {
       for (const board of [s.duel.player, s.duel.enemy]) {
         const occupied = new Set<number>();
         for (const p of board) {
+          need(
+            p.flightTime === undefined ||
+              (Number.isFinite(p.flightTime) &&
+                p.flightTime >= 0.5 &&
+                p.flightTime <= 3),
+            '弹道时长无效',
+          );
           validateItem({
             ...p,
             type: 'card',

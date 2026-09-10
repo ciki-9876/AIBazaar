@@ -4,7 +4,10 @@
 import { useState, useEffect, useMemo, useRef, useCallback } from 'react';
 import BattleEffects from './battle-effects';
 import CardFace from './card-face';
+import ElevatorRoom from './elevator-room';
 import {
+  Settings,
+  X,
   ArrowUp,
   ArrowRight,
   Heart,
@@ -23,7 +26,6 @@ import {
   Wrench,
   Radio,
   Trophy,
-  Users,
   Play,
   Pause,
   RotateCcw,
@@ -39,7 +41,6 @@ import {
   Check,
   ChevronRight,
   Apple,
-  Lightbulb,
   BatteryCharging,
   Box,
 } from 'lucide-react';
@@ -78,6 +79,10 @@ import {
   offerPrice,
   sellPrice,
   rescueCost,
+  checkpoint,
+  unlockedItem,
+  FACILITY_LEVEL,
+  LEVEL_GUIDE,
   puzzle,
   playerCards,
   ranking,
@@ -139,11 +144,13 @@ export default function Demo() {
     [notice, setNotice] = useState(''),
     [tab, setTab] = useState('base'),
     [selected, setSelected] = useState<string | null>(null),
+    [settings, setSettings] = useState(false),
+    [sleepPrompt, setSleepPrompt] = useState(false),
     [help, setHelp] = useState(false),
     [reset, setReset] = useState(false);
   const [cursor, setCursor] = useState(0),
     [playing, setPlaying] = useState(true),
-    [speed, setSpeed] = useState(2),
+    [speed, setSpeed] = useState(1),
     [enemyDetail, setEnemyDetail] = useState<FighterCard | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
   const commit = useCallback((next: Run) => {
@@ -557,6 +564,7 @@ export default function Demo() {
                     </p>
                     <div className="ed-actions">
                       <button
+                        className={run.level < 2 ? 'ed-hidden' : ''}
                         disabled={run.phase !== 'base' || viewed.level >= 5}
                         onClick={() =>
                           dispatch({ type: 'grow', id: viewed.uid })
@@ -565,6 +573,7 @@ export default function Demo() {
                         成长 +1 · {3 + viewed.level * 2} 材料
                       </button>
                       <button
+                        className={run.level < 2 ? 'ed-hidden' : ''}
                         disabled={run.phase !== 'base' || viewed.quality >= 2}
                         onClick={() =>
                           dispatch({ type: 'refine', id: viewed.uid })
@@ -615,19 +624,20 @@ export default function Demo() {
                         移至{zoneName[z]}
                       </button>
                     ))}
-                  {viewed.zone !== 'board' && (
-                    <button
-                      className="ed-danger"
-                      onClick={() =>
-                        dispatch({
-                          type: run.phase === 'base' ? 'recycle' : 'drop',
-                          id: viewed.uid,
-                        })
-                      }
-                    >
-                      {run.phase === 'base' ? '分解为材料' : '留在本层'}
-                    </button>
-                  )}
+                  {viewed.zone !== 'board' &&
+                    (run.phase !== 'base' || run.level >= 2) && (
+                      <button
+                        className="ed-danger"
+                        onClick={() =>
+                          dispatch({
+                            type: run.phase === 'base' ? 'recycle' : 'drop',
+                            id: viewed.uid,
+                          })
+                        }
+                      >
+                        {run.phase === 'base' ? '分解为材料' : '留在本层'}
+                      </button>
+                    )}
                 </div>
               </>
             ) : (
@@ -652,31 +662,36 @@ export default function Demo() {
       <section className="ed-panel">
         <div className="ed-panel-title">
           <h3>本层剩余物资</h3>
-          <span>{f.stock.length} 件 · 共享状态保留</span>
+          <span>
+            {f.stock.filter((x) => unlockedItem(run, x.id)).length} 件 ·
+            共享状态保留
+          </span>
         </div>
         <div className="ed-loot">
-          {f.stock.map((x) => (
-            <div className="ed-loot-item" key={x.uid}>
-              <Icon id={x.id} />
-              <div>
-                <b>{itemName(x)}</b>
-                <small>
-                  {x.type === 'physical'
-                    ? '未鉴定实体'
-                    : x.type === 'card'
-                      ? RARITY[x.rarity!].name
-                      : x.type === 'resource'
-                        ? `资源 ×${x.amount}`
-                        : '工具'}{' '}
-                  / {x.volume} 容积
-                </small>
+          {f.stock
+            .filter((x) => unlockedItem(run, x.id))
+            .map((x) => (
+              <div className="ed-loot-item" key={x.uid}>
+                <Icon id={x.id} />
+                <div>
+                  <b>{itemName(x)}</b>
+                  <small>
+                    {x.type === 'physical'
+                      ? '未鉴定实体'
+                      : x.type === 'card'
+                        ? RARITY[x.rarity!].name
+                        : x.type === 'resource'
+                          ? `资源 ×${x.amount}`
+                          : '工具'}{' '}
+                    / {x.volume} 容积
+                  </small>
+                </div>
+                <button onClick={() => dispatch({ type: 'pickup', id: x.uid })}>
+                  拾取
+                </button>
               </div>
-              <button onClick={() => dispatch({ type: 'pickup', id: x.uid })}>
-                拾取
-              </button>
-            </div>
-          ))}
-          {!f.stock.length && (
+            ))}
+          {!f.stock.some((x) => unlockedItem(run, x.id)) && (
             <p className="ed-empty">这里已被搜刮一空，主目标仍可挑战。</p>
           )}
         </div>
@@ -684,62 +699,24 @@ export default function Demo() {
       </section>
     );
   }
-  function base() {
+  function terminal() {
     return (
       <>
-        <section className="ed-base-hero">
-          <div className="ed-cabin">
-            <div className="ed-cabin-screen">
-              <small>TERMINAL CONNECTED</small>
-              <b>↑ {String(run.floor).padStart(2, '0')}</b>
-              <span>生命维持 / {run.quota} 配额</span>
-            </div>
-            <div className="ed-bed">
-              <BedDouble size={50} />
-              <small>你的床</small>
-            </div>
-            <div className="ed-table">
-              <Lightbulb size={34} />
-              <span>鉴定终端 · 免费使用</span>
-            </div>
-            <div className="ed-delivery">▰ 送物口</div>
-          </div>
-          <div className="ed-base-copy">
-            <p className="ed-kicker">YOUR ONLY SAFE ROOM</p>
-            <h1>
-              一部电梯。
-              <br />
-              一个尚存的世界。
-            </h1>
-            <p>
-              门外的世界每层都不同。这里是你唯一能睡下、重建，并为下一次出发准备的地方。
-            </p>
-            <div className="ed-actions">
-              <button
-                className="ed-primary"
-                disabled={run.used}
-                onClick={() => setTab('map')}
-              >
-                <ArrowUp size={18} />
-                选择楼层
-              </button>
-              <button onClick={() => dispatch({ type: 'sleep' })}>
-                <BedDouble size={18} />
-                睡到明天 · −1 配额
-              </button>
-            </div>
-            <small>
-              {run.used ? '今日已出勤，睡眠后可再次出发。' : '今日尚未出勤。'}
-              有补给恢复 50 精力，无补给恢复 15。
-            </small>
-          </div>
-        </section>
-        <div className="ed-base-grid">
+        <p className="ed-unlock-note">
+          Lv.{run.level} · {LEVEL_GUIDE[run.level - 1]}
+          {run.level < 6 && <small>下一级：{LEVEL_GUIDE[run.level]}</small>}
+        </p>
+        <div
+          className={
+            'ed-base-grid ed-terminal-content ' +
+            (tab === 'prep' ? 'show-prep' : 'show-upgrades')
+          }
+        >
           <section className="ed-panel">
             <div className="ed-panel-title">
               <h3>电梯改造 / Lv.{run.level}</h3>
               <span>
-                模块 {moduleUsed(run)} / {run.moduleCap}
+                材料 {run.material} · 模块 {moduleUsed(run)} / {run.moduleCap}
               </span>
             </div>
             <div className="ed-module-plan">
@@ -782,6 +759,41 @@ export default function Demo() {
             <p className="ed-hint">
               升级解锁战斗格；Lv.3 / Lv.5 同步扩充背包与安全容器。终端不占槽位。
             </p>
+            <section className="ed-resource-cycle">
+              <h3>现在能做什么</h3>
+              <p>补给 → 出勤与睡眠 → 带回物资 → 免费鉴定 → 新卡牌。</p>
+              <p>
+                材料来自搜查、交易和首次通关，用来升级电梯。当前库存{' '}
+                {run.material}。
+              </p>
+              {run.level >= 2 && (
+                <p>
+                  多余物品 → 分解为材料 → 强化卡牌。废料 → 回收台 → 材料；药品 →
+                  医疗站 → 精力。
+                </p>
+              )}
+              {run.level >= 3 && (
+                <p>
+                  废料 → 储藏架 → 燃料 → 发电机 → 电力；电力与材料 → 设备台 →
+                  鉴定电荷。仪器必须随身携带。
+                </p>
+              )}
+              {run.level >= 4 && (
+                <p>
+                  电力与材料 → 种植架 →
+                  补给。观测台免费预报明天天气，帮助选择下一条路线。
+                </p>
+              )}
+              {run.level >= 5 && (
+                <p>
+                  电力与材料 → 地形准备 → 下次出勤减少搜索消耗 →
+                  留出更多探索余量。
+                </p>
+              )}
+              {run.level >= 2 && (
+                <p>设施每日各使用一次；睡眠消耗有限配额，经营无法无限循环。</p>
+              )}
+            </section>
           </section>
           <section className="ed-panel">
             <p className="ed-kicker">PREPARATION</p>
@@ -797,10 +809,10 @@ export default function Demo() {
                   {bagCap(run)}
                 </b>
               </span>
-              <span>
+              <span className={run.level < 3 ? 'ed-hidden' : ''}>
                 鉴定电荷 <b>{run.charges} / 4</b>
               </span>
-              <span>
+              <span className={run.level < 5 ? 'ed-hidden' : ''}>
                 地形适应 <b>{run.adapted ? '已准备' : '未准备'}</b>
               </span>
             </div>
@@ -812,7 +824,7 @@ export default function Demo() {
               <button onClick={() => dispatch({ type: 'deposit' })}>
                 交付资源
               </button>
-              {!run.items.some((x) => x.id === 'scanner') && (
+              {run.level >= 3 && !run.items.some((x) => x.id === 'scanner') && (
                 <button onClick={() => dispatch({ type: 'craft-scanner' })}>
                   重制鉴定仪 · 4 材料 / 2 电力
                 </button>
@@ -846,12 +858,17 @@ export default function Demo() {
             )}
           </section>
         </div>
-        <div className="ed-section-title">
+        <div
+          className={'ed-section-title ' + (tab === 'prep' ? 'ed-hidden' : '')}
+        >
           <h2>把庇护所建起来</h2>
           <span>每设施每日一次 · 拆除保留当日使用记录</span>
         </div>
-        <div className="ed-facilities">
-          {FACILITY.map((f) => {
+        <div className={'ed-facilities ' + (tab === 'prep' ? 'ed-hidden' : '')}>
+          {FACILITY.filter(
+            (f) =>
+              run.level >= FACILITY_LEVEL[f.id] || run.installed.includes(f.id),
+          ).map((f) => {
             const built = run.installed.includes(f.id),
               used = run.facilityUsed.includes(f.id);
             return (
@@ -905,14 +922,14 @@ export default function Demo() {
             <h2>电梯通往哪里？</h2>
           </div>
           <p>
-            每次只允许出勤一次。可跳层，不能下降。
+            每天一次出勤。可跳层；通关后才确认新停靠点。
             <br />
-            Demo 1.0 开放十层；第十层通关撤离即完成本局。
+            未通关撤离返回出发点；救援另扣配额并丢失普通背包。
           </p>
         </div>
         <div className="ed-floor-map">
           {run.floors.map((fl) => {
-            const locked = fl.id < run.floor,
+            const locked = fl.id < checkpoint(run),
               weather = weatherAt(run, fl.id),
               forecast = weatherAt(run, fl.id, run.day + 1);
             return (
@@ -1022,6 +1039,7 @@ export default function Demo() {
                     </button>
                     {x.type === 'physical' && (
                       <button
+                        disabled={run.level < 3}
                         onClick={() => dispatch({ type: 'scan', id: x.uid })}
                       >
                         鉴定 · 1电荷
@@ -1120,29 +1138,31 @@ export default function Demo() {
           <span>材料 {run.material}</span>
         </div>
         <div className="ed-shop-items">
-          {merchantOffers(run).map((x) => (
-            <article className="ed-shop-item" key={x.uid}>
-              <Icon id={x.id} />
-              <div>
-                <h3>{itemName(x)}</h3>
-                <p>
-                  {x.type === 'physical'
-                    ? `未鉴定实体 · ${cardDef(x.id).effect}`
-                    : x.type === 'resource'
-                      ? `基地补给 ×${x.amount}，撤离后入库。`
-                      : x.id === 'apple'
-                        ? '食用恢复 25 精力。'
-                        : '携带后可使用电荷鉴定实体。'}
-                </p>
-                <small>
-                  {x.volume} 容积 / {offerPrice(x)} 材料
-                </small>
-              </div>
-              <button onClick={() => dispatch({ type: 'trade', id: x.uid })}>
-                购买
-              </button>
-            </article>
-          ))}
+          {merchantOffers(run)
+            .filter((x) => unlockedItem(run, x.id))
+            .map((x) => (
+              <article className="ed-shop-item" key={x.uid}>
+                <Icon id={x.id} />
+                <div>
+                  <h3>{itemName(x)}</h3>
+                  <p>
+                    {x.type === 'physical'
+                      ? `未鉴定实体 · ${cardDef(x.id).effect}`
+                      : x.type === 'resource'
+                        ? `基地补给 ×${x.amount}，撤离后入库。`
+                        : x.id === 'apple'
+                          ? '食用恢复 25 精力。'
+                          : '携带后可使用电荷鉴定实体。'}
+                  </p>
+                  <small>
+                    {x.volume} 容积 / {offerPrice(x)} 材料
+                  </small>
+                </div>
+                <button onClick={() => dispatch({ type: 'trade', id: x.uid })}>
+                  购买
+                </button>
+              </article>
+            ))}
           {!merchantOffers(run).length && (
             <p>本次商品已售罄。仍可出售或整理物品。</p>
           )}
@@ -1322,9 +1342,7 @@ export default function Demo() {
                 </>
               ) : node === 'rest' ? (
                 <>
-                  <p>
-                    这里暂时没有威胁。你可以坐下来喘一口气，或使用药品做一次更充分的恢复。
-                  </p>
+                  <p>这里暂时没有威胁。坐下来，喘一口气。</p>
                   <div className="ed-actions">
                     <button
                       className="ed-primary"
@@ -1333,6 +1351,7 @@ export default function Demo() {
                       短暂休整 · +8 精力
                     </button>
                     <button
+                      className={run.level < 2 ? 'ed-hidden' : ''}
                       onClick={() => dispatch({ type: 'rest', choice: 1 })}
                     >
                       消耗药品 · +25 精力
@@ -1353,6 +1372,7 @@ export default function Demo() {
                       穿越 · 8 精力
                     </button>
                     <button
+                      className={run.level < 3 ? 'ed-hidden' : ''}
                       onClick={() => dispatch({ type: 'hazard', choice: 1 })}
                     >
                       启动防护 · 2 电力
@@ -1522,10 +1542,11 @@ export default function Demo() {
         <details className="ed-visual-guide">
           <summary>卡牌与弹道图例</summary>
           <p>
-            底色：灰色普通、蓝色罕见、黄色稀有、暗金传说、红色奇迹。品质：基础单线框、精制双线框、大师雕角框。左上角为强化等级，朝前银边为护甲；蒙层铺满时发动。
+            底色：灰色普通、蓝色罕见、黄色稀有、暗金传说、红色奇迹。品质：基础单线框、精制双线框、大师雕角框。左上角为强化等级，我方右下角、敌方左下角显示卡牌护甲；蒙层铺满时发动。
           </p>
           <p>
-            直线流光：伤害红、治疗绿、护甲/护盾黄、灼烧橙、毒素墨绿、冰冻淡蓝。当前样卡尚无独立灼烧、毒素、冰冻效果，这三类已预留对应颜色。暂停会冻结弹道位置。
+            直线流光：伤害红、治疗绿、护甲/护盾黄、灼烧橙、毒素墨绿、冰冻淡蓝。当前样卡尚无独立灼烧、毒素、冰冻效果，这三类已预留对应颜色。弹道飞行
+            0.75–1.5 秒后结算效果；暂停会冻结弹道位置。
           </p>
         </details>
         {(enemyDetail || viewed) && (
@@ -1647,26 +1668,21 @@ export default function Demo() {
     );
   }
   return (
-    <main className="elevator-demo">
+    <main
+      className={
+        'elevator-demo ed-immersive ' +
+        (run.phase === 'base' ? 'at-base ' : '') +
+        (run.phase === 'base' && tab === 'base' ? 'in-room' : '')
+      }
+    >
       <header className="ed-header">
-        <a href="/">
-          f9<span> / 幸存者电梯</span>
-        </a>
-        <div className="ed-header-tools">
-          <button aria-label="游玩说明" onClick={() => setHelp(true)}>
-            <BookOpen size={17} />
-          </button>
-          <button onClick={exportRun} aria-label="导出存档">
-            <Download size={17} />
-          </button>
-          <button
-            onClick={() => fileRef.current?.click()}
-            aria-label="导入存档"
-          >
-            <Upload size={17} />
-          </button>
-          <a href="/design/">设计档案 ↗</a>
-        </div>
+        <button
+          className="ed-settings-button"
+          aria-label="设置"
+          onClick={() => setSettings(true)}
+        >
+          <Settings size={20} />
+        </button>
         <input
           ref={fileRef}
           type="file"
@@ -1676,14 +1692,26 @@ export default function Demo() {
         />
       </header>
       {run.phase === 'intro' ? (
-        <section className="ed-intro">
+        <section className="ed-intro ed-intro-room">
+          <div inert className="ed-intro-backdrop">
+            <ElevatorRoom
+              floor={0}
+              day={1}
+              used={false}
+              level={1}
+              onTable={() => {}}
+              onDoor={() => {}}
+              onBed={() => {}}
+              onTerminal={() => {}}
+            />
+          </div>
           <div className="ed-door">
             <span>↑</span>
             <b>00</b>
             <small>只能向上</small>
           </div>
           <div>
-            <p className="ed-kicker">SURVIVOR PROTOCOL / DEMO 1.0</p>
+            <p className="ed-kicker">未知位置 / 00:00</p>
             {notice && (
               <output className="ed-hint" aria-live="polite">
                 {notice}
@@ -1715,9 +1743,7 @@ export default function Demo() {
               </button>
             </div>
             <small className="ed-hint">
-              单人策略生存 · 十层完整旅程 · 本机自动存档
-              <br />
-              每局重组楼层题材，当前使用离线生成规则。
+              屏幕忽然闪了一下。它像是在等你说话。
             </small>
           </div>
         </section>
@@ -1733,16 +1759,24 @@ export default function Demo() {
               ['燃料', run.fuel, Flame],
               ['药品', run.medicine, Heart],
               ['废料', run.scrap, Box],
-            ].map(([name, n, I]) => {
-              const C = I as LucideIcon;
-              return (
-                <div key={String(name)}>
-                  <C size={16} />
-                  <span>{String(name)}</span>
-                  <b>{String(n)}</b>
-                </div>
-              );
-            })}
+            ]
+              .filter(
+                ([name]) =>
+                  ['配额', '精力', '补给'].includes(String(name)) ||
+                  (run.level >= 2 &&
+                    ['材料', '药品', '废料'].includes(String(name))) ||
+                  run.level >= 3,
+              )
+              .map(([name, n, I]) => {
+                const C = I as LucideIcon;
+                return (
+                  <div key={String(name)}>
+                    <C size={16} />
+                    <span>{String(name)}</span>
+                    <b>{String(n)}</b>
+                  </div>
+                );
+              })}
           </div>
           <div className="ed-shell">
             <aside className="ed-sidebar">
@@ -1762,8 +1796,6 @@ export default function Demo() {
                   ['map', '选择楼层', ArrowUp],
                   ['floor', '继续探索', DoorOpen],
                   ['inventory', '行装与构筑', Backpack],
-                  ['survivors', '幸存者榜', Users],
-                  ['log', '旅程日志', BookOpen],
                 ].map(([id, name, I]) => {
                   const C = I as LucideIcon;
                   return (
@@ -1785,19 +1817,44 @@ export default function Demo() {
                   );
                 })}
               </nav>
-              <div className="ed-side-note">
-                <Trophy size={18} />
-                <span>
-                  最高通关<b>{run.best} F</b>
-                </span>
-              </div>
-              <small className="ed-save">{saved}</small>
-              <button className="ed-restart" onClick={() => setReset(true)}>
-                <RotateCcw size={13} />
-                重新开始
-              </button>
             </aside>
             <div className="ed-main">
+              {run.phase === 'base' && tab !== 'base' && (
+                <div className="ed-terminal-nav">
+                  <span>
+                    {['upgrades', 'survivors', 'log', 'prep'].includes(tab)
+                      ? '电梯系统'
+                      : tab === 'inventory'
+                        ? '桌面 / 行装与构筑'
+                        : '门禁 / 选择楼层'}
+                  </span>
+                  {['upgrades', 'survivors', 'log', 'prep'].includes(tab) && (
+                    <nav aria-label="电梯系统界面">
+                      {[
+                        ['upgrades', '电梯改造'],
+                        ['survivors', '幸存者榜'],
+                        ['log', '旅程日志'],
+                        ['prep', '下一次出发'],
+                      ].map(([id, label]) => (
+                        <button
+                          key={id}
+                          className={tab === id ? 'active' : ''}
+                          onClick={() => setTab(id)}
+                        >
+                          {label}
+                        </button>
+                      ))}
+                    </nav>
+                  )}
+                  <button
+                    onClick={() => setTab('base')}
+                    aria-label="返回电梯房间"
+                  >
+                    <X size={20} />
+                  </button>
+                </div>
+              )}
+
               <output className="ed-notice" aria-live="polite">
                 <Radio size={15} />
                 <span>{notice || run.notice}</span>
@@ -1837,7 +1894,18 @@ export default function Demo() {
                   {survivors()}
                 </>
               ) : tab === 'base' ? (
-                base()
+                <ElevatorRoom
+                  floor={checkpoint(run)}
+                  day={run.day}
+                  used={run.used}
+                  level={run.level}
+                  onTable={() => setTab('inventory')}
+                  onDoor={() => setTab('map')}
+                  onBed={() => setSleepPrompt(true)}
+                  onTerminal={() => setTab('upgrades')}
+                />
+              ) : tab === 'upgrades' || tab === 'prep' ? (
+                terminal()
               ) : tab === 'map' ? (
                 map()
               ) : tab === 'floor' ? (
@@ -1860,18 +1928,75 @@ export default function Demo() {
           </div>
         </>
       )}
-      <footer className="ed-footer">
-        <span>f9 / DEMO 1.0 · 十层幸存者协议</span>
-        <span>
-          存档仅保存在当前浏览器，可导出备份 · <a href="/legacy/">旧版实验</a>
-        </span>
-      </footer>
+      <Dialog open={settings} onOpenChange={setSettings}>
+        <DialogContent className="ed-dialog">
+          <DialogTitle>设置与记录</DialogTitle>
+          <DialogDescription>f9 · 幸存者电梯</DialogDescription>
+          <p>
+            最高通关 {run.best} F · 第 {run.day} 天 · {saved}
+          </p>
+          <div className="ed-actions">
+            <button
+              onClick={() => {
+                setSettings(false);
+                setHelp(true);
+              }}
+            >
+              <BookOpen size={16} />
+              指南
+            </button>
+            <button onClick={exportRun}>
+              <Download size={16} />
+              导出存档
+            </button>
+            <button onClick={() => fileRef.current?.click()}>
+              <Upload size={16} />
+              导入存档
+            </button>
+            <button
+              onClick={() => {
+                setSettings(false);
+                setReset(true);
+              }}
+            >
+              <RotateCcw size={16} />
+              重新开始
+            </button>
+            <a href="/design/">设计档案 ↗</a>
+            <a href="/legacy/">旧版实验 ↗</a>
+          </div>
+        </DialogContent>
+      </Dialog>
+      <Dialog open={sleepPrompt} onOpenChange={setSleepPrompt}>
+        <DialogContent className="ed-dialog">
+          <DialogTitle>让门外的世界再等一会儿。</DialogTitle>
+          <DialogDescription>
+            睡一觉，醒来就是下一天。每日没有倒计时。
+          </DialogDescription>
+          <p>
+            生命维持配额 −1。
+            {run.supply > 0
+              ? '消耗 1 补给，恢复 50 精力。'
+              : '没有补给，仅恢复 15 精力。'}
+            {!run.used && '今天尚未出勤，睡眠会放弃今天的出发机会。'}
+          </p>
+          <button
+            className="ed-primary"
+            onClick={() => {
+              dispatch({ type: 'sleep' });
+              setSleepPrompt(false);
+            }}
+          >
+            睡到明天
+          </button>
+        </DialogContent>
+      </Dialog>
       <Dialog open={help} onOpenChange={setHelp}>
         <DialogContent className="ed-dialog">
           <DialogTitle>欢迎加入幸存者游戏</DialogTitle>
           <DialogDescription>
             100
-            名参与者，每人一部电梯。只能向上；高层奖励更多，但构筑与天气决定真正的难度。
+            名参与者，每人一部电梯。正常航行只能向上；未通关撤离返回原停靠点。高层奖励更多，但构筑与天气决定真正的难度。
           </DialogDescription>
           <div className="ed-help">
             <h3>准备 → 出勤 → 撤离 → 成长</h3>

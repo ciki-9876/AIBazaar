@@ -7,6 +7,7 @@ export type FighterCard = {
   rarity: number;
   quality: number;
   level: number;
+  flightTime?: number;
 };
 const ARMOR: Record<string, number> = {
   knife: 10,
@@ -48,6 +49,24 @@ export function selectTarget(
       .sort((a, b) => a.at - b.at)[0] ?? null
   );
 }
+export const flightTimeOf = (card: FighterCard) =>
+  Math.max(
+    0.5,
+    Math.min(
+      3,
+      Math.round(
+        (card.flightTime ??
+          { coil: 0.75, brick: 1.5, knife: 1, wire: 1, bell: 1.25 }[card.id] ??
+          1.25) * 4,
+      ) / 4,
+    ),
+  );
+export type Projectile = Hit & {
+  id: string;
+  launchedAt: number;
+  impactAt: number;
+  overflowCap?: number;
+};
 export type Hit = {
   side: number;
   kind: 'damage' | 'heal' | 'shield' | 'energy' | 'echo' | 'charge';
@@ -80,6 +99,7 @@ export type CombatFrame = {
   fired: string[];
   waiting: string[];
   hits: Hit[];
+  projectiles: Projectile[];
   log: string[];
 };
 export type Duel = {
@@ -106,6 +126,8 @@ export function simulateDuel(d: Duel) {
   );
   const terrain = terrainFor(d.weather, d.layout);
   const frames: CombatFrame[] = [];
+  let pending: Projectile[] = [];
+  let serial = 0;
   for (let step = 0; step <= 240; step++) {
     const time = step / 4,
       hits: Hit[] = [],
@@ -115,6 +137,43 @@ export function simulateDuel(d: Duel) {
       cd = [Array(9).fill(0), Array(9).fill(0)];
     // Damage is committed after both owners act, so simultaneous lethal hits are fair.
     const damage = [0, 0];
+    // Resolve arrivals first. Launch and impact are separate simulation events.
+    for (const shot of pending.filter((x) => x.impactAt <= time)) {
+      const hit: Hit = { ...shot };
+      if (hit.kind === 'damage') {
+        const target = boards[hit.side].find((x) => x.uid === hit.targetUid);
+        hit.armor = target ? armorOf(target) : 0;
+        hit.value = armorDamage(hit.raw ?? hit.value, hit.armor);
+        damage[hit.side] += hit.value;
+      } else if (hit.kind === 'heal') {
+        hit.value = Math.min(d.maxHp[hit.side] - hp[hit.side], shot.value);
+        hp[hit.side] += hit.value;
+        const overflow = Math.min(
+          shot.overflowCap ?? 0,
+          shot.value - hit.value,
+        );
+        if (overflow > 0) {
+          shield[hit.side] += overflow;
+          hits.push({
+            ...hit,
+            kind: 'shield',
+            visual: 'armor',
+            value: overflow,
+          });
+        }
+      } else if (hit.kind === 'shield') shield[hit.side] += hit.value;
+      else if (hit.kind === 'energy')
+        energy[hit.side] = Math.min(
+          cap[hit.side],
+          energy[hit.side] + hit.value,
+        );
+      else if (hit.kind === 'charge') {
+        const target = boards[hit.side].find((x) => x.uid === hit.targetUid);
+        if (target) timers[hit.side][target.at] += hit.value;
+      }
+      hits.push(hit);
+    }
+    pending = pending.filter((x) => x.impactAt > time);
     for (let side = 0; side < 2; side++)
       for (const p of boards[side]) {
         const c = cardDef(p.id),
@@ -154,13 +213,21 @@ export function simulateDuel(d: Duel) {
         }
         if (c.kind === 'shield' && q === 2)
           amount += c.id === 'shelter' ? 5 : c.id === 'battery' ? 10 : 0;
+        const launch = (hit: Hit, overflowCap = 0) =>
+          pending.push({
+            ...hit,
+            id: `projectile-${serial++}`,
+            launchedAt: time,
+            impactAt: time + flightTimeOf(p),
+            overflowCap,
+          });
         const apply = (value: number, echo = false) => {
           if (c.kind === 'damage') {
             const target = selectTarget(p, boards[1 - side]);
             const armor = target ? armorOf(target) : 0;
             const transmitted = armorDamage(value, armor);
-            damage[1 - side] += transmitted;
-            hits.push({
+
+            launch({
               side: 1 - side,
               kind: 'damage',
               value: transmitted,
@@ -174,8 +241,7 @@ export function simulateDuel(d: Duel) {
             });
           }
           if (c.kind === 'shield') {
-            shield[side] += value;
-            hits.push({
+            launch({
               side,
               kind: 'shield',
               value,
@@ -186,31 +252,30 @@ export function simulateDuel(d: Duel) {
             });
           }
           if (c.kind === 'heal') {
-            const healed = Math.min(d.maxHp[side] - hp[side], value);
-            hp[side] += healed;
-            hits.push({
-              side,
-              kind: 'heal',
-              value: healed,
-              source: c.name,
-              sourceUid: p.uid,
-              targetUid: `host-${side}`,
-              visual: 'heal',
-            });
-            if (!echo && c.id === 'box' && q > 0 && env === '寒冷') {
-              const overflow = Math.min(q === 2 ? 20 : 12, value - healed);
-              shield[side] += overflow;
-              if (overflow > 0) hits.push({ side, kind: 'shield', value: overflow,
-                source: c.name, sourceUid: p.uid, targetUid: `host-${side}`, visual: 'armor' });
-            }
+            launch(
+              {
+                side,
+                kind: 'heal',
+                value,
+                source: c.name,
+                sourceUid: p.uid,
+                targetUid: `host-${side}`,
+                visual: 'heal',
+              },
+              !echo && c.id === 'box' && q > 0 && env === '寒冷'
+                ? q === 2
+                  ? 20
+                  : 12
+                : 0,
+            );
           }
           if (echo) log.push(`${c.name} · 奇迹回响 ${value}`);
         };
         apply(amount);
         if (c.energyGain) {
           const gain = c.energyGain + (c.id === 'cell' && q === 2 ? 1 : 0);
-          energy[side] = Math.min(cap[side], energy[side] + gain);
-          hits.push({
+
+          launch({
             side,
             kind: 'energy',
             value: gain,
@@ -237,9 +302,8 @@ export function simulateDuel(d: Duel) {
             ? others
             : others.slice(0, 1);
         if (advance) {
-          targets.forEach((x) => (timers[side][x.at] += advance));
           targets.forEach((x) =>
-            hits.push({
+            launch({
               side,
               kind: 'charge',
               value: advance,
@@ -255,9 +319,17 @@ export function simulateDuel(d: Duel) {
         }
         if (p.rarity === 4 && n % 3 === 0) {
           if (c.kind === 'charge') {
-            targets.forEach((x) => (timers[side][x.at] += advance * 0.5));
-            targets.forEach((x) => hits.push({ side, kind: 'charge', value: advance * 0.5,
-              source: c.name, sourceUid: p.uid, targetUid: x.uid, visual: 'charge' }));
+            targets.forEach((x) =>
+              launch({
+                side,
+                kind: 'charge',
+                value: advance * 0.5,
+                source: c.name,
+                sourceUid: p.uid,
+                targetUid: x.uid,
+                visual: 'charge',
+              }),
+            );
             log.push(`${c.name} · 充能回响`);
           } else apply(Math.round(amount * 5) / 10, true);
         }
@@ -299,6 +371,7 @@ export function simulateDuel(d: Duel) {
       fired,
       waiting,
       hits,
+      projectiles: pending.map((x) => ({ ...x })),
       log,
     });
     if (hp.some((x) => x <= 0)) break;

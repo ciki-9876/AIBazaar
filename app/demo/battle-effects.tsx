@@ -58,24 +58,28 @@ export default function BattleEffects({
       observer.disconnect();
     };
   }, [surface, frames]);
-  // Use real animation playback controls: pause freezes bolts at their current position.
+  const frame = frames[cursor];
+  const shots = frame?.projectiles ?? [];
   useEffect(() => {
-    layer.current?.getAnimations({ subtree: true }).forEach((animation) => {
-      if (animation.playState === 'finished') return;
-      animation.playbackRate = speed;
-      if (playing) animation.play();
-      else animation.pause();
-    });
-  }, [playing, speed, cursor]);
-  const shots = frames
-    .slice(Math.max(0, cursor - 4), cursor + 1)
-    .flatMap((frame) =>
-      frame.hits.map((hit, i) => ({ hit, key: `${frame.time}-${i}` })),
-    )
-    .filter((x) => !!x.hit.sourceUid);
+    layer.current
+      ?.querySelectorAll<HTMLElement>('[data-launched]')
+      .forEach((element) => {
+        const age = Math.max(
+          0,
+          (frames[cursor].time - Number(element.dataset.launched)) * 1000,
+        );
+        element.getAnimations({ subtree: true }).forEach((animation) => {
+          if (element.dataset.frame !== String(cursor)) animation.currentTime = age;
+          animation.playbackRate = speed;
+          if (playing) animation.play();
+          else animation.pause();
+        });
+        element.dataset.frame = String(cursor);
+      });
+  }, [playing, speed, cursor, frames, points]);
   return (
     <div className="ed-projectiles" aria-hidden="true" ref={layer}>
-      {shots.map(({ hit, key }) => {
+      {shots.map((hit) => {
         const start = points[hit.sourceUid!],
           end = points[hit.targetUid ?? `host-${hit.side}`];
         if (!start || !end) return null;
@@ -91,7 +95,8 @@ export default function BattleEffects({
                 : 'armor');
         return (
           <div
-            key={key}
+            key={hit.id}
+            data-launched={hit.launchedAt}
             className="ed-shot-axis"
             style={
               {
@@ -100,6 +105,7 @@ export default function BattleEffects({
                 transform: `rotate(${Math.atan2(dy, dx)}rad)`,
                 '--flight-distance': `${distance}px`,
                 '--shot-color': SHOT_COLORS[visual],
+                '--flight-time': `${hit.impactAt - hit.launchedAt}s`,
               } as CSSProperties
             }
           >
@@ -107,10 +113,27 @@ export default function BattleEffects({
               <i />
               <b />
             </div>
-            <div className="ed-shot-impact" style={{ left: distance }} />
           </div>
         );
       })}
+      {frame?.hits
+        .filter((hit) => hit.sourceUid)
+        .map((hit, i) => {
+          const end = points[hit.targetUid ?? `host-${hit.side}`];
+          return end ? (
+            <div
+              key={`impact-${frame.time}-${i}`}
+              className="ed-shot-impact"
+              style={
+                {
+                  left: end.x,
+                  top: end.y - 7,
+                  '--shot-color': SHOT_COLORS[hit.visual ?? 'damage'],
+                } as CSSProperties
+              }
+            />
+          ) : null;
+        })}
     </div>
   );
 }

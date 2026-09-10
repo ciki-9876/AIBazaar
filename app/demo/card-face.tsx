@@ -68,20 +68,10 @@ export default function CardFace({
       <span className="ed-enhance">+{card.level}</span>
       <strong className="ed-card-name">{c.name}</strong>
       <div className="ed-special-copy">{cardSpecial(card)}</div>
-      <div
-        className="ed-armor-rail"
-        style={
-          {
-            '--armor-width': `${Math.min(12, 2 + armor / 8)}px`,
-            '--armor-tone': `${Math.max(38, 84 - armor * 0.45)}%`,
-          } as CSSProperties
-        }
-      >
-        <span>
-          <Shield size={10} />
-          {armor}
-        </span>
-      </div>
+      <span className="ed-armor-corner" title="卡牌护甲：减少传递给宿主的伤害">
+        <Shield size={12} />
+        {armor}
+      </span>
       <div className="ed-effect-values">
         <span
           title={
