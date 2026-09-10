@@ -1,3 +1,4 @@
+import { layout } from './cargo-layout.ts';
 import { rng, hash } from './design-model.ts';
 import {
   CARDS,
@@ -31,11 +32,17 @@ export const SAVE_KEY = 'f9.elevator.demo1.local';
 export const QUALITY = ['基础', '精制', '大师'];
 export const FACILITY = FACILITIES.map((f) => ({
   ...f,
+  name: f.name.replaceAll('材料', '金币'),
   cost: f.id === 'weather' ? 8 : f.cost,
-  desc: f.id === 'weather' ? '免费观测下一天天气，并给出路线建议' : f.desc,
+  desc:
+    f.id === 'weather'
+      ? '免费观测下一天天气，并给出路线建议'
+      : f.desc.replaceAll('材料', '金币'),
 }));
 export type Zone = 'bag' | 'safe' | 'warehouse' | 'board';
 export type Item = {
+  slot?: number;
+  rotated?: boolean;
   uid: string;
   id: string;
   type: 'physical' | 'card' | 'tool' | 'resource';
@@ -48,7 +55,8 @@ export type Item = {
   at?: number;
 };
 export type Floor = {
-  routeVersion?: 2;
+  routeVersion?: 2 | 3;
+  battleRewards?: string[];
   soldOffers?: string[];
   id: number;
   name: string;
@@ -95,10 +103,10 @@ export const FACILITY_LEVEL: Record<string, number> = {
 };
 export const LEVEL_GUIDE = [
   '活下去：补给用于出勤和睡眠。带回实体，在桌面免费鉴定。',
-  '学会利用剩余物资：材料培养卡牌，废料回收为材料，药品恢复精力。',
+  '学会利用剩余物资：金币培养卡牌，废料回收为金币，药品恢复精力。',
   '把电带进门外：燃料发电，电力补充鉴定电荷，带上便携鉴定仪。',
-  '建立稳定补给：电力与材料种植补给，观测天气再选择路线。',
-  '为危险做准备：用材料与电力制作地形适应装备，降低探索消耗。',
+  '建立稳定补给：电力与金币种植补给，观测天气再选择路线。',
+  '为危险做准备：用金币与电力制作地形适应装备，降低探索消耗。',
   '完整构筑：九格战斗布局，围绕天气、护甲和弹道组织卡牌。',
 ];
 export const unlockedItem = (s: Run, id: string) =>
@@ -149,6 +157,8 @@ export type Run = {
   clears: number[];
 };
 export type Action = {
+  slot?: number;
+  rotated?: boolean;
   type: string;
   id?: string;
   to?: Zone;
@@ -174,7 +184,7 @@ export const NAMES: Record<string, string> = {
   apple: '苹果',
   lighter: '打火机',
   scanner: '便携鉴定仪',
-  material: '机械组件',
+  material: '金币',
   supply: '密封补给',
   power: '储能电池',
   fuel: '燃料罐',
@@ -228,7 +238,7 @@ export function newRun(seed = Date.now() >>> 0): Run {
       detail: theme[1],
       focus: theme[2],
       nodes: floorRoute(seed, i + 1),
-      routeVersion: 2,
+      routeVersion: 3,
       soldOffers: [],
       stock: [
         loot(theme[2], 'resource', 3),
@@ -331,7 +341,11 @@ export const nodeName: Record<string, string> = {
   search: '搜刮区域',
   puzzle: '密码机关',
   merchant: '游商交易',
-  guardian: '楼层守卫',
+  guardian: 'BOSS',
+  patrol: '普通战',
+  elite: '精英战',
+  cache: '急救箱',
+  bargain: '体力交易',
   rest: '休整点',
   hazard: '危险区域',
   exit: '撤离出口',
@@ -345,7 +359,7 @@ export function puzzle(s: Run) {
 export const eventAt = (s: Run) => {
   const spec = eventSpec(s.seed, s.floor, s.node, currentFloor(s).name);
   return spec.kind === 1 && s.level < 3
-    ? { ...spec, kind: 2, alt: '用 2 材料修复通路，恢复 6 精力' }
+    ? { ...spec, kind: 2, alt: '用 2 金币修复通路，恢复 6 精力' }
     : spec;
 };
 export const nodeTitle = (s: Run, index = s.node) =>
@@ -454,11 +468,56 @@ function validateItem(x: Item) {
     );
   need(x.zone !== 'safe' || x.id !== 'core', '任务核心禁止进入安全格');
 }
-function validateItems(s: Run) {
+export const cargoShape = (s: Run, zone: Zone) => ({
+  columns:
+    zone === 'safe'
+      ? safeCap(s) === 6
+        ? 3
+        : safeCap(s)
+      : zone === 'warehouse'
+        ? 6
+        : 4,
+  capacity:
+    zone === 'safe'
+      ? safeCap(s)
+      : zone === 'warehouse'
+        ? Math.max(
+            24,
+            Math.ceil(
+              (s.items
+                .filter((x) => x.zone === zone)
+                .reduce((n, x) => n + x.volume, 0) +
+                12) /
+                6,
+            ) * 6,
+            ...s.items
+              .filter((x) => x.zone === zone)
+              .map((x) => (x.slot ?? 0) + x.volume * 6),
+          )
+        : bagCap(s),
+});
+export function cargoItems(s: Run, zone: Zone) {
+  const shape = cargoShape(s, zone);
+  return layout(
+    s.items.filter((x) => x.zone === zone),
+    shape.columns,
+    shape.capacity,
+  );
+}
+function validateItems(s: Run, persist = true) {
   const ids = new Set<string>(),
     occupied = new Set<number>();
   for (const x of s.items) {
     validateItem(x);
+    need(
+      x.slot === undefined ||
+        (Number.isInteger(x.slot) && x.slot >= 0 && x.slot < 1200),
+      '背包位置无效',
+    );
+    need(
+      x.rotated === undefined || typeof x.rotated === 'boolean',
+      '物品朝向无效',
+    );
     need(!ids.has(x.uid), '重复物品');
     ids.add(x.uid);
     need(Number.isFinite(x.volume) && x.volume > 0, '物品容积无效');
@@ -498,6 +557,15 @@ function validateItems(s: Run) {
     volume(s.items.filter((x) => x.zone === 'safe')) <= safeCap(s),
     '安全容器容量不足',
   );
+  for (const zone of ['bag', 'safe', 'warehouse'] as Zone[]) {
+    const arranged = cargoItems(s, zone);
+    if (persist)
+      for (const placed of arranged)
+        Object.assign(
+          s.items.find((x) => x.uid === placed.uid)!,
+          placed,
+        );
+  }
 }
 function hasTool(s: Run, id: string) {
   return s.items.some(
@@ -551,7 +619,7 @@ function botRescue(b: Bot, reason: string) {
   b.quota = Math.max(0, b.quota - cost);
   b.streak++;
   b.alive = b.quota > 0;
-  b.status = `${reason}，回收 -${cost} 配额${b.alive ? '' : '，淘汰'}`;
+  b.status = `${reason}，回收 -${cost} 生命${b.alive ? '' : '，淘汰'}`;
 }
 function finishBots(s: Run) {
   if (s.botsDone) return;
@@ -618,7 +686,7 @@ function endIfNeeded(s: Run) {
   if (s.quota <= 0) {
     s.quota = 0;
     s.phase = 'ended';
-    s.ending = '生命维持配额耗尽';
+    s.ending = '生命耗尽';
   }
 }
 function rescue(s: Run, reason: string) {
@@ -636,7 +704,7 @@ function rescue(s: Run, reason: string) {
   s.stopFloor = s.floor;
   say(
     s,
-    `${reason}，返回 ${s.floor} 层停靠点。强制回收消耗 ${cost} 配额，普通背包丢失，上阵卡、安全格和基地保留。`,
+    `${reason}，返回 ${s.floor} 层停靠点。强制回收消耗 ${cost} 生命，普通背包丢失，上阵卡、安全格和基地保留。`,
   );
   endIfNeeded(s);
 }
@@ -654,6 +722,15 @@ export function playerCards(s: Run): FighterCard[] {
 }
 export function makeDuel(s: Run, kind: 'guardian' | 'survivor'): Duel {
   const floor = s.floor;
+  const stage =
+    kind === 'survivor'
+      ? 'normal'
+      : currentNode(s) === 'patrol'
+        ? 'normal'
+        : currentNode(s) === 'elite'
+          ? 'elite'
+          : 'boss';
+  const scale = stage === 'normal' ? 0.55 : stage === 'elite' ? 0.8 : 1;
   const ids =
     floor <= 2
       ? ['knife']
@@ -680,19 +757,26 @@ export function makeDuel(s: Run, kind: 'guardian' | 'survivor'): Duel {
     enemy,
     maxHp: [
       240 + (s.level - 1) * 10,
-      65 + floor * 17 + (kind === 'survivor' ? 20 : 0),
+      Math.round((65 + floor * 17) * scale) + (kind === 'survivor' ? 20 : 0),
     ],
     weather: weatherAt(s),
     layout: layoutAt(s),
     name:
       kind === 'survivor'
         ? `幸存者 #${String(s.encounter).padStart(3, '0')}`
-        : sceneTitle(currentFloor(s).name, 'guardian'),
+        : sceneTitle(currentFloor(s).name, currentNode(s)),
+    stage,
     kind,
     botId: kind === 'survivor' ? s.encounter : null,
   };
 }
 export function act(old: Run, a: Action): Run {
+  const next = applyAction(old, a);
+  validateItems(next);
+  for (const floor of next.floors) floor.stock = layout(floor.stock, 4, 96);
+  return next;
+}
+function applyAction(old: Run, a: Action): Run {
   const s = structuredClone(old);
   s.stopFloor ??= s.best;
   s.departureFloor ??= s.stopFloor;
@@ -728,6 +812,7 @@ export function act(old: Run, a: Action): Run {
     need(s.phase === 'combat' && s.duel, '没有待结算战斗');
     const result = simulateDuel(s.duel);
     const kind = s.duel.kind;
+    const stage = s.duel.stage ?? (kind === 'guardian' ? 'boss' : 'normal');
     const bot = s.bots.find((x) => x.id === s.duel!.botId);
     s.duel = null;
     if (result.winner !== 0) {
@@ -742,7 +827,20 @@ export function act(old: Run, a: Action): Run {
           bot.status = '封锁对决胜出并完成楼层挑战';
         }
       }
-      rescue(s, result.winner === -1 ? '同归于尽，双方被回收' : '战斗失败');
+      if (stage === 'boss')
+        rescue(s, result.winner === -1 ? '与 BOSS 同归于尽' : 'BOSS 战失败');
+      else {
+        s.stamina = Math.max(0, s.stamina - 35);
+        finishBots(s);
+        s.phase = 'base';
+        s.interaction = null;
+        s.objective = false;
+        s.floor = s.departureFloor ?? checkpoint(s);
+        say(
+          s,
+          '非 BOSS 战败：损失 35 精力，退回原停靠点；生命与背包保留，今日出勤已使用。',
+        );
+      }
       return s;
     }
     s.phase = 'floor';
@@ -752,6 +850,18 @@ export function act(old: Run, a: Action): Run {
       say(
         s,
         '第 1/2 场：幸存者封锁战已胜利。下一场是本层守卫，点击后才会开战；现在也可以提前撤离。',
+      );
+    } else if (stage !== 'boss') {
+      const floor = currentFloor(s),
+        node = currentNode(s);
+      if (!(floor.battleRewards ?? []).includes(node)) {
+        s.material += stage === 'elite' ? 2 : 1;
+        (floor.battleRewards ??= []).push(node);
+      }
+      s.node++;
+      say(
+        s,
+        `${stage === 'elite' ? '精英' : '普通'}战胜利，继续前进。BOSS 仍在本层深处。`,
       );
     } else {
       s.objective = true;
@@ -771,6 +881,8 @@ export function act(old: Run, a: Action): Run {
       );
     if (a.to === 'board') need(x.type === 'card', '只有鉴定后的卡牌可以上阵');
     if (a.to === 'safe') need(x.id !== 'core', '任务核心不能放入安全格');
+    x.slot = a.slot;
+    if (a.rotated !== undefined) x.rotated = a.rotated;
     x.zone = a.to;
     x.at = a.to === 'board' ? a.at : undefined;
     validateItems(s);
@@ -829,7 +941,7 @@ export function act(old: Run, a: Action): Run {
     need(x && x.zone !== 'board', '请先卸下物品');
     s.material += 2 + x.level * 2 + x.quality * 2;
     s.items = s.items.filter((i) => i.uid !== x.uid);
-    say(s, '物品已分解为材料，培养投入部分返还。');
+    say(s, '物品已分解为金币，培养投入部分返还。');
     return s;
   }
   if (a.type === 'grow' || a.type === 'refine') {
@@ -838,12 +950,12 @@ export function act(old: Run, a: Action): Run {
     const x = s.items.find((x) => x.uid === a.id);
     need(x && x.type === 'card', '请选择卡牌');
     const cost = a.type === 'grow' ? 3 + x.level * 2 : 5 + x.quality * 4;
-    need(s.material >= cost, '材料不足');
+    need(s.material >= cost, '金币不足');
     need(a.type === 'grow' ? x.level < 5 : x.quality < 2, '已达培养上限');
     s.material -= cost;
     if (a.type === 'grow') x.level++;
     else x.quality++;
-    say(s, `培养完成，消耗 ${cost} 材料。稀有度保持不变。`);
+    say(s, `培养完成，消耗 ${cost} 金币。稀有度保持不变。`);
     return s;
   }
   if (a.type === 'sleep') {
@@ -865,12 +977,12 @@ export function act(old: Run, a: Action): Run {
       b.stamina = Math.min(100, b.stamina + 50);
       if (!b.quota) {
         b.alive = false;
-        b.status = '生命维持配额耗尽';
+        b.status = '生命耗尽';
       }
     }
     say(
       s,
-      `第 ${s.day} 天：${fed ? '消耗 1 补给，恢复 50' : '缺少补给，仅恢复 15'} 精力；生命维持配额 -1。`,
+      `第 ${s.day} 天：${fed ? '消耗 1 补给，恢复 50' : '缺少补给，仅恢复 15'} 精力；生命 -1。`,
     );
     endIfNeeded(s);
     return s;
@@ -885,12 +997,12 @@ export function act(old: Run, a: Action): Run {
     need(s.phase === 'base', '基地操作需要回到电梯');
     const f = FACILITY.find((f) => f.id === a.id);
     if (a.type === 'expand') {
-      need(s.moduleCap < 10 && s.material >= 6, '扩建需要 6 材料，上限 10 槽');
+      need(s.moduleCap < 10 && s.material >= 6, '扩建需要 6 金币，上限 10 槽');
       s.moduleCap += 2;
       s.material -= 6;
     } else if (a.type === 'upgrade') {
       const cost = 5 + s.level;
-      need(s.level < 6 && s.material >= cost, `升级需 ${cost} 材料，上限 Lv.6`);
+      need(s.level < 6 && s.material >= cost, `升级需 ${cost} 金币，上限 Lv.6`);
       s.material -= cost;
       s.level++;
       if (s.level === 3 && !s.items.some((x) => x.id === 'scanner'))
@@ -906,7 +1018,7 @@ export function act(old: Run, a: Action): Run {
           !s.installed.includes(f.id) && moduleUsed(s) + f.slots <= s.moduleCap,
           '设施已建造或空间不足',
         );
-        need(s.material >= f.cost, '材料不足');
+        need(s.material >= f.cost, '金币不足');
         s.material -= f.cost;
         s.installed.push(f.id);
       } else if (a.type === 'remove') {
@@ -921,7 +1033,7 @@ export function act(old: Run, a: Action): Run {
         );
         switch (f.id) {
           case 'grow':
-            need(s.material >= 1 && s.power >= 3, '需要 1 材料、3 电力');
+            need(s.material >= 1 && s.power >= 3, '需要 1 金币、3 电力');
             s.material--;
             s.power -= 3;
             s.supply += 2;
@@ -947,7 +1059,7 @@ export function act(old: Run, a: Action): Run {
           case 'workshop':
             need(
               s.material >= 1 && s.power >= 2 && s.charges < 4,
-              '需要材料、电力且电荷未满',
+              '需要金币、电力且电荷未满',
             );
             s.material--;
             s.power -= 2;
@@ -961,7 +1073,7 @@ export function act(old: Run, a: Action): Run {
           case 'adapt':
             need(
               s.material >= 2 && s.power >= 2 && !s.adapted,
-              '需要 2 材料、2 电力，且没有待用装备',
+              '需要 2 金币、2 电力，且没有待用装备',
             );
             s.material -= 2;
             s.power -= 2;
@@ -977,7 +1089,7 @@ export function act(old: Run, a: Action): Run {
         ? `电梯升至 Lv.${s.level}。${LEVEL_GUIDE[s.level - 1]}${s.level === 3 ? '便携鉴定仪已送入仓库，终端已解封电力与燃料库存。' : ''}`
         : a.type === 'expand'
           ? '电梯扩建完成。'
-          : `${f!.name} · ${a.type === 'build' ? '建造完成' : a.type === 'remove' ? '拆除返还一半材料，当日使用记录保留' : '今日处理完成'}`,
+          : `${f!.name} · ${a.type === 'build' ? '建造完成' : a.type === 'remove' ? '拆除返还一半金币，当日使用记录保留' : '今日处理完成'}`,
     );
     return s;
   }
@@ -994,7 +1106,7 @@ export function act(old: Run, a: Action): Run {
       !s.items.some((x) => x.id === 'scanner'),
       '已经拥有鉴定仪，可从仓库取回',
     );
-    need(s.material >= 4 && s.power >= 2, '重新制造需要 4 材料与 2 电力');
+    need(s.material >= 4 && s.power >= 2, '重新制造需要 4 金币与 2 电力');
     s.items.push(makeItem(`scanner-${s.serial++}`, 'scanner', 'tool'));
     validateItems(s);
     s.material -= 4;
@@ -1016,12 +1128,12 @@ export function act(old: Run, a: Action): Run {
     s.departureFloor = checkpoint(s);
     s.floor = a.floor!;
     if (
-      !currentFloor(s).routeVersion &&
+      currentFloor(s).routeVersion !== 3 &&
       !currentFloor(s).visitors.includes(0) &&
       !currentFloor(s).cleared
     ) {
       currentFloor(s).nodes = floorRoute(s.seed, s.floor);
-      currentFloor(s).routeVersion = 2;
+      currentFloor(s).routeVersion = 3;
     }
     s.used = true;
     s.supply--;
@@ -1047,13 +1159,29 @@ export function act(old: Run, a: Action): Run {
     return s;
   }
   need(s.phase === 'floor', '请先进入楼层');
+  if (a.type === 'arrange-stock') {
+    need(s.interaction === 'search', '请先搜查区域');
+    const x = currentFloor(s).stock.find((x) => x.uid === a.id);
+    need(x && unlockedItem(s, x.id), '物品不可用');
+    x.slot = a.slot;
+    x.rotated = a.rotated ?? x.rotated;
+    currentFloor(s).stock = layout(currentFloor(s).stock, 4, 96);
+    return s;
+  }
   if (a.type === 'pickup') {
     const floor = currentFloor(s);
     need(s.interaction === 'search', '请在搜查状态中拾取物资');
     const x = floor.stock.find((x) => x.uid === a.id);
     need(x, '这件物资已被拿走');
     need(unlockedItem(s, x.id), '电梯升级后可识别这类物资');
-    s.items.push({ ...x, zone: 'bag', at: undefined });
+    need(!a.to || ['bag', 'safe'].includes(a.to), '只能拾取到随身容器');
+    s.items.push({
+      ...x,
+      zone: a.to ?? 'bag',
+      at: undefined,
+      slot: a.slot,
+      rotated: a.rotated ?? x.rotated,
+    });
     validateItems(s);
     floor.stock = floor.stock.filter((i) => i.uid !== x.uid);
     say(s, `取得${itemName(x)}，物资从共享楼层中移除。`);
@@ -1078,7 +1206,7 @@ export function act(old: Run, a: Action): Run {
     say(
       s,
       s.objective
-        ? `已撤回，通关记录 ${s.best} 层。${firstClear ? `首次通关奖励 ${4 + Math.ceil(s.floor / 2)} 材料、2 补给。` : '本层奖励已领取，不重复发放。'}`
+        ? `已撤回，通关记录 ${s.best} 层。${firstClear ? `首次通关奖励 ${4 + Math.ceil(s.floor / 2)} 金币、2 补给。` : '本层奖励已领取，不重复发放。'}`
         : '提前撤离，保住随身物资；本层未计入通关高度。',
     );
     if (s.objective) s.stopFloor = Math.max(checkpoint(s), s.floor);
@@ -1099,10 +1227,15 @@ export function act(old: Run, a: Action): Run {
     return s;
   }
   if (a.type === 'fight') {
-    need(currentNode(s) === 'guardian', '尚未到达守卫节点');
+    need(
+      ['patrol', 'elite', 'guardian'].includes(currentNode(s)),
+      '尚未到达战斗节点',
+    );
     need(playerCards(s).length > 0, '请先上阵卡牌');
     const kind =
-      s.encounter !== null && !s.encounterDone ? 'survivor' : 'guardian';
+      currentNode(s) === 'guardian' && s.encounter !== null && !s.encounterDone
+        ? 'survivor'
+        : 'guardian';
     s.duel = makeDuel(s, kind);
     s.phase = 'combat';
     say(
@@ -1144,7 +1277,38 @@ export function act(old: Run, a: Action): Run {
     const amount = sellPrice(x);
     s.items = s.items.filter((i) => i.uid !== x.uid);
     s.material += amount;
-    say(s, `售出${itemName(x)}，获得 ${amount} 材料，背包容量已释放。`);
+    say(s, `售出${itemName(x)}，获得 ${amount} 金币，背包容量已释放。`);
+    return s;
+  }
+  if (a.type === 'cache') {
+    need(node === 'cache', '不在急救箱节点');
+    if (a.choice !== 2)
+      s.items.push(
+        makeItem(
+          `cache-${s.serial++}`,
+          a.choice === 1 ? 'lighter' : 'apple',
+          'tool',
+        ),
+      );
+    s.node++;
+    say(
+      s,
+      a.choice === 2 ? '保留急救箱，继续前进。' : '已取得应急用品，放入背包。',
+    );
+    return s;
+  }
+  if (a.type === 'bargain') {
+    need(node === 'bargain', '不在交易节点');
+    if (a.choice === 1) {
+      need(s.stamina >= 12, '需要 12 精力');
+      s.stamina -= 12;
+      s.material += 4;
+    }
+    s.node++;
+    say(
+      s,
+      a.choice === 1 ? '用 12 精力换取 4 金币。' : '拒绝体力交易，继续前进。',
+    );
     return s;
   }
   if (a.type === 'rest') {
@@ -1185,7 +1349,7 @@ export function act(old: Run, a: Action): Run {
         s.stamina = Math.min(100, s.stamina + 12);
       }
       if (spec.kind === 2) {
-        need(s.material >= 2, '需要 2 材料');
+        need(s.material >= 2, '需要 2 金币');
         s.material -= 2;
         s.stamina = Math.min(100, s.stamina + 6);
       }
@@ -1229,12 +1393,18 @@ export function act(old: Run, a: Action): Run {
     const x = merchantOffers(s).find((x) => x.uid === a.id);
     need(x, '商品已售出或不存在');
     const price = offerPrice(x);
-    need(s.material >= price, `需要 ${price} 材料`);
-    s.items.push(x);
+    need(s.material >= price, `需要 ${price} 金币`);
+    need(!a.to || ['bag', 'safe'].includes(a.to), '只能购买到随身容器');
+    s.items.push({
+      ...x,
+      zone: a.to ?? 'bag',
+      slot: a.slot,
+      rotated: a.rotated ?? x.rotated,
+    });
     validateItems(s);
     s.material -= price;
     (currentFloor(s).soldOffers ??= []).push(x.uid);
-    say(s, `购入${itemName(x)}，已放入背包。消耗 ${price} 材料。`);
+    say(s, `购入${itemName(x)}，已放入背包。消耗 ${price} 金币。`);
     return s;
   }
   if (a.type === 'skip') {
@@ -1287,7 +1457,7 @@ export function validSave(value: unknown): value is Run {
         s.level <= 6 &&
         s.floor <= 10 &&
         s.best <= 10 &&
-        s.node <= 7 &&
+        s.node <= 14 &&
         s.day >= 1 &&
         s.day <= 13 &&
         [6, 8, 10].includes(s.moduleCap) &&
@@ -1350,7 +1520,7 @@ export function validSave(value: unknown): value is Run {
           s.encounter <= 99),
       '遭遇对象无效',
     );
-    validateItems(s);
+    validateItems(s, false);
     const ids = new Set(s.items.map((x) => x.uid));
     for (const [index, f] of s.floors.entries()) {
       need(
@@ -1358,7 +1528,7 @@ export function validSave(value: unknown): value is Run {
           typeof f.name === 'string' &&
           typeof f.detail === 'string' &&
           f.nodes.length >= 3 &&
-          f.nodes.length <= 7 &&
+          f.nodes.length <= 14 &&
           new Set(f.nodes).size === f.nodes.length &&
           f.nodes.every((n) =>
             [
@@ -1367,6 +1537,10 @@ export function validSave(value: unknown): value is Run {
               'puzzle',
               'merchant',
               'guardian',
+              'patrol',
+              'elite',
+              'cache',
+              'bargain',
               'rest',
               'hazard',
             ].includes(n),
@@ -1382,6 +1556,13 @@ export function validSave(value: unknown): value is Run {
             f.soldOffers.every((id) => typeof id === 'string')),
         '商人库存无效',
       );
+      need(
+        f.battleRewards === undefined ||
+          (Array.isArray(f.battleRewards) &&
+            f.battleRewards.every((x) => ['patrol', 'elite'].includes(x))),
+        '战斗奖励记录无效',
+      );
+      layout(f.stock, 4, 96);
       for (const item of f.stock) {
         validateItem(item);
         need(!ids.has(item.uid), '重复物品账本');
@@ -1420,6 +1601,11 @@ export function validSave(value: unknown): value is Run {
           [0, 1, 2].includes(s.duel.layout) &&
           typeof s.duel.name === 'string',
         '战斗属性无效',
+      );
+      need(
+        s.duel.stage === undefined ||
+          ['normal', 'elite', 'boss'].includes(s.duel.stage),
+        '战斗阶段无效',
       );
       for (const board of [s.duel.player, s.duel.enemy]) {
         const occupied = new Set<number>();

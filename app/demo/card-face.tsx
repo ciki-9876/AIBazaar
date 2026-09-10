@@ -1,5 +1,6 @@
 'use client';
-import { Sword, Heart, Shield, Zap, FastForward } from 'lucide-react';
+import { Sword, Heart, Shield, Shirt, Zap, FastForward } from 'lucide-react';
+import { useEffect, useRef } from 'react';
 import type { CSSProperties } from 'react';
 import type { FighterCard } from '@/lib/demo-combat';
 import { armorOf } from '@/lib/demo-combat';
@@ -28,12 +29,43 @@ export default function CardFace({
   card,
   progress = 0,
   waiting = false,
+  cooldown = 1,
+  playing = false,
+  speed = 1,
 }: {
   card: FighterCard;
   enemy: boolean;
   progress?: number;
   waiting?: boolean;
+  cooldown?: number;
+  playing?: boolean;
+  speed?: number;
 }) {
+  const wash = useRef<HTMLDivElement>(null),
+    animation = useRef<Animation | null>(null),
+    active = useRef(playing);
+  useEffect(() => {
+    active.current = playing;
+    if (playing && animation.current?.playState !== 'finished')
+      animation.current?.play();
+    else animation.current?.pause();
+  }, [playing]);
+  useEffect(() => {
+    animation.current?.cancel();
+    if (!wash.current) return;
+    const from = Math.max(0, Math.min(1, progress));
+    animation.current = wash.current.animate(
+      [
+        { transform: `scaleX(${from})` },
+        {
+          transform: `scaleX(${waiting ? from : Math.min(1, from + 0.25 / Math.max(0.25, cooldown))})`,
+        },
+      ],
+      { duration: 250 / speed, fill: 'forwards', easing: 'linear' },
+    );
+    if (!active.current) animation.current.pause();
+    return () => animation.current?.cancel();
+  }, [progress, cooldown, speed, waiting]);
   const c = cardDef(card.id),
     armor = armorOf(card),
     value =
@@ -59,6 +91,7 @@ export default function CardFace({
     <>
       <div
         className="ed-card-wash"
+        ref={wash}
         style={
           {
             '--cooldown-progress': Math.max(0, Math.min(1, progress)),
@@ -68,8 +101,11 @@ export default function CardFace({
       <span className="ed-enhance">+{card.level}</span>
       <strong className="ed-card-name">{c.name}</strong>
       <div className="ed-special-copy">{cardSpecial(card)}</div>
-      <span className="ed-armor-corner" title="卡牌护甲：减少传递给宿主的伤害">
-        <Shield size={12} />
+      <span
+        className="ed-armor-corner"
+        title={`${((armor / (100 + armor)) * 100).toFixed(1)}% 伤害减免`}
+      >
+        <Shirt size={12} />
         {armor}
       </span>
       <div className="ed-effect-values">

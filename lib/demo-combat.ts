@@ -103,6 +103,7 @@ export type CombatFrame = {
   log: string[];
 };
 export type Duel = {
+  stage?: 'normal' | 'elite' | 'boss';
   player: FighterCard[];
   enemy: FighterCard[];
   maxHp: number[];

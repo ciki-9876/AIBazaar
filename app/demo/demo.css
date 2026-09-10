@@ -3042,3 +3042,279 @@
 .ed-immersive.in-room .ed-notice {
   z-index: 20;
 }
+.ed-cargo-columns {
+  display: grid;
+  grid-template-columns: 2fr 1fr;
+  gap: 18px;
+  margin: 18px 0;
+}
+.ed-spatial-container {
+  margin-top: 16px;
+  overflow: auto;
+  max-height: 560px;
+  padding: 3px;
+}
+.ed-spatial-grid {
+  display: grid;
+  grid-template-columns: repeat(var(--cargo-columns), minmax(50px, 1fr));
+  grid-template-rows: repeat(var(--cargo-rows), 72px);
+  gap: 5px;
+  min-width: calc(var(--cargo-columns)*55px);
+  position: relative;
+}
+.elevator-demo .ed-cargo-cell {
+  min-width: 0;
+  padding: 0;
+  background: #0f1713;
+  border: 1px dashed #7d8b5f38;
+  border-radius: 4px;
+}
+.elevator-demo .ed-cargo-cell.valid {
+  background: #94b75e45;
+  border-color: #b3d67f;
+}
+.elevator-demo .ed-cargo-cell.invalid {
+  background: #b74d4d60;
+  border-color: #f08271;
+}
+.elevator-demo .ed-spatial-item {
+  min-width: 0;
+  position: relative;
+  z-index: 2;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 8px 5px;
+  gap: 4px;
+  background: #313a29;
+  border: 1px solid #7a855c;
+  border-radius: 5px;
+  touch-action: none;
+  user-select: none;
+  cursor: grab;
+  box-shadow:
+    inset 0 1px #fff1,
+    0 3px 8px #0004;
+}
+.ed-spatial-item strong {
+  font-size: 11px;
+  text-align: center;
+  overflow-wrap: anywhere;
+}
+.ed-spatial-item small {
+  font-size: 9px;
+  opacity: 0.75;
+}
+.ed-spatial-item .ed-cargo-card-icon {
+  position: absolute;
+  top: 5px;
+  right: 5px;
+  color: #efeee0;
+}
+.elevator-demo .ed-spatial-item.rarity-0 {
+  background: linear-gradient(135deg, #575d59, #2e3432);
+  border-color: #8e9790;
+}
+.elevator-demo .ed-spatial-item.rarity-1 {
+  background: linear-gradient(135deg, #244e71, #172f4a);
+  border-color: #619bce;
+}
+.elevator-demo .ed-spatial-item.rarity-2 {
+  background: linear-gradient(135deg, #86701c, #483f15);
+  border-color: #d9bd4a;
+}
+.elevator-demo .ed-spatial-item.rarity-3 {
+  background: linear-gradient(135deg, #70522d, #352512);
+  border-color: #a87e42;
+}
+.elevator-demo .ed-spatial-item.rarity-4 {
+  background: linear-gradient(135deg, #8a3838, #451b27);
+  border-color: #ee7371;
+}
+.ed-cargo-drag {
+  position: fixed;
+  pointer-events: none;
+  z-index: 200;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  justify-content: center;
+  align-items: center;
+  background: #4b5b35dc;
+  border: 2px solid #d4ca8a;
+  color: #f0eed4;
+  padding: 8px;
+  font-size: 12px;
+  box-shadow: 0 10px 20px #0007;
+}
+.ed-cargo-drag small {
+  font-size: 9px;
+}
+.ed-cargo-drag.keyboard {
+  left: 50%;
+  transform: translateX(-50%);
+  bottom: 20px;
+  width: 300px;
+}
+.ed-grid-help {
+  font-size: 10px;
+  color: #98a580;
+  margin: 10px 0;
+}
+.ed-inspect-dialog {
+  width: min(540px, 94vw);
+  max-height: 88svh;
+  overflow: auto;
+}
+.ed-inspect-dialog .ed-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-top: 20px;
+  align-items: flex-start;
+}
+.ed-inspect-dialog button,
+.ed-inspect-dialog select {
+  padding: 9px 12px;
+  background: #35402c;
+  border: 1px solid #65714b;
+  color: #e7e9ce;
+  font-size: 12px;
+  cursor: pointer;
+}
+.ed-inspect-dialog button:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+.ed-card-description {
+  position: relative;
+  padding-top: 6px;
+}
+.ed-detail-cooldown {
+  display: flex;
+  gap: 5px;
+  align-items: center;
+  position: absolute;
+  right: 0;
+  top: -40px;
+  font: 12px monospace;
+  color: #b9c99f;
+}
+.ed-role {
+  display: inline-block;
+  border: 1px solid #7f956b55;
+  background: #71825519;
+  padding: 4px 9px;
+  font-size: 11px;
+  color: #b8c99e;
+}
+.ed-detail-grade {
+  text-align: center;
+  margin: 16px 0;
+  color: #c7bb82;
+  font-size: 13px;
+}
+.ed-detail-values {
+  display: flex;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 20px;
+}
+.ed-detail-values > span {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  background: #77844c22;
+  padding: 7px 10px;
+  font-size: 12px;
+}
+.ed-card-description section {
+  padding: 12px 0;
+  border-top: 1px solid #9fa87b33;
+}
+.ed-card-description h4 {
+  color: #d2d3b4;
+  font-size: 12px;
+  margin-bottom: 8px;
+}
+.ed-card-description section p {
+  color: #aeb99c;
+  font-size: 12px;
+  line-height: 1.8;
+  margin: 5px 0;
+}
+.ed-combat-inspection .ed-detail-cooldown {
+  top: 0;
+}
+.ed-cost-control {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 5px;
+  vertical-align: top;
+}
+.ed-cost-control > small {
+  display: flex;
+  gap: 4px;
+  justify-content: center;
+  align-items: center;
+  color: #e3c16e;
+  font-size: 11px;
+  line-height: 1.3;
+}
+.ed-actions:has(.ed-cost-control) {
+  align-items: flex-start;
+}
+@media (max-width: 650px) {
+  .ed-cargo-columns {
+    grid-template-columns: 1fr;
+  }
+  .ed-spatial-grid {
+    grid-template-rows: repeat(var(--cargo-rows), 66px);
+  }
+  .ed-detail-cooldown {
+    top: 0;
+  }
+  .ed-role {
+    max-width: 65%;
+  }
+}
+/* Dialogs are portalled outside the game root: give primary actions their own palette. */
+.ed-dialog button.ed-primary {
+  background: #e2b965 !important;
+  color: #1a2117 !important;
+  border: 1px solid #f2d591 !important;
+  padding: 12px 20px;
+  font-weight: 700;
+  border-radius: 4px;
+  opacity: 1;
+  cursor: pointer;
+}
+.ed-dialog button.ed-primary:hover {
+  background: #f2d591 !important;
+}
+.ed-dialog button.ed-primary:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+.ed-stage-warning {
+  border-left: 3px solid #cfb773;
+  padding: 12px 18px;
+  color: #d2c99c;
+  background: #46512b33;
+}
+.ed-route {
+  overflow-x: auto;
+  grid-template-columns: repeat(auto-fit, minmax(72px, 1fr));
+}
+.ed-route > div {
+  min-width: 70px;
+}
+.ed-card-wash {
+  transition: none !important;
+}
+.ed-spatial-grid:has(.invalid) {
+  outline: 1px solid #d97e68;
+}

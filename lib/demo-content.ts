@@ -1,18 +1,28 @@
 import { hash, rng } from './design-model.ts';
 export function floorRoute(seed: number, floor: number) {
-  const random = rng(hash(`${seed}/${floor}/route-v2`));
-  const optional = ['event', 'puzzle', 'rest', 'hazard'];
+  const random = rng(hash(`${seed}/${floor}/route-v3`));
+  const optional = ['event', 'puzzle', 'rest', 'hazard', 'cache', 'bargain'];
   for (let i = optional.length - 1; i > 0; i--) {
     const j = Math.floor(random() * (i + 1));
     [optional[i], optional[j]] = [optional[j], optional[i]];
   }
-  const route = ['search', ...optional.slice(0, 2 + Math.floor(random() * 2))];
-  if (random() < 0.75) route.push('merchant');
-  for (let i = route.length - 1; i > 0; i--) {
+  const stops = [
+    'search',
+    'merchant',
+    ...optional.slice(0, 4 + Math.floor(random() * 3)),
+  ];
+  for (let i = stops.length - 1; i > 0; i--) {
     const j = Math.floor(random() * (i + 1));
-    [route[i], route[j]] = [route[j], route[i]];
+    [stops[i], stops[j]] = [stops[j], stops[i]];
   }
-  return [...route, 'guardian'];
+  return [
+    ...stops.slice(0, 2),
+    'patrol',
+    ...stops.slice(2, 4),
+    'elite',
+    ...stops.slice(4),
+    'guardian',
+  ];
 }
 const SCENES: Record<string, string[]> = {
   月面金库: [
@@ -125,6 +135,10 @@ const SCENES: Record<string, string[]> = {
   ],
 };
 export function sceneTitle(theme: string, node: string) {
+  if (node === 'patrol') return `${theme} · 外围巡逻者`;
+  if (node === 'elite') return `${theme} · 核心看守`;
+  if (node === 'cache') return `${theme} · 遗留急救箱`;
+  if (node === 'bargain') return `${theme} · 体力交易所`;
   const row = SCENES[theme] ?? SCENES['月面金库'];
   return (
     row[
@@ -153,13 +167,13 @@ export function eventSpec(
     text: [
       `「${sceneTitle(theme, 'event')}」被黑暗封住。它要求一束真实的火光，否则你只能绕行。`,
       `「${sceneTitle(theme, 'event')}」不断重复你的名字。接通它的电源，或顶着回声穿过。`,
-      `「${sceneTitle(theme, 'event')}」正在倒转重力。用机械组件稳定通道，或沿墙慢慢爬过去。`,
+      `「${sceneTitle(theme, 'event')}」正在倒转重力。投币修复装置以稳定通道，或沿墙慢慢爬过去。`,
     ][kind],
     safeCost: [6, 6, 4][kind],
     alt: [
       '消耗打火机，恢复 8 精力',
       '消耗 2 电力，恢复 12 精力',
-      '消耗 2 材料，恢复 6 精力',
+      '消耗 2 金币，恢复 6 精力',
     ][kind],
   };
 }
