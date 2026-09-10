@@ -1,0 +1,188 @@
+import { hash, rng } from './design-model.ts';
+export function floorRoute(seed: number, floor: number) {
+  const random = rng(hash(`${seed}/${floor}/route-v2`));
+  const optional = ['event', 'puzzle', 'rest', 'hazard'];
+  for (let i = optional.length - 1; i > 0; i--) {
+    const j = Math.floor(random() * (i + 1));
+    [optional[i], optional[j]] = [optional[j], optional[i]];
+  }
+  const route = ['search', ...optional.slice(0, 2 + Math.floor(random() * 2))];
+  if (random() < 0.75) route.push('merchant');
+  for (let i = route.length - 1; i > 0; i--) {
+    const j = Math.floor(random() * (i + 1));
+    [route[i], route[j]] = [route[j], route[i]];
+  }
+  return [...route, 'guardian'];
+}
+const SCENES: Record<string, string[]> = {
+  月面金库: [
+    '失重保险柜',
+    '真空闸门',
+    '月尘账本',
+    '宇航服贩子',
+    '陨石遮蔽处',
+    '氧气泄漏区',
+    '金库审计员',
+  ],
+  漂浮皇宫: [
+    '悬空贡库',
+    '无火宫灯',
+    '倒写诏书',
+    '面具货郎',
+    '御花园浮亭',
+    '断裂玉阶',
+    '无面禁军',
+  ],
+  倒置医院: [
+    '悬吊药房',
+    '回声病房',
+    '反向心电仪',
+    '轮椅药商',
+    '输液休息室',
+    '消毒隔离带',
+    '夜班院长',
+  ],
+  鲸腹车站: [
+    '潮汐行李架',
+    '心跳广播',
+    '失踪时刻表',
+    '贝壳售货员',
+    '避浪候车室',
+    '胃酸铁轨',
+    '末班检票员',
+  ],
+  玻璃雨林: [
+    '透明树洞',
+    '齿轮雨幕',
+    '叶脉阵列',
+    '蘑菇换物摊',
+    '干燥树冠',
+    '碎玻璃河',
+    '根系看守',
+  ],
+  记忆银行: [
+    '梦境保险柜',
+    '遗忘柜台',
+    '利息账目',
+    '回忆掮客',
+    '空白等候区',
+    '记忆抽税站',
+    '记忆清算师',
+  ],
+  深海剧院: [
+    '后台道具库',
+    '无声独唱',
+    '音阶密码锁',
+    '潜水服商人',
+    '幕布气泡',
+    '深海暗流',
+    '谢幕指挥家',
+  ],
+  无昼机房: [
+    '停机备件库',
+    '拒绝停机的广播',
+    '逻辑继电器',
+    '维修机器人',
+    '冷却风道',
+    '过载电缆',
+    '永动监工',
+  ],
+  纸折战场: [
+    '纸箱军需站',
+    '折纸传令兵',
+    '折痕密文',
+    '纸甲军需商',
+    '纸鹤掩体',
+    '燃烧折线',
+    '纸铠将军',
+  ],
+  云端旧街: [
+    '逆雨杂货铺',
+    '变号门牌',
+    '错位地址',
+    '云上摊贩',
+    '旧屋檐下',
+    '风蚀天桥',
+    '街区收租人',
+  ],
+  黑日果园: [
+    '星空果筐',
+    '迟到的果农',
+    '果核时钟',
+    '夜行果商',
+    '树影长椅',
+    '黑日曝晒带',
+    '黑日园丁',
+  ],
+  梦境邮局: [
+    '无人领取的包裹',
+    '未来来信',
+    '投递编号',
+    '邮票收藏者',
+    '信封休息间',
+    '信纸风暴',
+    '末日邮差',
+  ],
+};
+export function sceneTitle(theme: string, node: string) {
+  const row = SCENES[theme] ?? SCENES['月面金库'];
+  return (
+    row[
+      [
+        'search',
+        'event',
+        'puzzle',
+        'merchant',
+        'rest',
+        'hazard',
+        'guardian',
+      ].indexOf(node)
+    ] ?? '撤离出口'
+  );
+}
+export function eventSpec(
+  seed: number,
+  floor: number,
+  node: number,
+  theme: string,
+) {
+  const kind = hash(`${seed}/${floor}/${node}/event`) % 3;
+  return {
+    title: sceneTitle(theme, 'event'),
+    kind,
+    text: [
+      `「${sceneTitle(theme, 'event')}」被黑暗封住。它要求一束真实的火光，否则你只能绕行。`,
+      `「${sceneTitle(theme, 'event')}」不断重复你的名字。接通它的电源，或顶着回声穿过。`,
+      `「${sceneTitle(theme, 'event')}」正在倒转重力。用机械组件稳定通道，或沿墙慢慢爬过去。`,
+    ][kind],
+    safeCost: [6, 6, 4][kind],
+    alt: [
+      '消耗打火机，恢复 8 精力',
+      '消耗 2 电力，恢复 12 精力',
+      '消耗 2 材料，恢复 6 精力',
+    ][kind],
+  };
+}
+export function puzzleSpec(seed: number, floor: number, node: number) {
+  const n = hash(`${seed}/${floor}/${node}/puzzle-v2`),
+    a = (n % 6) + 2,
+    b = (n % 3) + 2,
+    kind = n % 3;
+  const answer = kind === 0 ? a + 3 * b : kind === 1 ? a * 8 : a + b;
+  return {
+    text:
+      kind === 0
+        ? `铭牌刻着 ${a}、${a + b}、${a + 2 * b}、？。下一个数字是什么？`
+        : kind === 1
+          ? `指示灯依次闪烁 ${a}、${a * 2}、${a * 4} 次。下一组应该闪烁几次？`
+          : `左侧砝码重 ${a}，右侧重 ${b}。输入让天平另一端平衡的总重量。`,
+    hint:
+      kind === 0
+        ? '相邻数字之差固定。'
+        : kind === 1
+          ? '后一组是前一组的两倍。'
+          : '两侧重量相加。',
+    answer,
+    options: [answer, answer + 2, answer - 1].sort((x, y) => x - y),
+  };
+}

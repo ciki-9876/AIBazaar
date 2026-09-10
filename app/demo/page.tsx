@@ -2,6 +2,8 @@
 /* oxlint-disable react/react-compiler -- Event handlers read the authoritative run ref; mount effects restore explicitly local browser state. */
 /* oxlint-disable next/no-html-link-for-pages -- Static Sites hosting needs native anchors; RSC-prefetch navigation is unsupported. */
 import { useState, useEffect, useMemo, useRef, useCallback } from 'react';
+import BattleEffects from './battle-effects';
+import CardFace from './card-face';
 import {
   ArrowUp,
   ArrowRight,
@@ -70,6 +72,11 @@ import {
   weatherAt,
   layoutAt,
   searchCost,
+  eventAt,
+  nodeTitle,
+  merchantOffers,
+  offerPrice,
+  sellPrice,
   rescueCost,
   puzzle,
   playerCards,
@@ -124,6 +131,7 @@ const phaseName: Record<string, string> = {
   ended: '协议结算',
 };
 export default function Demo() {
+  const battlefieldRef = useRef<HTMLDivElement>(null);
   const [run, setRun] = useState<Run>(() => newRun(10909)),
     ref = useRef(run);
   const [ready, setReady] = useState(false),
@@ -148,6 +156,8 @@ export default function Demo() {
       try {
         const next = act(ref.current, a);
         commit(next);
+        if ((a.type === 'pickup' || a.type === 'trade') && a.id)
+          setSelected(a.id);
         if (a.type === 'enter') setTab('floor');
         if (a.type === 'begin') setTab('base');
         if (a.type === 'extract' || a.type === 'rescue' || a.type === 'sleep')
@@ -301,8 +311,11 @@ export default function Demo() {
                 return (
                   <button
                     key={card.uid}
+                    data-entity={card.uid}
                     className={
-                      'ed-card rarity-' +
+                      'ed-card ed-card-v2 quality-' +
+                      card.quality +
+                      ' rarity-' +
                       card.rarity +
                       (selected === card.uid ? ' selected' : '') +
                       (fr?.fired.includes(card.uid) ? ' firing' : '') +
@@ -316,51 +329,22 @@ export default function Demo() {
                         ? setEnemyDetail(card)
                         : (setSelected(card.uid),
                           setEnemyDetail(null),
-                          !fr && setTab('inventory'))
+                          !fr && !run.interaction && setTab('inventory'))
                     }
-                    aria-label={`查看${c.name}`}
+                    aria-label={`查看${c.name}，${RARITY[card.rarity].name}，${QUALITY[card.quality]}，强化${card.level}，护甲${armorOf(card)}`}
+                    title={`${RARITY[card.rarity].name} / ${QUALITY[card.quality]} / 冷却 ${c.cd}s`}
                   >
-                    <span className="ed-card-meta">
-                      {RARITY[card.rarity].name} <i>{c.size} 格</i>
-                    </span>
-                    <Icon id={card.id} />
-                    <strong>{c.name}</strong>
-                    <small>
-                      {QUALITY[card.quality]} · Lv.{card.level} · {c.cd}s
-                    </small>
-                    <span className="ed-card-armor">
-                      <Shield size={10} />
-                      护甲 {armorOf(card)}
-                      {card.id === 'coil' && <em>越线后排</em>}
-                    </span>
-                    <div className="ed-card-power">
-                      {c.kind === 'charge'
-                        ? '充能'
-                        : c.kind === 'damage'
-                          ? '伤害'
-                          : c.kind === 'heal'
-                            ? '治疗'
-                            : '护盾'}{' '}
-                      <b>{stat(card.id, card.rarity, card.level)}</b>
-                      {c.energyCost > 0 && <em> / {c.energyCost}能</em>}
-                    </div>
-                    {fr && (
-                      <>
-                        <Progress
-                          value={Math.min(
-                            100,
-                            (fr.timers[side][card.at] /
-                              (fr.cd[side][card.at] || 1)) *
-                              100,
-                          )}
-                          aria-label={`${c.name}冷却进度`}
-                          className="ed-cooldown"
-                        />
-                        {fr.waiting.includes(card.uid) && (
-                          <span className="ed-wait">等待能量</span>
-                        )}
-                      </>
-                    )}
+                    <CardFace
+                      card={card}
+                      enemy={enemy}
+                      progress={
+                        fr
+                          ? fr.timers[side][card.at] /
+                            (fr.cd[side][card.at] || 1)
+                          : 0
+                      }
+                      waiting={!!fr?.waiting.includes(card.uid)}
+                    />
                   </button>
                 );
               })}
@@ -372,7 +356,10 @@ export default function Demo() {
   }
   function actor(side: number, fr: CombatFrame) {
     return (
-      <div className={'ed-actor ' + (side ? 'enemy' : '')}>
+      <div
+        data-entity={`host-${side}`}
+        className={'ed-actor ' + (side ? 'enemy' : '')}
+      >
         <div className="ed-avatar">
           <span>{side ? '◈' : '◉'}</span>
           <small>{side ? 'SUBJECT' : 'YOU'}</small>
@@ -407,7 +394,7 @@ export default function Demo() {
                 })),
               ) ?? []
           )
-            .filter((x) => x.side === side)
+            .filter((x) => x.side === side && x.kind !== 'charge')
             .map((hit) => (
               <span
                 key={`${hit.stamp}-${hit.index}`}
@@ -656,7 +643,7 @@ export default function Demo() {
             )}
           </aside>
         </div>
-        {run.phase === 'floor' && f.searched && loot()}
+        {run.phase === 'floor' && run.interaction === 'search' && loot()}
       </>
     );
   }
@@ -979,196 +966,479 @@ export default function Demo() {
       </>
     );
   }
+  function fieldInventory() {
+    return (
+      <section className="ed-panel ed-field-bag">
+        <div className="ed-panel-title">
+          <h3>随身行装</h3>
+          <span>材料 {run.material}</span>
+        </div>
+        {(['bag', 'safe'] as Zone[]).map((zone) => (
+          <section className="ed-field-container" key={zone}>
+            <header>
+              <b>{zoneName[zone]}</b>
+              <span>
+                {volume(run.items.filter((x) => x.zone === zone))} /{' '}
+                {zone === 'bag' ? bagCap(run) : safeCap(run)}
+              </span>
+            </header>
+            {run.items
+              .filter((x) => x.zone === zone)
+              .map((x) => (
+                <div
+                  className={
+                    'ed-field-item ' + (selected === x.uid ? 'selected' : '')
+                  }
+                  key={x.uid}
+                >
+                  <button
+                    className="ed-field-inspect"
+                    onClick={() => setSelected(x.uid)}
+                  >
+                    <Icon id={x.id} />
+                    <span>
+                      <b>{itemName(x)}</b>
+                      <small>
+                        {x.type === 'card'
+                          ? RARITY[x.rarity!].name
+                          : x.type === 'physical'
+                            ? '未鉴定实体'
+                            : `数量 ${x.amount}`}{' '}
+                        · {x.volume} 容积
+                      </small>
+                    </span>
+                  </button>
+                  <div className="ed-actions">
+                    <button
+                      onClick={() =>
+                        dispatch({
+                          type: 'move',
+                          id: x.uid,
+                          to: zone === 'bag' ? 'safe' : 'bag',
+                        })
+                      }
+                    >
+                      {zone === 'bag' ? '放安全格' : '放回背包'}
+                    </button>
+                    {x.type === 'physical' && (
+                      <button
+                        onClick={() => dispatch({ type: 'scan', id: x.uid })}
+                      >
+                        鉴定 · 1电荷
+                      </button>
+                    )}
+                    {x.type === 'card' && (
+                      <select
+                        aria-label={`将${itemName(x)}上阵`}
+                        value=""
+                        onChange={(e) => {
+                          dispatch({
+                            type: 'move',
+                            id: x.uid,
+                            to: 'board',
+                            at: Number(e.target.value),
+                          });
+                          setSelected(x.uid);
+                        }}
+                      >
+                        <option value="" disabled>
+                          上阵腾格…
+                        </option>
+                        {openCells(run).map((at) => (
+                          <option key={at} value={at}>
+                            {['上', '中', '下'][Math.floor(at / 3)]}路{' '}
+                            {(at % 3) + 1}号位
+                          </option>
+                        ))}
+                      </select>
+                    )}
+                    {x.id === 'apple' && (
+                      <button
+                        onClick={() => dispatch({ type: 'consume', id: x.uid })}
+                      >
+                        食用
+                      </button>
+                    )}
+                    {run.interaction === 'trade' && (
+                      <button
+                        onClick={() => dispatch({ type: 'sell', id: x.uid })}
+                      >
+                        出售 +{sellPrice(x)}
+                      </button>
+                    )}
+                    <button
+                      onClick={() => dispatch({ type: 'drop', id: x.uid })}
+                    >
+                      丢弃
+                    </button>
+                  </div>
+                </div>
+              ))}
+            {!run.items.some((x) => x.zone === zone) && (
+              <p className="ed-empty">容器为空</p>
+            )}
+          </section>
+        ))}
+        {viewed && (
+          <div className="ed-field-detail">
+            <b>{itemName(viewed)}</b>
+            <p>
+              {viewed.type === 'card'
+                ? `${cardDef(viewed.id).effect} ${targetText(viewed.id)} 护甲 ${armorOf(viewed)}。`
+                : viewed.type === 'physical'
+                  ? '实体尚未鉴定，没有稀有度。'
+                  : viewed.id === 'scanner'
+                    ? `便携鉴定仪，剩余 ${run.charges} 电荷。`
+                    : `${viewed.volume} 容积，数量 ${viewed.amount}。`}
+            </p>
+            {viewed.zone === 'board' && (
+              <button
+                onClick={() =>
+                  dispatch({ type: 'move', id: viewed.uid, to: 'bag' })
+                }
+              >
+                卸入背包
+              </button>
+            )}
+          </div>
+        )}
+        <details className="ed-field-board">
+          <summary>
+            上阵卡组 · {volume(run.items.filter((x) => x.zone === 'board'))}/
+            {openCells(run).length} 格 · 点击展开
+          </summary>
+          {cardGrid(playerCards(run))}
+        </details>
+      </section>
+    );
+  }
+  function trading() {
+    return (
+      <section className="ed-panel">
+        <div className="ed-panel-title">
+          <h3>{nodeTitle(run)} · 商品</h3>
+          <span>材料 {run.material}</span>
+        </div>
+        <div className="ed-shop-items">
+          {merchantOffers(run).map((x) => (
+            <article className="ed-shop-item" key={x.uid}>
+              <Icon id={x.id} />
+              <div>
+                <h3>{itemName(x)}</h3>
+                <p>
+                  {x.type === 'physical'
+                    ? `未鉴定实体 · ${cardDef(x.id).effect}`
+                    : x.type === 'resource'
+                      ? `基地补给 ×${x.amount}，撤离后入库。`
+                      : x.id === 'apple'
+                        ? '食用恢复 25 精力。'
+                        : '携带后可使用电荷鉴定实体。'}
+                </p>
+                <small>
+                  {x.volume} 容积 / {offerPrice(x)} 材料
+                </small>
+              </div>
+              <button onClick={() => dispatch({ type: 'trade', id: x.uid })}>
+                购买
+              </button>
+            </article>
+          ))}
+          {!merchantOffers(run).length && (
+            <p>本次商品已售罄。仍可出售或整理物品。</p>
+          )}
+        </div>
+        <p className="ed-hint">
+          右侧可丢弃、转移、上阵或出售物品；购买失败不会扣款。售出即换成材料。
+        </p>
+      </section>
+    );
+  }
   function floor() {
-    const node = currentNode(run);
+    const node = currentNode(run),
+      active = !!run.interaction,
+      ev = eventAt(run);
+    const fights = run.encounter ? 2 : 1,
+      round = run.encounter && !run.encounterDone ? 1 : fights;
     return (
       <>
-        <section className={'ed-floor-scene scene-' + (run.floor % 4)}>
+        <section
+          className={
+            'ed-floor-scene scene-' +
+            (run.floor % 4) +
+            (active ? ' engaged' : '')
+          }
+        >
           <div className="ed-orbit" aria-hidden="true">
             <div />
-            <span>0{run.floor}</span>
+            <span>{run.floor}</span>
           </div>
           <div className="ed-scene-copy">
             <p className="ed-kicker">
-              FLOOR {String(run.floor).padStart(2, '0')} / UNKNOWN WORLD
+              FLOOR {String(run.floor).padStart(2, '0')} /{' '}
+              {active
+                ? '正在' + (run.interaction === 'trade' ? '交易' : '搜查')
+                : 'EXPLORATION'}
             </p>
             <h1>{f.name}</h1>
-            <p>{f.detail}</p>
+            {!active && <p>{f.detail}</p>}
             <div className="ed-tags">
               <span>
                 <WeatherIcon index={w} />
                 {WEATHER[w].name}
               </span>
-              <span>存留物资 {f.stock.length}</span>
-              <span>{run.objective ? '主目标已完成' : '尚未提交通关'}</span>
+              <span>{run.objective ? '主目标完成' : '尚未提交通关'}</span>
             </div>
           </div>
         </section>
-        <div className="ed-route">
+        <div
+          className="ed-route"
+          style={{
+            gridTemplateColumns: `repeat(${f.nodes.length + 1},minmax(0,1fr))`,
+          }}
+        >
           {[...f.nodes, 'exit'].map((n, i) => (
             <div
               key={i}
               className={i === run.node ? 'active' : i < run.node ? 'done' : ''}
             >
-              <b>{i < run.node ? '✓' : String(i + 1).padStart(2, '0')}</b>
+              <b>{i < run.node ? '✓' : i + 1}</b>
               <span>{nodeName[n]}</span>
             </div>
           ))}
         </div>
-        <div className="ed-explore-grid">
-          <section className="ed-panel ed-node">
-            <p className="ed-kicker">
-              {String(run.node + 1).padStart(2, '0')} /{' '}
-              {node === 'guardian' && run.encounter && !run.encounterDone
-                ? 'CONTACT DETECTED'
-                : 'EXPLORATION'}
-            </p>
-            <h2>{nodeName[node]}</h2>
-            {node === 'event' ? (
-              <>
+        {active ? (
+          <>
+            <div className="ed-interaction-heading">
+              <div>
+                <h2>{nodeTitle(run)}</h2>
                 <p>
-                  走廊里，一群没有面孔的人正倒着走。他们让你用一点火光交换前路。
+                  {run.interaction === 'search'
+                    ? '拾取的物品会立即出现在右侧背包；可以随时转移、鉴定和上阵。'
+                    : '商品与行装同屏，先整理出空间再购买。交易不会自动推进路线。'}
                 </p>
-                <div className="ed-actions">
-                  <button
-                    className="ed-primary"
-                    onClick={() => dispatch({ type: 'event', choice: 0 })}
-                  >
-                    绕过人群 · 6 精力
-                  </button>
-                  <button
-                    onClick={() => dispatch({ type: 'event', choice: 1 })}
-                  >
-                    消耗打火机 · 恢复 8 精力
-                  </button>
-                </div>
-              </>
-            ) : node === 'search' ? (
-              <>
-                <p>
-                  柜子里传来细小的回声。天气正在改变你的搜索消耗。
-                  {WEATHER[w].name}下本次搜索需 {searchCost(run)} 精力。
-                </p>
-                <div className="ed-actions">
-                  <button
-                    className="ed-primary"
-                    onClick={() => dispatch({ type: 'search' })}
-                  >
-                    <Search size={17} />
-                    搜查区域
-                  </button>
-                  <button onClick={() => dispatch({ type: 'skip' })}>
-                    跳过搜索
-                  </button>
-                </div>
-              </>
-            ) : node === 'puzzle' ? (
-              <>
-                <p>{puzzle(run).text}</p>
-                <p className="ed-hint">
-                  每次尝试消耗 4 精力。提示：相邻两个数字的差相同。
-                </p>
-                <div className="ed-actions">
-                  {puzzle(run).options.map((n) => (
-                    <button
-                      key={n}
-                      onClick={() => dispatch({ type: 'puzzle', choice: n })}
-                    >
-                      输入 {n}
-                    </button>
-                  ))}
-                </div>
-              </>
-            ) : node === 'merchant' ? (
-              <>
-                <p>
-                  游商把面具摘下，下面还是同一张面具。他愿意用一件未鉴定异物，交换
-                  4 份机械组件。
-                </p>
-                <div className="ed-actions">
-                  <button
-                    className="ed-primary"
-                    disabled={f.tradeSold}
-                    onClick={() => dispatch({ type: 'trade' })}
-                  >
-                    <Store size={17} />
-                    {f.tradeSold ? '本层交易已售罄' : '交易 · 4 材料'}
-                  </button>
-                  <button onClick={() => dispatch({ type: 'skip' })}>
-                    离开商人
-                  </button>
-                </div>
-              </>
-            ) : node === 'guardian' ? (
-              <>
-                <p>
-                  {run.encounter && !run.encounterDone
-                    ? `幸存者 #${run.encounter} 也在本层。进入封锁对决后不能撤离，败者被强制回收，胜者继续挑战守卫。`
-                    : '守门人等在出口前。检查你的卡牌位置，天气地形也会作用于敌方。'}
-                </p>
-                <div className="ed-actions">
-                  <button
-                    className="ed-primary"
-                    onClick={() => dispatch({ type: 'fight' })}
-                  >
-                    <Sword size={17} />
-                    开始
-                    {run.encounter && !run.encounterDone
-                      ? '封锁对决'
-                      : '守卫战'}
-                  </button>
-                  <button onClick={() => setTab('inventory')}>调整构筑</button>
-                </div>
-              </>
-            ) : (
-              <>
-                <p>门终于打开了。现在撤回电梯，带走物资并提交本层记录。</p>
-                <button
-                  className="ed-primary"
-                  onClick={() => dispatch({ type: 'extract' })}
-                >
-                  <DoorOpen size={17} />
-                  带着战利品撤离 · 8 精力
-                </button>
-              </>
-            )}
-          </section>
-          <aside className="ed-panel">
-            <h3>退路仍然亮着</h3>
-            <p>正常撤离需 8 精力，保留所有物品。提前离开不会记录本层通关。</p>
-            <div className="ed-actions vertical">
-              <button onClick={() => dispatch({ type: 'extract' })}>
-                <DoorOpen size={17} />
-                现在撤离
+              </div>
+              <button
+                className="ed-primary"
+                onClick={() => dispatch({ type: 'next-node' })}
+              >
+                前往下个目的地 <ArrowRight size={16} />
               </button>
-              <button onClick={() => setTab('inventory')}>
-                <Backpack size={17} />
-                整理背包 / 吃苹果
+            </div>
+            <div className="ed-interaction-grid">
+              {run.interaction === 'search' ? loot() : trading()}
+              {fieldInventory()}
+            </div>
+            <div className="ed-actions">
+              <button onClick={() => dispatch({ type: 'extract' })}>
+                提前撤离 · 8 精力
               </button>
               <button
                 className="ed-danger"
                 onClick={() => dispatch({ type: 'rescue' })}
               >
-                紧急回收 · −{rescueCost(run)} 配额
+                紧急回收 · {rescueCost(run)} 配额
               </button>
             </div>
-            <p className="ed-hint">
-              回收会丢失普通背包；安全格和上阵卡组保留。
-            </p>
-          </aside>
-        </div>
-        {f.searched && loot()}
+          </>
+        ) : (
+          <div className="ed-explore-grid">
+            <section className="ed-panel ed-node">
+              <p className="ed-kicker">
+                NODE {run.node + 1} / {nodeName[node]}
+              </p>
+              <h2>{nodeTitle(run)}</h2>
+              {node === 'event' ? (
+                <>
+                  <p>{ev.text}</p>
+                  <div className="ed-actions">
+                    <button
+                      className="ed-primary"
+                      onClick={() => dispatch({ type: 'event', choice: 0 })}
+                    >
+                      谨慎通过 · {ev.safeCost} 精力
+                    </button>
+                    <button
+                      onClick={() => dispatch({ type: 'event', choice: 1 })}
+                    >
+                      {ev.alt}
+                    </button>
+                  </div>
+                </>
+              ) : node === 'search' ? (
+                <>
+                  <p>
+                    {nodeTitle(run)}
+                    里还有未被带走的物资。当前天气下，打开搜查区域需要{' '}
+                    {searchCost(run)} 精力。
+                  </p>
+                  <div className="ed-actions">
+                    <button
+                      className="ed-primary"
+                      onClick={() => dispatch({ type: 'search' })}
+                    >
+                      <Search size={16} />
+                      搜查区域
+                    </button>
+                    <button onClick={() => dispatch({ type: 'skip' })}>
+                      跳过搜查
+                    </button>
+                  </div>
+                </>
+              ) : node === 'merchant' ? (
+                <>
+                  <p>
+                    {nodeTitle(run)}
+                    带来了不同的实体、工具与补给。可以用材料购买，也可以卖掉不需要的随身物品。
+                  </p>
+                  <div className="ed-actions">
+                    <button
+                      className="ed-primary"
+                      onClick={() => dispatch({ type: 'open-trade' })}
+                    >
+                      <Store size={16} />
+                      查看商品 / 开始交易
+                    </button>
+                    <button onClick={() => dispatch({ type: 'skip' })}>
+                      离开商人
+                    </button>
+                  </div>
+                </>
+              ) : node === 'puzzle' ? (
+                <>
+                  <p>{puzzle(run).text}</p>
+                  <p className="ed-hint">
+                    每次尝试 4 精力。提示：{puzzle(run).hint}
+                  </p>
+                  <div className="ed-actions">
+                    {puzzle(run).options.map((n) => (
+                      <button
+                        key={n}
+                        onClick={() => dispatch({ type: 'puzzle', choice: n })}
+                      >
+                        输入 {n}
+                      </button>
+                    ))}
+                  </div>
+                </>
+              ) : node === 'rest' ? (
+                <>
+                  <p>
+                    这里暂时没有威胁。你可以坐下来喘一口气，或使用药品做一次更充分的恢复。
+                  </p>
+                  <div className="ed-actions">
+                    <button
+                      className="ed-primary"
+                      onClick={() => dispatch({ type: 'rest' })}
+                    >
+                      短暂休整 · +8 精力
+                    </button>
+                    <button
+                      onClick={() => dispatch({ type: 'rest', choice: 1 })}
+                    >
+                      消耗药品 · +25 精力
+                    </button>
+                  </div>
+                </>
+              ) : node === 'hazard' ? (
+                <>
+                  <p>
+                    {nodeTitle(run)}
+                    阻断前路。用电力启动防护装置，或消耗精力谨慎穿越。
+                  </p>
+                  <div className="ed-actions">
+                    <button
+                      className="ed-primary"
+                      onClick={() => dispatch({ type: 'hazard' })}
+                    >
+                      穿越 · 8 精力
+                    </button>
+                    <button
+                      onClick={() => dispatch({ type: 'hazard', choice: 1 })}
+                    >
+                      启动防护 · 2 电力
+                    </button>
+                  </div>
+                </>
+              ) : node === 'guardian' ? (
+                <>
+                  <div className="ed-fight-queue">
+                    <b>
+                      本节点共 {fights} 场战斗 · 即将第 {round}/{fights} 场
+                    </b>
+                    {run.encounter && (
+                      <p className={run.encounterDone ? 'finished' : ''}>
+                        {run.encounterDone ? '✓ 已完成' : '① 待挑战'} 幸存者 #
+                        {run.encounter} · 封锁对决
+                      </p>
+                    )}
+                    <p>
+                      {fights === 2 ? '②' : '①'} {nodeTitle(run)} · 楼层守卫
+                    </p>
+                  </div>
+                  <p>
+                    {run.encounter && !run.encounterDone
+                      ? '先击败相遇的幸存者，之后还有楼层守卫。两场之间可以整理，也可以提前撤离。'
+                      : '击败这名守卫后，本层战斗全部结束。随后撤离才会提交通关。'}
+                  </p>
+                  <div className="ed-actions">
+                    <button
+                      className="ed-primary"
+                      onClick={() => dispatch({ type: 'fight' })}
+                    >
+                      开始第 {round}/{fights} 场：
+                      {run.encounter && !run.encounterDone
+                        ? '幸存者对决'
+                        : '守卫战'}
+                    </button>
+                    <button onClick={() => setTab('inventory')}>
+                      调整构筑
+                    </button>
+                  </div>
+                </>
+              ) : (
+                <>
+                  <p>本层战斗全部完成。撤离后提交成绩，并把资源带回电梯。</p>
+                  <button
+                    className="ed-primary"
+                    onClick={() => dispatch({ type: 'extract' })}
+                  >
+                    完成撤离 · 8 精力
+                  </button>
+                </>
+              )}
+            </section>
+            <aside className="ed-panel">
+              <h3>保留退路</h3>
+              <p>提前撤离保留物资，但不提交通关。正常返回需要 8 精力。</p>
+              <div className="ed-actions vertical">
+                <button onClick={() => dispatch({ type: 'extract' })}>
+                  现在撤离
+                </button>
+                <button onClick={() => setTab('inventory')}>
+                  整理行装 / 吃苹果
+                </button>
+                <button
+                  className="ed-danger"
+                  onClick={() => dispatch({ type: 'rescue' })}
+                >
+                  紧急回收 · {rescueCost(run)} 配额
+                </button>
+              </div>
+            </aside>
+          </div>
+        )}
         {f.history.length > 0 && (
           <details className="ed-panel">
-            <summary>其他幸存者留下的痕迹</summary>
-            {f.history.map((t, i) => (
-              <p key={i}>{t}</p>
+            <summary>本层其他幸存者留下的痕迹</summary>
+            {f.history.map((line, i) => (
+              <p key={i}>{line}</p>
             ))}
           </details>
         )}
       </>
     );
   }
+
   function combat() {
     if (!battle || !frame || !run.duel) return null;
     const finished = cursor >= battle.frames.length - 1;
@@ -1182,7 +1452,11 @@ export default function Demo() {
                 : 'FLOOR GUARDIAN'}
             </p>
             <h2>
-              {run.duel.kind === 'survivor' ? '只能有一人继续' : '门后的守卫'}
+              {run.duel.kind === 'survivor'
+                ? '第 1/2 场 · 幸存者封锁战'
+                : run.encounter
+                  ? '第 2/2 场 · 楼层守卫战'
+                  : '第 1/1 场 · 楼层守卫战'}
             </h2>
           </div>
           <span>
@@ -1196,7 +1470,14 @@ export default function Demo() {
           // oxlint-disable-next-line jsx-a11y/no-noninteractive-tabindex -- Keyboard users need to focus this horizontal scroll region.
           tabIndex={0}
         >
-          <div className="ed-horizontal-battle">
+          <div className="ed-horizontal-battle" ref={battlefieldRef}>
+            <BattleEffects
+              surface={battlefieldRef}
+              frames={battle.frames}
+              cursor={cursor}
+              playing={playing}
+              speed={speed}
+            />
             {actor(0, frame)}
             <div className="ed-battle-half">
               <div className="ed-facing">我方 · 后排 → 前排</div>
@@ -1238,6 +1519,15 @@ export default function Demo() {
             双方前排朝中央 · 命中卡牌 → 护甲 → 宿主护盾 / 生命 · 空路直击
           </span>
         </div>
+        <details className="ed-visual-guide">
+          <summary>卡牌与弹道图例</summary>
+          <p>
+            底色：灰色普通、蓝色罕见、黄色稀有、暗金传说、红色奇迹。品质：基础单线框、精制双线框、大师雕角框。左上角为强化等级，朝前银边为护甲；蒙层铺满时发动。
+          </p>
+          <p>
+            直线流光：伤害红、治疗绿、护甲/护盾黄、灼烧橙、毒素墨绿、冰冻淡蓝。当前样卡尚无独立灼烧、毒素、冰冻效果，这三类已预留对应颜色。暂停会冻结弹道位置。
+          </p>
+        </details>
         {(enemyDetail || viewed) && (
           <div className="ed-panel ed-battle-inspect">
             <strong>{cardDef((enemyDetail ?? viewed)!.id).name}</strong>
@@ -1280,7 +1570,9 @@ export default function Demo() {
               </h2>
               <p>
                 {battle.winner === 0
-                  ? '确认结算，继续楼层旅程。'
+                  ? run.duel.kind === 'survivor'
+                    ? '幸存者封锁战结束，下一场是楼层守卫。确认后可先整理或提前撤离。'
+                    : '本层全部战斗已结束。返回楼层后撤离提交通关。'
                   : `本次回收消耗 ${rescueCost(run)} 配额，普通背包丢失。`}
               </p>
             </div>

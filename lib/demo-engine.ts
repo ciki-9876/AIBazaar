@@ -1,9 +1,23 @@
 import { rng, hash } from './design-model.ts';
-import { CARDS, cardDef, FOUR, FACILITIES, RARITY } from './prototype-v04.ts';
+import {
+  CARDS,
+  cardDef,
+  FOUR,
+  FACILITIES,
+  RARITY as OLD_RARITY,
+} from './prototype-v04.ts';
+import {
+  floorRoute,
+  sceneTitle,
+  eventSpec,
+  puzzleSpec,
+} from './demo-content.ts';
 import { WEATHER as OLD_WEATHER } from './prototype-v03.ts';
 import { simulateDuel } from './demo-combat.ts';
 import type { Duel, FighterCard } from './demo-combat.ts';
 export { CARDS, RARITY, WEATHER };
+export const RARITY_LABELS = ['普通', '罕见', '稀有', '传说', '奇迹'];
+const RARITY = OLD_RARITY.map((r, i) => ({ ...r, name: RARITY_LABELS[i] }));
 const WEATHER = OLD_WEATHER.map((weather, index) => ({
   ...weather,
   explore: [
@@ -34,6 +48,8 @@ export type Item = {
   at?: number;
 };
 export type Floor = {
+  routeVersion?: 2;
+  soldOffers?: string[];
   id: number;
   name: string;
   detail: string;
@@ -59,6 +75,7 @@ export type Bot = {
   plan: number;
 };
 export type Run = {
+  interaction?: 'search' | 'trade' | null;
   version: 1;
   seed: number;
   phase: 'intro' | 'base' | 'floor' | 'combat' | 'ended';
@@ -178,10 +195,9 @@ export function newRun(seed = Date.now() >>> 0): Run {
       name: theme[0],
       detail: theme[1],
       focus: theme[2],
-      nodes:
-        i % 2
-          ? ['event', 'merchant', 'search', 'puzzle', 'guardian']
-          : ['event', 'search', 'puzzle', 'merchant', 'guardian'],
+      nodes: floorRoute(seed, i + 1),
+      routeVersion: 2,
+      soldOffers: [],
       stock: [
         loot(theme[2], 'resource', 3),
         loot('material', 'resource', 4 + Math.floor(i / 3)),
@@ -282,19 +298,64 @@ export const nodeName: Record<string, string> = {
   puzzle: '密码机关',
   merchant: '游商交易',
   guardian: '楼层守卫',
+  rest: '休整点',
+  hazard: '危险区域',
   exit: '撤离出口',
 };
 export const currentNode = (s: Run) => currentFloor(s)?.nodes[s.node] ?? 'exit';
 export const searchCost = (s: Run) =>
   Math.max(2, (weatherAt(s) === 2 ? 6 : 10) - (s.prepared ? 4 : 0));
 export function puzzle(s: Run) {
-  const a = (hash(`${s.seed}/${s.floor}/puzzle`) % 7) + 2,
-    b = (s.floor % 3) + 2;
-  return {
-    text: `门上刻着 ${a}、${a + b}、${a + 2 * b}、？。输入规律中的下一个数。`,
-    answer: a + 3 * b,
-    options: [a + 3 * b, a + 3 * b + 2, a + 3 * b - 1].sort((x, y) => x - y),
-  };
+  return puzzleSpec(s.seed, s.floor, s.node);
+}
+export const eventAt = (s: Run) =>
+  eventSpec(s.seed, s.floor, s.node, currentFloor(s).name);
+export const nodeTitle = (s: Run, index = s.node) =>
+  sceneTitle(currentFloor(s).name, currentFloor(s).nodes[index] ?? 'exit');
+export const sellPrice = (x: Item) =>
+  x.type === 'card'
+    ? 2 + x.level + 2 * x.quality + (x.rarity ?? 0)
+    : x.type === 'physical'
+      ? 2
+      : x.type === 'resource'
+        ? Math.max(1, Math.floor(x.amount / 2))
+        : 1;
+export const offerPrice = (x: Item) =>
+  x.type === 'physical'
+    ? 3 + x.volume
+    : x.id === 'scanner'
+      ? 6
+      : x.type === 'resource'
+        ? 3
+        : 2;
+export function merchantOffers(s: Run) {
+  const random = rng(hash(`${s.seed}/${s.floor}/${s.node}/offers`));
+  const choices = Array.from({ length: 3 }, () =>
+    makeItem(
+      `offer-${s.floor}-${s.node}-${Math.floor(random() * 1000000)}`,
+      CARDS[Math.floor(random() * CARDS.length)].id,
+      'physical',
+    ),
+  );
+  choices.push(
+    makeItem(
+      `offer-tool-${s.floor}-${s.node}`,
+      random() < 0.5 ? 'apple' : 'scanner',
+      'tool',
+    ),
+  );
+  choices.push(
+    makeItem(
+      `offer-supply-${s.floor}-${s.node}`,
+      'supply',
+      'resource',
+      'bag',
+      3,
+    ),
+  );
+  return choices.filter(
+    (x) => !(currentFloor(s).soldOffers ?? []).includes(x.uid),
+  );
 }
 function say(s: Run, text: string) {
   s.notice = text;
@@ -527,6 +588,7 @@ function rescue(s: Run, reason: string) {
   s.items = s.items.filter((x) => x.zone !== 'bag');
   deposit(s);
   s.phase = 'base';
+  s.interaction = null;
   s.objective = false;
   s.duel = null;
   finishBots(s);
@@ -565,7 +627,7 @@ export function makeDuel(s: Run, kind: 'guardian' | 'survivor'): Duel {
   }
   const enemy = ids.map((id, i) => ({
     uid: `enemy-${i}`,
-    id,
+    id: i === 0 && hash(`${s.seed}/${floor}/guard`) % 2 === 0 ? 'wire' : id,
     at: ats[i],
     rarity: 0,
     quality: floor >= 5 ? 1 : 0,
@@ -583,7 +645,7 @@ export function makeDuel(s: Run, kind: 'guardian' | 'survivor'): Duel {
     name:
       kind === 'survivor'
         ? `幸存者 #${String(s.encounter).padStart(3, '0')}`
-        : `${currentFloor(s).name} · 守门人`,
+        : sceneTitle(currentFloor(s).name, 'guardian'),
     kind,
     botId: kind === 'survivor' ? s.encounter : null,
   };
@@ -643,11 +705,14 @@ export function act(old: Run, a: Action): Run {
     if (kind === 'survivor') {
       if (bot) botRescue(bot, '封锁对决败北');
       s.encounterDone = true;
-      say(s, '封锁解除。对方已被强制回收，只有你能继续本次楼层挑战。');
+      say(
+        s,
+        '第 1/2 场：幸存者封锁战已胜利。下一场是本层守卫，点击后才会开战；现在也可以提前撤离。',
+      );
     } else {
       s.objective = true;
       s.node++;
-      say(s, '守门人倒下。主目标完成；成功撤离后才会提交通关记录。');
+      say(s, '楼层守卫已击败，全部战斗结束。主目标完成，成功撤离后提交记录。');
     }
     return s;
   }
@@ -895,11 +960,20 @@ export function act(old: Run, a: Action): Run {
     need(playerCards(s).length > 0, '请至少上阵一张卡');
     planBots(s);
     s.floor = a.floor!;
+    if (
+      !currentFloor(s).routeVersion &&
+      !currentFloor(s).visitors.includes(0) &&
+      !currentFloor(s).cleared
+    ) {
+      currentFloor(s).nodes = floorRoute(s.seed, s.floor);
+      currentFloor(s).routeVersion = 2;
+    }
     s.used = true;
     s.supply--;
     s.stamina -= 4;
     s.phase = 'floor';
     s.node = 0;
+    s.interaction = null;
     s.objective = false;
     s.puzzleErrors = 0;
     s.prepared = s.adapted;
@@ -920,7 +994,7 @@ export function act(old: Run, a: Action): Run {
   need(s.phase === 'floor', '请先进入楼层');
   if (a.type === 'pickup') {
     const floor = currentFloor(s);
-    need(floor.searched, '先搜索区域以发现物资');
+    need(s.interaction === 'search', '请在搜查状态中拾取物资');
     const x = floor.stock.find((x) => x.uid === a.id);
     need(x, '这件物资已被拿走');
     s.items.push({ ...x, zone: 'bag', at: undefined });
@@ -933,6 +1007,7 @@ export function act(old: Run, a: Action): Run {
     need(s.stamina >= 8, '返回需 8 精力，可吃苹果或请求救援');
     s.stamina -= 8;
     s.phase = 'base';
+    s.interaction = null;
     s.streak = 0;
     const firstClear = s.objective && !s.clears.includes(s.floor);
     if (firstClear) {
@@ -976,30 +1051,100 @@ export function act(old: Run, a: Action): Run {
     return s;
   }
   const node = currentNode(s);
+  if (a.type === 'next-node') {
+    need(
+      (s.interaction === 'search' && node === 'search') ||
+        (s.interaction === 'trade' && node === 'merchant'),
+      '当前没有可结束的搜查或交易',
+    );
+    s.interaction = null;
+    s.node++;
+    say(s, '已收好行囊，前往下个目的地。未带走的物资仍留在本层。');
+    return s;
+  }
+  if (a.type === 'open-trade') {
+    need(node === 'merchant' && !s.interaction, '当前无法开始交易');
+    s.interaction = 'trade';
+    say(
+      s,
+      '交易已开启，可购买、出售和整理随身物品；结束后主动前往下个目的地。',
+    );
+    return s;
+  }
+  if (a.type === 'sell') {
+    need(s.interaction === 'trade' && node === 'merchant', '请先进入交易状态');
+    const x = s.items.find((x) => x.uid === a.id);
+    need(
+      x && ['bag', 'safe'].includes(x.zone) && x.id !== 'core',
+      '只能出售随身物品；上阵卡请先卸下',
+    );
+    const amount = sellPrice(x);
+    s.items = s.items.filter((i) => i.uid !== x.uid);
+    s.material += amount;
+    say(s, `售出${itemName(x)}，获得 ${amount} 材料，背包容量已释放。`);
+    return s;
+  }
+  if (a.type === 'rest') {
+    need(node === 'rest', '当前不是休整点');
+    if (a.choice === 1) {
+      need(s.medicine > 0, '需要 1 药品');
+      s.medicine--;
+      s.stamina = Math.min(100, s.stamina + 25);
+    } else s.stamina = Math.min(100, s.stamina + 8);
+    s.node++;
+    say(s, '完成短暂休整，日期没有推进。');
+    return s;
+  }
+  if (a.type === 'hazard') {
+    need(node === 'hazard', '当前不是危险区域');
+    if (a.choice === 1) {
+      need(s.power >= 2, '需要 2 电力');
+      s.power -= 2;
+    } else {
+      need(s.stamina >= 8, '穿越危险区域需要 8 精力');
+      s.stamina -= 8;
+    }
+    s.node++;
+    say(s, '已穿过危险区域，继续前进。');
+    return s;
+  }
   if (a.type === 'event') {
     need(node === 'event', '当前不是事件节点');
+    const spec = eventAt(s);
     if (a.choice === 1) {
-      need(hasTool(s, 'lighter'), '需要携带打火机');
-      consumeTool(s, 'lighter');
-      s.stamina = Math.min(100, s.stamina + 8);
-      say(s, '点亮那根不存在的蜡烛，异象消失。恢复 8 精力，打火机耗尽。');
+      if (spec.kind === 0) {
+        consumeTool(s, 'lighter');
+        s.stamina = Math.min(100, s.stamina + 8);
+      }
+      if (spec.kind === 1) {
+        need(s.power >= 2, '需要 2 电力');
+        s.power -= 2;
+        s.stamina = Math.min(100, s.stamina + 12);
+      }
+      if (spec.kind === 2) {
+        need(s.material >= 2, '需要 2 材料');
+        s.material -= 2;
+        s.stamina = Math.min(100, s.stamina + 6);
+      }
+      say(s, `已解决${spec.title}：${spec.alt}。`);
     } else {
-      need(s.stamina >= 6, '需要 6 精力');
-      s.stamina -= 6;
-      say(s, '你绕过了倒流的人群，消耗 6 精力。');
+      need(s.stamina >= spec.safeCost, `需要 ${spec.safeCost} 精力`);
+      s.stamina -= spec.safeCost;
+      say(s, `绕过${spec.title}，消耗 ${spec.safeCost} 精力。`);
     }
     s.node++;
     return s;
   }
   if (a.type === 'search') {
     need(node === 'search', '当前不是搜索节点');
+    need(!s.interaction, '已经进入搜查状态，无需重复消耗精力');
     need(s.stamina >= searchCost(s), '搜索精力不足');
     s.stamina -= searchCost(s);
     currentFloor(s).searched = true;
-    s.node++;
+    s.interaction = 'search';
     say(
       s,
-      `搜索完成，发现 ${currentFloor(s).stock.length} 件剩余物资。请在物品界面挑选；背包不会自动塞满。`,
+      `正在搜查，发现 ${currentFloor(s).stock.length} 件剩余物资。拾取后立即进入右侧背包；整理完成后再前往下个目的地。`,
     );
     return s;
   }
@@ -1012,27 +1157,26 @@ export function act(old: Run, a: Action): Run {
       say(s, '数字归位。通向守卫的门打开了。');
     } else {
       s.puzzleErrors++;
-      say(
-        s,
-        '答案错误，机关重新排列声音，但刻字仍然遵循等差规律。损失 4 精力。',
-      );
+      say(s, `答案错误，损失 4 精力。提示：${puzzle(s).hint}`);
     }
     return s;
   }
   if (a.type === 'trade') {
-    need(node === 'merchant' && !currentFloor(s).tradeSold, '交易已经结束');
-    need(s.material >= 4, '交易需要 4 材料');
-    const id = CARDS[(s.floor + hash(`${s.seed}/trade`)) % CARDS.length].id;
-    const x = makeItem(`trade-${s.floor}`, id, 'physical');
+    need(node === 'merchant' && s.interaction === 'trade', '请先进入交易状态');
+    const x = merchantOffers(s).find((x) => x.uid === a.id);
+    need(x, '商品已售出或不存在');
+    const price = offerPrice(x);
+    need(s.material >= price, `需要 ${price} 材料`);
     s.items.push(x);
     validateItems(s);
-    s.material -= 4;
-    currentFloor(s).tradeSold = true;
-    say(s, `购入${itemName(x)}实体，回到终端或使用便携仪鉴定。`);
+    s.material -= price;
+    (currentFloor(s).soldOffers ??= []).push(x.uid);
+    say(s, `购入${itemName(x)}，已放入背包。消耗 ${price} 材料。`);
     return s;
   }
   if (a.type === 'skip') {
     need(['search', 'merchant'].includes(node), '这个节点不能直接跳过');
+    need(!s.interaction, '请点击“前往下个目的地”结束当前状态');
     s.node++;
     say(s, '保留资源，继续前进。');
     return s;
@@ -1074,7 +1218,7 @@ export function validSave(value: unknown): value is Run {
         s.level <= 6 &&
         s.floor <= 10 &&
         s.best <= 10 &&
-        s.node <= 5 &&
+        s.node <= 7 &&
         s.day >= 1 &&
         s.day <= 13 &&
         [6, 8, 10].includes(s.moduleCap) &&
@@ -1124,6 +1268,13 @@ export function validSave(value: unknown): value is Run {
       '活动楼层无效',
     );
     need(
+      s.interaction == null ||
+        (s.phase === 'floor' &&
+          ((s.interaction === 'search' && currentNode(s) === 'search') ||
+            (s.interaction === 'trade' && currentNode(s) === 'merchant'))),
+      '搜查/交易状态无效',
+    );
+    need(
       s.encounter === null ||
         (Number.isInteger(s.encounter) &&
           s.encounter >= 1 &&
@@ -1137,15 +1288,30 @@ export function validSave(value: unknown): value is Run {
         f.id === index + 1 &&
           typeof f.name === 'string' &&
           typeof f.detail === 'string' &&
-          f.nodes.length === 5 &&
-          new Set(f.nodes).size === 5 &&
+          f.nodes.length >= 3 &&
+          f.nodes.length <= 7 &&
+          new Set(f.nodes).size === f.nodes.length &&
           f.nodes.every((n) =>
-            ['event', 'search', 'puzzle', 'merchant', 'guardian'].includes(n),
+            [
+              'event',
+              'search',
+              'puzzle',
+              'merchant',
+              'guardian',
+              'rest',
+              'hazard',
+            ].includes(n),
           ) &&
           Array.isArray(f.stock) &&
           Array.isArray(f.visitors) &&
           Array.isArray(f.history),
         '楼层无效',
+      );
+      need(
+        !f.soldOffers ||
+          (Array.isArray(f.soldOffers) &&
+            f.soldOffers.every((id) => typeof id === 'string')),
+        '商人库存无效',
       );
       for (const item of f.stock) {
         validateItem(item);

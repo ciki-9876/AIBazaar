@@ -50,9 +50,19 @@ export function selectTarget(
 }
 export type Hit = {
   side: number;
-  kind: 'damage' | 'heal' | 'shield' | 'energy' | 'echo';
+  kind: 'damage' | 'heal' | 'shield' | 'energy' | 'echo' | 'charge';
   value: number;
   source: string;
+  sourceUid?: string;
+  visual?:
+    | 'damage'
+    | 'heal'
+    | 'armor'
+    | 'burn'
+    | 'poison'
+    | 'freeze'
+    | 'charge'
+    | 'slow';
   raw?: number;
   armor?: number;
   targetUid?: string;
@@ -155,6 +165,8 @@ export function simulateDuel(d: Duel) {
               kind: 'damage',
               value: transmitted,
               source: c.name,
+              sourceUid: p.uid,
+              visual: 'damage',
               raw: value,
               armor,
               targetUid: target?.uid,
@@ -163,14 +175,34 @@ export function simulateDuel(d: Duel) {
           }
           if (c.kind === 'shield') {
             shield[side] += value;
-            hits.push({ side, kind: 'shield', value, source: c.name });
+            hits.push({
+              side,
+              kind: 'shield',
+              value,
+              source: c.name,
+              sourceUid: p.uid,
+              targetUid: `host-${side}`,
+              visual: 'armor',
+            });
           }
           if (c.kind === 'heal') {
             const healed = Math.min(d.maxHp[side] - hp[side], value);
             hp[side] += healed;
-            hits.push({ side, kind: 'heal', value: healed, source: c.name });
-            if (!echo && c.id === 'box' && q > 0 && env === '寒冷')
-              shield[side] += Math.min(q === 2 ? 20 : 12, value - healed);
+            hits.push({
+              side,
+              kind: 'heal',
+              value: healed,
+              source: c.name,
+              sourceUid: p.uid,
+              targetUid: `host-${side}`,
+              visual: 'heal',
+            });
+            if (!echo && c.id === 'box' && q > 0 && env === '寒冷') {
+              const overflow = Math.min(q === 2 ? 20 : 12, value - healed);
+              shield[side] += overflow;
+              if (overflow > 0) hits.push({ side, kind: 'shield', value: overflow,
+                source: c.name, sourceUid: p.uid, targetUid: `host-${side}`, visual: 'armor' });
+            }
           }
           if (echo) log.push(`${c.name} · 奇迹回响 ${value}`);
         };
@@ -178,7 +210,15 @@ export function simulateDuel(d: Duel) {
         if (c.energyGain) {
           const gain = c.energyGain + (c.id === 'cell' && q === 2 ? 1 : 0);
           energy[side] = Math.min(cap[side], energy[side] + gain);
-          hits.push({ side, kind: 'energy', value: gain, source: c.name });
+          hits.push({
+            side,
+            kind: 'energy',
+            value: gain,
+            source: c.name,
+            sourceUid: p.uid,
+            targetUid: `host-${side}`,
+            visual: 'armor',
+          });
         }
         const advance =
           c.kind === 'charge'
@@ -198,6 +238,17 @@ export function simulateDuel(d: Duel) {
             : others.slice(0, 1);
         if (advance) {
           targets.forEach((x) => (timers[side][x.at] += advance));
+          targets.forEach((x) =>
+            hits.push({
+              side,
+              kind: 'charge',
+              value: advance,
+              source: c.name,
+              sourceUid: p.uid,
+              targetUid: x.uid,
+              visual: 'charge',
+            }),
+          );
           log.push(
             `${c.name} → 同路 ${targets.length} 张牌充能 ${advance.toFixed(1)}s`,
           );
@@ -205,6 +256,8 @@ export function simulateDuel(d: Duel) {
         if (p.rarity === 4 && n % 3 === 0) {
           if (c.kind === 'charge') {
             targets.forEach((x) => (timers[side][x.at] += advance * 0.5));
+            targets.forEach((x) => hits.push({ side, kind: 'charge', value: advance * 0.5,
+              source: c.name, sourceUid: p.uid, targetUid: x.uid, visual: 'charge' }));
             log.push(`${c.name} · 充能回响`);
           } else apply(Math.round(amount * 5) / 10, true);
         }
