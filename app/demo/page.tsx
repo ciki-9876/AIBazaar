@@ -369,6 +369,7 @@ export default function Demo() {
                     <CardFace
                       card={card}
                       health={fr?.cards[card.uid]?.hp}
+                      deaths={fr?.cards[card.uid]?.deaths}
                       reviveRemaining={
                         fr?.cards[card.uid]?.reviveAt != null
                           ? Math.max(0, fr.cards[card.uid].reviveAt! - fr.time)
@@ -865,6 +866,10 @@ export default function Demo() {
         node === 'guardian' && run.encounter && !run.encounterDone ? 1 : fights;
     return (
       <>
+        <p className="ed-route-cost">
+          前往下一个节点：基础消耗 3
+          精力；搜查、事件等消耗另计。击败敌人可获得金币，精英与幸存者另掉落一张携带卡牌。
+        </p>
         <section
           className={
             'ed-floor-scene scene-' +

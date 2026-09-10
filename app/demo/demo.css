@@ -3320,8 +3320,8 @@
 }
 .ed-card-health {
   position: absolute;
-  top: 26px;
-  left: 7px;
+  top: 7px;
+  left: 43px;
   right: 7px;
   height: 12px;
   background: #101612c9;
@@ -3344,9 +3344,23 @@
   text-shadow: 0 1px 2px #000;
 }
 .elevator-demo .ed-card.is-ghost {
-  filter: grayscale(1);
-  opacity: 0.4;
+  background: #172019 !important;
   border-style: dashed !important;
+}
+.elevator-demo .ed-card.is-ghost > :not(.ed-card-health) {
+  filter: grayscale(1);
+  opacity: 0.35;
+}
+.ed-card-health.is-reviving {
+  background: #29313b;
+  border-color: #e7c985;
+  box-shadow: 0 0 7px #f0ca7855;
+}
+.ed-card-health.is-reviving i {
+  background: #e5bf6e;
+}
+.ed-card-health.is-reviving span {
+  color: #fff5d4;
 }
 .is-ghost .ed-card-wash {
   visibility: hidden;

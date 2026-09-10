@@ -808,6 +808,17 @@ export function migrateCargo(source: Run): Run {
 }
 export function act(old: Run, a: Action): Run {
   const next = applyAction(old, a);
+  if (
+    next.phase === 'floor' &&
+    next.floor === old.floor &&
+    next.node > old.node &&
+    next.node < currentFloor(next).nodes.length
+  ) {
+    if (a.type !== 'resolve')
+      need(next.stamina >= 3, '前往下个节点需要 3 精力，可先使用苹果或撤离');
+    next.stamina = Math.max(0, next.stamina - 3);
+    say(next, `${next.notice} 路程消耗 3 精力。`);
+  }
   validateItems(next);
   for (const floor of next.floors) floor.stock = layout(floor.stock, 4, 96);
   return next;
@@ -849,6 +860,7 @@ function applyAction(old: Run, a: Action): Run {
     need(s.phase === 'combat' && s.duel, '没有待结算战斗');
     const result = simulateDuel(s.duel);
     const kind = s.duel.kind;
+    const defeatedCards = s.duel.enemy;
     const stage = s.duel.stage ?? (kind === 'guardian' ? 'boss' : 'normal');
     const bot = s.bots.find((x) => x.id === s.duel!.botId);
     s.duel = null;
@@ -886,6 +898,44 @@ function applyAction(old: Run, a: Action): Run {
       return s;
     }
     s.phase = 'floor';
+    const rewardFloor = currentFloor(s);
+    const rewardKey =
+      kind === 'survivor' ? `survivor-${s.encounter}` : currentNode(s);
+    let rewardText = '';
+    if (!(rewardFloor.battleRewards ?? []).includes(rewardKey)) {
+      (rewardFloor.battleRewards ??= []).push(rewardKey);
+      const gold =
+        kind === 'survivor'
+          ? 3
+          : stage === 'boss'
+            ? 4
+            : stage === 'elite'
+              ? 2
+              : 1;
+      s.material += gold;
+      rewardText = `战利品：金币 +${gold}。`;
+      if (defeatedCards.length && (kind === 'survivor' || stage === 'elite')) {
+        const card =
+          defeatedCards[
+            hash(`${s.seed}/${s.floor}/${rewardKey}`) % defeatedCards.length
+          ];
+        const loot = {
+          ...makeItem(`trophy-${s.serial++}`, card.id, 'card'),
+          rarity: card.rarity,
+          quality: card.quality,
+          level: card.level,
+        };
+        s.items.push(loot);
+        try {
+          validateItems(s);
+          rewardText += ` ${itemName(loot)}已放入背包。`;
+        } catch {
+          s.items = s.items.filter((x) => x.uid !== loot.uid);
+          s.material += 2;
+          rewardText += ' 背包空间不足，卡牌战利品折为 2 金币。';
+        }
+      }
+    }
     if (kind === 'survivor') {
       if (bot) botRescue(bot, '封锁对决败北');
       s.encounterDone = true;
@@ -894,12 +944,6 @@ function applyAction(old: Run, a: Action): Run {
         '第 1/2 场：幸存者封锁战已胜利。下一场是本层守卫，点击后才会开战；现在也可以提前撤离。',
       );
     } else if (stage !== 'boss') {
-      const floor = currentFloor(s),
-        node = currentNode(s);
-      if (!(floor.battleRewards ?? []).includes(node)) {
-        s.material += stage === 'elite' ? 2 : 1;
-        (floor.battleRewards ??= []).push(node);
-      }
       s.node++;
       say(
         s,
@@ -910,6 +954,7 @@ function applyAction(old: Run, a: Action): Run {
       s.node++;
       say(s, '楼层守卫已击败，全部战斗结束。主目标完成，成功撤离后提交记录。');
     }
+    if (rewardText) say(s, `${s.notice} ${rewardText}`);
     return s;
   }
   need(s.phase !== 'combat', '战斗开始后不可修改物品或基地');
@@ -1270,6 +1315,10 @@ function applyAction(old: Run, a: Action): Run {
   }
   if (a.type === 'fight') {
     need(
+      s.stamina >= 3,
+      '精力不足：开始下一场战斗至少需要 3 精力，可使用苹果或撤离',
+    );
+    need(
       ['patrol', 'elite', 'guardian'].includes(currentNode(s)),
       '尚未到达战斗节点',
     );
@@ -1601,7 +1650,11 @@ export function validSave(value: unknown): value is Run {
       need(
         f.battleRewards === undefined ||
           (Array.isArray(f.battleRewards) &&
-            f.battleRewards.every((x) => ['patrol', 'elite'].includes(x))),
+            f.battleRewards.every(
+              (x) =>
+                ['patrol', 'elite', 'guardian'].includes(x) ||
+                /^survivor-([1-9]|[1-9][0-9])$/.test(x),
+            )),
         '战斗奖励记录无效',
       );
       layout(f.stock, 4, 96);

@@ -3,7 +3,7 @@ import { Sword, Heart, Shield, Shirt, Zap, FastForward } from 'lucide-react';
 import { useEffect, useRef } from 'react';
 import type { CSSProperties } from 'react';
 import type { FighterCard } from '@/lib/demo-combat';
-import { armorOf, cardMaxHp } from '@/lib/demo-combat';
+import { armorOf, cardMaxHp, reviveTimeOf } from '@/lib/demo-combat';
 import { cardDef, stat } from '@/lib/prototype-v04';
 export function cardSpecial(card: FighterCard) {
   const q = card.quality;
@@ -30,6 +30,7 @@ export default function CardFace({
   progress = 0,
   health,
   reviveRemaining = 0,
+  deaths = 0,
   waiting = false,
   cooldown = 1,
   playing = false,
@@ -40,6 +41,7 @@ export default function CardFace({
   progress?: number;
   health?: number;
   reviveRemaining?: number;
+  deaths?: number;
   waiting?: boolean;
   cooldown?: number;
   playing?: boolean;
@@ -103,12 +105,14 @@ export default function CardFace({
         }
       />
       <div
-        className="ed-card-health"
+        className={
+          'ed-card-health' + (reviveRemaining > 0 ? ' is-reviving' : '')
+        }
         title={`卡牌生命 ${health ?? cardMaxHp(card)} / ${cardMaxHp(card)}`}
       >
         <i
           style={{
-            width: `${((health ?? cardMaxHp(card)) / cardMaxHp(card)) * 100}%`,
+            width: `${reviveRemaining > 0 ? Math.max(0, 1 - reviveRemaining / reviveTimeOf(card, deaths)) * 100 : ((health ?? cardMaxHp(card)) / cardMaxHp(card)) * 100}%`,
           }}
         />
         <span>
@@ -117,7 +121,7 @@ export default function CardFace({
             : `${Math.ceil(health ?? cardMaxHp(card))} / ${cardMaxHp(card)}`}
         </span>
       </div>
-      <span className="ed-enhance">+{card.level}</span>
+      <span className="ed-enhance">Lv-{card.level}</span>
       <strong className="ed-card-name">{c.name}</strong>
       <div className="ed-special-copy">{cardSpecial(card)}</div>
       <span
