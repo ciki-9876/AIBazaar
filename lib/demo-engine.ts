@@ -770,6 +770,42 @@ export function makeDuel(s: Run, kind: 'guardian' | 'survivor'): Duel {
     botId: kind === 'survivor' ? s.encounter : null,
   };
 }
+export function migrateCargo(source: Run): Run {
+  const s = structuredClone(source);
+  for (const zone of ['bag', 'safe', 'warehouse'] as Zone[]) {
+    const items = s.items.filter((x) => x.zone === zone);
+    if (!items.some((x) => x.rotated)) continue;
+    items.forEach((x) => {
+      x.rotated = false;
+      x.slot = undefined;
+    });
+    const shape = cargoShape(s, zone);
+    const fitted: Item[] = [];
+    for (const x of [...items].sort((a, b) => b.volume - a.volume)) {
+      try {
+        const placed = layout([...fitted, x], shape.columns, shape.capacity);
+        fitted.splice(0, fitted.length, ...placed);
+      } catch {
+        x.zone = 'warehouse';
+        x.slot = undefined;
+        s.notice = '旧版竖放物品已改为横放；容器放不下的物品保存在基地仓库。';
+      }
+    }
+    for (const x of fitted)
+      Object.assign(
+        s.items.find((i) => i.uid === x.uid)!,
+        x,
+      );
+  }
+  for (const floor of s.floors)
+    if (floor.stock.some((x) => x.rotated))
+      floor.stock = layout(
+        floor.stock.map((x) => ({ ...x, rotated: false, slot: undefined })),
+        4,
+        96,
+      );
+  return s;
+}
 export function act(old: Run, a: Action): Run {
   const next = applyAction(old, a);
   validateItems(next);
@@ -777,10 +813,11 @@ export function act(old: Run, a: Action): Run {
   return next;
 }
 function applyAction(old: Run, a: Action): Run {
-  const s = structuredClone(old);
+  const s = migrateCargo(old);
   s.stopFloor ??= s.best;
   s.departureFloor ??= s.stopFloor;
   if (s.phase === 'base') s.floor = s.stopFloor;
+  need(a.rotated !== true, '物品只能横向摆放');
   need(s.phase !== 'ended', '本局已结算，请重新开始');
   if (a.type === 'begin') {
     need(s.phase === 'intro', '协议已确认');
@@ -1242,7 +1279,7 @@ function applyAction(old: Run, a: Action): Run {
       s,
       kind === 'survivor'
         ? '封锁对决开始，本场只能有一名胜者继续。'
-        : '守卫战开始。同路前排卡牌承受攻击，护甲减伤后传给宿主。空路直击宿主。',
+        : '守卫战开始。攻击削减同路前排卡牌的生命；卡牌归零后进入幽魂并等待复活。空路直击宿主。',
     );
     return s;
   }
@@ -1418,7 +1455,7 @@ function applyAction(old: Run, a: Action): Run {
 }
 export function validSave(value: unknown): value is Run {
   try {
-    const s = value as Run;
+    const s = migrateCargo(value as Run);
     need(s && s.version === 1 && Number.isInteger(s.seed), '存档版本不支持');
     for (const height of [s.stopFloor, s.departureFloor])
       need(

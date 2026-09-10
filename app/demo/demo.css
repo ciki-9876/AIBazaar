@@ -3318,3 +3318,39 @@
 .ed-spatial-grid:has(.invalid) {
   outline: 1px solid #d97e68;
 }
+.ed-card-health {
+  position: absolute;
+  top: 26px;
+  left: 7px;
+  right: 7px;
+  height: 12px;
+  background: #101612c9;
+  border: 1px solid #8faa7540;
+  z-index: 5;
+  overflow: hidden;
+}
+.ed-card-health i {
+  display: block;
+  height: 100%;
+  background: #8caa64;
+  transition: width 0.12s linear;
+}
+.ed-card-health span {
+  position: absolute;
+  inset: 0;
+  font: 9px monospace;
+  text-align: center;
+  color: #fff;
+  text-shadow: 0 1px 2px #000;
+}
+.elevator-demo .ed-card.is-ghost {
+  filter: grayscale(1);
+  opacity: 0.4;
+  border-style: dashed !important;
+}
+.is-ghost .ed-card-wash {
+  visibility: hidden;
+}
+.ed-card-v2 .ed-card-name {
+  margin-top: 18px;
+}

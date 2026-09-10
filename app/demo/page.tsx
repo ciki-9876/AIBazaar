@@ -77,6 +77,7 @@ import {
   sellPrice,
   rescueCost,
   cargoShape,
+  migrateCargo,
   checkpoint,
   unlockedItem,
   FACILITY_LEVEL,
@@ -131,6 +132,7 @@ export default function Demo() {
     [enemyDetail, setEnemyDetail] = useState<FighterCard | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
   const commit = useCallback((next: Run) => {
+    next = migrateCargo(next);
     ref.current = next;
     setRun(next);
     setNotice(next.notice);
@@ -297,6 +299,9 @@ export default function Demo() {
                     key={card.uid}
                     data-entity={card.uid}
                     className={
+                      (fr?.cards[card.uid]?.reviveAt != null
+                        ? 'is-ghost '
+                        : '') +
                       'ed-card ed-card-v2 quality-' +
                       card.quality +
                       ' rarity-' +
@@ -324,6 +329,12 @@ export default function Demo() {
                   >
                     <CardFace
                       card={card}
+                      health={fr?.cards[card.uid]?.hp}
+                      reviveRemaining={
+                        fr?.cards[card.uid]?.reviveAt != null
+                          ? Math.max(0, fr.cards[card.uid].reviveAt! - fr.time)
+                          : 0
+                      }
                       enemy={enemy}
                       progress={
                         fr
@@ -335,6 +346,7 @@ export default function Demo() {
                       cooldown={fr?.cd[side][card.at]}
                       playing={
                         !!fr &&
+                        fr.cards[card.uid]?.reviveAt == null &&
                         playing &&
                         cursor < (battle?.frames.length ?? 0) - 1
                       }
@@ -389,7 +401,12 @@ export default function Demo() {
                 })),
               ) ?? []
           )
-            .filter((x) => x.side === side && x.kind !== 'charge')
+            .filter(
+              (x) =>
+                x.side === side &&
+                x.kind !== 'charge' &&
+                x.cardHealthLoss === undefined,
+            )
             .map((hit) => (
               <span
                 key={`${hit.stamp}-${hit.index}`}
@@ -442,7 +459,7 @@ export default function Demo() {
       <>
         <div className="ed-section-title">
           <h2>行装与构筑</h2>
-          <p>物品按实际形状占格。点击查看详情，拖动整理，按 R 旋转。</p>
+          <p>物品按实际形状占格。点击查看详情，拖动整理，固定横向占格。</p>
         </div>
         <section className="ed-panel">
           <h3>上阵卡组</h3>
@@ -1225,7 +1242,7 @@ export default function Demo() {
             跳至结果
           </button>
           <span>
-            双方前排朝中央 · 命中卡牌 → 护甲 → 宿主护盾 / 生命 · 空路直击
+            双方前排朝中央 · 命中卡牌 → 护甲 → 卡牌生命 / 幽魂 · 空路直击
           </span>
         </div>
         <details className="ed-visual-guide">
@@ -1256,7 +1273,9 @@ export default function Demo() {
             .flatMap((fr) => [
               ...fr.hits.map((h) =>
                 h.targetName
-                  ? `${fr.time.toFixed(1)}s · ${h.source} → ${h.targetName}：${h.raw} 原伤 / ${h.armor} 护甲 → 传递 ${h.value}；宿主盾吸收 ${Math.round((h.shieldAbsorbed ?? 0) * 10) / 10} / 生命 −${Math.round((h.healthLoss ?? 0) * 10) / 10}`
+                  ? h.cardHealthLoss !== undefined
+                    ? `${fr.time.toFixed(1)}s · ${h.source} → ${h.targetName}：卡牌生命 −${h.cardHealthLoss}`
+                    : `${fr.time.toFixed(1)}s · ${h.source} → ${h.targetName}：${h.raw} 原伤 / ${h.armor} 护甲 → 传递 ${h.value}；宿主盾吸收 ${Math.round((h.shieldAbsorbed ?? 0) * 10) / 10} / 生命 −${Math.round((h.healthLoss ?? 0) * 10) / 10}`
                   : `${fr.time.toFixed(1)}s · ${h.source} → ${h.side ? '敌方' : '我方'} ${h.kind === 'damage' ? '伤害' : h.kind === 'heal' ? '治疗' : h.kind === 'shield' ? '护盾' : '能量'} ${Math.round(h.value * 10) / 10}`,
               ),
               ...fr.log,
@@ -1834,21 +1853,7 @@ export default function Demo() {
                             移至{zoneName[to]}
                           </button>
                         ))}
-                      {inspected.zone !== 'board' && (
-                        <button
-                          onClick={() =>
-                            itemAction({
-                              type: 'move',
-                              id: inspected.uid,
-                              to: inspected.zone,
-                              slot: inspected.slot,
-                              rotated: !inspected.rotated,
-                            })
-                          }
-                        >
-                          旋转 90°
-                        </button>
-                      )}
+
                       {run.interaction === 'trade' &&
                         inspected.zone !== 'board' && (
                           <button
@@ -1979,9 +1984,10 @@ export default function Demo() {
                 的完整范围，撤离第十层后结算。楼层使用离线种子重组，尚未接入大模型；机器人采用可解释的数值模拟。
               </p>
               <p>
-                伤害默认命中同路前排卡牌，空路直击宿主。卡牌只有护甲，没有生命值，不会被打掉；减伤公式为原始伤害
-                × 100 ÷（100 +
-                护甲），之后扣宿主护盾与生命。治疗、护盾仍给宿主。脉冲线圈明确攻击其他路后排；多格卡算一个完整目标。我方右侧为前排，敌方左侧为前排，双方前排在中央相对。40
+                伤害默认命中同路前排卡牌，空路直击宿主。卡牌拥有独立生命，归零进入幽魂，期间视为空格且不发动、不承受效果。复活时间为
+                8 − 强化等级 × 0.5
+                秒，复活时满生命并重新冷却。减伤公式为原始伤害 × 100 ÷（100 +
+                护甲），之后扣卡牌生命；只有直击宿主才扣宿主护盾与生命。治疗、护盾仍给宿主。脉冲线圈明确攻击其他路后排；多格卡算一个完整目标。我方右侧为前排，敌方左侧为前排，双方前排在中央相对。40
                 秒后空间坍缩属于环境伤害，绕过卡牌护甲与宿主护盾。
               </p>
             </div>

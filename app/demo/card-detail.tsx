@@ -1,6 +1,6 @@
 import { Clock3, Shirt } from 'lucide-react';
 import { describeCard } from '@/lib/card-description';
-import { armorOf } from '@/lib/demo-combat';
+import { armorOf, cardMaxHp, reviveTimeOf } from '@/lib/demo-combat';
 import type { FighterCard } from '@/lib/demo-combat';
 import { RARITY, QUALITY } from '@/lib/demo-engine';
 export default function CardDetail({ card }: { card: FighterCard }) {
@@ -16,6 +16,8 @@ export default function CardDetail({ card }: { card: FighterCard }) {
         {RARITY[card.rarity].name} · {QUALITY[card.quality]} · Lv.{card.level}
       </p>
       <div className="ed-detail-values">
+        <span>生命 {cardMaxHp(card)}</span>
+        <span>复活 {reviveTimeOf(card)} 秒</span>
         {d.effects.map((e, i) => (
           <span key={i}>{e.text}</span>
         ))}

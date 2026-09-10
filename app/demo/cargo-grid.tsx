@@ -1,7 +1,7 @@
 'use client';
 import { createContext, useContext, useEffect, useRef, useState } from 'react';
 import type { ReactNode, CSSProperties } from 'react';
-import { Layers, Package, RotateCw } from 'lucide-react';
+import { Layers, Package } from 'lucide-react';
 import { dimensions, layout, cells } from '@/lib/cargo-layout';
 import { itemName, offerPrice } from '@/lib/demo-engine';
 import type { Item } from '@/lib/demo-engine';
@@ -22,7 +22,6 @@ type Context = {
   inspect: (item: Item, from: string) => void;
   pickup: (item: Item, from: string) => void;
   drop: (zone: string, slot: number) => void;
-  rotate: () => void;
 };
 const CargoContext = createContext<Context>(null!);
 export function CargoProvider({
@@ -48,15 +47,6 @@ export function CargoProvider({
     onPlace(d.item, d.from, zone, slot);
     update(null);
     setHover(null);
-  };
-  const rotate = () => {
-    const d = current.current;
-    if (d)
-      update({
-        ...d,
-        item: { ...d.item, rotated: !d.item.rotated },
-        moved: true,
-      });
   };
   useEffect(() => {
     const move = (e: PointerEvent) => {
@@ -102,16 +92,6 @@ export function CargoProvider({
     const key = (e: KeyboardEvent) => {
       const d = current.current;
       if (!d) return;
-      if (e.key.toLowerCase() === 'r') {
-        e.preventDefault();
-        const next = {
-          ...d,
-          item: { ...d.item, rotated: !d.item.rotated },
-          moved: true,
-        };
-        current.current = next;
-        setDrag(next);
-      }
       if (e.key === 'Escape') {
         current.current = null;
         setDrag(null);
@@ -162,7 +142,6 @@ export function CargoProvider({
             keyboard: true,
           }),
         drop,
-        rotate,
       }}
     >
       {children}
@@ -181,10 +160,7 @@ export function CargoProvider({
           }
         >
           <b>{itemName(drag.item)}</b>
-          <small>
-            {drag.item.volume} 格 · {drag.item.rotated ? '竖放' : '横放'} · R
-            旋转 / Esc 取消
-          </small>
+          <small>{drag.item.volume} 格 · 横放 / Esc 取消</small>
         </div>
       )}
     </CargoContext.Provider>
@@ -285,13 +261,7 @@ export default function CargoGrid({
           );
         })}
       </div>
-      <p className="ed-grid-help">点击查看 · 拖动摆放 · 拖动时 R 旋转</p>
-      {ctx.drag?.keyboard && (
-        <button onClick={ctx.rotate}>
-          <RotateCw size={13} />
-          旋转手中物品
-        </button>
-      )}
+      <p className="ed-grid-help">点击查看 · 拖动摆放 · 固定横向占格</p>
     </div>
   );
 }

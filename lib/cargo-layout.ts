@@ -4,8 +4,7 @@ export type CargoItem = {
   slot?: number;
   rotated?: boolean;
 };
-export const dimensions = (item: CargoItem) =>
-  item.rotated ? { w: 1, h: item.volume } : { w: item.volume, h: 1 };
+export const dimensions = (item: CargoItem) => ({ w: item.volume, h: 1 });
 export function cells(
   item: CargoItem,
   slot: number,
@@ -36,7 +35,7 @@ export function layout<T extends CargoItem>(
   }
   for (const item of items.filter((x) => x.slot === undefined)) {
     let placed = false;
-    for (const rotated of [item.rotated ?? false, !(item.rotated ?? false)]) {
+    for (const rotated of [false]) {
       for (let slot = 0; slot < capacity; slot++) {
         const candidate = { ...item, rotated, slot };
         const covered = cells(candidate, slot, columns, capacity);
@@ -49,7 +48,7 @@ export function layout<T extends CargoItem>(
       }
       if (placed) break;
     }
-    if (!placed) throw Error('没有放得下这件物品的连续空位，请移动或旋转物品');
+    if (!placed) throw Error('没有放得下这件物品的连续空位，请整理横向空位');
   }
   return items.map((item) => positions.get(item.uid)!);
 }

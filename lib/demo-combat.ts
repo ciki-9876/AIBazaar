@@ -23,6 +23,16 @@ const ARMOR: Record<string, number> = {
 };
 export const armorOf = (card: Pick<FighterCard, 'id' | 'level' | 'quality'>) =>
   ARMOR[card.id] + card.quality * 5 + card.level * 2;
+export const REVIVE_BASE = 8;
+export const REVIVE_PER_LEVEL = 0.5;
+export const reviveTimeOf = (card: FighterCard) =>
+  Math.max(2, REVIVE_BASE - card.level * REVIVE_PER_LEVEL);
+export const cardMaxHp = (card: FighterCard) =>
+  Math.round(
+    (40 + cardDef(card.id).size * 15) * (1 + card.rarity * 0.15) +
+      card.level * 8 +
+      card.quality * 10,
+  );
 export const armorDamage = (raw: number, armor: number) =>
   Math.round(((raw * 100) / (100 + Math.max(0, armor))) * 10) / 10;
 export function targetText(id: string) {
@@ -88,10 +98,12 @@ export type Hit = {
   targetName?: string;
   shieldAbsorbed?: number;
   healthLoss?: number;
+  cardHealthLoss?: number;
 };
 export type CombatFrame = {
   time: number;
   hp: number[];
+  cards: Record<string, { hp: number; maxHp: number; reviveAt: number | null }>;
   shield: number[];
   energy: number[];
   timers: number[][];
@@ -117,6 +129,15 @@ export function simulateDuel(d: Duel) {
   const boards = [d.player, d.enemy].map((b) =>
     [...b].sort((a, b) => a.at - b.at),
   );
+  const cards: CombatFrame['cards'] = Object.fromEntries(
+    boards
+      .flat()
+      .map((c) => [
+        c.uid,
+        { hp: cardMaxHp(c), maxHp: cardMaxHp(c), reviveAt: null },
+      ]),
+  );
+  const alive = (c: FighterCard) => cards[c.uid].reviveAt === null;
   const hp = [...d.maxHp],
     shield = [0, 0],
     energy = [0, 0],
@@ -136,16 +157,35 @@ export function simulateDuel(d: Duel) {
       waiting: string[] = [],
       log: string[] = [],
       cd = [Array(9).fill(0), Array(9).fill(0)];
+    const revived = new Set<string>();
+    for (const c of boards.flat())
+      if (cards[c.uid].reviveAt !== null && cards[c.uid].reviveAt! <= time) {
+        revived.add(c.uid);
+        cards[c.uid].hp = cards[c.uid].maxHp;
+        cards[c.uid].reviveAt = null;
+        log.push(`${cardDef(c.id).name} 已复活，重新开始冷却。`);
+      }
+    for (let side = 0; side < 2; side++) {
+      cap[side] =
+        10 + (boards[side].some((c) => c.id === 'battery' && alive(c)) ? 6 : 0);
+      energy[side] = Math.min(energy[side], cap[side]);
+    }
+    const cardDamage: Record<string, number> = {};
     // Damage is committed after both owners act, so simultaneous lethal hits are fair.
     const damage = [0, 0];
     // Resolve arrivals first. Launch and impact are separate simulation events.
     for (const shot of pending.filter((x) => x.impactAt <= time)) {
       const hit: Hit = { ...shot };
+      if (shot.sourceUid && cards[shot.sourceUid]?.reviveAt !== null) continue;
+      if (shot.targetUid && cards[shot.targetUid]?.reviveAt != null) continue;
       if (hit.kind === 'damage') {
         const target = boards[hit.side].find((x) => x.uid === hit.targetUid);
         hit.armor = target ? armorOf(target) : 0;
         hit.value = armorDamage(hit.raw ?? hit.value, hit.armor);
-        damage[hit.side] += hit.value;
+        if (target) {
+          cardDamage[target.uid] = (cardDamage[target.uid] ?? 0) + hit.value;
+          hit.cardHealthLoss = hit.value;
+        } else damage[hit.side] += hit.value;
       } else if (hit.kind === 'heal') {
         hit.value = Math.min(d.maxHp[hit.side] - hp[hit.side], shot.value);
         hp[hit.side] += hit.value;
@@ -176,12 +216,34 @@ export function simulateDuel(d: Duel) {
     }
     pending = pending.filter((x) => x.impactAt > time);
     for (let side = 0; side < 2; side++)
+      for (const c of boards[side]) {
+        const state = cards[c.uid];
+        state.hp = Math.max(0, state.hp - (cardDamage[c.uid] ?? 0));
+        if (state.hp === 0 && state.reviveAt === null) {
+          state.reviveAt = time + reviveTimeOf(c);
+          timers[side][c.at] = 0;
+          pending = pending.filter(
+            (p) => p.sourceUid !== c.uid && p.targetUid !== c.uid,
+          );
+          log.push(
+            `${cardDef(c.id).name} 进入幽魂，${reviveTimeOf(c)} 秒后复活。`,
+          );
+        }
+      }
+    for (let side = 0; side < 2; side++) {
+      cap[side] =
+        10 + (boards[side].some((c) => c.id === 'battery' && alive(c)) ? 6 : 0);
+      energy[side] = Math.min(energy[side], cap[side]);
+    }
+    for (let side = 0; side < 2; side++)
       for (const p of boards[side]) {
+        if (!alive(p)) continue;
         const c = cardDef(p.id),
           env = terrain[Math.floor(p.at / 3)],
           q = p.quality;
         const shelter = boards[side].some(
           (x) =>
+            alive(x) &&
             x.id === 'shelter' &&
             x.quality > 0 &&
             x.uid !== p.uid &&
@@ -191,7 +253,7 @@ export function simulateDuel(d: Duel) {
           c.cd +
           (!shelter && ['寒冷', '强风'].includes(env) ? 0.75 : 0) +
           (p.id === 'bell' && q > 0 && env === '强风' ? 1 : 0);
-        if (!step) continue;
+        if (!step || revived.has(p.uid)) continue;
         timers[side][p.at] += 0.25;
         if (timers[side][p.at] < cd[side][p.at]) continue;
         if (energy[side] < c.energyCost) {
@@ -224,7 +286,7 @@ export function simulateDuel(d: Duel) {
           });
         const apply = (value: number, echo = false) => {
           if (c.kind === 'damage') {
-            const target = selectTarget(p, boards[1 - side]);
+            const target = selectTarget(p, boards[1 - side].filter(alive));
             const armor = target ? armorOf(target) : 0;
             const transmitted = armorDamage(value, armor);
 
@@ -296,7 +358,9 @@ export function simulateDuel(d: Duel) {
               : 0;
         const others = boards[side].filter(
           (x) =>
-            x.uid !== p.uid && Math.floor(x.at / 3) === Math.floor(p.at / 3),
+            alive(x) &&
+            x.uid !== p.uid &&
+            Math.floor(x.at / 3) === Math.floor(p.at / 3),
         );
         const targets =
           c.id === 'bell' && q > 0 && env === '强风'
@@ -338,7 +402,10 @@ export function simulateDuel(d: Duel) {
     for (let side = 0; side < 2; side++) {
       let remainingShield = shield[side];
       for (const hit of hits.filter(
-        (h) => h.side === side && h.kind === 'damage',
+        (h) =>
+          h.side === side &&
+          h.kind === 'damage' &&
+          h.cardHealthLoss === undefined,
       )) {
         hit.shieldAbsorbed = Math.min(remainingShield, hit.value);
         remainingShield -= hit.shieldAbsorbed;
@@ -365,6 +432,7 @@ export function simulateDuel(d: Duel) {
     frames.push({
       time,
       hp: [...hp],
+      cards: structuredClone(cards),
       shield: [...shield],
       energy: [...energy],
       timers: timers.map((x) => [...x]),

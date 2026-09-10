@@ -3,7 +3,7 @@ import { Sword, Heart, Shield, Shirt, Zap, FastForward } from 'lucide-react';
 import { useEffect, useRef } from 'react';
 import type { CSSProperties } from 'react';
 import type { FighterCard } from '@/lib/demo-combat';
-import { armorOf } from '@/lib/demo-combat';
+import { armorOf, cardMaxHp } from '@/lib/demo-combat';
 import { cardDef, stat } from '@/lib/prototype-v04';
 export function cardSpecial(card: FighterCard) {
   const q = card.quality;
@@ -28,6 +28,8 @@ export function cardSpecial(card: FighterCard) {
 export default function CardFace({
   card,
   progress = 0,
+  health,
+  reviveRemaining = 0,
   waiting = false,
   cooldown = 1,
   playing = false,
@@ -36,6 +38,8 @@ export default function CardFace({
   card: FighterCard;
   enemy: boolean;
   progress?: number;
+  health?: number;
+  reviveRemaining?: number;
   waiting?: boolean;
   cooldown?: number;
   playing?: boolean;
@@ -98,6 +102,21 @@ export default function CardFace({
           } as CSSProperties
         }
       />
+      <div
+        className="ed-card-health"
+        title={`卡牌生命 ${health ?? cardMaxHp(card)} / ${cardMaxHp(card)}`}
+      >
+        <i
+          style={{
+            width: `${((health ?? cardMaxHp(card)) / cardMaxHp(card)) * 100}%`,
+          }}
+        />
+        <span>
+          {reviveRemaining > 0
+            ? `幽魂 · ${reviveRemaining.toFixed(1)}s`
+            : `${Math.ceil(health ?? cardMaxHp(card))} / ${cardMaxHp(card)}`}
+        </span>
+      </div>
       <span className="ed-enhance">+{card.level}</span>
       <strong className="ed-card-name">{c.name}</strong>
       <div className="ed-special-copy">{cardSpecial(card)}</div>
