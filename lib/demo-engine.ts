@@ -864,18 +864,23 @@ function applyAction(old: Run, a: Action): Run {
           bot.status = '封锁对决胜出并完成楼层挑战';
         }
       }
-      if (stage === 'boss')
-        rescue(s, result.winner === -1 ? '与 BOSS 同归于尽' : 'BOSS 战失败');
+      if (stage === 'boss' || kind === 'survivor')
+        rescue(
+          s,
+          kind === 'survivor'
+            ? '幸存者 AI 对战失败'
+            : result.winner === -1
+              ? '与 BOSS 同归于尽'
+              : 'BOSS 战失败',
+        );
       else {
         s.stamina = Math.max(0, s.stamina - 35);
-        finishBots(s);
-        s.phase = 'base';
+        s.phase = 'floor';
         s.interaction = null;
-        s.objective = false;
-        s.floor = s.departureFloor ?? checkpoint(s);
+        s.node++;
         say(
           s,
-          '非 BOSS 战败：损失 35 精力，退回原停靠点；生命与背包保留，今日出勤已使用。',
+          '普通或精英战败：损失 35 精力，继续当前楼层的下一个节点；生命与背包保留，不领取战斗奖励。',
         );
       }
       return s;

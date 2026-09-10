@@ -1067,8 +1067,8 @@ export default function Demo() {
                   </h3>
                   <p>
                     战败损失 35
-                    精力并退回电梯，生命与背包保留。胜利后继续深入，最终 BOSS
-                    尚未到达。
+                    精力并进入下一个节点，生命与背包保留，不领取战斗奖励。最终
+                    BOSS 尚未到达。
                   </p>
                   <button
                     className="ed-primary"
@@ -1163,10 +1163,12 @@ export default function Demo() {
     return (
       <section className="ed-combat">
         <p className="ed-stage-warning">
-          {run.duel?.stage === 'boss' ||
-          (!run.duel?.stage && run.duel?.kind === 'guardian')
-            ? '最终 BOSS · 战败触发强制回收，损失生命和普通背包。'
-            : '非 BOSS 战斗 · 战败仅损失 35 精力并返回电梯，保留生命和背包。'}
+          {run.duel.kind === 'survivor'
+            ? '幸存者 AI 对战 · 战败触发强制回收，损失生命和普通背包。'
+            : run.duel?.stage === 'boss' ||
+                (!run.duel?.stage && run.duel?.kind === 'guardian')
+              ? '最终 BOSS · 战败触发强制回收，损失生命和普通背包。'
+              : '普通 / 精英战斗 · 战败仅损失 35 精力并进入下一个节点，保留生命和背包。'}
         </p>
         <div className="ed-section-title">
           <div>
@@ -1296,7 +1298,11 @@ export default function Demo() {
                   ? '你还活着。'
                   : battle.winner === -1
                     ? '同归于尽。'
-                    : '电梯启动了回收。'}
+                    : run.duel.kind === 'survivor' ||
+                        run.duel.stage === 'boss' ||
+                        !run.duel.stage
+                      ? '电梯启动了回收。'
+                      : '负伤继续前进。'}
               </h2>
               <p>
                 {battle.winner === 0
@@ -1305,10 +1311,11 @@ export default function Demo() {
                     : run.duel.stage === 'normal' || run.duel.stage === 'elite'
                       ? '本阶段胜利，确认后继续深入。最终 BOSS 仍未击败。'
                       : '本层全部战斗已结束。返回楼层后撤离提交通关。'
-                  : run.duel.stage === 'boss' ||
+                  : run.duel.kind === 'survivor' ||
+                      run.duel.stage === 'boss' ||
                       (!run.duel.stage && run.duel.kind === 'guardian')
                     ? `本次回收消耗 ${rescueCost(run)} 生命，普通背包丢失。`
-                    : '本次战败损失 35 精力，返回原停靠点。生命与背包保留。'}
+                    : '本次战败损失 35 精力，进入当前楼层的下一个节点。生命与背包保留，不领取战斗奖励。'}
               </p>
             </div>
             <button
@@ -1528,7 +1535,7 @@ export default function Demo() {
                       title={
                         (
                           {
-                            生命: '有限的生存次数。睡眠消耗 1；BOSS 战败或主动救援按回收费用扣除。',
+                            生命: '有限的生存次数。睡眠消耗 1；幸存者 AI、BOSS 战败或主动救援按回收费用扣除。',
                             精力: '出勤、探索和撤离需要精力；睡眠、苹果和药品可以恢复。',
                             补给: '出勤消耗 1；睡眠消耗 1 并恢复更多精力。',
                             金币: '购买物品、升级电梯、建造设施和培养卡牌。',
