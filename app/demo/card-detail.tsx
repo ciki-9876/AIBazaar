@@ -17,9 +17,7 @@ export default function CardDetail({ card }: { card: FighterCard }) {
       </p>
       <div className="ed-detail-values">
         <span>生命 {cardMaxHp(card)}</span>
-        <span>
-          首次复活 {reviveTimeOf(card)} 秒；每多死亡一次增加 25% 基础时间
-        </span>
+        <span>初始复活 {reviveTimeOf(card)} 秒</span>
         {d.effects.map((e, i) => (
           <span key={i}>{e.text}</span>
         ))}
@@ -36,18 +34,6 @@ export default function CardDetail({ card }: { card: FighterCard }) {
           d.innate.map((line, i) => <p key={i}>{line}</p>)
         ) : (
           <p>无额外固有效果</p>
-        )}
-      </section>
-      <section>
-        <h4>天气</h4>
-        {d.weather.length ? (
-          d.weather.map((w) => (
-            <p key={w.name}>
-              {w.name}：{w.text}
-            </p>
-          ))
-        ) : (
-          <p>无专属天气效果</p>
         )}
       </section>
     </div>

@@ -30,7 +30,17 @@ const WEATHER = OLD_WEATHER.map((weather, index) => ({
 }));
 export const SAVE_KEY = 'f9.elevator.demo1.local';
 export const QUALITY = ['基础', '精制', '大师'];
-export const FACILITY = FACILITIES.map((f) => ({
+export const FACILITY = [
+  {
+    id: 'identify',
+    name: '鉴定台',
+    slots: 0,
+    cost: 0,
+    desc: '初始设施，免费鉴定实体物品',
+    effect: 'identify',
+  },
+  ...FACILITIES.filter((f) => f.id !== 'weather'),
+].map((f) => ({
   ...f,
   name: f.name.replaceAll('材料', '金币'),
   cost: f.id === 'weather' ? 8 : f.cost,
@@ -92,6 +102,7 @@ export const RESOURCE_LEVEL: Record<string, number> = {
   scanner: 3,
 };
 export const FACILITY_LEVEL: Record<string, number> = {
+  identify: 1,
   clinic: 2,
   recycle: 2,
   generator: 3,
@@ -105,17 +116,67 @@ export const LEVEL_GUIDE = [
   '活下去：补给用于出勤和睡眠。带回实体，在桌面免费鉴定。',
   '学会利用剩余物资：金币培养卡牌，废料回收为金币，药品恢复精力。',
   '把电带进门外：燃料发电，电力补充鉴定电荷，带上便携鉴定仪。',
-  '建立稳定补给：电力与金币种植补给，观测天气再选择路线。',
-  '为危险做准备：用金币与电力制作地形适应装备，降低探索消耗。',
-  '完整构筑：九格战斗布局，围绕天气、护甲和弹道组织卡牌。',
+  '建立稳定补给：电力与金币培育密封补给物品。',
+  '为危险做准备：用金币与电力制作探索工具，降低探索消耗。',
+  '完整构筑：九格战斗布局，围绕生命、护甲和弹道组织卡牌。',
 ];
 export const unlockedItem = (s: Run, id: string) =>
   s.level >= (RESOURCE_LEVEL[id] ?? 1);
+export const CONSUMABLES = ['supply', 'fuel', 'medicine', 'scrap'] as const;
+export function itemCount(
+  s: Run,
+  id: string,
+  carried = s.phase === 'floor' || s.phase === 'combat',
+) {
+  return s.items
+    .filter(
+      (x) =>
+        x.id === id &&
+        (carried ? ['bag', 'safe'].includes(x.zone) : x.zone !== 'board'),
+    )
+    .reduce((n, x) => n + x.amount, 0);
+}
+function grantItem(s: Run, id: string, amount: number) {
+  const existing = s.items.find(
+    (x) => x.id === id && x.zone === 'warehouse' && x.type === 'tool',
+  );
+  if (existing) existing.amount += amount;
+  else
+    s.items.push(
+      makeItem('stock-' + s.serial++, id, 'tool', 'warehouse', amount),
+    );
+}
+function spendItem(s: Run, id: string, amount = 1) {
+  need(itemCount(s, id) >= amount, '缺少' + (NAMES[id] ?? id) + '物品');
+  let remaining = amount;
+  for (const x of s.items.filter(
+    (x) =>
+      x.id === id && (s.phase === 'base' || ['bag', 'safe'].includes(x.zone)),
+  )) {
+    const take = Math.min(remaining, x.amount);
+    x.amount -= take;
+    remaining -= take;
+    if (!remaining) break;
+  }
+  s.items = s.items.filter((x) => x.amount > 0);
+}
 export const checkpoint = (s: Run) => s.stopFloor ?? s.best;
 export type Run = {
   stopFloor?: number;
   departureFloor?: number;
   interaction?: 'search' | 'trade' | null;
+  dailyReport?: {
+    day: number;
+    rows: {
+      id: number;
+      floor: number;
+      previousFloor: number;
+      alive: boolean;
+      wasAlive: boolean;
+      status: string;
+    }[];
+  };
+  dayStartBots?: { id: number; floor: number; alive: boolean }[];
   version: 1;
   seed: number;
   phase: 'intro' | 'base' | 'floor' | 'combat' | 'ended';
@@ -205,7 +266,9 @@ export function makeItem(
   return {
     uid,
     id,
-    type,
+    type: ['supply', 'fuel', 'medicine', 'scrap', 'core'].includes(id)
+      ? 'tool'
+      : type,
     zone,
     volume:
       type === 'physical' || type === 'card'
@@ -351,8 +414,7 @@ export const nodeName: Record<string, string> = {
   exit: '撤离出口',
 };
 export const currentNode = (s: Run) => currentFloor(s)?.nodes[s.node] ?? 'exit';
-export const searchCost = (s: Run) =>
-  Math.max(2, (weatherAt(s) === 2 ? 6 : 10) - (s.prepared ? 4 : 0));
+export const searchCost = (s: Run) => Math.max(2, 10 - (s.prepared ? 4 : 0));
 export function puzzle(s: Run) {
   return puzzleSpec(s.seed, s.floor, s.node);
 }
@@ -444,7 +506,16 @@ function validateItem(x: Item) {
   } else {
     need(
       x.type === 'tool'
-        ? ['apple', 'lighter', 'scanner'].includes(x.id)
+        ? [
+            'apple',
+            'lighter',
+            'scanner',
+            'supply',
+            'fuel',
+            'medicine',
+            'scrap',
+            'core',
+          ].includes(x.id)
         : [
             'material',
             'supply',
@@ -577,27 +648,15 @@ function consumeTool(s: Run, id: string) {
     (x) => x.id === id && (x.zone === 'bag' || x.zone === 'safe'),
   );
   need(x, '没有携带对应工具');
-  s.items = s.items.filter((i) => i.uid !== x.uid);
+  x.amount--;
+  s.items = s.items.filter((i) => i.amount > 0);
 }
 function deposit(s: Run) {
-  for (const x of s.items.filter((x) => x.type === 'resource')) {
-    if (x.id === 'core') continue;
-    const key = x.id as
-      | 'material'
-      | 'supply'
-      | 'power'
-      | 'fuel'
-      | 'medicine'
-      | 'scrap';
-    if (key === 'fuel') {
-      const room = (s.installed.includes('storage') ? 10 : 6) - s.fuel;
-      const n = Math.min(room, x.amount);
-      s.fuel += n;
-      x.amount -= n;
-    } else {
-      s[key] += x.amount;
-      x.amount = 0;
-    }
+  for (const x of s.items.filter(
+    (x) => x.type === 'resource' && ['material', 'power'].includes(x.id),
+  )) {
+    s[x.id as 'material' | 'power'] += x.amount;
+    x.amount = 0;
   }
   s.items = s.items.filter((x) => x.amount > 0);
 }
@@ -759,7 +818,8 @@ export function makeDuel(s: Run, kind: 'guardian' | 'survivor'): Duel {
       240 + (s.level - 1) * 10,
       Math.round((65 + floor * 17) * scale) + (kind === 'survivor' ? 20 : 0),
     ],
-    weather: weatherAt(s),
+    weather: 0,
+    weatherEnabled: false,
     layout: layoutAt(s),
     name:
       kind === 'survivor'
@@ -772,6 +832,28 @@ export function makeDuel(s: Run, kind: 'guardian' | 'survivor'): Duel {
 }
 export function migrateCargo(source: Run): Run {
   const s = structuredClone(source);
+  for (const id of CONSUMABLES) {
+    need(
+      Number.isInteger(s[id]) && s[id] >= 0 && s[id] <= 10000,
+      '旧库存数量无效',
+    );
+    if (s[id] > 0) grantItem(s, id, s[id]);
+    s[id] = 0;
+  }
+  for (const x of [...s.items, ...s.floors.flatMap((f) => f.stock)])
+    if ([...CONSUMABLES, 'core'].includes(x.id)) x.type = 'tool';
+  if (s.installed.includes('weather')) s.material += 8;
+  s.installed = s.installed.filter((id) => id !== 'weather');
+  s.facilityUsed = s.facilityUsed.filter((id) => id !== 'weather');
+  if (!s.installed.includes('identify')) s.installed.unshift('identify');
+  s.forecast = false;
+  if (s.duel) s.duel.weatherEnabled = false;
+  s.dayStartBots ??= s.bots.map(({ id, floor, alive }) => ({
+    id,
+    floor,
+    alive,
+  }));
+
   for (const zone of ['bag', 'safe', 'warehouse'] as Zone[]) {
     const items = s.items.filter((x) => x.zone === zone);
     if (!items.some((x) => x.rotated)) continue;
@@ -843,6 +925,9 @@ function applyAction(old: Run, a: Action): Run {
     shelter.rarity = 0;
     shelter.at = 3;
     s.items = [
+      ...s.items.filter((x) =>
+        CONSUMABLES.includes(x.id as (typeof CONSUMABLES)[number]),
+      ),
       knife,
       wire,
       shelter,
@@ -1001,14 +1086,19 @@ function applyAction(old: Run, a: Action): Run {
   if (a.type === 'consume') {
     const x = s.items.find((x) => x.uid === a.id);
     need(
-      x && (x.zone === 'bag' || x.zone === 'safe'),
+      x && (s.phase === 'base' || x.zone === 'bag' || x.zone === 'safe'),
       '请先把物品装入随身容器',
     );
-    need(x.id === 'apple', '该工具通过节点选项使用');
+    need(
+      ['apple', 'supply', 'medicine'].includes(x.id),
+      '该物品通过设施或节点选项使用',
+    );
     need(s.stamina < 100, '精力已经充足');
-    s.stamina = Math.min(100, s.stamina + 25);
-    s.items = s.items.filter((i) => i.uid !== x.uid);
-    say(s, '吃掉苹果，恢复 25 精力。');
+    const gain = x.id === 'medicine' ? 35 : 25;
+    s.stamina = Math.min(100, s.stamina + gain);
+    x.amount--;
+    s.items = s.items.filter((i) => i.amount > 0);
+    say(s, `使用${itemName(x)}，恢复 ${gain} 精力。`);
     return s;
   }
   if (a.type === 'drop') {
@@ -1049,8 +1139,8 @@ function applyAction(old: Run, a: Action): Run {
     need(s.phase === 'base', '只能回到床上睡觉');
     planBots(s);
     finishBots(s);
-    const fed = s.supply > 0;
-    if (fed) s.supply--;
+    const fed = itemCount(s, 'supply') > 0;
+    if (fed) spendItem(s, 'supply');
     s.stamina = Math.min(100, s.stamina + (fed ? 50 : 15));
     s.quota--;
     s.day++;
@@ -1067,6 +1157,23 @@ function applyAction(old: Run, a: Action): Run {
         b.status = '生命耗尽';
       }
     }
+    s.dailyReport = {
+      day: s.day - 1,
+      rows: s.bots.map((b) => ({
+        id: b.id,
+        floor: b.floor,
+        previousFloor:
+          s.dayStartBots?.find((x) => x.id === b.id)?.floor ?? b.floor,
+        alive: b.alive,
+        wasAlive: s.dayStartBots?.find((x) => x.id === b.id)?.alive ?? b.alive,
+        status: b.status,
+      })),
+    };
+    s.dayStartBots = s.bots.map(({ id, floor, alive }) => ({
+      id,
+      floor,
+      alive,
+    }));
     say(
       s,
       `第 ${s.day} 天：${fed ? '消耗 1 补给，恢复 50' : '缺少补给，仅恢复 15'} 精力；生命 -1。`,
@@ -1110,7 +1217,7 @@ function applyAction(old: Run, a: Action): Run {
         s.installed.push(f.id);
       } else if (a.type === 'remove') {
         need(s.installed.includes(f.id), '设施未建造');
-        need(f.id !== 'storage' || s.fuel <= 6, '先消耗超出基础上限的燃料');
+        need(f.id !== 'identify', '初始鉴定台不可拆除');
         s.installed = s.installed.filter((i) => i !== f.id);
         s.material += Math.floor(f.cost / 2);
       } else {
@@ -1119,28 +1226,34 @@ function applyAction(old: Run, a: Action): Run {
           '设施未建造或今天已使用',
         );
         switch (f.id) {
+          case 'identify':
+            say(s, '前往鉴定台选择实体物品');
+            break;
           case 'grow':
             need(s.material >= 1 && s.power >= 3, '需要 1 金币、3 电力');
             s.material--;
             s.power -= 3;
-            s.supply += 2;
+            grantItem(s, 'supply', 2);
             break;
           case 'generator':
-            need(s.fuel > 0, '需要燃料');
-            s.fuel--;
+            need(itemCount(s, 'fuel') > 0, '需要燃料');
+            spendItem(s, 'fuel');
             s.power += 8;
             break;
           case 'clinic':
-            need(s.medicine > 0 && s.stamina < 100, '需要药品且精力未满');
-            s.medicine--;
+            need(
+              itemCount(s, 'medicine') > 0 && s.stamina < 100,
+              '需要药品且精力未满',
+            );
+            spendItem(s, 'medicine');
             s.stamina = Math.min(100, s.stamina + 35);
             break;
           case 'weather':
             s.forecast = true;
             break;
           case 'recycle':
-            need(s.scrap >= 2, '需要 2 废料');
-            s.scrap -= 2;
+            need(itemCount(s, 'scrap') >= 2, '需要 2 废料');
+            spendItem(s, 'scrap', 2);
             s.material += 3;
             break;
           case 'workshop':
@@ -1153,9 +1266,9 @@ function applyAction(old: Run, a: Action): Run {
             s.charges++;
             break;
           case 'storage':
-            need(s.scrap >= 2 && s.fuel < 10, '需要废料且燃料未满');
-            s.scrap -= 2;
-            s.fuel++;
+            need(itemCount(s, 'scrap') >= 2, '需要 2 废料束');
+            spendItem(s, 'scrap', 2);
+            grantItem(s, 'fuel', 1);
             break;
           case 'adapt':
             need(
@@ -1209,7 +1322,10 @@ function applyAction(old: Run, a: Action): Run {
         a.floor! <= 10,
       '电梯只能向上，或重试当前层',
     );
-    need(s.supply >= 1 && s.stamina >= 12, '出勤需 1 补给和至少 12 精力');
+    need(
+      itemCount(s, 'supply') >= 1 && s.stamina >= 12,
+      '出勤需 1 补给和至少 12 精力',
+    );
     need(playerCards(s).length > 0, '请至少上阵一张卡');
     planBots(s);
     s.departureFloor = checkpoint(s);
@@ -1223,7 +1339,7 @@ function applyAction(old: Run, a: Action): Run {
       currentFloor(s).routeVersion = 3;
     }
     s.used = true;
-    s.supply--;
+    spendItem(s, 'supply');
     s.stamina -= 4;
     s.phase = 'floor';
     s.node = 0;
@@ -1262,6 +1378,12 @@ function applyAction(old: Run, a: Action): Run {
     need(x, '这件物资已被拿走');
     need(unlockedItem(s, x.id), '电梯升级后可识别这类物资');
     need(!a.to || ['bag', 'safe'].includes(a.to), '只能拾取到随身容器');
+    if (x.type === 'resource' && ['material', 'power'].includes(x.id)) {
+      s[x.id as 'material' | 'power'] += x.amount;
+      floor.stock = floor.stock.filter((i) => i.uid !== x.uid);
+      say(s, `取得${itemName(x)} ×${x.amount}`);
+      return s;
+    }
     s.items.push({
       ...x,
       zone: a.to ?? 'bag',
@@ -1286,7 +1408,7 @@ function applyAction(old: Run, a: Action): Run {
       s.clears.push(s.floor);
       currentFloor(s).cleared = true;
       s.material += 4 + Math.ceil(s.floor / 2);
-      s.supply += 2;
+      grantItem(s, 'supply', 2);
     }
     deposit(s);
     finishBots(s);
@@ -1405,8 +1527,11 @@ function applyAction(old: Run, a: Action): Run {
   if (a.type === 'rest') {
     need(node === 'rest', '当前不是休整点');
     if (a.choice === 1) {
-      need(s.level >= 2 && s.medicine > 0, '需要 Lv.2 与 1 药品');
-      s.medicine--;
+      need(
+        s.level >= 2 && itemCount(s, 'medicine') > 0,
+        '需要 Lv.2 与携带 1 医疗包',
+      );
+      spendItem(s, 'medicine');
       s.stamina = Math.min(100, s.stamina + 25);
     } else s.stamina = Math.min(100, s.stamina + 8);
     s.node++;

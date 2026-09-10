@@ -9,12 +9,12 @@ export function cardSpecial(card: FighterCard) {
   const q = card.quality;
   const descriptions: Record<string, string> = {
     knife: `每第3次攻击追加 ${q === 2 ? 12 : 6} 伤害。`,
-    wire: `潮湿时每第3次发动，给同路另一张牌充能 ${q === 2 ? 2 : 1} 秒。`,
-    bottle: `潮湿时每第3次发动，额外治疗 ${q === 2 ? 25 : 15}。`,
-    shelter: '同路其他牌免受寒冷与强风的冷却惩罚。',
-    bell: '强风时充能同路全部其他牌，自身冷却延长 1 秒。',
-    brick: `炎热时每第3次攻击追加 ${q === 2 ? 30 : 18} 伤害。`,
-    box: `寒冷时溢出治疗转为最多 ${q === 2 ? 20 : 12} 护盾。`,
+    wire: `每第3次发动，给同路另一张牌充能 ${q === 2 ? 2 : 1} 秒。`,
+    bottle: `每第3次发动，额外治疗 ${q === 2 ? 25 : 15}。`,
+    shelter: `同路其他牌护甲 +${q === 2 ? 20 : 10}。`,
+    bell: '充能同路全部其他牌，自身冷却延长 1 秒。',
+    brick: `每第3次攻击追加 ${q === 2 ? 30 : 18} 伤害。`,
+    box: `溢出治疗转为最多 ${q === 2 ? 20 : 12} 护盾。`,
   };
   if (card.id === 'coil')
     return (
@@ -121,7 +121,7 @@ export default function CardFace({
             : `${Math.ceil(health ?? cardMaxHp(card))} / ${cardMaxHp(card)}`}
         </span>
       </div>
-      <span className="ed-enhance">Lv-{card.level}</span>
+      <span className="ed-enhance">Lv {card.level}</span>
       <strong className="ed-card-name">{c.name}</strong>
       <div className="ed-special-copy">{cardSpecial(card)}</div>
       <span

@@ -5,7 +5,11 @@ import { useState, useEffect, useMemo, useRef, useCallback } from 'react';
 import BattleEffects from './battle-effects';
 import CardFace from './card-face';
 import CardDetail from './card-detail';
-import CargoGrid, { CargoProvider, CarryButton } from './cargo-grid';
+import CargoGrid, {
+  CargoProvider,
+  CarryButton,
+  BoardCargoButton,
+} from './cargo-grid';
 import CostButton from './cost-button';
 import ElevatorRoom from './elevator-room';
 import {
@@ -16,13 +20,8 @@ import {
   ArrowRight,
   Heart,
   Zap,
-  Package,
   Backpack,
   Shield,
-  Flame,
-  CloudRain,
-  Snowflake,
-  CloudFog,
   BedDouble,
   Wrench,
   Radio,
@@ -40,7 +39,6 @@ import {
   Store,
   Check,
   ChevronRight,
-  Box,
 } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import {
@@ -57,18 +55,16 @@ import {
   SAVE_KEY,
   RARITY,
   QUALITY,
-  WEATHER,
   FACILITY,
   itemName,
   volume,
   bagCap,
-  openCells,
   moduleUsed,
   currentFloor,
   currentNode,
   nodeName,
-  weatherAt,
-  layoutAt,
+  itemCount,
+  openCells,
   searchCost,
   eventAt,
   nodeTitle,
@@ -90,12 +86,7 @@ import type { Run, Action, Zone, Item } from '@/lib/demo-engine';
 import { simulateDuel, armorOf } from '@/lib/demo-combat';
 import type { FighterCard, CombatFrame } from '@/lib/demo-combat';
 import { cardDef } from '@/lib/prototype-v04';
-import { terrainFor } from '@/lib/prototype-v03';
 import './demo.css';
-function WeatherIcon({ index }: { index: number }) {
-  const C = [CloudRain, Snowflake, CloudFog, Flame][index];
-  return <C size={20} />;
-}
 const zoneName: Record<Zone, string> = {
   bag: '随身背包',
   safe: '安全容器',
@@ -126,21 +117,40 @@ export default function Demo() {
     } | null>(null),
     [settings, setSettings] = useState(false),
     [sleepPrompt, setSleepPrompt] = useState(false),
+    [sleeping, setSleeping] = useState(false),
+    [news, setNews] = useState(false),
     [help, setHelp] = useState(false),
     [reset, setReset] = useState(false);
   const [cursor, setCursor] = useState(0),
     [playing, setPlaying] = useState(true),
     [speed, setSpeed] = useState(1);
+  const baseInspect =
+    run.phase === 'base' && ['inventory', 'identify'].includes(tab);
   const fileRef = useRef<HTMLInputElement>(null);
+  useEffect(() => {
+    if (!sleeping) return;
+    const t = setTimeout(() => {
+      setSleeping(false);
+      setNews(true);
+    }, 2200);
+    return () => clearTimeout(t);
+  }, [sleeping]);
   const hoverClose = useRef<ReturnType<typeof setTimeout> | null>(null);
   const keepInspection = () => {
     if (hoverClose.current) clearTimeout(hoverClose.current);
   };
   const hideInspection = () => {
+    if (baseInspect) return;
     keepInspection();
     hoverClose.current = setTimeout(() => setInspection(null), 220);
   };
-  const showInspection = (uid: string, source: string, target: HTMLElement) => {
+  const showInspection = (
+    uid: string,
+    source: string,
+    target: HTMLElement,
+    clicked = false,
+  ) => {
+    if (baseInspect && !clicked) return;
     keepInspection();
     const rect = target.getBoundingClientRect();
     const width = Math.min(360, window.innerWidth - 24);
@@ -174,6 +184,7 @@ export default function Demo() {
   }, []);
   const dispatch = useCallback(
     (a: Action) => {
+      if (sleeping) return null;
       try {
         const next = act(ref.current, a);
         commit(next);
@@ -195,7 +206,7 @@ export default function Demo() {
         return null;
       }
     },
-    [commit],
+    [commit, sleeping],
   );
   // oxlint-disable-next-line react/react-compiler -- Restore explicitly device-local game state after hydration.
   useEffect(() => {
@@ -236,8 +247,7 @@ export default function Demo() {
   const frame = battle?.frames[Math.min(cursor, battle.frames.length - 1)];
   const viewed = run.items.find((x) => x.uid === selected);
   const f = currentFloor(run),
-    w = weatherAt(run),
-    terrain = terrainFor(w, layoutAt(run));
+    terrain = ['上路', '中路', '下路'];
   const resetRun = () => {
     commit(newRun(crypto.getRandomValues(new Uint32Array(1))[0]));
     try {
@@ -298,8 +308,10 @@ export default function Demo() {
                   return null;
                 if (!card)
                   return (
-                    <button
+                    <BoardCargoButton
                       key={at}
+                      at={at}
+                      cargoEnabled={!fr && !enemy}
                       style={{ gridColumn: col + 1 }}
                       className={
                         'ed-slot ' + (locked.includes(at) ? 'locked' : '')
@@ -324,13 +336,16 @@ export default function Demo() {
                           ＋<small>{at + 1}</small>
                         </span>
                       )}
-                    </button>
+                    </BoardCargoButton>
                   );
                 const c = cardDef(card.id),
                   side = enemy ? 1 : 0;
                 return (
-                  <button
+                  <BoardCargoButton
                     key={card.uid}
+                    at={at}
+                    item={run.items.find((x) => x.uid === card.uid)}
+                    cargoEnabled={!fr && !enemy}
                     data-entity={card.uid}
                     className={
                       (fr?.cards[card.uid]?.reviveAt != null
@@ -392,7 +407,7 @@ export default function Demo() {
                       }
                       speed={speed}
                     />
-                  </button>
+                  </BoardCargoButton>
                 );
               })}
             </div>
@@ -407,6 +422,13 @@ export default function Demo() {
         data-entity={`host-${side}`}
         className={'ed-actor ' + (side ? 'enemy' : '')}
       >
+        <div className="ed-host-hitboxes" aria-label="宿主三路受击区域">
+          {[0, 1, 2].map((lane) => (
+            <span key={lane} data-entity={`host-${side}-lane-${lane}`}>
+              {['上路', '中路', '下路'][lane]}
+            </span>
+          ))}
+        </div>
         <div className="ed-avatar">
           <span>{side ? '◈' : '◉'}</span>
           <small>{side ? 'SUBJECT' : 'YOU'}</small>
@@ -496,22 +518,28 @@ export default function Demo() {
   }
   function inventory() {
     return (
-      <>
-        <div className="ed-section-title">
-          <h2>行装与构筑</h2>
-          <p>悬停查看详情与操作，拖动整理，固定横向占格。</p>
+      <section className="ed-build-workspace">
+        <div className="ed-build-top">
+          <section className="ed-panel ed-build-board">
+            <h3>{tab === 'identify' ? '鉴定台 · 初始设施' : '上阵卡组'}</h3>
+            <p>拖拽卡牌上阵或移回背包；单击查看右侧详情。</p>
+            <div className="ed-board-scroll">{cardGrid(playerCards(run))}</div>
+          </section>
+          <aside className="ed-panel ed-fixed-details ed-inspect-dialog">
+            {inspected ? (
+              itemDetailBody()
+            ) : (
+              <p>左键单击物品或卡牌，在这里查看详情、鉴定和强化。</p>
+            )}
+          </aside>
         </div>
-        <section className="ed-panel">
-          <h3>上阵卡组</h3>
-          {cardGrid(playerCards(run))}
-        </section>
-        <div className="ed-cargo-columns">
+        <div className="ed-build-storage">
           {grid('bag')}
           {grid('safe')}
+          {grid('warehouse')}
+          {run.phase === 'floor' && run.interaction === 'search' && loot()}
         </div>
-        {grid('warehouse')}
-        {run.phase === 'floor' && run.interaction === 'search' && loot()}
-      </>
+      </section>
     );
   }
   function loot() {
@@ -614,13 +642,12 @@ export default function Demo() {
               )}
               {run.level >= 4 && (
                 <p>
-                  电力与金币 → 种植架 →
-                  补给。观测台免费预报明天天气，帮助选择下一条路线。
+                  电力与金币 → 种植架 → 密封补给物品，可用于出勤、睡眠和食用。
                 </p>
               )}
               {run.level >= 5 && (
                 <p>
-                  电力与金币 → 地形准备 → 下次出勤减少搜索消耗 →
+                  电力与金币 → 探索整备 → 下次出勤减少搜索消耗 →
                   留出更多探索余量。
                 </p>
               )}
@@ -647,7 +674,7 @@ export default function Demo() {
                 鉴定电荷 <b>{run.charges} / 4</b>
               </span>
               <span className={run.level < 5 ? 'ed-hidden' : ''}>
-                地形适应 <b>{run.adapted ? '已准备' : '未准备'}</b>
+                探索整备 <b>{run.adapted ? '已准备' : '未准备'}</b>
               </span>
             </div>
             <div className="ed-actions">
@@ -667,32 +694,6 @@ export default function Demo() {
                 </CostButton>
               )}
             </div>
-            {run.forecast && (
-              <p className="ed-forecast">
-                <Radio size={18} />
-                明天天气：
-                {
-                  WEATHER[
-                    weatherAt(
-                      run,
-                      Math.min(10, Math.max(1, run.floor + 1)),
-                      run.day + 1,
-                    )
-                  ].name
-                }
-                。
-                {
-                  WEATHER[
-                    weatherAt(
-                      run,
-                      Math.min(10, Math.max(1, run.floor + 1)),
-                      run.day + 1,
-                    )
-                  ].explore
-                }
-                各楼层的具体预报见楼层选择。
-              </p>
-            )}
           </section>
         </div>
         <div
@@ -732,12 +733,17 @@ export default function Demo() {
                         }
                         className={used ? '' : 'ed-primary'}
                         disabled={used}
-                        onClick={() => dispatch({ type: 'facility', id: f.id })}
+                        onClick={() =>
+                          f.id === 'identify'
+                            ? setTab('identify')
+                            : dispatch({ type: 'facility', id: f.id })
+                        }
                       >
                         {used ? <Check size={15} /> : <Wrench size={15} />}{' '}
                         {used ? '今日已完成' : '使用设施'}
                       </CostButton>
                       <button
+                        disabled={f.id === 'identify'}
                         onClick={() => dispatch({ type: 'remove', id: f.id })}
                       >
                         拆除 +{Math.floor(f.cost / 2)}
@@ -775,9 +781,7 @@ export default function Demo() {
         </div>
         <div className="ed-floor-map">
           {run.floors.map((fl) => {
-            const locked = fl.id < checkpoint(run),
-              weather = weatherAt(run, fl.id),
-              forecast = weatherAt(run, fl.id, run.day + 1);
+            const locked = fl.id < checkpoint(run);
             return (
               <button
                 key={fl.id}
@@ -796,22 +800,12 @@ export default function Demo() {
                   <h3>{fl.name}</h3>
                   <p>{fl.detail}</p>
                   <div className="ed-tags">
-                    <span>
-                      <WeatherIcon index={weather} />
-                      {WEATHER[weather].name}
-                    </span>
                     <span>物资 {fl.stock.length}</span>
                     <span>挑战 {16 + fl.id * 5}</span>
                     {fl.visitors.length > 0 && (
                       <span>已有 {fl.visitors.length} 人触达</span>
                     )}
                   </div>
-                  {run.forecast && (
-                    <small>
-                      明日：{WEATHER[forecast].name} /{' '}
-                      {WEATHER[forecast].explore}
-                    </small>
-                  )}
                 </div>
                 <span className="ed-floor-enter">
                   {locked
@@ -891,10 +885,6 @@ export default function Demo() {
             <h1>{f.name}</h1>
             {!active && <p>{f.detail}</p>}
             <div className="ed-tags">
-              <span>
-                <WeatherIcon index={w} />
-                {WEATHER[w].name}
-              </span>
               <span>{run.objective ? '主目标完成' : '尚未提交通关'}</span>
             </div>
           </div>
@@ -978,8 +968,10 @@ export default function Demo() {
                 <>
                   <p>
                     {nodeTitle(run)}
-                    里还有未被带走的物资。当前天气下，打开搜查区域需要{' '}
-                    {searchCost(run)} 精力。
+                    里还有未被带走的物资。打开搜查区域需要 {searchCost(
+                      run,
+                    )}{' '}
+                    精力。
                   </p>
                   <div className="ed-actions">
                     <button
@@ -1231,10 +1223,7 @@ export default function Demo() {
                     : '第三阶段 · 最终 BOSS'}
             </h2>
           </div>
-          <span>
-            <WeatherIcon index={w} /> {WEATHER[w].name} ·{' '}
-            {frame.time.toFixed(2)}s
-          </span>
+          <span>{frame.time.toFixed(2)}s</span>
         </div>
         <section
           className="ed-battle-scroll"
@@ -1290,6 +1279,9 @@ export default function Demo() {
           <span>
             双方前排朝中央 · 命中卡牌 → 护甲 → 卡牌生命 / 幽魂 · 空路直击
           </span>
+          <small>
+            空间坍缩已停用。当前测试上限 60 秒，超时暂按宿主剩余生命判胜。
+          </small>
         </div>
         <details className="ed-visual-guide">
           <summary>卡牌与弹道图例</summary>
@@ -1325,6 +1317,9 @@ export default function Demo() {
           >
             <Trophy size={30} />
             <div>
+              {battle.timedOut && (
+                <p>已到 60 秒测试上限，本次按双方宿主剩余生命判定结果。</p>
+              )}
               <h2>
                 {battle.winner === 0
                   ? '你还活着。'
@@ -1437,10 +1432,17 @@ export default function Demo() {
       )?.find((x) => x.uid === inspection.uid)
     : undefined;
   const inspectItem = (item: Item, source: string, target: HTMLElement) => {
+    if (!baseInspect) showInspection(item.uid, source, target);
+  };
+  const selectItem = (item: Item, source: string, target: HTMLElement) => {
     setSelected(item.uid);
-    showInspection(item.uid, source, target);
+    showInspection(item.uid, source, target, true);
   };
   const placeItem = (item: Item, from: string, to: string, slot: number) => {
+    if (to === 'board') {
+      dispatch({ type: 'move', id: item.uid, to: 'board', at: slot });
+      return;
+    }
     if (to === 'loot') {
       if (from === 'loot')
         dispatch({
@@ -1466,10 +1468,192 @@ export default function Demo() {
     if (next && !next.items.some((x) => x.uid === inspection?.uid))
       setInspection(null);
   };
+  function itemDetailBody() {
+    return (
+      <>
+        {' '}
+        <h3>{inspected && itemName(inspected)}</h3>
+        <p>
+          {inspected?.volume} 格 ·{' '}
+          {inspected?.type === 'card'
+            ? '卡牌'
+            : inspected?.type === 'physical'
+              ? '未鉴定实体'
+              : '物品'}
+        </p>
+        {inspected && (
+          <>
+            {inspected.type === 'card' ? (
+              <CardDetail
+                card={{
+                  ...inspected,
+                  at: inspected.at ?? 0,
+                  rarity: inspected.rarity ?? 0,
+                }}
+              />
+            ) : (
+              <p>
+                {inspected.type === 'physical'
+                  ? '带回电梯免费鉴定后成为卡牌。'
+                  : inspected.id === 'apple'
+                    ? '食用恢复 25 精力。'
+                    : inspected.id === 'scanner'
+                      ? `携带后可在楼层鉴定实体。剩余 ${run.charges} 电荷。`
+                      : inspected.id === 'lighter'
+                        ? '可以用于特定事件。'
+                        : ((
+                            {
+                              supply:
+                                '密封补给：出勤或睡眠消耗 1；携带时可食用恢复 25 精力。',
+                              fuel: '燃料罐：发电机消耗 1 罐产生 8 电力。',
+                              medicine:
+                                '医疗包：使用恢复 35 精力，或用于医疗设施与休整。',
+                              scrap:
+                                '废料束：回收台消耗 2 束换取 3 金币，也可加工燃料。',
+                            } as Record<string, string>
+                          )[inspected.id] ?? `数量 ${inspected.amount}。`)}
+              </p>
+            )}
+            <div
+              className={
+                'ed-actions ' + (run.phase === 'combat' ? 'ed-hidden' : '')
+              }
+            >
+              {inspection?.source === 'shop' ? (
+                <CostButton
+                  cost={offerPrice(inspected)}
+                  onClick={() =>
+                    itemAction({ type: 'trade', id: inspected.uid })
+                  }
+                >
+                  购买
+                </CostButton>
+              ) : inspection?.source === 'loot' ? (
+                <button
+                  onClick={() =>
+                    itemAction({ type: 'pickup', id: inspected.uid })
+                  }
+                >
+                  拾取到背包
+                </button>
+              ) : (
+                <>
+                  {inspected.type === 'physical' && (
+                    <button
+                      disabled={run.phase !== 'base' && run.level < 3}
+                      onClick={() =>
+                        itemAction({ type: 'scan', id: inspected.uid })
+                      }
+                    >
+                      {run.phase === 'base' ? '免费鉴定' : '鉴定 · 1 电荷'}
+                    </button>
+                  )}
+                  {inspected.type === 'card' && (
+                    <>
+                      {run.phase === 'base' && run.level >= 2 && (
+                        <>
+                          <CostButton
+                            cost={3 + inspected.level * 2}
+                            disabled={inspected.level >= 5}
+                            onClick={() =>
+                              itemAction({
+                                type: 'grow',
+                                id: inspected.uid,
+                              })
+                            }
+                          >
+                            强化 +1
+                          </CostButton>
+                          <CostButton
+                            cost={5 + inspected.quality * 4}
+                            disabled={inspected.quality >= 2}
+                            onClick={() =>
+                              itemAction({
+                                type: 'refine',
+                                id: inspected.uid,
+                              })
+                            }
+                          >
+                            提升品质
+                          </CostButton>
+                        </>
+                      )}
+                    </>
+                  )}
+                  {['apple', 'supply', 'medicine'].includes(inspected.id) && (
+                    <button
+                      onClick={() =>
+                        itemAction({ type: 'consume', id: inspected.uid })
+                      }
+                    >
+                      使用 · 恢复 {inspected.id === 'medicine' ? 35 : 25} 精力
+                    </button>
+                  )}
+                  {(['bag', 'safe', 'warehouse'] as Zone[])
+                    .filter(
+                      (z) =>
+                        z !== inspected.zone &&
+                        (run.phase === 'base' || z !== 'warehouse'),
+                    )
+                    .map((to) => (
+                      <button
+                        key={to}
+                        onClick={() =>
+                          itemAction({
+                            type: 'move',
+                            id: inspected.uid,
+                            to,
+                          })
+                        }
+                      >
+                        移至{zoneName[to]}
+                      </button>
+                    ))}
+
+                  {run.interaction === 'trade' &&
+                    inspected.zone !== 'board' && (
+                      <button
+                        onClick={() =>
+                          itemAction({ type: 'sell', id: inspected.uid })
+                        }
+                      >
+                        出售 +{sellPrice(inspected)} 金币
+                      </button>
+                    )}
+                  {inspected.zone !== 'board' &&
+                    (run.phase !== 'base' || run.level >= 2) && (
+                      <button
+                        onClick={() =>
+                          itemAction({
+                            type: run.phase === 'base' ? 'recycle' : 'drop',
+                            id: inspected.uid,
+                          })
+                        }
+                      >
+                        {run.phase === 'base' ? '分解换金币' : '丢弃'}
+                      </button>
+                    )}
+                </>
+              )}
+              {run.phase !== 'combat' && (
+                <CarryButton
+                  item={inspected}
+                  from={inspection!.source}
+                  onCarry={() => setInspection(null)}
+                />
+              )}
+            </div>
+          </>
+        )}
+      </>
+    );
+  }
   return (
     <CargoProvider
+      onLoot={(item) => dispatch({ type: 'pickup', id: item.uid })}
       onPlace={placeItem}
       onInspect={inspectItem}
+      onSelect={selectItem}
       onDismiss={hideInspection}
     >
       <main
@@ -1504,6 +1688,7 @@ export default function Demo() {
                 used={false}
                 level={1}
                 onTable={() => {}}
+                onIdentify={() => {}}
                 onDoor={() => {}}
                 onBed={() => {}}
                 onTerminal={() => {}}
@@ -1557,46 +1742,34 @@ export default function Demo() {
               {[
                 ['生命', run.quota, Heart],
                 ['精力', run.stamina, Leaf],
-                ['补给', run.supply, Package],
                 ['金币', run.material, Coins],
                 ['电力', run.power, Zap],
-                ['燃料', run.fuel, Flame],
-                ['药品', run.medicine, Heart],
-                ['废料', run.scrap, Box],
-              ]
-                .filter(
-                  ([name]) =>
-                    ['生命', '精力', '补给'].includes(String(name)) ||
-                    (run.level >= 2 &&
-                      ['金币', '药品', '废料'].includes(String(name))) ||
-                    run.level >= 3,
-                )
-                .map(([name, n, I]) => {
-                  const C = I as LucideIcon;
-                  return (
-                    <div
-                      key={String(name)}
-                      title={
-                        (
-                          {
-                            生命: '有限的生存次数。睡眠消耗 1；幸存者 AI、BOSS 战败或主动救援按回收费用扣除。',
-                            精力: '出勤、探索和撤离需要精力；睡眠、苹果和药品可以恢复。',
-                            补给: '出勤消耗 1；睡眠消耗 1 并恢复更多精力。',
-                            金币: '购买物品、升级电梯、建造设施和培养卡牌。',
-                            电力: '设备充能、种植和地形准备。战斗能量独立计算。',
-                            燃料: '发电机将 1 燃料转为 8 电力。',
-                            药品: '医疗站或休整点消耗药品恢复精力。',
-                            废料: '回收成金币，或在储藏架制成燃料。',
-                          } as Record<string, string>
-                        )[String(name)]
-                      }
-                    >
-                      <C size={16} />
-                      <span>{String(name)}</span>
-                      <b>{String(n)}</b>
-                    </div>
-                  );
-                })}
+              ].map(([name, n, I]) => {
+                const C = I as LucideIcon;
+                return (
+                  <div
+                    key={String(name)}
+                    title={
+                      (
+                        {
+                          生命: '有限的生存次数。睡眠消耗 1；幸存者 AI、BOSS 战败或主动救援按回收费用扣除。',
+                          精力: '出勤、探索和撤离需要精力；睡眠、苹果和药品可以恢复。',
+                          补给: '出勤消耗 1；睡眠消耗 1 并恢复更多精力。',
+                          金币: '购买物品、升级电梯、建造设施和培养卡牌。',
+                          电力: '设备充能、种植和探索整备。战斗能量独立计算。',
+                          燃料: '发电机将 1 燃料转为 8 电力。',
+                          药品: '医疗站或休整点消耗药品恢复精力。',
+                          废料: '回收成金币，或在储藏架制成燃料。',
+                        } as Record<string, string>
+                      )[String(name)]
+                    }
+                  >
+                    <C size={16} />
+                    <span>{String(name)}</span>
+                    <b>{String(n)}</b>
+                  </div>
+                );
+              })}
             </div>
             <div className="ed-shell">
               <aside className="ed-sidebar">
@@ -1638,7 +1811,7 @@ export default function Demo() {
                   })}
                 </nav>
               </aside>
-              <div className="ed-main">
+              <div className={`ed-main view-${tab}`}>
                 {run.phase === 'base' && tab !== 'base' && (
                   <div className="ed-terminal-nav">
                     <span>
@@ -1720,6 +1893,7 @@ export default function Demo() {
                     used={run.used}
                     level={run.level}
                     onTable={() => setTab('inventory')}
+                    onIdentify={() => setTab('identify')}
                     onDoor={() => setTab('map')}
                     onBed={() => setSleepPrompt(true)}
                     onTerminal={() => setTab('upgrades')}
@@ -1730,7 +1904,7 @@ export default function Demo() {
                   map()
                 ) : tab === 'floor' ? (
                   floor()
-                ) : tab === 'inventory' ? (
+                ) : tab === 'inventory' || tab === 'identify' ? (
                   inventory()
                 ) : tab === 'survivors' ? (
                   survivors()
@@ -1748,7 +1922,7 @@ export default function Demo() {
             </div>
           </>
         )}
-        {inspected && inspection && (
+        {inspected && inspection && !baseInspect && (
           <dialog
             open
             className="ed-item-tooltip ed-inspect-dialog"
@@ -1765,191 +1939,7 @@ export default function Demo() {
             onFocusCapture={keepInspection}
             onBlurCapture={hideInspection}
           >
-            <h3>{inspected && itemName(inspected)}</h3>
-            <p>
-              {inspected?.volume} 格 ·{' '}
-              {inspected?.type === 'card'
-                ? '卡牌'
-                : inspected?.type === 'physical'
-                  ? '未鉴定实体'
-                  : '物品'}
-            </p>
-            {inspected && (
-              <>
-                {inspected.type === 'card' ? (
-                  <CardDetail
-                    card={{
-                      ...inspected,
-                      at: inspected.at ?? 0,
-                      rarity: inspected.rarity ?? 0,
-                    }}
-                  />
-                ) : (
-                  <p>
-                    {inspected.type === 'physical'
-                      ? '带回电梯免费鉴定后成为卡牌。'
-                      : inspected.id === 'apple'
-                        ? '食用恢复 25 精力。'
-                        : inspected.id === 'scanner'
-                          ? `携带后可在楼层鉴定实体。剩余 ${run.charges} 电荷。`
-                          : inspected.id === 'lighter'
-                            ? '可以用于特定事件。'
-                            : `数量 ${inspected.amount}，带回电梯后存入库存。`}
-                  </p>
-                )}
-                <div
-                  className={
-                    'ed-actions ' + (run.phase === 'combat' ? 'ed-hidden' : '')
-                  }
-                >
-                  {inspection?.source === 'shop' ? (
-                    <CostButton
-                      cost={offerPrice(inspected)}
-                      onClick={() =>
-                        itemAction({ type: 'trade', id: inspected.uid })
-                      }
-                    >
-                      购买
-                    </CostButton>
-                  ) : inspection?.source === 'loot' ? (
-                    <button
-                      onClick={() =>
-                        itemAction({ type: 'pickup', id: inspected.uid })
-                      }
-                    >
-                      拾取到背包
-                    </button>
-                  ) : (
-                    <>
-                      {inspected.type === 'physical' && (
-                        <button
-                          disabled={run.phase !== 'base' && run.level < 3}
-                          onClick={() =>
-                            itemAction({ type: 'scan', id: inspected.uid })
-                          }
-                        >
-                          {run.phase === 'base' ? '免费鉴定' : '鉴定 · 1 电荷'}
-                        </button>
-                      )}
-                      {inspected.type === 'card' && (
-                        <>
-                          <select
-                            aria-label="选择上阵位置"
-                            value=""
-                            onChange={(e) =>
-                              itemAction({
-                                type: 'move',
-                                id: inspected.uid,
-                                to: 'board',
-                                at: Number(e.target.value),
-                              })
-                            }
-                          >
-                            <option value="" disabled>
-                              上阵到…
-                            </option>
-                            {openCells(run).map((at) => (
-                              <option key={at} value={at}>
-                                {['上', '中', '下'][Math.floor(at / 3)]}路{' '}
-                                {(at % 3) + 1}号位
-                              </option>
-                            ))}
-                          </select>
-                          {run.phase === 'base' && run.level >= 2 && (
-                            <>
-                              <CostButton
-                                cost={3 + inspected.level * 2}
-                                disabled={inspected.level >= 5}
-                                onClick={() =>
-                                  itemAction({
-                                    type: 'grow',
-                                    id: inspected.uid,
-                                  })
-                                }
-                              >
-                                强化 +1
-                              </CostButton>
-                              <CostButton
-                                cost={5 + inspected.quality * 4}
-                                disabled={inspected.quality >= 2}
-                                onClick={() =>
-                                  itemAction({
-                                    type: 'refine',
-                                    id: inspected.uid,
-                                  })
-                                }
-                              >
-                                提升品质
-                              </CostButton>
-                            </>
-                          )}
-                        </>
-                      )}
-                      {inspected.id === 'apple' && (
-                        <button
-                          onClick={() =>
-                            itemAction({ type: 'consume', id: inspected.uid })
-                          }
-                        >
-                          食用
-                        </button>
-                      )}
-                      {(['bag', 'safe', 'warehouse'] as Zone[])
-                        .filter(
-                          (z) =>
-                            z !== inspected.zone &&
-                            (run.phase === 'base' || z !== 'warehouse'),
-                        )
-                        .map((to) => (
-                          <button
-                            key={to}
-                            onClick={() =>
-                              itemAction({
-                                type: 'move',
-                                id: inspected.uid,
-                                to,
-                              })
-                            }
-                          >
-                            移至{zoneName[to]}
-                          </button>
-                        ))}
-
-                      {run.interaction === 'trade' &&
-                        inspected.zone !== 'board' && (
-                          <button
-                            onClick={() =>
-                              itemAction({ type: 'sell', id: inspected.uid })
-                            }
-                          >
-                            出售 +{sellPrice(inspected)} 金币
-                          </button>
-                        )}
-                      {inspected.zone !== 'board' &&
-                        (run.phase !== 'base' || run.level >= 2) && (
-                          <button
-                            onClick={() =>
-                              itemAction({
-                                type: run.phase === 'base' ? 'recycle' : 'drop',
-                                id: inspected.uid,
-                              })
-                            }
-                          >
-                            {run.phase === 'base' ? '分解换金币' : '丢弃'}
-                          </button>
-                        )}
-                    </>
-                  )}
-                  {run.phase !== 'combat' && (
-                    <CarryButton
-                      item={inspected}
-                      from={inspection!.source}
-                      onCarry={() => setInspection(null)}
-                    />
-                  )}
-                </div>
-              </>
-            )}
+            {itemDetailBody()}
           </dialog>
         )}
         <Dialog open={settings} onOpenChange={setSettings}>
@@ -1991,6 +1981,51 @@ export default function Demo() {
             </div>
           </DialogContent>
         </Dialog>
+        {sleeping && (
+          <output className="ed-sleep-film">
+            <i />
+            <p>电梯缓缓熄灯</p>
+            <b>DAY {run.day}</b>
+            <small>门外的世界仍在继续……</small>
+          </output>
+        )}
+        <Dialog open={news && !sleeping} onOpenChange={setNews}>
+          <DialogContent className="ed-dialog ed-daily-news">
+            <DialogTitle>
+              昨日幸存者速报 · 第 {run.dailyReport?.day} 天
+            </DialogTitle>
+            <DialogDescription>
+              电梯系统已汇总其他 99 名参与者的动向。
+            </DialogDescription>
+            <p>
+              仍存活 {run.bots.filter((b) => b.alive).length} 人 · 昨日阵亡{' '}
+              {run.dailyReport?.rows.filter((b) => b.wasAlive && !b.alive)
+                .length ?? 0}{' '}
+              人
+            </p>
+            <div className="ed-news-list">
+              {[...(run.dailyReport?.rows ?? [])]
+                .sort(
+                  (a, b) =>
+                    Number(b.wasAlive && !b.alive) -
+                      Number(a.wasAlive && !a.alive) || b.floor - a.floor,
+                )
+                .map((b) => (
+                  <article key={b.id}>
+                    <b>
+                      #{String(b.id).padStart(3, '0')} ·{' '}
+                      {b.alive ? '存活' : '阵亡'}
+                    </b>
+                    <span>
+                      {b.previousFloor}F → {b.floor}F
+                    </span>
+                    <p>{b.status}</p>
+                  </article>
+                ))}
+            </div>
+            <button onClick={() => setNews(false)}>开始新的一天</button>
+          </DialogContent>
+        </Dialog>
         <Dialog open={sleepPrompt} onOpenChange={setSleepPrompt}>
           <DialogContent className="ed-dialog">
             <DialogTitle>让门外的世界再等一会儿。</DialogTitle>
@@ -1999,7 +2034,7 @@ export default function Demo() {
             </DialogDescription>
             <p>
               生命 −1。
-              {run.supply > 0
+              {itemCount(run, 'supply', false) > 0
                 ? '消耗 1 补给，恢复 50 精力。'
                 : '没有补给，仅恢复 15 精力。'}
               {!run.used && '今天尚未出勤，睡眠会放弃今天的出发机会。'}
@@ -2007,8 +2042,11 @@ export default function Demo() {
             <button
               className="ed-primary"
               onClick={() => {
-                dispatch({ type: 'sleep' });
-                setSleepPrompt(false);
+                const next = dispatch({ type: 'sleep' });
+                if (next) {
+                  setSleepPrompt(false);
+                  setSleeping(true);
+                }
               }}
             >
               睡到明天
@@ -2020,7 +2058,7 @@ export default function Demo() {
             <DialogTitle>欢迎加入幸存者游戏</DialogTitle>
             <DialogDescription>
               100
-              名参与者，每人一部电梯。正常航行只能向上；未通关撤离返回原停靠点。高层奖励更多，但构筑与天气决定真正的难度。
+              名参与者，每人一部电梯。正常航行只能向上；未通关撤离返回原停靠点。高层奖励更多，合理的卡牌构筑能帮助你走得更远。
             </DialogDescription>
             <div className="ed-help">
               <h3>准备 → 出勤 → 撤离 → 成长</h3>
@@ -2046,11 +2084,11 @@ export default function Demo() {
               </p>
               <p>
                 伤害默认命中同路前排卡牌，空路直击宿主。卡牌拥有独立生命，归零进入幽魂，期间视为空格且不发动、不承受效果。复活时间为
-                首次 8 秒，每多死亡一次增加 2 秒（基础时间的
-                25%），本场独立累计，新战斗重置。
+                1/2/3 格对应初始 6/8/10 秒，每多死亡一次增加初始时间的
+                25%，本场独立累计，新战斗重置。
                 复活时满生命并重新冷却。减伤公式为原始伤害 × 100 ÷（100 +
-                护甲），之后扣卡牌生命；只有直击宿主才扣宿主护盾与生命。治疗、护盾仍给宿主。脉冲线圈明确攻击其他路后排；多格卡算一个完整目标。我方右侧为前排，敌方左侧为前排，双方前排在中央相对。40
-                秒后空间坍缩属于环境伤害，绕过卡牌护甲与宿主护盾。
+                护甲），之后扣卡牌生命；只有直击宿主才扣宿主护盾与生命。治疗、护盾仍给宿主。脉冲线圈明确攻击其他路后排；多格卡算一个完整目标。我方右侧为前排，敌方左侧为前排，双方前排在中央相对。空间坍缩停用，测试阶段
+                60 秒超时按宿主剩余生命判胜。
               </p>
             </div>
           </DialogContent>

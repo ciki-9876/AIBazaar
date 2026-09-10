@@ -5,6 +5,7 @@ type Props = {
   used: boolean;
   level: number;
   onTable: () => void;
+  onIdentify: () => void;
   onDoor: () => void;
   onBed: () => void;
   onTerminal: () => void;
@@ -94,6 +95,16 @@ export default function ElevatorRoom(p: Props) {
         </text>
       </svg>
       <div className="ed-room-grain" />
+      <button
+        className="ed-room-object ed-room-identify"
+        onClick={p.onIdentify}
+        aria-label="初始鉴定台，免费鉴定实体"
+      >
+        <i>⌑</i>
+        <span className="ed-object-label">
+          鉴定台<small>初始设施 · 免费鉴定</small>
+        </span>
+      </button>
       <div className="ed-room-whisper">
         <span>
           第 {String(p.day).padStart(2, '0')} 天 · 电梯 Lv.{p.level}

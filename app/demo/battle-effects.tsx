@@ -69,7 +69,8 @@ export default function BattleEffects({
           (frames[cursor].time - Number(element.dataset.launched)) * 1000,
         );
         element.getAnimations({ subtree: true }).forEach((animation) => {
-          if (element.dataset.frame !== String(cursor)) animation.currentTime = age;
+          if (element.dataset.frame !== String(cursor))
+            animation.currentTime = age;
           animation.playbackRate = speed;
           if (playing) animation.play();
           else animation.pause();
@@ -81,7 +82,10 @@ export default function BattleEffects({
     <div className="ed-projectiles" aria-hidden="true" ref={layer}>
       {shots.map((hit) => {
         const start = points[hit.sourceUid!],
-          end = points[hit.targetUid ?? `host-${hit.side}`];
+          end =
+            points[
+              hit.targetUid ?? `host-${hit.side}-lane-${hit.targetLane ?? 1}`
+            ];
         if (!start || !end) return null;
         const dx = end.x - start.x,
           dy = end.y - start.y,
@@ -119,7 +123,10 @@ export default function BattleEffects({
       {frame?.hits
         .filter((hit) => hit.sourceUid)
         .map((hit, i) => {
-          const end = points[hit.targetUid ?? `host-${hit.side}`];
+          const end =
+            points[
+              hit.targetUid ?? `host-${hit.side}-lane-${hit.targetLane ?? 1}`
+            ];
           return end ? (
             <div
               key={`impact-${frame.time}-${i}`}

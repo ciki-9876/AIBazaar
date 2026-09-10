@@ -1,6 +1,6 @@
 'use client';
 import { createContext, useContext, useEffect, useRef, useState } from 'react';
-import type { ReactNode, CSSProperties } from 'react';
+import type { ReactNode, CSSProperties, ButtonHTMLAttributes } from 'react';
 import { Layers, Package } from 'lucide-react';
 import { dimensions, layout, cells } from '@/lib/cargo-layout';
 import { itemName, offerPrice } from '@/lib/demo-engine';
@@ -20,7 +20,9 @@ type Context = {
   hover: { zone: string; slot: number } | null;
   start: (item: Item, from: string, x: number, y: number) => void;
   inspect: (item: Item, from: string, target: HTMLElement) => void;
+  select: (item: Item, from: string, target: HTMLElement) => void;
   dismiss: () => void;
+  loot: (item: Item) => void;
   pickup: (item: Item, from: string) => void;
   drop: (zone: string, slot: number) => void;
 };
@@ -30,11 +32,15 @@ export function CargoProvider({
   onPlace,
   onInspect,
   onDismiss,
+  onLoot,
+  onSelect,
 }: {
   children: ReactNode;
   onPlace: (item: Item, from: string, to: string, slot: number) => void;
   onInspect: (item: Item, from: string, target: HTMLElement) => void;
   onDismiss: () => void;
+  onLoot: (item: Item) => void;
+  onSelect: (item: Item, from: string, target: HTMLElement) => void;
 }) {
   const [drag, setDrag] = useState<Drag | null>(null),
     [hover, setHover] = useState<Context['hover']>(null);
@@ -127,7 +133,22 @@ export function CargoProvider({
           suppress.current = false;
           update({ item, from, x, y, startX: x, startY: y, moved: false });
         },
+        select: (item, from, target) => {
+          if (suppress.current) {
+            suppress.current = false;
+            return;
+          }
+          onSelect(item, from, target);
+        },
         dismiss: onDismiss,
+        loot: (item) => {
+          if (suppress.current) {
+            suppress.current = false;
+            return;
+          }
+          onDismiss();
+          onLoot(item);
+        },
         inspect: (item, from, target) => {
           if (suppress.current) {
             suppress.current = false;
@@ -249,7 +270,9 @@ export default function CargoGrid({
               onClick={(e) =>
                 ctx.drag?.keyboard
                   ? ctx.drop(zone, item.slot!)
-                  : ctx.inspect(item, zone, e.currentTarget)
+                  : zone === 'loot'
+                    ? ctx.loot(item)
+                    : ctx.select(item, zone, e.currentTarget)
               }
               aria-label={`${itemName(item)}，${item.volume} 格，悬停查看详情，拖动移动`}
             >
@@ -264,7 +287,7 @@ export default function CargoGrid({
                   ? `${offerPrice(item)} 金币`
                   : item.type === 'physical'
                     ? '未鉴定'
-                    : item.type === 'resource'
+                    : item.type === 'resource' || item.amount > 1
                       ? `×${item.amount}`
                       : `${item.volume} 格`}
               </small>
@@ -294,6 +317,42 @@ export function CarryButton({
       }}
     >
       拿起并选择格子
+    </button>
+  );
+}
+
+export function BoardCargoButton({
+  item,
+  at,
+  cargoEnabled,
+  onClick,
+  children,
+  ...props
+}: ButtonHTMLAttributes<HTMLButtonElement> & {
+  item?: Item;
+  at: number;
+  cargoEnabled: boolean;
+}) {
+  const ctx = useContext(CargoContext);
+  return (
+    <button
+      {...props}
+      data-cargo-zone={cargoEnabled ? 'board' : undefined}
+      data-cargo-slot={cargoEnabled ? at : undefined}
+      onPointerDown={(e) => {
+        if (cargoEnabled && item && e.button === 0 && !ctx.drag?.keyboard) {
+          ctx.start(item, 'board', e.clientX, e.clientY);
+          e.currentTarget.setPointerCapture(e.pointerId);
+        }
+      }}
+      onClick={(e) => {
+        if (cargoEnabled && ctx.drag?.keyboard) ctx.drop('board', at);
+        else if (cargoEnabled && item)
+          ctx.select(item, 'board', e.currentTarget);
+        else onClick?.(e);
+      }}
+    >
+      {children}
     </button>
   );
 }

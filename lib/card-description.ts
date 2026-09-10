@@ -78,7 +78,7 @@ export function describeCard(card: FighterCard) {
   if (c.id === 'shelter')
     weather.push({
       name: '寒冷 / 强风',
-      text: `${lock}同路其他卡牌免受环境冷却惩罚。`,
+      text: `${lock}同路其他卡牌护甲 +${q === 2 ? 20 : 10}。`,
     });
   if (c.id === 'bell')
     weather.push({
@@ -87,5 +87,11 @@ export function describeCard(card: FighterCard) {
     });
   if (card.rarity === 4)
     innate.push('奇迹回响：每第 3 次发动，追加一次 50% 主效果。');
-  return { role: CARD_ROLES[c.id], cd: c.cd, effects, innate, weather };
+  return {
+    role: CARD_ROLES[c.id],
+    cd: c.cd + (c.id === 'bell' && q > 0 ? 1 : 0),
+    effects,
+    innate: [...innate, ...weather.map((w) => w.text)],
+    weather: [] as { name: string; text: string }[],
+  };
 }

@@ -23,10 +23,11 @@ const ARMOR: Record<string, number> = {
 };
 export const armorOf = (card: Pick<FighterCard, 'id' | 'level' | 'quality'>) =>
   ARMOR[card.id] + card.quality * 5 + card.level * 2;
-export const REVIVE_BASE = 8;
+export const REVIVE_BASE = 4;
 export const REVIVE_DEATH_INCREASE = 0.25;
 export const reviveTimeOf = (_card: FighterCard, deaths = 1) =>
-  REVIVE_BASE * (1 + Math.max(0, deaths - 1) * REVIVE_DEATH_INCREASE);
+  (REVIVE_BASE + cardDef(_card.id).size * 2) *
+  (1 + Math.max(0, deaths - 1) * REVIVE_DEATH_INCREASE);
 export const cardMaxHp = (card: FighterCard) =>
   Math.round(
     (40 + cardDef(card.id).size * 15) * (1 + card.rarity * 0.15) +
@@ -95,6 +96,7 @@ export type Hit = {
   raw?: number;
   armor?: number;
   targetUid?: string;
+  targetLane?: number;
   targetName?: string;
   shieldAbsorbed?: number;
   healthLoss?: number;
@@ -123,6 +125,7 @@ export type Duel = {
   enemy: FighterCard[];
   maxHp: number[];
   weather: number;
+  weatherEnabled?: boolean;
   layout: number;
   name: string;
   kind: 'guardian' | 'survivor';
@@ -149,7 +152,10 @@ export function simulateDuel(d: Duel) {
   const cap = boards.map(
     (b) => 10 + (b.some((x) => x.id === 'battery') ? 6 : 0),
   );
-  const terrain = terrainFor(d.weather, d.layout);
+  const noWeather = d.weatherEnabled === false;
+  const terrain = noWeather
+    ? ['常态', '常态', '常态']
+    : terrainFor(d.weather, d.layout);
   const frames: CombatFrame[] = [];
   let pending: Projectile[] = [];
   let serial = 0;
@@ -183,7 +189,23 @@ export function simulateDuel(d: Duel) {
       if (shot.targetUid && cards[shot.targetUid]?.reviveAt != null) continue;
       if (hit.kind === 'damage') {
         const target = boards[hit.side].find((x) => x.uid === hit.targetUid);
-        hit.armor = target ? armorOf(target) : 0;
+        hit.armor = target
+          ? armorOf(target) +
+            (noWeather
+              ? Math.max(
+                  0,
+                  ...boards[hit.side]
+                    .filter(
+                      (c) =>
+                        alive(c) &&
+                        c.id === 'shelter' &&
+                        c.uid !== target.uid &&
+                        Math.floor(c.at / 3) === Math.floor(target.at / 3),
+                    )
+                    .map((c) => c.quality * 10),
+                )
+              : 0)
+          : 0;
         hit.value = armorDamage(hit.raw ?? hit.value, hit.armor);
         if (target) {
           cardDamage[target.uid] = (cardDamage[target.uid] ?? 0) + hit.value;
@@ -256,7 +278,7 @@ export function simulateDuel(d: Duel) {
         cd[side][p.at] =
           c.cd +
           (!shelter && ['寒冷', '强风'].includes(env) ? 0.75 : 0) +
-          (p.id === 'bell' && q > 0 && env === '强风' ? 1 : 0);
+          (p.id === 'bell' && q > 0 && (noWeather || env === '强风') ? 1 : 0);
         if (!step || revived.has(p.uid)) continue;
         timers[side][p.at] += 0.25;
         if (timers[side][p.at] < cd[side][p.at]) continue;
@@ -274,9 +296,11 @@ export function simulateDuel(d: Duel) {
         let amount = v;
         if (q > 0 && n % 3 === 0) {
           if (c.id === 'knife') amount += q === 2 ? 12 : 6;
-          if (c.id === 'brick' && env === '炎热') amount += q === 2 ? 30 : 18;
+          if (c.id === 'brick' && (noWeather || env === '炎热'))
+            amount += q === 2 ? 30 : 18;
           if (c.id === 'coil') amount += q === 2 ? 24 : 12;
-          if (c.id === 'bottle' && env === '潮湿') amount += q === 2 ? 25 : 15;
+          if (c.id === 'bottle' && (noWeather || env === '潮湿'))
+            amount += q === 2 ? 25 : 15;
         }
         if (c.kind === 'shield' && q === 2)
           amount += c.id === 'shelter' ? 5 : c.id === 'battery' ? 10 : 0;
@@ -304,6 +328,7 @@ export function simulateDuel(d: Duel) {
               raw: value,
               armor,
               targetUid: target?.uid,
+              targetLane: Math.floor(p.at / 3),
               targetName: target ? cardDef(target.id).name : '空路宿主',
             });
           }
@@ -329,7 +354,7 @@ export function simulateDuel(d: Duel) {
                 targetUid: `host-${side}`,
                 visual: 'heal',
               },
-              !echo && c.id === 'box' && q > 0 && env === '寒冷'
+              !echo && c.id === 'box' && q > 0 && (noWeather || env === '寒冷')
                 ? q === 2
                   ? 20
                   : 12
@@ -355,7 +380,10 @@ export function simulateDuel(d: Duel) {
         const advance =
           c.kind === 'charge'
             ? v + (q === 2 ? 0.5 : 0)
-            : c.id === 'wire' && q > 0 && env === '潮湿' && n % 3 === 0
+            : c.id === 'wire' &&
+                q > 0 &&
+                (noWeather || env === '潮湿') &&
+                n % 3 === 0
               ? q === 2
                 ? 2
                 : 1
@@ -367,7 +395,7 @@ export function simulateDuel(d: Duel) {
             Math.floor(x.at / 3) === Math.floor(p.at / 3),
         );
         const targets =
-          c.id === 'bell' && q > 0 && env === '强风'
+          c.id === 'bell' && q > 0 && (noWeather || env === '强风')
             ? others
             : others.slice(0, 1);
         if (advance) {
@@ -419,20 +447,6 @@ export function simulateDuel(d: Duel) {
       shield[side] -= absorbed;
       hp[side] = Math.max(0, hp[side] - (damage[side] - absorbed));
     }
-    if (time >= 40 && step % 4 === 0) {
-      const loss = 8 + (time - 40) * 3;
-      for (let side = 0; side < 2; side++) {
-        hp[side] = Math.max(0, hp[side] - loss);
-        hits.push({
-          side,
-          kind: 'damage',
-          value: loss,
-          healthLoss: loss,
-          source: '空间坍缩',
-        });
-      }
-      log.push('空间坍缩 · 环境伤害直接作用于宿主，绕过卡牌护甲与宿主护盾');
-    }
     frames.push({
       time,
       hp: [...hp],
@@ -450,5 +464,10 @@ export function simulateDuel(d: Duel) {
     if (hp.some((x) => x <= 0)) break;
   }
   const winner = hp[0] > hp[1] ? 0 : hp[1] > hp[0] ? 1 : -1;
-  return { frames, winner, duration: frames.at(-1)!.time };
+  return {
+    frames,
+    winner,
+    duration: frames.at(-1)!.time,
+    timedOut: hp.every((x) => x > 0),
+  };
 }
