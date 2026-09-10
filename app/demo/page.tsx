@@ -121,6 +121,8 @@ export default function Demo() {
     [inspection, setInspection] = useState<{
       uid: string;
       source: string;
+      x: number;
+      y: number;
     } | null>(null),
     [settings, setSettings] = useState(false),
     [sleepPrompt, setSleepPrompt] = useState(false),
@@ -128,9 +130,42 @@ export default function Demo() {
     [reset, setReset] = useState(false);
   const [cursor, setCursor] = useState(0),
     [playing, setPlaying] = useState(true),
-    [speed, setSpeed] = useState(1),
-    [enemyDetail, setEnemyDetail] = useState<FighterCard | null>(null);
+    [speed, setSpeed] = useState(1);
   const fileRef = useRef<HTMLInputElement>(null);
+  const hoverClose = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const keepInspection = () => {
+    if (hoverClose.current) clearTimeout(hoverClose.current);
+  };
+  const hideInspection = () => {
+    keepInspection();
+    hoverClose.current = setTimeout(() => setInspection(null), 220);
+  };
+  const showInspection = (uid: string, source: string, target: HTMLElement) => {
+    keepInspection();
+    const rect = target.getBoundingClientRect();
+    const width = Math.min(360, window.innerWidth - 24);
+    const x =
+      rect.right + 8 + width <= window.innerWidth
+        ? rect.right + 8
+        : Math.max(12, rect.left - width - 8);
+    setInspection({
+      uid,
+      source,
+      x,
+      y: Math.max(12, Math.min(rect.top, window.innerHeight - 440)),
+    });
+  };
+  useEffect(() => {
+    const close = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setInspection(null);
+    };
+    window.addEventListener('keydown', close);
+    return () => {
+      window.removeEventListener('keydown', close);
+      if (hoverClose.current) clearTimeout(hoverClose.current);
+    };
+  }, []);
+
   const commit = useCallback((next: Run) => {
     next = migrateCargo(next);
     ref.current = next;
@@ -153,7 +188,6 @@ export default function Demo() {
         if (a.type === 'fight') {
           setCursor(0);
           setPlaying(true);
-          setEnemyDetail(null);
         }
         return next;
       } catch (e) {
@@ -313,19 +347,24 @@ export default function Demo() {
                         : '')
                     }
                     style={{ gridColumn: `${col + 1} / span ${c.size}` }}
-                    onClick={() =>
-                      enemy
-                        ? setEnemyDetail(card)
-                        : (setSelected(card.uid),
-                          setEnemyDetail(null),
-                          !fr &&
-                            setInspection({
-                              uid: card.uid,
-                              source: 'inventory',
-                            }))
+                    onMouseEnter={(e) =>
+                      showInspection(
+                        card.uid,
+                        enemy ? 'enemy' : 'inventory',
+                        e.currentTarget,
+                      )
                     }
+                    onMouseLeave={hideInspection}
+                    onFocus={(e) =>
+                      showInspection(
+                        card.uid,
+                        enemy ? 'enemy' : 'inventory',
+                        e.currentTarget,
+                      )
+                    }
+                    onBlur={hideInspection}
+                    onClick={() => !enemy && setSelected(card.uid)}
                     aria-label={`查看${c.name}，${RARITY[card.rarity].name}，${QUALITY[card.quality]}，强化${card.level}，护甲${armorOf(card)}`}
-                    title={`${RARITY[card.rarity].name} / ${QUALITY[card.quality]} / 冷却 ${c.cd}s`}
                   >
                     <CardFace
                       card={card}
@@ -459,7 +498,7 @@ export default function Demo() {
       <>
         <div className="ed-section-title">
           <h2>行装与构筑</h2>
-          <p>物品按实际形状占格。点击查看详情，拖动整理，固定横向占格。</p>
+          <p>悬停查看详情与操作，拖动整理，固定横向占格。</p>
         </div>
         <section className="ed-panel">
           <h3>上阵卡组</h3>
@@ -1257,18 +1296,6 @@ export default function Demo() {
             0.75–1.5 秒后结算效果；暂停会冻结弹道位置。
           </p>
         </details>
-        {(enemyDetail || viewed?.type === 'card') && (
-          <div className="ed-combat-inspection">
-            <strong>{cardDef((enemyDetail ?? viewed)!.id).name}</strong>
-            <CardDetail
-              card={{
-                ...(enemyDetail ?? viewed)!,
-                at: (enemyDetail ?? viewed)?.at ?? 0,
-                rarity: (enemyDetail ?? viewed)?.rarity ?? 0,
-              }}
-            />
-          </div>
-        )}
         <div className="ed-combat-log">
           {battle.frames
             .slice(Math.max(0, cursor - 12), cursor + 1)
@@ -1389,16 +1416,24 @@ export default function Demo() {
     );
   }
   const inspected = inspection
-    ? (inspection.source === 'loot'
-        ? f?.stock
-        : inspection.source === 'shop'
-          ? merchantOffers(run)
-          : run.items
+    ? (inspection.source === 'enemy'
+        ? run.duel?.enemy.map((c) => ({
+            ...c,
+            type: 'card' as const,
+            zone: 'board' as const,
+            volume: cardDef(c.id).size,
+            amount: 1,
+          }))
+        : inspection.source === 'loot'
+          ? f?.stock
+          : inspection.source === 'shop'
+            ? merchantOffers(run)
+            : run.items
       )?.find((x) => x.uid === inspection.uid)
     : undefined;
-  const inspectItem = (item: Item, source: string) => {
+  const inspectItem = (item: Item, source: string, target: HTMLElement) => {
     setSelected(item.uid);
-    setInspection({ uid: item.uid, source });
+    showInspection(item.uid, source, target);
   };
   const placeItem = (item: Item, from: string, to: string, slot: number) => {
     if (to === 'loot') {
@@ -1427,7 +1462,11 @@ export default function Demo() {
       setInspection(null);
   };
   return (
-    <CargoProvider onPlace={placeItem} onInspect={inspectItem}>
+    <CargoProvider
+      onPlace={placeItem}
+      onInspect={inspectItem}
+      onDismiss={hideInspection}
+    >
       <main
         className={
           'elevator-demo ed-immersive ' +
@@ -1704,22 +1743,32 @@ export default function Demo() {
             </div>
           </>
         )}
-        <Dialog
-          open={!!inspected}
-          onOpenChange={(open) => {
-            if (!open) setInspection(null);
-          }}
-        >
-          <DialogContent className="ed-dialog ed-inspect-dialog">
-            <DialogTitle>{inspected && itemName(inspected)}</DialogTitle>
-            <DialogDescription>
+        {inspected && inspection && (
+          <dialog
+            open
+            className="ed-item-tooltip ed-inspect-dialog"
+            aria-modal={false}
+            tabIndex={-1}
+            aria-label="物品详情"
+            style={{
+              left: inspection.x,
+              top: inspection.y,
+              maxHeight: `calc(100dvh - ${inspection.y + 12}px)`,
+            }}
+            onPointerEnter={keepInspection}
+            onPointerLeave={hideInspection}
+            onFocusCapture={keepInspection}
+            onBlurCapture={hideInspection}
+          >
+            <h3>{inspected && itemName(inspected)}</h3>
+            <p>
               {inspected?.volume} 格 ·{' '}
               {inspected?.type === 'card'
                 ? '卡牌'
                 : inspected?.type === 'physical'
                   ? '未鉴定实体'
                   : '物品'}
-            </DialogDescription>
+            </p>
             {inspected && (
               <>
                 {inspected.type === 'card' ? (
@@ -1896,8 +1945,8 @@ export default function Demo() {
                 </div>
               </>
             )}
-          </DialogContent>
-        </Dialog>
+          </dialog>
+        )}
         <Dialog open={settings} onOpenChange={setSettings}>
           <DialogContent className="ed-dialog">
             <DialogTitle>设置与记录</DialogTitle>
@@ -1992,8 +2041,9 @@ export default function Demo() {
               </p>
               <p>
                 伤害默认命中同路前排卡牌，空路直击宿主。卡牌拥有独立生命，归零进入幽魂，期间视为空格且不发动、不承受效果。复活时间为
-                8 − 强化等级 × 0.5
-                秒，复活时满生命并重新冷却。减伤公式为原始伤害 × 100 ÷（100 +
+                首次 8 秒，每多死亡一次增加 2 秒（基础时间的
+                25%），本场独立累计，新战斗重置。
+                复活时满生命并重新冷却。减伤公式为原始伤害 × 100 ÷（100 +
                 护甲），之后扣卡牌生命；只有直击宿主才扣宿主护盾与生命。治疗、护盾仍给宿主。脉冲线圈明确攻击其他路后排；多格卡算一个完整目标。我方右侧为前排，敌方左侧为前排，双方前排在中央相对。40
                 秒后空间坍缩属于环境伤害，绕过卡牌护甲与宿主护盾。
               </p>

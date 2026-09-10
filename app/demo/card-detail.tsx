@@ -17,7 +17,9 @@ export default function CardDetail({ card }: { card: FighterCard }) {
       </p>
       <div className="ed-detail-values">
         <span>生命 {cardMaxHp(card)}</span>
-        <span>复活 {reviveTimeOf(card)} 秒</span>
+        <span>
+          首次复活 {reviveTimeOf(card)} 秒；每多死亡一次增加 25% 基础时间
+        </span>
         {d.effects.map((e, i) => (
           <span key={i}>{e.text}</span>
         ))}

@@ -19,7 +19,8 @@ type Context = {
   drag: Drag | null;
   hover: { zone: string; slot: number } | null;
   start: (item: Item, from: string, x: number, y: number) => void;
-  inspect: (item: Item, from: string) => void;
+  inspect: (item: Item, from: string, target: HTMLElement) => void;
+  dismiss: () => void;
   pickup: (item: Item, from: string) => void;
   drop: (zone: string, slot: number) => void;
 };
@@ -28,10 +29,12 @@ export function CargoProvider({
   children,
   onPlace,
   onInspect,
+  onDismiss,
 }: {
   children: ReactNode;
   onPlace: (item: Item, from: string, to: string, slot: number) => void;
-  onInspect: (item: Item, from: string) => void;
+  onInspect: (item: Item, from: string, target: HTMLElement) => void;
+  onDismiss: () => void;
 }) {
   const [drag, setDrag] = useState<Drag | null>(null),
     [hover, setHover] = useState<Context['hover']>(null);
@@ -120,15 +123,17 @@ export function CargoProvider({
         drag,
         hover,
         start: (item, from, x, y) => {
+          onDismiss();
           suppress.current = false;
           update({ item, from, x, y, startX: x, startY: y, moved: false });
         },
-        inspect: (item, from) => {
+        dismiss: onDismiss,
+        inspect: (item, from, target) => {
           if (suppress.current) {
             suppress.current = false;
             return;
           }
-          onInspect(item, from);
+          if (!current.current) onInspect(item, from, target);
         },
         pickup: (item, from) =>
           update({
@@ -154,8 +159,10 @@ export function CargoProvider({
               : {
                   left: drag.x + 12,
                   top: drag.y + 12,
-                  width: dimensions(drag.item).w * 62,
-                  height: dimensions(drag.item).h * 62,
+                  width:
+                    dimensions(drag.item).w * 120 +
+                    (dimensions(drag.item).w - 1) * 6,
+                  height: 156,
                 }
           }
         >
@@ -235,12 +242,16 @@ export default function CargoGrid({
                 ctx.start(item, zone, e.clientX, e.clientY);
                 e.currentTarget.setPointerCapture(e.pointerId);
               }}
-              onClick={() =>
+              onMouseEnter={(e) => ctx.inspect(item, zone, e.currentTarget)}
+              onMouseLeave={ctx.dismiss}
+              onFocus={(e) => ctx.inspect(item, zone, e.currentTarget)}
+              onBlur={ctx.dismiss}
+              onClick={(e) =>
                 ctx.drag?.keyboard
                   ? ctx.drop(zone, item.slot!)
-                  : ctx.inspect(item, zone)
+                  : ctx.inspect(item, zone, e.currentTarget)
               }
-              aria-label={`${itemName(item)}，${item.volume} 格，点击查看详情，拖动移动`}
+              aria-label={`${itemName(item)}，${item.volume} 格，悬停查看详情，拖动移动`}
             >
               {item.type === 'card' ? (
                 <Layers className="ed-cargo-card-icon" size={14} />
@@ -261,7 +272,7 @@ export default function CargoGrid({
           );
         })}
       </div>
-      <p className="ed-grid-help">点击查看 · 拖动摆放 · 固定横向占格</p>
+      <p className="ed-grid-help">悬停查看 · 拖动摆放 · 固定横向占格</p>
     </div>
   );
 }

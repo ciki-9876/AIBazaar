@@ -24,9 +24,9 @@ const ARMOR: Record<string, number> = {
 export const armorOf = (card: Pick<FighterCard, 'id' | 'level' | 'quality'>) =>
   ARMOR[card.id] + card.quality * 5 + card.level * 2;
 export const REVIVE_BASE = 8;
-export const REVIVE_PER_LEVEL = 0.5;
-export const reviveTimeOf = (card: FighterCard) =>
-  Math.max(2, REVIVE_BASE - card.level * REVIVE_PER_LEVEL);
+export const REVIVE_DEATH_INCREASE = 0.25;
+export const reviveTimeOf = (_card: FighterCard, deaths = 1) =>
+  REVIVE_BASE * (1 + Math.max(0, deaths - 1) * REVIVE_DEATH_INCREASE);
 export const cardMaxHp = (card: FighterCard) =>
   Math.round(
     (40 + cardDef(card.id).size * 15) * (1 + card.rarity * 0.15) +
@@ -103,7 +103,10 @@ export type Hit = {
 export type CombatFrame = {
   time: number;
   hp: number[];
-  cards: Record<string, { hp: number; maxHp: number; reviveAt: number | null }>;
+  cards: Record<
+    string,
+    { hp: number; maxHp: number; reviveAt: number | null; deaths: number }
+  >;
   shield: number[];
   energy: number[];
   timers: number[][];
@@ -134,7 +137,7 @@ export function simulateDuel(d: Duel) {
       .flat()
       .map((c) => [
         c.uid,
-        { hp: cardMaxHp(c), maxHp: cardMaxHp(c), reviveAt: null },
+        { hp: cardMaxHp(c), maxHp: cardMaxHp(c), reviveAt: null, deaths: 0 },
       ]),
   );
   const alive = (c: FighterCard) => cards[c.uid].reviveAt === null;
@@ -220,13 +223,14 @@ export function simulateDuel(d: Duel) {
         const state = cards[c.uid];
         state.hp = Math.max(0, state.hp - (cardDamage[c.uid] ?? 0));
         if (state.hp === 0 && state.reviveAt === null) {
-          state.reviveAt = time + reviveTimeOf(c);
+          state.deaths++;
+          state.reviveAt = time + reviveTimeOf(c, state.deaths);
           timers[side][c.at] = 0;
           pending = pending.filter(
             (p) => p.sourceUid !== c.uid && p.targetUid !== c.uid,
           );
           log.push(
-            `${cardDef(c.id).name} 进入幽魂，${reviveTimeOf(c)} 秒后复活。`,
+            `${cardDef(c.id).name} 第 ${state.deaths} 次进入幽魂，${reviveTimeOf(c, state.deaths)} 秒后复活。`,
           );
         }
       }

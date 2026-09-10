@@ -3354,3 +3354,67 @@
 .ed-card-v2 .ed-card-name {
   margin-top: 18px;
 }
+
+/* One physical cell size across storage, loot and all three combat lanes. */
+.elevator-demo {
+  --item-cell-width: 120px;
+  --item-cell-height: 156px;
+  --item-cell-gap: 6px;
+}
+.elevator-demo .ed-spatial-grid {
+  grid-template-columns: repeat(var(--cargo-columns), var(--item-cell-width));
+  grid-template-rows: repeat(var(--cargo-rows), var(--item-cell-height));
+  gap: var(--item-cell-gap);
+  width: max-content;
+}
+.elevator-demo .ed-lane-cells {
+  grid-template-columns: repeat(3, var(--item-cell-width));
+  gap: var(--item-cell-gap);
+  height: var(--item-cell-height);
+}
+.elevator-demo .ed-board {
+  grid-template-rows: repeat(3, var(--item-cell-height));
+  gap: var(--item-cell-gap);
+  width: max-content;
+  max-width: none;
+}
+.elevator-demo .ed-card.ed-card-v2,
+.elevator-demo .ed-slot {
+  height: var(--item-cell-height);
+  min-height: var(--item-cell-height);
+}
+.elevator-demo .ed-horizontal-battle {
+  grid-template-columns: 120px 372px 52px 372px 120px;
+  width: max-content;
+}
+.elevator-demo .ed-lane-bridge {
+  grid-template-rows: 30px 162px 162px 156px;
+}
+.elevator-demo .ed-lane-bridge > div:not(.ed-facing) {
+  height: var(--item-cell-height);
+}
+.ed-item-tooltip {
+  margin: 0;
+  position: fixed;
+  z-index: 100;
+  width: min(360px, calc(100vw - 24px));
+  max-height: min(620px, calc(100vh - 24px));
+  overflow: auto;
+  padding: 18px;
+  border: 1px solid #8c9768;
+  border-radius: 9px;
+  background: #1b251bee;
+  color: #e3dfb9;
+  box-shadow: 0 10px 35px #0009;
+  font-size: 13px;
+}
+.ed-item-tooltip > h3 {
+  margin: 0 0 8px;
+  color: #edcc83;
+}
+.ed-item-tooltip .ed-actions {
+  margin-top: 14px;
+}
+.ed-item-tooltip .ed-card-description {
+  margin-top: 16px;
+}
