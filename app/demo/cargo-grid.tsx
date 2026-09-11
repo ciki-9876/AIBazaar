@@ -1,6 +1,6 @@
 'use client';
 import { createContext, useContext, useEffect, useRef, useState } from 'react';
-import type { ReactNode, CSSProperties, ButtonHTMLAttributes } from 'react';
+import type { ReactNode, CSSProperties } from 'react';
 import { Layers, Package } from 'lucide-react';
 import { dimensions, layout, cells } from '@/lib/cargo-layout';
 import { itemName, offerPrice } from '@/lib/demo-engine';
@@ -181,9 +181,9 @@ export function CargoProvider({
                   left: drag.x + 12,
                   top: drag.y + 12,
                   width:
-                    dimensions(drag.item).w * 120 +
-                    (dimensions(drag.item).w - 1) * 6,
-                  height: 156,
+                    dimensions(drag.item).w * 72 +
+                    (dimensions(drag.item).w - 1) * 4,
+                  height: 88,
                 }
           }
         >
@@ -317,42 +317,6 @@ export function CarryButton({
       }}
     >
       拿起并选择格子
-    </button>
-  );
-}
-
-export function BoardCargoButton({
-  item,
-  at,
-  cargoEnabled,
-  onClick,
-  children,
-  ...props
-}: ButtonHTMLAttributes<HTMLButtonElement> & {
-  item?: Item;
-  at: number;
-  cargoEnabled: boolean;
-}) {
-  const ctx = useContext(CargoContext);
-  return (
-    <button
-      {...props}
-      data-cargo-zone={cargoEnabled ? 'board' : undefined}
-      data-cargo-slot={cargoEnabled ? at : undefined}
-      onPointerDown={(e) => {
-        if (cargoEnabled && item && e.button === 0 && !ctx.drag?.keyboard) {
-          ctx.start(item, 'board', e.clientX, e.clientY);
-          e.currentTarget.setPointerCapture(e.pointerId);
-        }
-      }}
-      onClick={(e) => {
-        if (cargoEnabled && ctx.drag?.keyboard) ctx.drop('board', at);
-        else if (cargoEnabled && item)
-          ctx.select(item, 'board', e.currentTarget);
-        else onClick?.(e);
-      }}
-    >
-      {children}
     </button>
   );
 }

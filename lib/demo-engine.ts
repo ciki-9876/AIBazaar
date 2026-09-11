@@ -386,6 +386,24 @@ export const openCells = (s: Run) => [
   ...FOUR,
   ...[1, 2, 5, 7, 8].slice(0, s.level - 1),
 ];
+export function autoBoardPosition(s: Run, item: Item): number | null {
+  const available = new Set(openCells(s));
+  const occupied = new Set(
+    s.items
+      .filter((x) => x.zone === 'board' && x.uid !== item.uid)
+      .flatMap((x) => Array.from({ length: x.volume }, (_, i) => x.at! + i)),
+  );
+  for (let at = 0; at < 9; at++) {
+    if (Math.floor(at / 3) !== Math.floor((at + item.volume - 1) / 3)) continue;
+    if (
+      Array.from({ length: item.volume }, (_, i) => at + i).every(
+        (c) => available.has(c) && !occupied.has(c),
+      )
+    )
+      return at;
+  }
+  return null;
+}
 export const volume = (items: Item[]) =>
   items.reduce((n, x) => n + x.volume, 0);
 export const moduleUsed = (s: Run) =>
@@ -1043,6 +1061,18 @@ function applyAction(old: Run, a: Action): Run {
     return s;
   }
   need(s.phase !== 'combat', '战斗开始后不可修改物品或基地');
+  if (a.type === 'equip' || a.type === 'unequip') {
+    const item = s.items.find((x) => x.uid === a.id);
+    need(item?.type === 'card', '请选择卡牌');
+    if (a.type === 'equip') {
+      need(item.zone !== 'board', '该卡牌已经上阵');
+      const at = autoBoardPosition(s, item);
+      need(at !== null, `没有能容纳 ${item.volume} 格卡牌的连续已解锁空位`);
+      return applyAction(s, { type: 'move', id: item.uid, to: 'board', at });
+    }
+    need(item.zone === 'board', '该卡牌尚未上阵');
+    return applyAction(s, { type: 'move', id: item.uid, to: 'bag' });
+  }
   if (a.type === 'move') {
     const x = s.items.find((x) => x.uid === a.id);
     need(x && a.to, '物品不存在');

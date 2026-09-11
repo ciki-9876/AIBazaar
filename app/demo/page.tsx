@@ -5,13 +5,11 @@ import { useState, useEffect, useMemo, useRef, useCallback } from 'react';
 import BattleEffects from './battle-effects';
 import CardFace from './card-face';
 import CardDetail from './card-detail';
-import CargoGrid, {
-  CargoProvider,
-  CarryButton,
-  BoardCargoButton,
-} from './cargo-grid';
+import CargoGrid, { CargoProvider, CarryButton } from './cargo-grid';
 import CostButton from './cost-button';
 import ElevatorRoom from './elevator-room';
+import IdentifyTable from './identify-table';
+import ScrollChrome from './scroll-chrome';
 import {
   Coins,
   Settings,
@@ -65,6 +63,7 @@ import {
   nodeName,
   itemCount,
   openCells,
+  CARDS,
   searchCost,
   eventAt,
   nodeTitle,
@@ -109,9 +108,13 @@ export default function Demo() {
     [notice, setNotice] = useState(''),
     [tab, setTab] = useState('base'),
     [selected, setSelected] = useState<string | null>(null),
+    [inventoryTab, setInventoryTab] = useState('build'),
+    [catalogId, setCatalogId] = useState(CARDS[0].id),
+    [scanUid, setScanUid] = useState<string | undefined>(),
     [inspection, setInspection] = useState<{
       uid: string;
       source: string;
+      scope: string;
       x: number;
       y: number;
     } | null>(null),
@@ -124,8 +127,7 @@ export default function Demo() {
   const [cursor, setCursor] = useState(0),
     [playing, setPlaying] = useState(true),
     [speed, setSpeed] = useState(1);
-  const baseInspect =
-    run.phase === 'base' && ['inventory', 'identify'].includes(tab);
+  const baseInspect = tab === 'inventory';
   const fileRef = useRef<HTMLInputElement>(null);
   useEffect(() => {
     if (!sleeping) return;
@@ -161,6 +163,7 @@ export default function Demo() {
     setInspection({
       uid,
       source,
+      scope: `${run.phase}:${tab}:${inventoryTab}`,
       x,
       y: Math.max(12, Math.min(rect.top, window.innerHeight - 440)),
     });
@@ -190,7 +193,10 @@ export default function Demo() {
         commit(next);
         if ((a.type === 'pickup' || a.type === 'trade') && a.id)
           setSelected(a.id);
-        if (a.type === 'enter') setTab('floor');
+        if (a.type === 'enter') {
+          setTab('floor');
+          setInventoryTab('build');
+        }
         if (a.type === 'begin') setTab('base');
         if (a.type === 'extract' || a.type === 'rescue' || a.type === 'sleep')
           setTab('base');
@@ -245,7 +251,6 @@ export default function Demo() {
     return () => clearTimeout(timer);
   }, [battle, playing, cursor, speed]);
   const frame = battle?.frames[Math.min(cursor, battle.frames.length - 1)];
-  const viewed = run.items.find((x) => x.uid === selected);
   const f = currentFloor(run),
     terrain = ['上路', '中路', '下路'];
   const resetRun = () => {
@@ -308,24 +313,17 @@ export default function Demo() {
                   return null;
                 if (!card)
                   return (
-                    <BoardCargoButton
+                    <button
                       key={at}
-                      at={at}
-                      cargoEnabled={!fr && !enemy}
                       style={{ gridColumn: col + 1 }}
                       className={
                         'ed-slot ' + (locked.includes(at) ? 'locked' : '')
                       }
                       disabled={!!fr || enemy || locked.includes(at)}
                       onClick={() =>
-                        viewed?.type === 'card'
-                          ? dispatch({
-                              type: 'move',
-                              id: viewed.uid,
-                              to: 'board',
-                              at,
-                            })
-                          : setNotice('先在容器里选择一张卡牌，再点击目标格。')
+                        setNotice(
+                          '在卡牌详情中点击“上阵”，系统会自动选择合适空位。',
+                        )
                       }
                       aria-label={`${['上', '中', '下'][lane]}路第${col + 1}格${locked.includes(at) ? '未解锁' : '，放置所选卡牌'}`}
                     >
@@ -336,16 +334,13 @@ export default function Demo() {
                           ＋<small>{at + 1}</small>
                         </span>
                       )}
-                    </BoardCargoButton>
+                    </button>
                   );
                 const c = cardDef(card.id),
                   side = enemy ? 1 : 0;
                 return (
-                  <BoardCargoButton
+                  <button
                     key={card.uid}
-                    at={at}
-                    item={run.items.find((x) => x.uid === card.uid)}
-                    cargoEnabled={!fr && !enemy}
                     data-entity={card.uid}
                     className={
                       (fr?.cards[card.uid]?.reviveAt != null
@@ -378,7 +373,11 @@ export default function Demo() {
                       )
                     }
                     onBlur={hideInspection}
-                    onClick={() => !enemy && setSelected(card.uid)}
+                    onClick={(e) => {
+                      const item = run.items.find((x) => x.uid === card.uid);
+                      if (!enemy && item)
+                        selectItem(item, 'board', e.currentTarget);
+                    }}
                     aria-label={`查看${c.name}，${RARITY[card.rarity].name}，${QUALITY[card.quality]}，强化${card.level}，护甲${armorOf(card)}`}
                   >
                     <CardFace
@@ -407,7 +406,7 @@ export default function Demo() {
                       }
                       speed={speed}
                     />
-                  </BoardCargoButton>
+                  </button>
                 );
               })}
             </div>
@@ -517,27 +516,134 @@ export default function Demo() {
     );
   }
   function inventory() {
+    const tabs = [
+      ['build', '上阵构筑'],
+      ['bag', '背包'],
+      ['safe', '安全容器'],
+      ...(run.phase === 'base' ? [['warehouse', '仓库']] : []),
+      ['catalog', '卡牌图鉴'],
+    ];
+    const definition = CARDS.find((c) => c.id === catalogId) ?? CARDS[0];
+    const owned = run.items.filter(
+      (x) => x.type === 'card' && x.id === definition.id,
+    );
+    const specimen = owned[0] ?? {
+      uid: 'catalog-' + definition.id,
+      id: definition.id,
+      at: 0,
+      rarity: 0,
+      quality: 0,
+      level: 0,
+    };
     return (
-      <section className="ed-build-workspace">
-        <div className="ed-build-top">
-          <section className="ed-panel ed-build-board">
-            <h3>{tab === 'identify' ? '鉴定台 · 初始设施' : '上阵卡组'}</h3>
-            <p>拖拽卡牌上阵或移回背包；单击查看右侧详情。</p>
-            <div className="ed-board-scroll">{cardGrid(playerCards(run))}</div>
-          </section>
-          <aside className="ed-panel ed-fixed-details ed-inspect-dialog">
-            {inspected ? (
-              itemDetailBody()
-            ) : (
-              <p>左键单击物品或卡牌，在这里查看详情、鉴定和强化。</p>
-            )}
-          </aside>
-        </div>
-        <div className="ed-build-storage">
-          {grid('bag')}
-          {grid('safe')}
-          {grid('warehouse')}
-          {run.phase === 'floor' && run.interaction === 'search' && loot()}
+      <section className="ed-inventory-pages">
+        <nav className="ed-inventory-tabs" aria-label="行装与构筑子页">
+          {tabs.map(([id, label]) => (
+            <button
+              key={id}
+              aria-pressed={inventoryTab === id}
+              className={inventoryTab === id ? 'active' : ''}
+              onClick={() => {
+                setInventoryTab(id);
+                setInspection(null);
+              }}
+            >
+              {label}
+            </button>
+          ))}
+        </nav>
+        <div className="ed-inventory-page-body">
+          {inventoryTab === 'catalog' ? (
+            <>
+              <section className="ed-panel ed-atlas-panel">
+                <h3>卡牌图鉴 · {CARDS.length} 种</h3>
+                <p>
+                  已拥有{' '}
+                  {
+                    new Set(
+                      run.items
+                        .filter((x) => x.type === 'card')
+                        .map((x) => x.id),
+                    ).size
+                  }{' '}
+                  / {CARDS.length}
+                </p>
+                <div className="ed-atlas-grid">
+                  {CARDS.map((c) => {
+                    const cards = run.items.filter(
+                      (x) => x.type === 'card' && x.id === c.id,
+                    );
+                    return (
+                      <button
+                        key={c.id}
+                        className={
+                          'ed-atlas-tile ' +
+                          (catalogId === c.id ? 'selected' : '')
+                        }
+                        onClick={() => setCatalogId(c.id)}
+                      >
+                        <span>
+                          {cards.length
+                            ? '已拥有 ×' + cards.length
+                            : '尚未拥有'}
+                        </span>
+                        <div className="ed-card ed-card-v2 rarity-0 quality-0">
+                          <CardFace
+                            card={{
+                              uid: 'atlas-' + c.id,
+                              id: c.id,
+                              at: 0,
+                              rarity: 0,
+                              quality: 0,
+                              level: 0,
+                            }}
+                            enemy={false}
+                          />
+                        </div>
+                        <small>{c.size} 格</small>
+                      </button>
+                    );
+                  })}
+                </div>
+              </section>
+              <aside className="ed-panel ed-fixed-details">
+                <h3>{definition.name}</h3>
+                <p>
+                  {owned.length
+                    ? '当前拥有 ' + owned.length + ' 张'
+                    : '尚未拥有 · 展示基础属性'}
+                </p>
+                <CardDetail
+                  card={{
+                    ...specimen,
+                    at: specimen.at ?? 0,
+                    rarity: specimen.rarity ?? 0,
+                  }}
+                />
+              </aside>
+            </>
+          ) : (
+            <>
+              {inventoryTab === 'build' ? (
+                <section className="ed-panel ed-build-board">
+                  <h3>上阵卡组</h3>
+                  <p>单击卡牌查看详情；上下阵由按钮自动安排。</p>
+                  <div className="ed-board-scroll">
+                    {cardGrid(playerCards(run))}
+                  </div>
+                </section>
+              ) : (
+                grid(inventoryTab as Zone)
+              )}
+              <aside className="ed-panel ed-fixed-details ed-inspect-dialog">
+                {inspected ? (
+                  itemDetailBody()
+                ) : (
+                  <p>单击物品或卡牌，在这里查看详情与操作。</p>
+                )}
+              </aside>
+            </>
+          )}
         </div>
       </section>
     );
@@ -1415,22 +1521,23 @@ export default function Demo() {
       </>
     );
   }
-  const inspected = inspection
-    ? (inspection.source === 'enemy'
-        ? run.duel?.enemy.map((c) => ({
-            ...c,
-            type: 'card' as const,
-            zone: 'board' as const,
-            volume: cardDef(c.id).size,
-            amount: 1,
-          }))
-        : inspection.source === 'loot'
-          ? f?.stock
-          : inspection.source === 'shop'
-            ? merchantOffers(run)
-            : run.items
-      )?.find((x) => x.uid === inspection.uid)
-    : undefined;
+  const inspected =
+    inspection && inspection.scope === `${run.phase}:${tab}:${inventoryTab}`
+      ? (inspection.source === 'enemy'
+          ? run.duel?.enemy.map((c) => ({
+              ...c,
+              type: 'card' as const,
+              zone: 'board' as const,
+              volume: cardDef(c.id).size,
+              amount: 1,
+            }))
+          : inspection.source === 'loot'
+            ? f?.stock
+            : inspection.source === 'shop'
+              ? merchantOffers(run)
+              : run.items
+        )?.find((x) => x.uid === inspection.uid)
+      : undefined;
   const inspectItem = (item: Item, source: string, target: HTMLElement) => {
     if (!baseInspect) showInspection(item.uid, source, target);
   };
@@ -1439,10 +1546,6 @@ export default function Demo() {
     showInspection(item.uid, source, target, true);
   };
   const placeItem = (item: Item, from: string, to: string, slot: number) => {
-    if (to === 'board') {
-      dispatch({ type: 'move', id: item.uid, to: 'board', at: slot });
-      return;
-    }
     if (to === 'loot') {
       if (from === 'loot')
         dispatch({
@@ -1542,14 +1645,30 @@ export default function Demo() {
                     <button
                       disabled={run.phase !== 'base' && run.level < 3}
                       onClick={() =>
-                        itemAction({ type: 'scan', id: inspected.uid })
+                        run.phase === 'base'
+                          ? (setScanUid(inspected.uid), setTab('identify'))
+                          : itemAction({ type: 'scan', id: inspected.uid })
                       }
                     >
-                      {run.phase === 'base' ? '免费鉴定' : '鉴定 · 1 电荷'}
+                      {run.phase === 'base' ? '前往鉴定台' : '鉴定 · 1 电荷'}
                     </button>
                   )}
                   {inspected.type === 'card' && (
                     <>
+                      <button
+                        className="ed-primary"
+                        onClick={() =>
+                          itemAction({
+                            type:
+                              inspected.zone === 'board' ? 'unequip' : 'equip',
+                            id: inspected.uid,
+                          })
+                        }
+                      >
+                        {inspected.zone === 'board'
+                          ? '下阵至背包'
+                          : '上阵 · 自动安排'}
+                      </button>
                       {run.phase === 'base' && run.level >= 2 && (
                         <>
                           <CostButton
@@ -1592,6 +1711,7 @@ export default function Demo() {
                   {(['bag', 'safe', 'warehouse'] as Zone[])
                     .filter(
                       (z) =>
+                        inspected.zone !== 'board' &&
                         z !== inspected.zone &&
                         (run.phase === 'base' || z !== 'warehouse'),
                     )
@@ -1635,7 +1755,7 @@ export default function Demo() {
                     )}
                 </>
               )}
-              {run.phase !== 'combat' && (
+              {run.phase !== 'combat' && inspected.zone !== 'board' && (
                 <CarryButton
                   item={inspected}
                   from={inspection!.source}
@@ -1656,6 +1776,7 @@ export default function Demo() {
       onSelect={selectItem}
       onDismiss={hideInspection}
     >
+      <ScrollChrome />
       <main
         className={
           'elevator-demo ed-immersive ' +
@@ -1819,7 +1940,9 @@ export default function Demo() {
                         ? '电梯系统'
                         : tab === 'inventory'
                           ? '桌面 / 行装与构筑'
-                          : '门禁 / 选择楼层'}
+                          : tab === 'identify'
+                            ? '鉴定台 / 物品解析'
+                            : '门禁 / 选择楼层'}
                     </span>
                     {['upgrades', 'survivors', 'log', 'prep'].includes(tab) && (
                       <nav aria-label="电梯系统界面">
@@ -1904,7 +2027,17 @@ export default function Demo() {
                   map()
                 ) : tab === 'floor' ? (
                   floor()
-                ) : tab === 'inventory' || tab === 'identify' ? (
+                ) : tab === 'identify' ? (
+                  <IdentifyTable
+                    items={run.items}
+                    initialUid={scanUid}
+                    onScan={(uid) => {
+                      const next = dispatch({ type: 'scan', id: uid });
+                      if (next) setNotice('物品已交由鉴定台处理。');
+                      return next?.items.find((x) => x.uid === uid) ?? null;
+                    }}
+                  />
+                ) : tab === 'inventory' ? (
                   inventory()
                 ) : tab === 'survivors' ? (
                   survivors()
