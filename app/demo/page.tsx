@@ -1,4 +1,6 @@
 'use client';
+import { rarityOf, growthCost } from '@/lib/demo-card-rules';
+import { refineIngredient } from '@/lib/demo-engine';
 /* oxlint-disable react/react-compiler -- Event handlers read the authoritative run ref; mount effects restore explicitly local browser state. */
 /* oxlint-disable next/no-html-link-for-pages -- Static Sites hosting needs native anchors; RSC-prefetch navigation is unsupported. */
 import { useState, useEffect, useMemo, useRef, useCallback } from 'react';
@@ -82,7 +84,7 @@ import {
   ranking,
 } from '@/lib/demo-engine';
 import type { Run, Action, Zone, Item } from '@/lib/demo-engine';
-import { simulateDuel, armorOf } from '@/lib/demo-combat';
+import { simulateDuel } from '@/lib/demo-combat';
 import type { FighterCard, CombatFrame } from '@/lib/demo-combat';
 import { cardDef } from '@/lib/prototype-v04';
 import './demo.css';
@@ -343,9 +345,6 @@ export default function Demo() {
                     key={card.uid}
                     data-entity={card.uid}
                     className={
-                      (fr?.cards[card.uid]?.reviveAt != null
-                        ? 'is-ghost '
-                        : '') +
                       'ed-card ed-card-v2 quality-' +
                       card.quality +
                       ' rarity-' +
@@ -378,17 +377,10 @@ export default function Demo() {
                       if (!enemy && item)
                         selectItem(item, 'board', e.currentTarget);
                     }}
-                    aria-label={`查看${c.name}，${RARITY[card.rarity].name}，${QUALITY[card.quality]}，强化${card.level}，护甲${armorOf(card)}`}
+                    aria-label={`查看${c.name}，${RARITY[card.rarity].name}，${QUALITY[card.quality]}，强化${card.level}`}
                   >
                     <CardFace
                       card={card}
-                      health={fr?.cards[card.uid]?.hp}
-                      deaths={fr?.cards[card.uid]?.deaths}
-                      reviveRemaining={
-                        fr?.cards[card.uid]?.reviveAt != null
-                          ? Math.max(0, fr.cards[card.uid].reviveAt! - fr.time)
-                          : 0
-                      }
                       enemy={enemy}
                       progress={
                         fr
@@ -400,7 +392,6 @@ export default function Demo() {
                       cooldown={fr?.cd[side][card.at]}
                       playing={
                         !!fr &&
-                        fr.cards[card.uid]?.reviveAt == null &&
                         playing &&
                         cursor < (battle?.frames.length ?? 0) - 1
                       }
@@ -446,7 +437,6 @@ export default function Demo() {
             className="ed-hp"
           />
           <p>
-            <Shield size={13} /> {Math.ceil(fr.shield[side])} 护盾{' '}
             <Zap size={13} /> {fr.energy[side]} 能量
           </p>
         </div>
@@ -466,7 +456,7 @@ export default function Demo() {
               (x) =>
                 x.side === side &&
                 x.kind !== 'charge' &&
-                x.cardHealthLoss === undefined,
+                (x.kind !== 'damage' || (x.healthLoss ?? 0) > 0),
             )
             .map((hit) => (
               <span
@@ -531,7 +521,7 @@ export default function Demo() {
       uid: 'catalog-' + definition.id,
       id: definition.id,
       at: 0,
-      rarity: 0,
+      rarity: rarityOf(catalogId),
       quality: 0,
       level: 0,
     };
@@ -587,13 +577,19 @@ export default function Demo() {
                             ? '已拥有 ×' + cards.length
                             : '尚未拥有'}
                         </span>
-                        <div className="ed-card ed-card-v2 rarity-0 quality-0">
+                        <div
+                          className={
+                            'ed-card ed-card-v2 rarity-' +
+                            rarityOf(c.id) +
+                            ' quality-0'
+                          }
+                        >
                           <CardFace
                             card={{
                               uid: 'atlas-' + c.id,
                               id: c.id,
                               at: 0,
-                              rarity: 0,
+                              rarity: rarityOf(c.id),
                               quality: 0,
                               level: 0,
                             }}
@@ -736,7 +732,7 @@ export default function Demo() {
               </p>
               {run.level >= 2 && (
                 <p>
-                  多余物品 → 分解为金币 → 强化卡牌。废料 → 回收台 → 金币；药品 →
+                  同卡 → 吞噬升阶。废料 → 强化卡牌；多余物品 → 回收金币；药品 →
                   医疗站 → 精力。
                 </p>
               )}
@@ -1299,11 +1295,56 @@ export default function Demo() {
     );
   }
 
+  function barrierRow(side: number, fr: CombatFrame) {
+    return (
+      <div className={'ed-barriers ' + (side ? 'enemy' : '')}>
+        {fr.barriers[side].map((barrier, lane) => (
+          <div
+            key={lane}
+            data-entity={`barrier-${side}-${lane}`}
+            className={
+              'ed-barrier ' +
+              (barrier.broken ? 'broken' : '') +
+              (fr.hits.some(
+                (h) =>
+                  h.side === side &&
+                  h.targetLane === lane &&
+                  h.kind === 'damage',
+              )
+                ? ' struck'
+                : '')
+            }
+          >
+            <div>
+              <Shield size={14} />
+              <strong>{['上路', '中路', '下路'][lane]}屏障</strong>
+              <span>
+                {barrier.broken
+                  ? '已损毁 · 宿主暴露'
+                  : `${Math.ceil(barrier.hp)} / ${barrier.maxHp}`}
+              </span>
+            </div>
+            <div
+              className="ed-barrier-track"
+              // oxlint-disable-next-line jsx-a11y/prefer-tag-over-role -- Custom barrier track shares the game combat animation.
+              role="progressbar"
+              aria-label={`${side ? '敌方' : '我方'}${['上路', '中路', '下路'][lane]}屏障`}
+              aria-valuemin={0}
+              aria-valuemax={barrier.maxHp}
+              aria-valuenow={Math.ceil(barrier.hp)}
+            >
+              <i style={{ width: (barrier.hp / barrier.maxHp) * 100 + '%' }} />
+            </div>
+          </div>
+        ))}
+      </div>
+    );
+  }
   function combat() {
     if (!battle || !frame || !run.duel) return null;
     const finished = cursor >= battle.frames.length - 1;
     return (
-      <section className="ed-combat">
+      <section className={'ed-combat' + (finished ? ' is-finished' : '')}>
         <p className="ed-stage-warning">
           {run.duel.kind === 'survivor'
             ? '幸存者 AI 对战 · 战败触发强制回收，损失生命和普通背包。'
@@ -1331,42 +1372,26 @@ export default function Demo() {
           </div>
           <span>{frame.time.toFixed(2)}s</span>
         </div>
-        <section
-          className="ed-battle-scroll"
-          aria-label="左右对战棋盘，可横向滚动"
-          // oxlint-disable-next-line jsx-a11y/no-noninteractive-tabindex -- Keyboard users need to focus this horizontal scroll region.
-          tabIndex={0}
-        >
-          <div className="ed-horizontal-battle" ref={battlefieldRef}>
+        <section className="ed-battle-scroll" aria-label="上下三路对战棋盘">
+          <div className="ed-vertical-battle" ref={battlefieldRef}>
             <BattleEffects
               surface={battlefieldRef}
               frames={battle.frames}
               cursor={cursor}
-              playing={playing}
+              playing={playing && !finished}
               speed={speed}
             />
-            {actor(0, frame)}
-            <div className="ed-battle-half">
-              <div className="ed-facing">我方 · 后排 → 前排</div>
-              {cardGrid(run.duel.player, false, frame)}
-            </div>
-            <div className="ed-lane-bridge">
-              <div className="ed-facing">
-                {frame.time >= 40 ? '坍缩' : '交锋'}
-              </div>
-              {[0, 1, 2].map((lane) => (
-                <div key={lane}>
-                  <b>{['上路', '中路', '下路'][lane]}</b>
-                  <span>↔</span>
-                  <small>{terrain[lane]}</small>
-                </div>
-              ))}
-            </div>
-            <div className="ed-battle-half">
-              <div className="ed-facing">敌方 · 前排 → 后排</div>
-              {cardGrid(run.duel.enemy, true, frame)}
-            </div>
             {actor(1, frame)}
+            {barrierRow(1, frame)}
+            {cardGrid(run.duel.enemy, true, frame)}
+            <div className="ed-battle-divider">
+              <span>上路</span>
+              <span>中路</span>
+              <span>下路</span>
+            </div>
+            {cardGrid(run.duel.player, false, frame)}
+            {barrierRow(0, frame)}
+            {actor(0, frame)}
           </div>
         </section>
         <div className="ed-battle-controls">
@@ -1382,55 +1407,52 @@ export default function Demo() {
           <button onClick={() => setCursor(battle.frames.length - 1)}>
             跳至结果
           </button>
-          <span>
-            双方前排朝中央 · 命中卡牌 → 护甲 → 卡牌生命 / 幽魂 · 空路直击
-          </span>
-          <small>
-            空间坍缩已停用。当前测试上限 60 秒，超时暂按宿主剩余生命判胜。
-          </small>
+          <span>屏障损毁后，本路攻击直击宿主；卡牌始终运转。</span>
+          <small>90 秒未分胜负则平局，无击败奖励。</small>
         </div>
         <details className="ed-visual-guide">
           <summary>卡牌与弹道图例</summary>
           <p>
-            底色：灰色普通、蓝色罕见、黄色稀有、暗金传说、红色奇迹。品质：基础单线框、精制双线框、大师雕角框。左上角为强化等级，我方右下角、敌方左下角显示卡牌护甲；蒙层铺满时发动。
+            底色：灰色普通、蓝色罕见、黄色稀有、暗金传说、红色奇迹。品质：基础单线框、精制双线框、大师雕角框。左上角为强化等级；蒙层铺满时发动。卡牌不承伤，后方屏障保护宿主。
           </p>
           <p>
-            直线流光：伤害红、治疗绿、护甲/护盾黄、灼烧橙、毒素墨绿、冰冻淡蓝。当前样卡尚无独立灼烧、毒素、冰冻效果，这三类已预留对应颜色。弹道飞行
+            直线流光：伤害红、治疗绿、屏障修复黄、灼烧橙、毒素墨绿、冰冻淡蓝。当前样卡尚无独立灼烧、毒素、冰冻效果，这三类已预留对应颜色。弹道飞行
             0.75–1.5 秒后结算效果；暂停会冻结弹道位置。
           </p>
         </details>
-        <div className="ed-combat-log">
-          {battle.frames
-            .slice(Math.max(0, cursor - 12), cursor + 1)
-            .flatMap((fr) => [
-              ...fr.hits.map((h) =>
-                h.targetName
-                  ? h.cardHealthLoss !== undefined
-                    ? `${fr.time.toFixed(1)}s · ${h.source} → ${h.targetName}：卡牌生命 −${h.cardHealthLoss}`
-                    : `${fr.time.toFixed(1)}s · ${h.source} → ${h.targetName}：${h.raw} 原伤 / ${h.armor} 护甲 → 传递 ${h.value}；宿主盾吸收 ${Math.round((h.shieldAbsorbed ?? 0) * 10) / 10} / 生命 −${Math.round((h.healthLoss ?? 0) * 10) / 10}`
-                  : `${fr.time.toFixed(1)}s · ${h.source} → ${h.side ? '敌方' : '我方'} ${h.kind === 'damage' ? '伤害' : h.kind === 'heal' ? '治疗' : h.kind === 'shield' ? '护盾' : '能量'} ${Math.round(h.value * 10) / 10}`,
-              ),
-              ...fr.log,
-            ])
-            .slice(-6)
-            .map((line, i) => (
-              <p key={i}>{line}</p>
-            ))}
-        </div>
+        <details className="ed-battle-log-details">
+          <summary>战斗记录</summary>
+          <div className="ed-combat-log">
+            {battle.frames
+              .slice(0, cursor + 1)
+              .flatMap((fr) => [
+                ...fr.hits.map((h) =>
+                  h.kind === 'damage'
+                    ? `${fr.time.toFixed(1)}s · ${h.source} → ${h.targetName}：屏障 −${h.barrierAbsorbed ?? 0} / 宿主 −${h.healthLoss ?? 0}`
+                    : `${fr.time.toFixed(1)}s · ${h.source} → ${h.targetName ?? (h.side ? '敌方' : '我方')} · ${h.kind === 'heal' ? '治疗' : h.kind === 'shield' ? '修复' : h.kind === 'charge' ? '充能' : '能量'} ${h.value}`,
+                ),
+                ...fr.log,
+              ])
+              .slice(-30)
+              .map((line, i) => (
+                <p key={i}>{line}</p>
+              ))}
+          </div>
+        </details>
         {finished && (
           <section
             className={'ed-battle-result ' + (battle.winner === 0 ? 'won' : '')}
           >
             <Trophy size={30} />
             <div>
-              {battle.timedOut && (
-                <p>已到 60 秒测试上限，本次按双方宿主剩余生命判定结果。</p>
-              )}
+              {battle.timedOut && <p>90 秒平局，未击败敌人，不获得奖励。</p>}
               <h2>
                 {battle.winner === 0
                   ? '你还活着。'
                   : battle.winner === -1
-                    ? '同归于尽。'
+                    ? battle.timedOut
+                      ? '战斗陷入僵局。'
+                      : '同归于尽。'
                     : run.duel.kind === 'survivor' ||
                         run.duel.stage === 'boss' ||
                         !run.duel.stage
@@ -1438,17 +1460,24 @@ export default function Demo() {
                       : '负伤继续前进。'}
               </h2>
               <p>
-                {battle.winner === 0
-                  ? run.duel.kind === 'survivor'
-                    ? '幸存者封锁战结束，下一场是楼层守卫。确认后可先整理或提前撤离。'
-                    : run.duel.stage === 'normal' || run.duel.stage === 'elite'
-                      ? '本阶段胜利，确认后继续深入。最终 BOSS 仍未击败。'
-                      : '本层全部战斗已结束。返回楼层后撤离提交通关。'
-                  : run.duel.kind === 'survivor' ||
-                      run.duel.stage === 'boss' ||
-                      (!run.duel.stage && run.duel.kind === 'guardian')
-                    ? `本次回收消耗 ${rescueCost(run)} 生命，普通背包丢失。`
-                    : '本次战败损失 35 精力，进入当前楼层的下一个节点。生命与背包保留，不领取战斗奖励。'}
+                {battle.timedOut
+                  ? run.duel.kind === 'survivor' ||
+                    run.duel.stage === 'boss' ||
+                    !run.duel.stage
+                    ? '消耗 15 精力，返回停靠点。生命与物品保留，无通关进度。'
+                    : '消耗 15 精力及下一节点路费，保留生命与物品，继续前进。'
+                  : battle.winner === 0
+                    ? run.duel.kind === 'survivor'
+                      ? '幸存者封锁战结束，下一场是楼层守卫。确认后可先整理或提前撤离。'
+                      : run.duel.stage === 'normal' ||
+                          run.duel.stage === 'elite'
+                        ? '本阶段胜利，确认后继续深入。最终 BOSS 仍未击败。'
+                        : '本层全部战斗已结束。返回楼层后撤离提交通关。'
+                    : run.duel.kind === 'survivor' ||
+                        run.duel.stage === 'boss' ||
+                        (!run.duel.stage && run.duel.kind === 'guardian')
+                      ? `本次回收消耗 ${rescueCost(run)} 生命，普通背包丢失。`
+                      : '本次战败损失 35 精力，进入当前楼层的下一个节点。生命与背包保留，不领取战斗奖励。'}
               </p>
             </div>
             <button
@@ -1612,7 +1641,7 @@ export default function Demo() {
                               medicine:
                                 '医疗包：使用恢复 35 精力，或用于医疗设施与休整。',
                               scrap:
-                                '废料束：回收台消耗 2 束换取 3 金币，也可加工燃料。',
+                                '废料束：强化卡牌的主要材料；也可回收金币或加工燃料。',
                             } as Record<string, string>
                           )[inspected.id] ?? `数量 ${inspected.amount}。`)}
               </p>
@@ -1671,30 +1700,35 @@ export default function Demo() {
                       </button>
                       {run.phase === 'base' && run.level >= 2 && (
                         <>
-                          <CostButton
-                            cost={3 + inspected.level * 2}
-                            disabled={inspected.level >= 5}
+                          <button
+                            disabled={
+                              inspected.level >= 5 ||
+                              itemCount(run, 'scrap', false) <
+                                growthCost(inspected.level)
+                            }
                             onClick={() =>
-                              itemAction({
-                                type: 'grow',
-                                id: inspected.uid,
-                              })
+                              itemAction({ type: 'grow', id: inspected.uid })
                             }
                           >
-                            强化 +1
-                          </CostButton>
-                          <CostButton
-                            cost={5 + inspected.quality * 4}
-                            disabled={inspected.quality >= 2}
+                            强化 +1 · {growthCost(inspected.level)} 废料
+                          </button>
+                          <button
+                            disabled={
+                              inspected.quality >= 2 ||
+                              !refineIngredient(run, inspected)
+                            }
                             onClick={() =>
-                              itemAction({
-                                type: 'refine',
-                                id: inspected.uid,
-                              })
+                              itemAction({ type: 'refine', id: inspected.uid })
                             }
                           >
-                            提升品质
-                          </CostButton>
+                            吞噬同卡 · 升至
+                            {QUALITY[Math.min(2, inspected.quality + 1)]}
+                          </button>
+                          <small>
+                            {refineIngredient(run, inspected)
+                              ? `消耗：${itemName(inspected)} · ${QUALITY[inspected.quality]} · Lv ${refineIngredient(run, inspected)!.level}（未上阵）。返还素材卡 80% 强化废料。`
+                              : '需要一张未上阵、同名、同品阶卡牌；不消耗金币。'}
+                          </small>
                         </>
                       )}
                     </>
@@ -1780,6 +1814,7 @@ export default function Demo() {
       <main
         className={
           'elevator-demo ed-immersive ' +
+          (run.phase === 'combat' ? 'in-combat ' : '') +
           (run.phase === 'base' ? 'at-base ' : '') +
           (run.phase === 'base' && tab === 'base' ? 'in-room' : '')
         }
@@ -1876,11 +1911,11 @@ export default function Demo() {
                           生命: '有限的生存次数。睡眠消耗 1；幸存者 AI、BOSS 战败或主动救援按回收费用扣除。',
                           精力: '出勤、探索和撤离需要精力；睡眠、苹果和药品可以恢复。',
                           补给: '出勤消耗 1；睡眠消耗 1 并恢复更多精力。',
-                          金币: '购买物品、升级电梯、建造设施和培养卡牌。',
+                          金币: '购买物品、升级电梯和建造设施。',
                           电力: '设备充能、种植和探索整备。战斗能量独立计算。',
                           燃料: '发电机将 1 燃料转为 8 电力。',
                           药品: '医疗站或休整点消耗药品恢复精力。',
-                          废料: '回收成金币，或在储藏架制成燃料。',
+                          废料: '强化卡牌，也可回收金币或制成燃料。',
                         } as Record<string, string>
                       )[String(name)]
                     }
@@ -2216,12 +2251,8 @@ export default function Demo() {
                 的完整范围，撤离第十层后结算。楼层使用离线种子重组，尚未接入大模型；机器人采用可解释的数值模拟。
               </p>
               <p>
-                伤害默认命中同路前排卡牌，空路直击宿主。卡牌拥有独立生命，归零进入幽魂，期间视为空格且不发动、不承受效果。复活时间为
-                1/2/3 格对应初始 6/8/10 秒，每多死亡一次增加初始时间的
-                25%，本场独立累计，新战斗重置。
-                复活时满生命并重新冷却。减伤公式为原始伤害 × 100 ÷（100 +
-                护甲），之后扣卡牌生命；只有直击宿主才扣宿主护盾与生命。治疗、护盾仍给宿主。脉冲线圈明确攻击其他路后排；多格卡算一个完整目标。我方右侧为前排，敌方左侧为前排，双方前排在中央相对。空间坍缩停用，测试阶段
-                60 秒超时按宿主剩余生命判胜。
+                卡牌持续自动发动，不承受攻击。伤害先扣同路屏障，击破时的溢出伤害进入宿主；屏障本场不重建，破路后直击宿主。90
+                秒未分胜负则平局，无击败奖励。卡牌稀有度固定，消耗废料强化，吞噬同名同品阶卡牌升阶。
               </p>
             </div>
           </DialogContent>

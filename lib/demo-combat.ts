@@ -1,5 +1,5 @@
-import { cardDef, stat } from './prototype-v04.ts';
-import { terrainFor } from './prototype-v03.ts';
+import { cardDef } from './prototype-v04.ts';
+import { combatValue } from './demo-card-rules.ts';
 export type FighterCard = {
   uid: string;
   id: string;
@@ -9,57 +9,7 @@ export type FighterCard = {
   level: number;
   flightTime?: number;
 };
-const ARMOR: Record<string, number> = {
-  knife: 10,
-  wire: 5,
-  bottle: 8,
-  shelter: 45,
-  bell: 5,
-  brick: 35,
-  box: 25,
-  cell: 15,
-  coil: 10,
-  battery: 40,
-};
-export const armorOf = (card: Pick<FighterCard, 'id' | 'level' | 'quality'>) =>
-  ARMOR[card.id] + card.quality * 5 + card.level * 2;
-export const REVIVE_BASE = 4;
-export const REVIVE_DEATH_INCREASE = 0.25;
-export const reviveTimeOf = (_card: FighterCard, deaths = 1) =>
-  (REVIVE_BASE + cardDef(_card.id).size * 2) *
-  (1 + Math.max(0, deaths - 1) * REVIVE_DEATH_INCREASE);
-export const cardMaxHp = (card: FighterCard) =>
-  Math.round(
-    (40 + cardDef(card.id).size * 15) * (1 + card.rarity * 0.15) +
-      card.level * 8 +
-      card.quality * 10,
-  );
-export const armorDamage = (raw: number, armor: number) =>
-  Math.round(((raw * 100) / (100 + Math.max(0, armor))) * 10) / 10;
-export function targetText(id: string) {
-  if (cardDef(id).kind !== 'damage')
-    return '非伤害效果作用于宿主或技能描述的友方卡牌；本牌也可承受攻击。';
-  return id === 'coil'
-    ? '特技 · 越线狙击：优先攻击其他路最靠后的卡牌；同列优先上路。其他路为空时，改攻同路前排。目标路为空则直击宿主。'
-    : '默认攻击同路最靠前的敌方卡牌；同路为空时直击宿主，不享受卡牌护甲。';
-}
-export function selectTarget(
-  source: FighterCard,
-  enemies: FighterCard[],
-): FighterCard | null {
-  const lane = Math.floor(source.at / 3);
-  if (source.id === 'coil') {
-    const others = enemies
-      .filter((x) => Math.floor(x.at / 3) !== lane)
-      .sort((a, b) => (b.at % 3) - (a.at % 3) || a.at - b.at);
-    if (others.length) return others[0];
-  }
-  return (
-    [...enemies]
-      .filter((x) => Math.floor(x.at / 3) === lane)
-      .sort((a, b) => a.at - b.at)[0] ?? null
-  );
-}
+export const COMBAT_LIMIT = 90;
 export const flightTimeOf = (card: FighterCard) =>
   Math.max(
     0.5,
@@ -72,15 +22,9 @@ export const flightTimeOf = (card: FighterCard) =>
       ) / 4,
     ),
   );
-export type Projectile = Hit & {
-  id: string;
-  launchedAt: number;
-  impactAt: number;
-  overflowCap?: number;
-};
 export type Hit = {
   side: number;
-  kind: 'damage' | 'heal' | 'shield' | 'energy' | 'echo' | 'charge';
+  kind: 'damage' | 'heal' | 'shield' | 'energy' | 'charge';
   value: number;
   source: string;
   sourceUid?: string;
@@ -94,22 +38,23 @@ export type Hit = {
     | 'charge'
     | 'slow';
   raw?: number;
-  armor?: number;
   targetUid?: string;
   targetLane?: number;
   targetName?: string;
-  shieldAbsorbed?: number;
+  barrierAbsorbed?: number;
   healthLoss?: number;
-  cardHealthLoss?: number;
 };
+export type Projectile = Hit & {
+  id: string;
+  launchedAt: number;
+  impactAt: number;
+  overflowCap?: number;
+};
+export type Barrier = { hp: number; maxHp: number; broken: boolean };
 export type CombatFrame = {
   time: number;
   hp: number[];
-  cards: Record<
-    string,
-    { hp: number; maxHp: number; reviveAt: number | null; deaths: number }
-  >;
-  shield: number[];
+  barriers: Barrier[][];
   energy: number[];
   timers: number[][];
   cd: number[][];
@@ -124,6 +69,7 @@ export type Duel = {
   player: FighterCard[];
   enemy: FighterCard[];
   maxHp: number[];
+  barrierHp?: number[][];
   weather: number;
   weatherEnabled?: boolean;
   layout: number;
@@ -131,155 +77,125 @@ export type Duel = {
   kind: 'guardian' | 'survivor';
   botId: number | null;
 };
+const laneOf = (c: FighterCard) => Math.floor(c.at / 3);
+const laneName = (lane: number) => ['上路', '中路', '下路'][lane];
 export function simulateDuel(d: Duel) {
   const boards = [d.player, d.enemy].map((b) =>
     [...b].sort((a, b) => a.at - b.at),
   );
-  const cards: CombatFrame['cards'] = Object.fromEntries(
-    boards
-      .flat()
-      .map((c) => [
-        c.uid,
-        { hp: cardMaxHp(c), maxHp: cardMaxHp(c), reviveAt: null, deaths: 0 },
-      ]),
-  );
-  const alive = (c: FighterCard) => cards[c.uid].reviveAt === null;
   const hp = [...d.maxHp],
-    shield = [0, 0],
-    energy = [0, 0],
-    timers = [Array(9).fill(0), Array(9).fill(0)],
+    energy = [0, 0];
+  const barriers = d.maxHp.map((health, side) =>
+    [0, 1, 2].map((lane) => {
+      const maxHp = Math.max(
+        1,
+        d.barrierHp?.[side]?.[lane] ?? Math.round(health * 0.3),
+      );
+      return { hp: maxHp, maxHp, broken: false };
+    }),
+  );
+  const timers = [Array(9).fill(0), Array(9).fill(0)],
     counts = [Array(9).fill(0), Array(9).fill(0)];
   const cap = boards.map(
-    (b) => 10 + (b.some((x) => x.id === 'battery') ? 6 : 0),
+    (b) => 10 + (b.some((c) => c.id === 'battery') ? 6 : 0),
   );
-  const noWeather = d.weatherEnabled === false;
-  const terrain = noWeather
-    ? ['常态', '常态', '常态']
-    : terrainFor(d.weather, d.layout);
   const frames: CombatFrame[] = [];
-  let pending: Projectile[] = [];
-  let serial = 0;
-  for (let step = 0; step <= 240; step++) {
+  let pending: Projectile[] = [],
+    serial = 0;
+  const repairLane = (side: number, lane: number) =>
+    !barriers[side][lane].broken
+      ? lane
+      : [0, 1, 2]
+          .filter((i) => !barriers[side][i].broken)
+          .sort(
+            (a, b) =>
+              barriers[side][a].hp / barriers[side][a].maxHp -
+                barriers[side][b].hp / barriers[side][b].maxHp || a - b,
+          )[0];
+  for (let step = 0; step <= COMBAT_LIMIT * 4; step++) {
     const time = step / 4,
       hits: Hit[] = [],
       fired: string[] = [],
       waiting: string[] = [],
-      log: string[] = [],
-      cd = [Array(9).fill(0), Array(9).fill(0)];
-    const revived = new Set<string>();
-    for (const c of boards.flat())
-      if (cards[c.uid].reviveAt !== null && cards[c.uid].reviveAt! <= time) {
-        revived.add(c.uid);
-        cards[c.uid].hp = cards[c.uid].maxHp;
-        cards[c.uid].reviveAt = null;
-        log.push(`${cardDef(c.id).name} 已复活，重新开始冷却。`);
-      }
-    for (let side = 0; side < 2; side++) {
-      cap[side] =
-        10 + (boards[side].some((c) => c.id === 'battery' && alive(c)) ? 6 : 0);
-      energy[side] = Math.min(energy[side], cap[side]);
-    }
-    const cardDamage: Record<string, number> = {};
-    // Damage is committed after both owners act, so simultaneous lethal hits are fair.
-    const damage = [0, 0];
-    // Resolve arrivals first. Launch and impact are separate simulation events.
-    for (const shot of pending.filter((x) => x.impactAt <= time)) {
-      const hit: Hit = { ...shot };
-      if (shot.sourceUid && cards[shot.sourceUid]?.reviveAt !== null) continue;
-      if (shot.targetUid && cards[shot.targetUid]?.reviveAt != null) continue;
+      log: string[] = [];
+    const cd = [Array(9).fill(0), Array(9).fill(0)],
+      damage = [0, 0];
+    const arrivals = pending.filter((p) => p.impactAt <= time);
+    pending = pending.filter((p) => p.impactAt > time);
+    for (const shot of arrivals) {
+      const hit: Hit = { ...shot },
+        lane = hit.targetLane ?? 1;
       if (hit.kind === 'damage') {
-        const target = boards[hit.side].find((x) => x.uid === hit.targetUid);
-        hit.armor = target
-          ? armorOf(target) +
-            (noWeather
-              ? Math.max(
-                  0,
-                  ...boards[hit.side]
-                    .filter(
-                      (c) =>
-                        alive(c) &&
-                        c.id === 'shelter' &&
-                        c.uid !== target.uid &&
-                        Math.floor(c.at / 3) === Math.floor(target.at / 3),
-                    )
-                    .map((c) => c.quality * 10),
-                )
-              : 0)
-          : 0;
-        hit.value = armorDamage(hit.raw ?? hit.value, hit.armor);
-        if (target) {
-          cardDamage[target.uid] = (cardDamage[target.uid] ?? 0) + hit.value;
-          hit.cardHealthLoss = hit.value;
-        } else damage[hit.side] += hit.value;
-      } else if (hit.kind === 'heal') {
-        hit.value = Math.min(d.maxHp[hit.side] - hp[hit.side], shot.value);
-        hp[hit.side] += hit.value;
-        const overflow = Math.min(
-          shot.overflowCap ?? 0,
-          shot.value - hit.value,
-        );
-        if (overflow > 0) {
-          shield[hit.side] += overflow;
-          hits.push({
-            ...hit,
-            kind: 'shield',
-            visual: 'armor',
-            value: overflow,
-          });
+        const barrier = barriers[hit.side][lane];
+        hit.targetUid = barrier.broken
+          ? `host-${hit.side}-lane-${lane}`
+          : `barrier-${hit.side}-${lane}`;
+        hit.targetName = `${laneName(lane)}${barrier.broken ? '宿主' : '屏障'}`;
+        hit.barrierAbsorbed = Math.min(barrier.hp, hit.raw ?? hit.value);
+        barrier.hp -= hit.barrierAbsorbed;
+        hit.healthLoss = (hit.raw ?? hit.value) - hit.barrierAbsorbed;
+        damage[hit.side] += hit.healthLoss;
+        if (!barrier.broken && barrier.hp <= 0) {
+          barrier.broken = true;
+          log.push(
+            `${hit.side ? '敌方' : '我方'}${laneName(lane)}屏障损毁，本场不会重建。`,
+          );
         }
-      } else if (hit.kind === 'shield') shield[hit.side] += hit.value;
-      else if (hit.kind === 'energy')
+      } else if (hit.kind === 'shield') {
+        const target = repairLane(hit.side, lane);
+        hit.value = 0;
+        if (target !== undefined) {
+          const barrier = barriers[hit.side][target];
+          hit.value = Math.min(shot.value, barrier.maxHp - barrier.hp);
+          barrier.hp += hit.value;
+          hit.targetLane = target;
+          hit.targetUid = `barrier-${hit.side}-${target}`;
+          hit.targetName = `${laneName(target)}屏障修复`;
+        }
+      } else if (hit.kind === 'heal') {
+        hit.value = Math.min(shot.value, d.maxHp[hit.side] - hp[hit.side]);
+        hp[hit.side] += hit.value;
+        const target = repairLane(hit.side, lane);
+        if (shot.overflowCap && target !== undefined) {
+          const barrier = barriers[hit.side][target];
+          const value = Math.min(
+            shot.overflowCap,
+            shot.value - hit.value,
+            barrier.maxHp - barrier.hp,
+          );
+          barrier.hp += value;
+          if (value)
+            hits.push({
+              ...hit,
+              kind: 'shield',
+              visual: 'armor',
+              value,
+              targetLane: target,
+              targetUid: `barrier-${hit.side}-${target}`,
+              targetName: '溢出治疗修复屏障',
+            });
+        }
+      } else if (hit.kind === 'energy')
         energy[hit.side] = Math.min(
           cap[hit.side],
           energy[hit.side] + hit.value,
         );
       else if (hit.kind === 'charge') {
-        const target = boards[hit.side].find((x) => x.uid === hit.targetUid);
+        const target = boards[hit.side].find((c) => c.uid === hit.targetUid);
         if (target) timers[hit.side][target.at] += hit.value;
       }
       hits.push(hit);
     }
-    pending = pending.filter((x) => x.impactAt > time);
+    // Commit damage to both hosts before checking lethal results.
     for (let side = 0; side < 2; side++)
-      for (const c of boards[side]) {
-        const state = cards[c.uid];
-        state.hp = Math.max(0, state.hp - (cardDamage[c.uid] ?? 0));
-        if (state.hp === 0 && state.reviveAt === null) {
-          state.deaths++;
-          state.reviveAt = time + reviveTimeOf(c, state.deaths);
-          timers[side][c.at] = 0;
-          pending = pending.filter(
-            (p) => p.sourceUid !== c.uid && p.targetUid !== c.uid,
-          );
-          log.push(
-            `${cardDef(c.id).name} 第 ${state.deaths} 次进入幽魂，${reviveTimeOf(c, state.deaths)} 秒后复活。`,
-          );
-        }
-      }
+      hp[side] = Math.max(0, hp[side] - damage[side]);
     for (let side = 0; side < 2; side++) {
-      cap[side] =
-        10 + (boards[side].some((c) => c.id === 'battery' && alive(c)) ? 6 : 0);
-      energy[side] = Math.min(energy[side], cap[side]);
-    }
-    for (let side = 0; side < 2; side++)
       for (const p of boards[side]) {
-        if (!alive(p)) continue;
         const c = cardDef(p.id),
-          env = terrain[Math.floor(p.at / 3)],
-          q = p.quality;
-        const shelter = boards[side].some(
-          (x) =>
-            alive(x) &&
-            x.id === 'shelter' &&
-            x.quality > 0 &&
-            x.uid !== p.uid &&
-            Math.floor(x.at / 3) === Math.floor(p.at / 3),
-        );
-        cd[side][p.at] =
-          c.cd +
-          (!shelter && ['寒冷', '强风'].includes(env) ? 0.75 : 0) +
-          (p.id === 'bell' && q > 0 && (noWeather || env === '强风') ? 1 : 0);
-        if (!step || revived.has(p.uid)) continue;
+          q = p.quality,
+          lane = laneOf(p);
+        cd[side][p.at] = c.cd + (c.id === 'bell' && q > 0 ? 1 : 0);
+        if (!step || hp.some((h) => h <= 0)) continue;
         timers[side][p.at] += 0.25;
         if (timers[side][p.at] < cd[side][p.at]) continue;
         if (energy[side] < c.energyCost) {
@@ -289,21 +205,18 @@ export function simulateDuel(d: Duel) {
         }
         timers[side][p.at] -= cd[side][p.at];
         energy[side] -= c.energyCost;
-        counts[side][p.at]++;
         fired.push(p.uid);
-        const n = counts[side][p.at],
-          v = stat(c.id, p.rarity, p.level);
+        const n = ++counts[side][p.at],
+          v = combatValue(c.id, p.level, q);
         let amount = v;
-        if (q > 0 && n % 3 === 0) {
-          if (c.id === 'knife') amount += q === 2 ? 12 : 6;
-          if (c.id === 'brick' && (noWeather || env === '炎热'))
-            amount += q === 2 ? 30 : 18;
-          if (c.id === 'coil') amount += q === 2 ? 24 : 12;
-          if (c.id === 'bottle' && (noWeather || env === '潮湿'))
-            amount += q === 2 ? 25 : 15;
-        }
-        if (c.kind === 'shield' && q === 2)
-          amount += c.id === 'shelter' ? 5 : c.id === 'battery' ? 10 : 0;
+        if (q > 0 && n % 3 === 0)
+          amount +=
+            {
+              knife: q === 2 ? 12 : 6,
+              brick: q === 2 ? 30 : 18,
+              coil: q === 2 ? 24 : 12,
+              bottle: q === 2 ? 25 : 15,
+            }[c.id] ?? 0;
         const launch = (hit: Hit, overflowCap = 0) =>
           pending.push({
             ...hit,
@@ -312,162 +225,121 @@ export function simulateDuel(d: Duel) {
             impactAt: time + flightTimeOf(p),
             overflowCap,
           });
-        const apply = (value: number, echo = false) => {
-          if (c.kind === 'damage') {
-            const target = selectTarget(p, boards[1 - side].filter(alive));
-            const armor = target ? armorOf(target) : 0;
-            const transmitted = armorDamage(value, armor);
-
-            launch({
-              side: 1 - side,
-              kind: 'damage',
-              value: transmitted,
-              source: c.name,
-              sourceUid: p.uid,
-              visual: 'damage',
-              raw: value,
-              armor,
-              targetUid: target?.uid,
-              targetLane: Math.floor(p.at / 3),
-              targetName: target ? cardDef(target.id).name : '空路宿主',
-            });
-          }
-          if (c.kind === 'shield') {
-            launch({
-              side,
-              kind: 'shield',
-              value,
-              source: c.name,
-              sourceUid: p.uid,
-              targetUid: `host-${side}`,
-              visual: 'armor',
-            });
-          }
-          if (c.kind === 'heal') {
-            launch(
-              {
-                side,
-                kind: 'heal',
-                value,
-                source: c.name,
-                sourceUid: p.uid,
-                targetUid: `host-${side}`,
-                visual: 'heal',
-              },
-              !echo && c.id === 'box' && q > 0 && (noWeather || env === '寒冷')
-                ? q === 2
-                  ? 20
-                  : 12
-                : 0,
-            );
-          }
-          if (echo) log.push(`${c.name} · 奇迹回响 ${value}`);
-        };
-        apply(amount);
-        if (c.energyGain) {
-          const gain = c.energyGain + (c.id === 'cell' && q === 2 ? 1 : 0);
-
+        const base = { source: c.name, sourceUid: p.uid, targetLane: lane };
+        if (c.kind === 'damage') {
+          const targetLane =
+            c.id === 'coil'
+              ? [0, 1, 2]
+                  .filter((i) => i !== lane)
+                  .sort(
+                    (a, b) =>
+                      barriers[1 - side][a].hp - barriers[1 - side][b].hp ||
+                      a - b,
+                  )[0]
+              : lane;
           launch({
-            side,
-            kind: 'energy',
-            value: gain,
-            source: c.name,
-            sourceUid: p.uid,
-            targetUid: `host-${side}`,
-            visual: 'armor',
+            ...base,
+            side: 1 - side,
+            kind: 'damage',
+            value: amount,
+            raw: amount,
+            visual: 'damage',
+            targetLane,
           });
         }
+        if (c.kind === 'shield') {
+          const target = repairLane(side, lane);
+          if (target !== undefined)
+            launch({
+              ...base,
+              side,
+              kind: 'shield',
+              value: amount,
+              visual: 'armor',
+              targetLane: target,
+              targetUid: `barrier-${side}-${target}`,
+            });
+        }
+        if (c.kind === 'heal')
+          launch(
+            {
+              ...base,
+              side,
+              kind: 'heal',
+              value: amount,
+              visual: 'heal',
+              targetUid: `host-${side}-lane-${lane}`,
+            },
+            c.id === 'box' && q > 0 ? (q === 2 ? 20 : 12) : 0,
+          );
+        if (c.energyGain)
+          launch({
+            ...base,
+            side,
+            kind: 'energy',
+            value: c.energyGain + (c.id === 'cell' && q === 2 ? 1 : 0),
+            visual: 'armor',
+            targetUid: `host-${side}-lane-${lane}`,
+          });
         const advance =
           c.kind === 'charge'
-            ? v + (q === 2 ? 0.5 : 0)
-            : c.id === 'wire' &&
-                q > 0 &&
-                (noWeather || env === '潮湿') &&
-                n % 3 === 0
+            ? v
+            : c.id === 'wire' && q > 0 && n % 3 === 0
               ? q === 2
                 ? 2
                 : 1
               : 0;
-        const others = boards[side].filter(
-          (x) =>
-            alive(x) &&
-            x.uid !== p.uid &&
-            Math.floor(x.at / 3) === Math.floor(p.at / 3),
-        );
-        const targets =
-          c.id === 'bell' && q > 0 && (noWeather || env === '强风')
-            ? others
-            : others.slice(0, 1);
         if (advance) {
-          targets.forEach((x) =>
+          const others = boards[side].filter(
+            (x) =>
+              x.uid !== p.uid &&
+              (laneOf(x) === lane || (c.id === 'bell' && q > 0)),
+          );
+          const targets =
+            c.id === 'bell' && q > 0 ? others : others.slice(0, 1);
+          for (const x of targets)
             launch({
+              ...base,
               side,
               kind: 'charge',
               value: advance,
-              source: c.name,
-              sourceUid: p.uid,
-              targetUid: x.uid,
               visual: 'charge',
-            }),
-          );
-          log.push(
-            `${c.name} → 同路 ${targets.length} 张牌充能 ${advance.toFixed(1)}s`,
-          );
+              targetUid: x.uid,
+              targetLane: laneOf(x),
+            });
         }
-        if (p.rarity === 4 && n % 3 === 0) {
-          if (c.kind === 'charge') {
-            targets.forEach((x) =>
-              launch({
-                side,
-                kind: 'charge',
-                value: advance * 0.5,
-                source: c.name,
-                sourceUid: p.uid,
-                targetUid: x.uid,
-                visual: 'charge',
-              }),
-            );
-            log.push(`${c.name} · 充能回响`);
-          } else apply(Math.round(amount * 5) / 10, true);
+        if (c.id === 'shelter' && q > 0 && n % 3 === 0) {
+          const target = boards[side].find(
+            (x) => x.uid !== p.uid && laneOf(x) === lane,
+          );
+          if (target)
+            launch({
+              ...base,
+              side,
+              kind: 'charge',
+              value: q === 2 ? 2 : 1,
+              visual: 'charge',
+              targetUid: target.uid,
+            });
         }
       }
-    for (let side = 0; side < 2; side++) {
-      let remainingShield = shield[side];
-      for (const hit of hits.filter(
-        (h) =>
-          h.side === side &&
-          h.kind === 'damage' &&
-          h.cardHealthLoss === undefined,
-      )) {
-        hit.shieldAbsorbed = Math.min(remainingShield, hit.value);
-        remainingShield -= hit.shieldAbsorbed;
-        hit.healthLoss = hit.value - hit.shieldAbsorbed;
-      }
-      const absorbed = Math.min(shield[side], damage[side]);
-      shield[side] -= absorbed;
-      hp[side] = Math.max(0, hp[side] - (damage[side] - absorbed));
     }
     frames.push({
       time,
       hp: [...hp],
-      cards: structuredClone(cards),
-      shield: [...shield],
+      barriers: structuredClone(barriers),
       energy: [...energy],
-      timers: timers.map((x) => [...x]),
+      timers: timers.map((a) => [...a]),
       cd,
       fired,
       waiting,
       hits,
-      projectiles: pending.map((x) => ({ ...x })),
+      projectiles: pending.map((p) => ({ ...p })),
       log,
     });
-    if (hp.some((x) => x <= 0)) break;
+    if (hp.some((h) => h <= 0)) break;
   }
-  const winner = hp[0] > hp[1] ? 0 : hp[1] > hp[0] ? 1 : -1;
-  return {
-    frames,
-    winner,
-    duration: frames.at(-1)!.time,
-    timedOut: hp.every((x) => x > 0),
-  };
+  const timedOut = hp.every((h) => h > 0);
+  const winner = timedOut || hp.every((h) => h <= 0) ? -1 : hp[1] <= 0 ? 0 : 1;
+  return { frames, winner, duration: frames.at(-1)!.time, timedOut };
 }

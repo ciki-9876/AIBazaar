@@ -1,36 +1,21 @@
 'use client';
-import { Sword, Heart, Shield, Shirt, Zap, FastForward } from 'lucide-react';
+import { Sword, Heart, Shield, Zap, FastForward } from 'lucide-react';
 import { useEffect, useRef } from 'react';
 import type { CSSProperties } from 'react';
 import type { FighterCard } from '@/lib/demo-combat';
-import { armorOf, cardMaxHp, reviveTimeOf } from '@/lib/demo-combat';
-import { cardDef, stat } from '@/lib/prototype-v04';
+import { describeCard } from '@/lib/card-description';
+import { combatValue } from '@/lib/demo-card-rules';
+import { cardDef } from '@/lib/prototype-v04';
 export function cardSpecial(card: FighterCard) {
-  const q = card.quality;
-  const descriptions: Record<string, string> = {
-    knife: `每第3次攻击追加 ${q === 2 ? 12 : 6} 伤害。`,
-    wire: `每第3次发动，给同路另一张牌充能 ${q === 2 ? 2 : 1} 秒。`,
-    bottle: `每第3次发动，额外治疗 ${q === 2 ? 25 : 15}。`,
-    shelter: `同路其他牌护甲 +${q === 2 ? 20 : 10}。`,
-    bell: '充能同路全部其他牌，自身冷却延长 1 秒。',
-    brick: `每第3次攻击追加 ${q === 2 ? 30 : 18} 伤害。`,
-    box: `溢出治疗转为最多 ${q === 2 ? 20 : 12} 护盾。`,
-  };
-  if (card.id === 'coil')
-    return (
-      '越线狙击：其他路后排，无目标改同路。' +
-      (q > 0 ? `每第3次追加 ${q === 2 ? 24 : 12} 伤害。` : '')
-    );
-  if (card.id === 'battery') return '能量上限 +6。';
-  if (card.id === 'cell') return '';
-  return `${q === 0 ? '精制解锁：' : ''}${descriptions[card.id] ?? ''}`;
+  return describeCard(card)
+    .innate.join(' ')
+    .replaceAll('精制解锁：', '精制：')
+    .replaceAll('每第 3 次', '每3次')
+    .replaceAll('卡牌', '牌');
 }
 export default function CardFace({
   card,
   progress = 0,
-  health,
-  reviveRemaining = 0,
-  deaths = 0,
   waiting = false,
   cooldown = 1,
   playing = false,
@@ -39,9 +24,6 @@ export default function CardFace({
   card: FighterCard;
   enemy: boolean;
   progress?: number;
-  health?: number;
-  reviveRemaining?: number;
-  deaths?: number;
   waiting?: boolean;
   cooldown?: number;
   playing?: boolean;
@@ -73,18 +55,7 @@ export default function CardFace({
     return () => animation.current?.cancel();
   }, [progress, cooldown, speed, waiting]);
   const c = cardDef(card.id),
-    armor = armorOf(card),
-    value =
-      stat(card.id, card.rarity, card.level) +
-      (card.quality === 2
-        ? c.kind === 'charge'
-          ? 0.5
-          : card.id === 'shelter'
-            ? 5
-            : card.id === 'battery'
-              ? 10
-              : 0
-        : 0),
+    value = combatValue(card.id, card.level, card.quality),
     Symbol =
       c.kind === 'damage'
         ? Sword
@@ -104,33 +75,10 @@ export default function CardFace({
           } as CSSProperties
         }
       />
-      <div
-        className={
-          'ed-card-health' + (reviveRemaining > 0 ? ' is-reviving' : '')
-        }
-        title={`卡牌生命 ${health ?? cardMaxHp(card)} / ${cardMaxHp(card)}`}
-      >
-        <i
-          style={{
-            width: `${reviveRemaining > 0 ? Math.max(0, 1 - reviveRemaining / reviveTimeOf(card, deaths)) * 100 : ((health ?? cardMaxHp(card)) / cardMaxHp(card)) * 100}%`,
-          }}
-        />
-        <span>
-          {reviveRemaining > 0
-            ? `幽魂 · ${reviveRemaining.toFixed(1)}s`
-            : `${Math.ceil(health ?? cardMaxHp(card))} / ${cardMaxHp(card)}`}
-        </span>
-      </div>
       <span className="ed-enhance">Lv {card.level}</span>
       <strong className="ed-card-name">{c.name}</strong>
+      <Symbol className="ed-card-emblem" aria-hidden="true" />
       <div className="ed-special-copy">{cardSpecial(card)}</div>
-      <span
-        className="ed-armor-corner"
-        title={`${((armor / (100 + armor)) * 100).toFixed(1)}% 伤害减免`}
-      >
-        <Shirt size={12} />
-        {armor}
-      </span>
       <div className="ed-effect-values">
         <span
           title={
@@ -140,7 +88,7 @@ export default function CardFace({
                 ? '治疗宿主'
                 : c.kind === 'charge'
                   ? '充能秒数'
-                  : '提供护盾'
+                  : '修复屏障'
           }
         >
           <Symbol size={12} />

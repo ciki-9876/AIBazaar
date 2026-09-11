@@ -59,6 +59,27 @@ export default function BattleEffects({
     };
   }, [surface, frames]);
   const frame = frames[cursor];
+  const endpoint = (hit: CombatFrame['hits'][number]) => {
+    const lane = hit.targetLane ?? 1;
+    if (hit.kind === 'damage')
+      return (
+        hit.targetUid ??
+        (frame.barriers[hit.side][lane].broken
+          ? `host-${hit.side}-lane-${lane}`
+          : `barrier-${hit.side}-${lane}`)
+      );
+    if (hit.kind === 'shield' && frame.barriers[hit.side][lane].broken) {
+      const next = [0, 1, 2]
+        .filter((i) => !frame.barriers[hit.side][i].broken)
+        .sort(
+          (a, b) =>
+            frame.barriers[hit.side][a].hp / frame.barriers[hit.side][a].maxHp -
+            frame.barriers[hit.side][b].hp / frame.barriers[hit.side][b].maxHp,
+        )[0];
+      if (next !== undefined) return `barrier-${hit.side}-${next}`;
+    }
+    return hit.targetUid ?? `host-${hit.side}-lane-${lane}`;
+  };
   const shots = frame?.projectiles ?? [];
   useEffect(() => {
     layer.current
@@ -82,10 +103,7 @@ export default function BattleEffects({
     <div className="ed-projectiles" aria-hidden="true" ref={layer}>
       {shots.map((hit) => {
         const start = points[hit.sourceUid!],
-          end =
-            points[
-              hit.targetUid ?? `host-${hit.side}-lane-${hit.targetLane ?? 1}`
-            ];
+          end = points[endpoint(hit)];
         if (!start || !end) return null;
         const dx = end.x - start.x,
           dy = end.y - start.y,
@@ -123,10 +141,7 @@ export default function BattleEffects({
       {frame?.hits
         .filter((hit) => hit.sourceUid)
         .map((hit, i) => {
-          const end =
-            points[
-              hit.targetUid ?? `host-${hit.side}-lane-${hit.targetLane ?? 1}`
-            ];
+          const end = points[endpoint(hit)];
           return end ? (
             <div
               key={`impact-${frame.time}-${i}`}

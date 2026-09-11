@@ -4162,3 +4162,650 @@ body:has(.elevator-demo) {
     animation: none;
   }
 }
+/* Demo 1.7: three permanent barriers, enemy above, player below. */
+.ed-combat .ed-battle-scroll {
+  overflow: hidden;
+}
+.ed-vertical-battle {
+  position: relative;
+  height: 100%;
+  width: 100%;
+  min-height: 0;
+  display: grid;
+  grid-template-rows: 48px 44px minmax(70px, 1fr) 22px minmax(
+      70px,
+      1fr
+    ) 44px 48px;
+  gap: 5px;
+}
+.ed-vertical-battle .ed-board {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+  margin: 0;
+  min-height: 0;
+  width: 100%;
+}
+.ed-vertical-battle .ed-lane {
+  display: block;
+  min-width: 0;
+  min-height: 0;
+}
+.ed-vertical-battle .ed-lane-label {
+  display: none;
+}
+.ed-vertical-battle .ed-lane-cells {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-rows: minmax(0, 1fr);
+  gap: 4px;
+  height: 100%;
+  min-height: 0;
+  direction: ltr;
+}
+.elevator-demo .ed-vertical-battle .ed-card.ed-card-v2,
+.ed-vertical-battle .ed-slot {
+  width: auto;
+  min-width: 0;
+  min-height: 0;
+  height: 100%;
+  padding: 24px 6px 24px;
+  overflow: hidden;
+}
+.elevator-demo .ed-vertical-battle .ed-card-v2 .ed-card-name {
+  font-size: 13px;
+  margin: 0;
+  line-height: 1.3;
+}
+.ed-vertical-battle .ed-card-v2 .ed-special-copy {
+  font-size: 12px;
+  line-height: 1.4;
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+.ed-vertical-battle .ed-card .ed-enhance {
+  top: 5px;
+  font-size: 12px;
+}
+.ed-vertical-battle .ed-effect-values {
+  bottom: 4px;
+  font-size: 12px;
+}
+.ed-vertical-battle .ed-actor {
+  position: relative;
+  min-height: 0;
+  height: 48px;
+  display: flex;
+  margin: 0;
+  padding: 5px 12px;
+  gap: 12px;
+}
+.ed-vertical-battle .ed-avatar {
+  width: 28px;
+  height: 30px;
+  flex: none;
+}
+.ed-vertical-battle .ed-avatar span {
+  font-size: 22px;
+}
+.ed-vertical-battle .ed-avatar small {
+  display: none;
+}
+.ed-vertical-battle .ed-actor-info {
+  flex: 1;
+  min-width: 0;
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 2px 15px;
+}
+.ed-vertical-battle .ed-actor-info > div:first-child {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+.ed-vertical-battle .ed-actor strong {
+  font-size: 14px;
+}
+.ed-vertical-battle .ed-actor-info b {
+  font-size: 18px;
+}
+.ed-vertical-battle .ed-actor-info b small {
+  font-size: 12px;
+}
+.ed-vertical-battle .ed-actor-info p {
+  grid-column: 2;
+  grid-row: 1 / span 2;
+  display: flex;
+  align-items: center;
+  margin: 0;
+  font-size: 12px;
+}
+.ed-vertical-battle .ed-hp {
+  height: 5px;
+}
+.ed-vertical-battle .ed-host-hitboxes {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-rows: 1fr;
+}
+.ed-vertical-battle .ed-host-hitboxes span {
+  color: transparent;
+  border: none;
+}
+.ed-barriers {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+}
+.ed-barrier {
+  border: 1px solid #91aa6370;
+  background: #1f2b24;
+  padding: 4px 8px;
+  min-width: 0;
+}
+.ed-barrier > div:first-child {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 12px;
+  white-space: nowrap;
+}
+.ed-barrier strong {
+  font-weight: 500;
+}
+.ed-barrier span {
+  margin-left: auto;
+  font-variant-numeric: tabular-nums;
+}
+.ed-barrier-track {
+  height: 9px;
+  background: #0d1713;
+  margin-top: 4px;
+  overflow: hidden;
+}
+.ed-barrier-track i {
+  display: block;
+  height: 100%;
+  background: linear-gradient(90deg, #738b47, #d5dc8a);
+  transition: width 0.2s linear;
+}
+.ed-barriers.enemy .ed-barrier {
+  background: #2d211c;
+  border-color: #b7865570;
+}
+.ed-barriers.enemy .ed-barrier-track i {
+  background: linear-gradient(90deg, #926342, #e2ac6c);
+}
+.ed-barrier.broken {
+  background: repeating-linear-gradient(
+    135deg,
+    #481e1722 0 6px,
+    transparent 6px 12px
+  );
+  border-style: dashed;
+  border-color: #a9604b;
+  color: #e7a895;
+}
+.ed-barrier.broken .ed-barrier-track {
+  background: #8a403833;
+}
+.ed-battle-divider {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  text-align: center;
+  font-size: 12px;
+  color: #c0bc97;
+  letter-spacing: 3px;
+}
+.ed-combat .ed-section-title h2 {
+  font-size: 21px;
+  margin: 0;
+}
+.ed-combat .ed-section-title .ed-kicker {
+  display: none;
+}
+.ed-combat .ed-stage-warning {
+  font-size: 12px;
+}
+.ed-combat .ed-battle-controls {
+  gap: 8px;
+}
+.ed-combat .ed-battle-controls button {
+  padding: 5px 10px;
+  font-size: 12px;
+}
+.ed-combat .ed-battle-controls span,
+.ed-combat .ed-battle-controls small {
+  font-size: 12px;
+}
+.ed-combat .ed-battle-controls small {
+  margin-left: auto;
+}
+.ed-combat .ed-visual-guide,
+.ed-battle-log-details {
+  flex: none;
+  margin: 0;
+  padding: 0;
+  font-size: 12px;
+}
+.ed-battle-log-details[open],
+.ed-combat .ed-visual-guide[open] {
+  position: absolute;
+  z-index: 40;
+  bottom: 18px;
+  right: 22px;
+  width: min(650px, 90%);
+  background: #172017;
+  border: 1px solid #73864b;
+  padding: 12px;
+  max-height: 160px;
+  overflow: auto;
+}
+.ed-combat .ed-battle-result {
+  padding: 8px 12px;
+  gap: 10px;
+  max-height: 110px;
+  margin: 0;
+}
+.ed-combat .ed-battle-result h2 {
+  font-size: 19px;
+  margin: 0;
+}
+.ed-combat .ed-battle-result p {
+  font-size: 12px;
+  margin: 2px 0;
+}
+.ed-combat .ed-battle-result button {
+  padding: 7px 10px;
+  font-size: 12px;
+}
+@media (max-height: 850px) {
+  .ed-vertical-battle .ed-special-copy {
+    display: none !important;
+  }
+  .ed-combat .ed-battle-controls > span {
+    display: none;
+  }
+  .ed-vertical-battle {
+    grid-template-rows: 40px 40px minmax(65px, 1fr) 18px minmax(
+        65px,
+        1fr
+      ) 40px 40px;
+    gap: 4px;
+  }
+  .ed-vertical-battle .ed-actor {
+    height: 40px;
+  }
+}
+@media (max-width: 900px) {
+  .ed-vertical-battle .ed-board,
+  .ed-barriers {
+    gap: 5px;
+  }
+  .ed-barrier {
+    padding: 4px;
+  }
+  .ed-barrier strong,
+  .ed-barrier svg {
+    display: none;
+  }
+  .ed-vertical-battle .ed-card-v2 .ed-special-copy {
+    display: none;
+  }
+  .ed-combat .ed-stage-warning {
+    display: none;
+  }
+}
+@media (max-height: 650px) {
+  .ed-combat .ed-battle-scroll {
+    overflow: auto;
+  }
+  .ed-vertical-battle {
+    min-height: 340px;
+  }
+}
+.elevator-demo .ed-vertical-battle .ed-board {
+  grid-template-rows: minmax(0, 1fr);
+  width: 100%;
+  max-width: 100%;
+}
+.elevator-demo .ed-vertical-battle .ed-lane-cells {
+  width: 100%;
+  max-width: 100%;
+}
+.ed-combat .ed-battle-scroll {
+  padding: 0;
+}
+.elevator-demo .ed-main > .ed-combat {
+  width: 100%;
+  max-width: none;
+  margin: 0;
+}
+.elevator-demo .ed-vertical-battle .ed-board .ed-lane-cells {
+  direction: ltr;
+}
+.elevator-demo .ed-card-v2 .ed-effect-values {
+  max-width: none;
+}
+.ed-vertical-battle .ed-board.enemy .ed-effect-values {
+  justify-content: flex-start;
+}
+/* Combat composition: the board owns the screen, not the exploration chrome. */
+.elevator-demo.in-combat {
+  padding: 14px 32px 12px;
+  background:
+    radial-gradient(ellipse at 50% 50%, #27302580, transparent 76%), #101511;
+}
+.in-combat .ed-shell {
+  display: block;
+  max-width: none;
+  padding: 0;
+  margin: 0;
+}
+.in-combat .ed-sidebar,
+.in-combat .ed-resources,
+.in-combat .ed-main > .ed-notice {
+  display: none;
+}
+.elevator-demo.in-combat .ed-main {
+  padding: 0;
+  margin: 0;
+  width: 100%;
+  max-width: none;
+}
+.in-combat .ed-settings-button {
+  top: 12px;
+  left: 14px;
+  width: 34px;
+  height: 34px;
+}
+.in-combat .ed-main > .ed-combat {
+  position: relative;
+  height: 100%;
+  display: grid;
+  grid-template-rows: 38px minmax(0, 1fr) 52px;
+  gap: 10px;
+}
+.in-combat .ed-combat .ed-stage-warning {
+  display: none;
+}
+.in-combat .ed-combat .ed-section-title {
+  grid-row: 1;
+  padding: 0 0 0 40px;
+  align-items: center;
+}
+.in-combat .ed-section-title h2 {
+  font-size: 18px;
+  letter-spacing: 1px;
+}
+.in-combat .ed-section-title > span {
+  font-size: 24px;
+  font-variant-numeric: tabular-nums;
+}
+.in-combat .ed-battle-scroll {
+  grid-row: 2;
+  height: 100%;
+  overflow: hidden;
+}
+.in-combat .ed-vertical-battle {
+  height: 100%;
+  min-height: 0;
+  grid-template-rows: 52px 46px minmax(140px, 1fr) 28px minmax(
+      140px,
+      1fr
+    ) 46px 52px;
+  gap: 6px;
+}
+.in-combat .ed-vertical-battle .ed-actor {
+  height: 52px;
+  background: #263224;
+  border-color: #71845788;
+  padding: 6px 16px;
+}
+.in-combat .ed-vertical-battle .ed-actor.enemy {
+  background: #30261e;
+  border-color: #ad825a88;
+}
+.in-combat .ed-vertical-battle .ed-actor strong {
+  font-size: 16px;
+}
+.in-combat .ed-vertical-battle .ed-actor-info b {
+  font-size: 23px;
+}
+.in-combat .ed-vertical-battle .ed-actor-info b small,
+.in-combat .ed-vertical-battle .ed-actor-info p {
+  font-size: 14px;
+}
+.in-combat .ed-vertical-battle .ed-hp {
+  height: 7px;
+}
+.in-combat .ed-barrier {
+  padding: 5px 10px;
+}
+.in-combat .ed-barrier > div:first-child {
+  font-size: 14px;
+}
+.in-combat .ed-barrier-track {
+  height: 10px;
+}
+.in-combat .ed-battle-divider {
+  font-size: 14px;
+  letter-spacing: 4px;
+  align-items: center;
+}
+.in-combat .ed-vertical-battle .ed-board {
+  gap: 14px;
+}
+.elevator-demo.in-combat .ed-vertical-battle .ed-lane-cells {
+  gap: 7px;
+}
+.elevator-demo.in-combat .ed-vertical-battle .ed-card.ed-card-v2 {
+  padding: 30px 10px 38px;
+  border-radius: 5px;
+  box-shadow:
+    inset 0 0 25px #080c0b55,
+    0 3px 8px #0008;
+}
+.elevator-demo.in-combat .ed-vertical-battle .ed-card-v2 .ed-card-name {
+  font-size: clamp(16px, 1.1vw, 21px);
+  line-height: 1.4;
+  margin: 0 0 8px;
+}
+.elevator-demo.in-combat .ed-card-v2 .ed-enhance {
+  font-size: 14px;
+  left: 9px;
+  top: 8px;
+}
+.ed-card-emblem {
+  display: none;
+}
+.in-combat .ed-card-emblem {
+  display: block;
+  width: clamp(30px, 3vw, 52px);
+  height: clamp(30px, 3vw, 52px);
+  min-height: 26px;
+  margin: 4px auto;
+  stroke-width: 1;
+  opacity: 0.65;
+  flex-shrink: 0;
+  filter: drop-shadow(0 0 12px currentColor);
+}
+.elevator-demo.in-combat .ed-vertical-battle .ed-card-v2 .ed-special-copy {
+  display: -webkit-box !important;
+  -webkit-line-clamp: 4;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  font-size: 14px;
+  line-height: 1.5;
+  padding: 0;
+  margin: auto 0;
+  color: #e6e7d8;
+}
+.elevator-demo.in-combat .ed-card-v2 .ed-effect-values {
+  font-size: clamp(20px, 1.4vw, 26px);
+  font-weight: 600;
+  bottom: 8px;
+  left: 10px;
+  right: 10px;
+  gap: 10px;
+}
+.in-combat .ed-effect-values svg {
+  width: 19px;
+  height: 19px;
+}
+.in-combat .ed-card-v2 .ed-effect-values > span {
+  gap: 5px;
+}
+.in-combat .ed-battle-controls {
+  grid-row: 3;
+  align-self: center;
+  padding: 0;
+}
+.in-combat .ed-battle-controls button {
+  font-size: 14px;
+  padding: 9px 14px;
+}
+.in-combat .ed-battle-controls > span,
+.in-combat .ed-battle-controls > small {
+  display: none;
+}
+.in-combat .ed-combat .ed-visual-guide,
+.in-combat .ed-combat .ed-battle-log-details {
+  position: absolute;
+  bottom: 14px;
+  right: 0;
+  z-index: 12;
+  border: none;
+  font-size: 14px;
+}
+.in-combat .ed-combat .ed-visual-guide {
+  right: 112px;
+}
+.in-combat .ed-combat .ed-visual-guide[open],
+.in-combat .ed-combat .ed-battle-log-details[open] {
+  bottom: 0;
+  max-height: 220px;
+  width: min(600px, 80vw);
+  border: 1px solid #869564;
+  padding: 14px;
+  background: #182019f5;
+}
+.in-combat .ed-combat.is-finished .ed-battle-controls,
+.in-combat .ed-combat.is-finished .ed-visual-guide,
+.in-combat .ed-combat.is-finished .ed-battle-log-details {
+  display: none;
+}
+.in-combat .ed-combat .ed-battle-result {
+  grid-row: 3;
+  display: flex;
+  height: 52px;
+  max-height: none;
+  padding: 6px 14px;
+  border-color: #9ea36e;
+  align-items: center;
+  gap: 16px;
+  overflow: visible;
+}
+.in-combat .ed-battle-result > div {
+  flex: 1;
+  min-width: 0;
+}
+.in-combat .ed-combat .ed-battle-result h2 {
+  font-size: 19px;
+}
+.in-combat .ed-combat .ed-battle-result p {
+  font-size: 13px;
+  line-height: 1.3;
+}
+.in-combat .ed-combat .ed-battle-result button {
+  font-size: 14px;
+  padding: 8px 16px;
+  flex: none;
+}
+@media (max-height: 800px) {
+  .elevator-demo.in-combat {
+    padding: 10px 22px;
+  }
+  .in-combat .ed-main > .ed-combat {
+    grid-template-rows: 30px minmax(0, 1fr) 54px;
+    gap: 6px;
+  }
+  .in-combat .ed-vertical-battle {
+    grid-template-rows: 42px 42px minmax(125px, 1fr) 20px minmax(
+        125px,
+        1fr
+      ) 42px 42px;
+    gap: 4px;
+  }
+  .in-combat .ed-vertical-battle .ed-actor {
+    height: 42px;
+  }
+  .in-combat .ed-card-emblem {
+    display: none;
+  }
+  .elevator-demo.in-combat .ed-vertical-battle .ed-card.ed-card-v2 {
+    padding: 28px 8px 36px;
+  }
+  .elevator-demo.in-combat .ed-vertical-battle .ed-card-v2 .ed-special-copy {
+    -webkit-line-clamp: 3;
+  }
+}
+@media (max-width: 800px) {
+  .elevator-demo.in-combat {
+    padding: 8px;
+  }
+  .in-combat .ed-vertical-battle .ed-board,
+  .in-combat .ed-barriers {
+    gap: 5px;
+  }
+  .in-combat .ed-vertical-battle {
+    min-width: 740px;
+  }
+  .in-combat .ed-battle-scroll {
+    overflow-x: auto;
+  }
+  .in-combat .ed-combat .ed-battle-result p {
+    display: none;
+  }
+}
+@media (max-height: 600px) {
+  .in-combat .ed-battle-scroll {
+    overflow-y: auto;
+  }
+  .in-combat .ed-vertical-battle {
+    min-height: 490px;
+  }
+}
+.elevator-demo.in-combat .ed-settings-button {
+  position: fixed;
+  top: 8px;
+  left: 14px;
+  width: 28px;
+  height: 28px;
+}
+.elevator-demo.in-combat .ed-card-v2 .ed-effect-values > span {
+  font-size: inherit;
+  line-height: 1;
+}
+.elevator-demo.in-combat .ed-vertical-battle .ed-card-v2 .ed-special-copy {
+  -webkit-line-clamp: 4;
+}
+.in-combat .ed-main > .ed-combat {
+  grid-template-rows: 38px minmax(0, 1fr) 70px;
+}
+.in-combat .ed-combat .ed-battle-result {
+  height: 70px;
+}
+.in-combat .ed-combat .ed-battle-result > div {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 2px;
+}
+@media (max-height: 800px) {
+  .in-combat .ed-main > .ed-combat {
+    grid-template-rows: 30px minmax(0, 1fr) 70px;
+  }
+}

@@ -1,4 +1,5 @@
 import { layout } from './cargo-layout.ts';
+import { rarityOf, growthCost, growthRefund } from './demo-card-rules.ts';
 import { rng, hash } from './design-model.ts';
 import {
   CARDS,
@@ -114,11 +115,11 @@ export const FACILITY_LEVEL: Record<string, number> = {
 };
 export const LEVEL_GUIDE = [
   '活下去：补给用于出勤和睡眠。带回实体，在桌面免费鉴定。',
-  '学会利用剩余物资：金币培养卡牌，废料回收为金币，药品恢复精力。',
+  '学会利用剩余物资：废料强化卡牌，同名同品阶卡吞噬升阶，药品恢复精力。',
   '把电带进门外：燃料发电，电力补充鉴定电荷，带上便携鉴定仪。',
   '建立稳定补给：电力与金币培育密封补给物品。',
   '为危险做准备：用金币与电力制作探索工具，降低探索消耗。',
-  '完整构筑：九格战斗布局，围绕生命、护甲和弹道组织卡牌。',
+  '完整构筑：九格战斗布局，围绕破路、修复和跨路支援组织卡牌。',
 ];
 export const unlockedItem = (s: Run, id: string) =>
   s.level >= (RESOURCE_LEVEL[id] ?? 1);
@@ -279,6 +280,7 @@ export function makeItem(
             ? 2
             : 1,
     amount,
+    ...(type === 'card' ? { rarity: rarityOf(id) } : {}),
     quality: 0,
     level: 0,
   };
@@ -403,6 +405,18 @@ export function autoBoardPosition(s: Run, item: Item): number | null {
       return at;
   }
   return null;
+}
+export function refineIngredient(s: Run, item: Item) {
+  return s.items
+    .filter(
+      (x) =>
+        x.type === 'card' &&
+        x.uid !== item.uid &&
+        x.id === item.id &&
+        x.quality === item.quality &&
+        x.zone !== 'board',
+    )
+    .sort((a, b) => a.level - b.level || a.uid.localeCompare(b.uid))[0];
 }
 export const volume = (items: Item[]) =>
   items.reduce((n, x) => n + x.volume, 0);
@@ -825,7 +839,9 @@ export function makeDuel(s: Run, kind: 'guardian' | 'survivor'): Duel {
     uid: `enemy-${i}`,
     id: i === 0 && hash(`${s.seed}/${floor}/guard`) % 2 === 0 ? 'wire' : id,
     at: ats[i],
-    rarity: 0,
+    rarity: rarityOf(
+      i === 0 && hash(`${s.seed}/${floor}/guard`) % 2 === 0 ? 'wire' : id,
+    ),
     quality: floor >= 5 ? 1 : 0,
     level: Math.floor((floor - 1) / 4),
   }));
@@ -850,6 +866,11 @@ export function makeDuel(s: Run, kind: 'guardian' | 'survivor'): Duel {
 }
 export function migrateCargo(source: Run): Run {
   const s = structuredClone(source);
+  for (const item of [...s.items, ...s.floors.flatMap((f) => f.stock)])
+    if (item.type === 'card') item.rarity = rarityOf(item.id);
+  if (s.duel)
+    for (const card of [...s.duel.player, ...s.duel.enemy])
+      card.rarity = rarityOf(card.id);
   for (const id of CONSUMABLES) {
     need(
       Number.isInteger(s[id]) && s[id] >= 0 && s[id] <= 10000,
@@ -940,7 +961,7 @@ function applyAction(old: Run, a: Action): Run {
     wire.rarity = 0;
     wire.at = 0;
     const shelter = makeItem('starter-shelter', 'shelter', 'card', 'board');
-    shelter.rarity = 0;
+    shelter.rarity = rarityOf('shelter');
     shelter.at = 3;
     s.items = [
       ...s.items.filter((x) =>
@@ -967,6 +988,33 @@ function applyAction(old: Run, a: Action): Run {
     const stage = s.duel.stage ?? (kind === 'guardian' ? 'boss' : 'normal');
     const bot = s.bots.find((x) => x.id === s.duel!.botId);
     s.duel = null;
+    if (result.timedOut) {
+      s.stamina = Math.max(0, s.stamina - 15);
+      s.interaction = null;
+      if (kind === 'survivor' || stage === 'boss') {
+        if (bot) {
+          bot.status = '封锁对决超时，双方撤离';
+          s.encounterDone = true;
+        }
+        finishBots(s);
+        s.phase = 'base';
+        s.objective = false;
+        s.floor = s.departureFloor ?? checkpoint(s);
+        s.stopFloor = s.floor;
+        say(
+          s,
+          '90 秒未分胜负：本次出勤结束，返回停靠点。消耗 15 精力，生命与物品保留，无奖励、无通关进度。',
+        );
+      } else {
+        s.phase = 'floor';
+        s.node++;
+        say(
+          s,
+          '90 秒未分胜负：消耗 15 精力，绕过敌人继续下一个节点，不领取奖励。',
+        );
+      }
+      return s;
+    }
     if (result.winner !== 0) {
       if (bot) {
         bot.floor = s.floor;
@@ -1103,13 +1151,11 @@ function applyAction(old: Run, a: Action): Run {
       );
       s.charges--;
     }
-    const roll = hash(`${s.seed}/${x.uid}/rarity`) % 10000;
-    x.rarity =
-      roll < 6000 ? 0 : roll < 8600 ? 1 : roll < 9700 ? 2 : roll < 9980 ? 3 : 4;
+    x.rarity = rarityOf(x.id);
     x.type = 'card';
     say(
       s,
-      `鉴定完成：${itemName(x)} / ${RARITY[x.rarity].name}。稀有度已锁定${x.rarity === 4 ? '，获得奇迹回响' : ''}。`,
+      `鉴定完成：${itemName(x)} / ${RARITY[x.rarity].name}。每种卡牌具有固定稀有度。`,
     );
     return s;
   }
@@ -1146,9 +1192,10 @@ function applyAction(old: Run, a: Action): Run {
     need(s.level >= 2, '电梯 Lv.2 解锁分解回收');
     const x = s.items.find((x) => x.uid === a.id);
     need(x && x.zone !== 'board', '请先卸下物品');
-    s.material += 2 + x.level * 2 + x.quality * 2;
+    s.material += 2 + x.quality * 2;
+    if (growthRefund(x.level)) grantItem(s, 'scrap', growthRefund(x.level));
     s.items = s.items.filter((i) => i.uid !== x.uid);
-    say(s, '物品已分解为金币，培养投入部分返还。');
+    say(s, '物品已回收为金币，返还 80% 强化废料（向下取整）。');
     return s;
   }
   if (a.type === 'grow' || a.type === 'refine') {
@@ -1156,13 +1203,25 @@ function applyAction(old: Run, a: Action): Run {
     need(s.level >= 2, '电梯 Lv.2 解锁卡牌培养');
     const x = s.items.find((x) => x.uid === a.id);
     need(x && x.type === 'card', '请选择卡牌');
-    const cost = a.type === 'grow' ? 3 + x.level * 2 : 5 + x.quality * 4;
-    need(s.material >= cost, '金币不足');
     need(a.type === 'grow' ? x.level < 5 : x.quality < 2, '已达培养上限');
-    s.material -= cost;
-    if (a.type === 'grow') x.level++;
-    else x.quality++;
-    say(s, `培养完成，消耗 ${cost} 金币。稀有度保持不变。`);
+    if (a.type === 'grow') {
+      const cost = growthCost(x.level);
+      need(itemCount(s, 'scrap', false) >= cost, '强化废料不足');
+      spendItem(s, 'scrap', cost);
+      x.level++;
+      say(s, `强化至 Lv ${x.level}，消耗 ${cost} 废料。`);
+    } else {
+      const duplicate = refineIngredient(s, x);
+      need(duplicate, '需要一张未上阵、同名且同品阶的卡牌');
+      s.items = s.items.filter((item) => item.uid !== duplicate.uid);
+      if (growthRefund(duplicate.level))
+        grantItem(s, 'scrap', growthRefund(duplicate.level));
+      x.quality++;
+      say(
+        s,
+        `吞噬同卡，升为${QUALITY[x.quality]}；主卡等级保留，素材卡返还 80% 强化废料。`,
+      );
+    }
     return s;
   }
   if (a.type === 'sleep') {
@@ -1485,7 +1544,7 @@ function applyAction(old: Run, a: Action): Run {
       s,
       kind === 'survivor'
         ? '封锁对决开始，本场只能有一名胜者继续。'
-        : '守卫战开始。攻击削减同路前排卡牌的生命；卡牌归零后进入幽魂并等待复活。空路直击宿主。',
+        : '守卫战开始。攻击先削减同路屏障，损毁后直击宿主；卡牌持续运转，屏障本场不重建。',
     );
     return s;
   }
@@ -1856,6 +1915,18 @@ export function validSave(value: unknown): value is Run {
         s.duel.stage === undefined ||
           ['normal', 'elite', 'boss'].includes(s.duel.stage),
         '战斗阶段无效',
+      );
+      need(
+        s.duel.barrierHp === undefined ||
+          (Array.isArray(s.duel.barrierHp) &&
+            s.duel.barrierHp.length === 2 &&
+            s.duel.barrierHp.every(
+              (lanes) =>
+                Array.isArray(lanes) &&
+                lanes.length === 3 &&
+                lanes.every((h) => Number.isFinite(h) && h > 0 && h <= 10000),
+            )),
+        '屏障初始值无效',
       );
       for (const board of [s.duel.player, s.duel.enemy]) {
         const occupied = new Set<number>();

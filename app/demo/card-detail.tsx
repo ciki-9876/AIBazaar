@@ -1,6 +1,5 @@
-import { Clock3, Shirt } from 'lucide-react';
+import { Clock3 } from 'lucide-react';
 import { describeCard } from '@/lib/card-description';
-import { armorOf, cardMaxHp, reviveTimeOf } from '@/lib/demo-combat';
 import type { FighterCard } from '@/lib/demo-combat';
 import { RARITY, QUALITY } from '@/lib/demo-engine';
 export default function CardDetail({ card }: { card: FighterCard }) {
@@ -13,20 +12,12 @@ export default function CardDetail({ card }: { card: FighterCard }) {
       </span>
       <span className="ed-role">定位 · {d.role}</span>
       <p className="ed-detail-grade">
-        {RARITY[card.rarity].name} · {QUALITY[card.quality]} · Lv.{card.level}
+        {RARITY[card.rarity].name} · {QUALITY[card.quality]} · Lv {card.level}
       </p>
       <div className="ed-detail-values">
-        <span>生命 {cardMaxHp(card)}</span>
-        <span>初始复活 {reviveTimeOf(card)} 秒</span>
         {d.effects.map((e, i) => (
           <span key={i}>{e.text}</span>
         ))}
-        <span
-          title={`${((armorOf(card) / (100 + armorOf(card))) * 100).toFixed(1)}% 伤害减免`}
-        >
-          <Shirt size={13} />
-          护甲 {armorOf(card)}
-        </span>
       </div>
       <section>
         <h4>固有效果</h4>
