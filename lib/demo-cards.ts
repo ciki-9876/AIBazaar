@@ -1,10 +1,13 @@
 import { CARDS as ORIGINAL, type CardDef } from './prototype-v04.ts';
+import { HERO_CARDS, type HeroId, type HeroMechanic } from './hero-cards.ts';
 export type School = 'rush' | 'erosion' | 'bastion';
 export type SystemCard = CardDef & {
   school?: School;
   rarity?: number;
   role?: string;
   rule?: string;
+  hero?: HeroId;
+  mechanic?: HeroMechanic;
 };
 const make = (
   id: string,
@@ -180,8 +183,10 @@ export const SYSTEM_CARDS: SystemCard[] = [
   ),
 ];
 export const CARDS: SystemCard[] = [...ORIGINAL, ...SYSTEM_CARDS];
+// Hero trials are isolated from adventure loot until the switching proposal is accepted.
+export const ALL_CARDS: SystemCard[] = [...CARDS, ...HERO_CARDS];
 export const cardDef = (id: string) => {
-  const c = CARDS.find((c) => c.id === id);
+  const c = ALL_CARDS.find((c) => c.id === id);
   if (!c) throw Error('未知卡牌');
   return c;
 };

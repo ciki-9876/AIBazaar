@@ -99,6 +99,62 @@ export function describeCard(card: FighterCard) {
         text: `宿主治疗 ${n(5 + q * 3)}`,
       });
   }
+  if (c.hero) {
+    const m = c.mechanic ?? {},
+      g = (1 + card.level * 0.12) * (1 + q * 0.15),
+      n = (v: number) => Math.round(v * g * 10) / 10;
+    if (m.opening)
+      innate.push(
+        `前 ${m.opening[0]} 次发动，额外${c.kind === 'shield' ? '修复' : '伤害'} ${n(m.opening[1])}。`,
+      );
+    if (m.allRepair) {
+      const defaultIndex = innate.findIndex((x) => x.startsWith('修复本路'));
+      if (defaultIndex >= 0) innate.splice(defaultIndex, 1);
+      innate.push('同时修复三路仍完整的屏障，每路独立结算。');
+    }
+    if (m.exposed)
+      innate.push(`命中时目标屏障已破，额外伤害 ${n(m.exposed)}。`);
+    if (m.barrierBonus)
+      innate.push(`命中时目标屏障完整，额外伤害 ${n(m.barrierBonus)}。`);
+    if (m.growth) innate.push(`每次发动比上次多 ${n(m.growth)} 伤害。`);
+    if (m.intactBonus)
+      innate.push(`发动时本路屏障高于一半，额外伤害 ${n(m.intactBonus)}。`);
+    if (m.corrosionBonus)
+      innate.push(`发动时，敌方本路每层侵蚀使伤害 +${n(m.corrosionBonus)}。`);
+    if (m.smallAllyBonus)
+      innate.push(`同路有另一张 1 格卡牌时，伤害 +${n(m.smallAllyBonus)}。`);
+    if (m.seekCorrosion)
+      innate.push('攻击侵蚀最深的一路；同层数优先上路，无侵蚀则攻击本路。');
+    if (m.recoil)
+      innate.push(
+        `本路屏障承受直接伤害的 50% 储为反冲，上限 ${(40 + q * 10) * (1 + card.level * 0.12)}；下次攻击消耗并附加。`,
+      );
+    if (m.buffer)
+      innate.push(
+        `本路完整屏障受到直接伤害 −${n(m.buffer)}；同路只取最高值，不能减免侵蚀。`,
+      );
+    if (c.kind === 'charge')
+      innate.push(
+        m.allCharge ? '给三路全部其他卡牌充能。' : '给同路另一张卡牌充能。',
+      );
+    if (m.firstCharge) innate.push(`首次额外充能 ${n(m.firstCharge)} 秒。`);
+    if (c.kind === 'corrode')
+      innate.push(
+        '每层每秒造成 1 伤害并削减 1 屏障上限，最多 12 层；破路后持续伤害宿主。',
+      );
+    if (m.heal)
+      effects.push({
+        kind: 'heal',
+        value: n(m.heal),
+        text: `宿主治疗 ${n(m.heal)}`,
+      });
+    if (m.repair)
+      effects.push({
+        kind: 'shield',
+        value: n(m.repair),
+        text: `屏障修复 ${n(m.repair)}`,
+      });
+  }
   return {
     role: c.role ?? CARD_ROLES[c.id],
     cd: c.cd + (c.id === 'bell' && q > 0 ? 1 : 0),

@@ -1,5 +1,7 @@
 import { cardDef } from './demo-cards.ts';
 import { combatValue } from './demo-card-rules.ts';
+import { heroDef, heroOwner } from './heroes.ts';
+import type { HeroId } from './hero-cards.ts';
 export type FighterCard = {
   uid: string;
   id: string;
@@ -46,6 +48,7 @@ export type Hit = {
   blocked?: number;
   periodic?: boolean;
   exposedBonus?: number;
+  barrierBonus?: number;
 };
 export type Projectile = Hit & {
   id: string;
@@ -60,6 +63,7 @@ export type CombatFrame = {
   barriers: Barrier[][];
   corrosion: number[][];
   stored: Record<string, number>;
+  heroMeters: number[][];
   energy: number[];
   timers: number[][];
   cd: number[][];
@@ -70,6 +74,9 @@ export type CombatFrame = {
   log: string[];
 };
 export type Duel = {
+  heroes?: (HeroId | null)[];
+  heroPassives?: boolean;
+  disabledHeroSides?: number[];
   stage?: 'normal' | 'elite' | 'boss';
   player: FighterCard[];
   enemy: FighterCard[];
@@ -85,11 +92,18 @@ export type Duel = {
 const laneOf = (c: FighterCard) => Math.floor(c.at / 3);
 const laneName = (lane: number) => ['上路', '中路', '下路'][lane];
 export function simulateDuel(d: Duel) {
+  for (const [side, board] of [d.player, d.enemy].entries())
+    for (const card of board) {
+      const owner = d.heroes ? heroOwner(card.id) : cardDef(card.id).hero;
+      if (owner && owner !== d.heroes?.[side])
+        throw Error('未接入对应回响，不能上阵专属卡');
+    }
   const boards = [d.player, d.enemy].map((b) =>
     [...b].sort((a, b) => a.at - b.at),
   );
   const hp = [...d.maxHp],
     energy = [0, 0];
+  const sourcePositions = new Map(boards.flat().map((c) => [c.uid, c.at]));
   const barriers = d.maxHp.map((health, side) =>
     [0, 1, 2].map((lane) => {
       const maxHp = Math.max(
@@ -111,8 +125,48 @@ export function simulateDuel(d: Duel) {
       [0, 0, 0],
       [0, 0, 0],
     ],
-    corrosionSource: (FighterCard | undefined)[][] = [[], []];
+    corrosionSource: ({ uid: string; name: string } | undefined)[][] = [[], []];
   const stored: Record<string, number> = {};
+  const heroMeters = [
+    [0, 0, 0],
+    [0, 0, 0],
+  ];
+  const activeHero = (side: number) =>
+    d.heroPassives === false || d.disabledHeroSides?.includes(side)
+      ? null
+      : d.heroes?.[side];
+  const heroCharge = (side: number, lane: number, time: number, value = 1) => {
+    const hero = activeHero(side);
+    if (!hero) return;
+    for (const c of boards[side].filter((c) => laneOf(c) === lane))
+      pending.push({
+        id: `hero-${serial++}`,
+        kind: 'charge',
+        side,
+        value,
+        source: heroDef(hero).name + ' · 回响',
+        sourceUid: `host-${side}-lane-${lane}`,
+        targetUid: c.uid,
+        targetLane: lane,
+        visual: 'charge',
+        launchedAt: time,
+        impactAt: time + 1.25,
+      });
+  };
+  const onRepair = (
+    side: number,
+    lane: number,
+    value: number,
+    time: number,
+  ) => {
+    if (activeHero(side) !== 'mender' || value <= 0) return;
+    heroMeters[side][lane] += value;
+    const pulses = Math.floor((heroMeters[side][lane] + 1e-8) / 30);
+    if (pulses) {
+      heroMeters[side][lane] -= pulses * 30;
+      heroCharge(side, lane, time, pulses);
+    }
+  };
   const repairLane = (side: number, lane: number) =>
     !barriers[side][lane].broken
       ? lane
@@ -123,6 +177,24 @@ export function simulateDuel(d: Duel) {
               barriers[side][a].hp / barriers[side][a].maxHp -
                 barriers[side][b].hp / barriers[side][b].maxHp || a - b,
           )[0];
+  const damageLane = (id: string, side: number, lane: number) => {
+    const def = cardDef(id);
+    if (
+      (id === 'culture' || def.mechanic?.seekCorrosion) &&
+      corrosion[1 - side].some((v) => v > 0)
+    )
+      return [0, 1, 2].sort(
+        (a, b) => corrosion[1 - side][b] - corrosion[1 - side][a] || a - b,
+      )[0];
+    if (id === 'coil')
+      return [0, 1, 2]
+        .filter((i) => i !== lane)
+        .sort(
+          (a, b) =>
+            barriers[1 - side][a].hp - barriers[1 - side][b].hp || a - b,
+        )[0];
+    return lane;
+  };
   for (let step = 0; step <= COMBAT_LIMIT * 4; step++) {
     const time = step / 4,
       hits: Hit[] = [],
@@ -131,6 +203,10 @@ export function simulateDuel(d: Duel) {
       log: string[] = [];
     const cd = [Array(9).fill(0), Array(9).fill(0)],
       damage = [0, 0];
+    if (step === 0)
+      for (let side = 0; side < 2; side++)
+        if (activeHero(side) === 'breaker')
+          for (let lane = 0; lane < 3; lane++) heroCharge(side, lane, time);
     const arrivals = pending.filter((p) => p.impactAt <= time);
     pending = pending.filter((p) => p.impactAt > time);
     if (step > 0 && step % 4 === 0)
@@ -145,7 +221,7 @@ export function simulateDuel(d: Duel) {
               value: corrosion[side][lane],
               raw: corrosion[side][lane],
               periodic: true,
-              source: '侵蚀 · ' + cardDef(source.id).name,
+              source: '侵蚀 · ' + source.name,
               sourceUid: source.uid,
               targetLane: lane,
               visual: 'poison',
@@ -167,7 +243,10 @@ export function simulateDuel(d: Duel) {
       (a, b) =>
         impactOrder[a.kind] - impactOrder[b.kind] ||
         a.impactAt - b.impactAt ||
-        (a.sourceUid ?? '').localeCompare(b.sourceUid ?? ''),
+        Number(!!a.periodic) - Number(!!b.periodic) ||
+        (sourcePositions.get(a.sourceUid ?? '') ?? 9 + (a.targetLane ?? 1)) -
+          (sourcePositions.get(b.sourceUid ?? '') ?? 9 + (b.targetLane ?? 1)) ||
+        (a.source < b.source ? -1 : a.source > b.source ? 1 : 0),
     );
     for (const shot of arrivals) {
       const hit: Hit = { ...shot },
@@ -180,13 +259,23 @@ export function simulateDuel(d: Duel) {
             : Math.max(
                 0,
                 ...boards[hit.side]
-                  .filter((c) => c.id === 'rubber' && laneOf(c) === lane)
-                  .map((c) => (8 + c.quality) * (1 + c.level * 0.12)),
+                  .filter(
+                    (c) =>
+                      (c.id === 'rubber' || cardDef(c.id).mechanic?.buffer) &&
+                      laneOf(c) === lane,
+                  )
+                  .map((c) =>
+                    c.id === 'rubber'
+                      ? (8 + c.quality) * (1 + c.level * 0.12)
+                      : cardDef(c.id).mechanic!.buffer! *
+                        (1 + c.level * 0.12) *
+                        (1 + c.quality * 0.15),
+                  ),
               );
         hit.blocked = Math.min(hit.raw ?? hit.value, buffer);
         hit.value =
           Math.max(0, (hit.raw ?? hit.value) - hit.blocked) +
-          (barrier.broken ? (hit.exposedBonus ?? 0) : 0);
+          (barrier.broken ? (hit.exposedBonus ?? 0) : (hit.barrierBonus ?? 0));
         hit.targetUid = barrier.broken
           ? `host-${hit.side}-lane-${lane}`
           : `barrier-${hit.side}-${lane}`;
@@ -198,7 +287,9 @@ export function simulateDuel(d: Duel) {
           barrier.maxHp = Math.max(1, barrier.maxHp - hit.value);
         if (!hit.periodic && hit.barrierAbsorbed > 0)
           for (const c of boards[hit.side].filter(
-            (c) => c.id === 'recoil' && laneOf(c) === lane,
+            (c) =>
+              (c.id === 'recoil' || cardDef(c.id).mechanic?.recoil) &&
+              laneOf(c) === lane,
           ))
             stored[c.uid] = Math.min(
               (40 + c.quality * 10) * (1 + c.level * 0.12),
@@ -207,6 +298,11 @@ export function simulateDuel(d: Duel) {
         damage[hit.side] += hit.healthLoss;
         if (!barrier.broken && barrier.hp <= 0) {
           barrier.broken = true;
+          if (activeHero(1 - hit.side) === 'breaker') {
+            heroMeters[1 - hit.side][lane]++;
+            for (let target = 0; target < 3; target++)
+              heroCharge(1 - hit.side, target, time);
+          }
           log.push(
             `${hit.side ? '敌方' : '我方'}${laneName(lane)}屏障损毁，本场不会重建。`,
           );
@@ -215,9 +311,10 @@ export function simulateDuel(d: Duel) {
         const before = corrosion[hit.side][lane];
         corrosion[hit.side][lane] = Math.min(12, before + hit.value);
         hit.value = corrosion[hit.side][lane] - before;
-        corrosionSource[hit.side][lane] = boards[1 - hit.side].find(
-          (c) => c.uid === hit.sourceUid,
-        );
+        corrosionSource[hit.side][lane] = {
+          uid: hit.sourceUid ?? `host-${1 - hit.side}-lane-${lane}`,
+          name: hit.source,
+        };
         hit.targetUid = barriers[hit.side][lane].broken
           ? `host-${hit.side}-lane-${lane}`
           : `barrier-${hit.side}-${lane}`;
@@ -229,6 +326,7 @@ export function simulateDuel(d: Duel) {
           const barrier = barriers[hit.side][target];
           hit.value = Math.min(shot.value, barrier.maxHp - barrier.hp);
           barrier.hp += hit.value;
+          onRepair(hit.side, target, hit.value, time);
           hit.targetLane = target;
           hit.targetUid = `barrier-${hit.side}-${target}`;
           hit.targetName = `${laneName(target)}屏障修复`;
@@ -245,6 +343,7 @@ export function simulateDuel(d: Duel) {
             barrier.maxHp - barrier.hp,
           );
           barrier.hp += value;
+          onRepair(hit.side, target, value, time);
           if (value)
             hits.push({
               ...hit,
@@ -288,9 +387,31 @@ export function simulateDuel(d: Duel) {
         energy[side] -= c.energyCost;
         fired.push(p.uid);
         const growth = 1 + p.level * 0.12;
+        const special = c.mechanic,
+          heroGrowth = growth * (1 + q * 0.15);
         const n = ++counts[side][p.at],
           v = combatValue(c.id, p.level, q);
         let amount = v;
+        if (special?.opening && n <= special.opening[0])
+          amount += special.opening[1] * heroGrowth;
+        if (special?.growth) amount += (n - 1) * special.growth * heroGrowth;
+        if (
+          special?.intactBonus &&
+          !barriers[side][lane].broken &&
+          barriers[side][lane].hp > barriers[side][lane].maxHp * 0.5
+        )
+          amount += special.intactBonus * heroGrowth;
+        if (special?.corrosionBonus)
+          amount +=
+            corrosion[1 - side][lane] * special.corrosionBonus * heroGrowth;
+        if (
+          special?.smallAllyBonus &&
+          boards[side].some(
+            (x) =>
+              x.uid !== p.uid && laneOf(x) === lane && cardDef(x.id).size === 1,
+          )
+        )
+          amount += special.smallAllyBonus * heroGrowth;
         if (c.id === 'nailer' && n <= 2) amount += (16 + q * 4) * growth;
         if (c.id === 'springbow' && n <= 3) amount += (16 + q * 4) * growth;
         if (c.id === 'culture') amount += (n - 1) * (8 + q * 2) * growth;
@@ -300,7 +421,7 @@ export function simulateDuel(d: Duel) {
           barriers[side][lane].hp > barriers[side][lane].maxHp * 0.5
         )
           amount += (20 + q * 5) * growth;
-        if (c.id === 'recoil') {
+        if (c.id === 'recoil' || special?.recoil) {
           amount += stored[p.uid] ?? 0;
           stored[p.uid] = 0;
         }
@@ -321,22 +442,100 @@ export function simulateDuel(d: Duel) {
             overflowCap,
           });
         const base = { source: c.name, sourceUid: p.uid, targetLane: lane };
+        if (activeHero(side) === 'archivist') {
+          heroMeters[side][lane]++;
+          if (heroMeters[side][lane] >= 3) {
+            heroMeters[side][lane] -= 3;
+            const recorded = boards[side]
+              .filter((x) => laneOf(x) === lane)
+              .sort(
+                (a, b) =>
+                  cardDef(b.id).size - cardDef(a.id).size ||
+                  cardDef(b.id).cd - cardDef(a.id).cd ||
+                  a.at - b.at,
+              )[0];
+            if (recorded) {
+              const def = cardDef(recorded.id),
+                value = combatValue(
+                  recorded.id,
+                  recorded.level,
+                  recorded.quality,
+                ),
+                source = {
+                  source: '闻砂 · 复写 ' + def.name,
+                  sourceUid: `host-${side}-lane-${lane}`,
+                  targetLane: lane,
+                };
+              const copy = (hit: Hit) =>
+                pending.push({
+                  ...hit,
+                  id: `echo-${serial++}`,
+                  launchedAt: time,
+                  impactAt: time + 1.25,
+                });
+              if (def.kind === 'damage' || def.kind === 'corrode')
+                copy({
+                  ...source,
+                  kind: def.kind,
+                  side: 1 - side,
+                  value,
+                  raw: value,
+                  targetLane:
+                    def.kind === 'damage'
+                      ? damageLane(recorded.id, side, lane)
+                      : lane,
+                  visual: def.kind === 'damage' ? 'damage' : 'poison',
+                });
+              if (def.kind === 'heal')
+                copy({
+                  ...source,
+                  kind: 'heal',
+                  side,
+                  value,
+                  visual: 'heal',
+                  targetUid: `host-${side}-lane-${lane}`,
+                });
+              if (def.kind === 'shield') {
+                const primary = repairLane(side, lane);
+                const targets = def.mechanic?.allRepair
+                  ? [0, 1, 2].filter((i) => !barriers[side][i].broken)
+                  : primary === undefined
+                    ? []
+                    : [primary];
+                for (const target of targets)
+                  copy({
+                    ...source,
+                    kind: 'shield',
+                    side,
+                    value,
+                    visual: 'armor',
+                    targetLane: target,
+                    targetUid: `barrier-${side}-${target}`,
+                  });
+              }
+              if (def.kind === 'charge') {
+                const all =
+                  def.mechanic?.allCharge ||
+                  (def.id === 'bell' && recorded.quality > 0);
+                const targets = boards[side].filter(
+                  (x) => x.uid !== recorded.uid && (laneOf(x) === lane || all),
+                );
+                for (const target of all ? targets : targets.slice(0, 1))
+                  copy({
+                    ...source,
+                    kind: 'charge',
+                    side,
+                    value,
+                    visual: 'charge',
+                    targetUid: target.uid,
+                    targetLane: laneOf(target),
+                  });
+              }
+            }
+          }
+        }
         if (c.kind === 'damage') {
-          const targetLane =
-            c.id === 'culture' && corrosion[1 - side].some((v) => v > 0)
-              ? [0, 1, 2].sort(
-                  (a, b) =>
-                    corrosion[1 - side][b] - corrosion[1 - side][a] || a - b,
-                )[0]
-              : c.id === 'coil'
-                ? [0, 1, 2]
-                    .filter((i) => i !== lane)
-                    .sort(
-                      (a, b) =>
-                        barriers[1 - side][a].hp - barriers[1 - side][b].hp ||
-                        a - b,
-                    )[0]
-                : lane;
+          const targetLane = damageLane(c.id, side, lane);
           launch({
             ...base,
             side: 1 - side,
@@ -345,8 +544,34 @@ export function simulateDuel(d: Duel) {
             raw: amount,
             visual: 'damage',
             targetLane,
-            exposedBonus: c.id === 'gapblade' ? (12 + q * 4) * growth : 0,
+            exposedBonus:
+              c.id === 'gapblade'
+                ? (12 + q * 4) * growth
+                : (special?.exposed ?? 0) * heroGrowth,
+            barrierBonus: (special?.barrierBonus ?? 0) * heroGrowth,
           });
+        }
+        if (special?.heal)
+          launch({
+            ...base,
+            side,
+            kind: 'heal',
+            value: special.heal * heroGrowth,
+            visual: 'heal',
+            targetUid: `host-${side}-lane-${lane}`,
+          });
+        if (special?.repair) {
+          const target = repairLane(side, lane);
+          if (target !== undefined)
+            launch({
+              ...base,
+              side,
+              kind: 'shield',
+              value: special.repair * heroGrowth,
+              visual: 'armor',
+              targetLane: target,
+              targetUid: `barrier-${side}-${target}`,
+            });
         }
         if (c.kind === 'corrode') {
           launch({
@@ -367,8 +592,13 @@ export function simulateDuel(d: Duel) {
             });
         }
         if (c.kind === 'shield') {
-          const target = repairLane(side, lane);
-          if (target !== undefined)
+          const primary = repairLane(side, lane);
+          const targets = special?.allRepair
+            ? [0, 1, 2].filter((i) => !barriers[side][i].broken)
+            : primary === undefined
+              ? []
+              : [primary];
+          for (const target of targets)
             launch({
               ...base,
               side,
@@ -409,16 +639,22 @@ export function simulateDuel(d: Duel) {
                 : 1
               : 0;
         if (c.id === 'fuse' && n === 1) advance += 2 + q * 0.5;
+        if (special?.firstCharge && n === 1)
+          advance += special.firstCharge * heroGrowth;
         if (c.id === 'catalyst' && corrosion[1 - side][lane] > 0)
           advance += 0.8 + q * 0.2;
         if (advance) {
           const others = boards[side].filter(
             (x) =>
               x.uid !== p.uid &&
-              (laneOf(x) === lane || (c.id === 'bell' && q > 0)),
+              (laneOf(x) === lane ||
+                (c.id === 'bell' && q > 0) ||
+                special?.allCharge),
           );
           const targets =
-            c.id === 'bell' && q > 0 ? others : others.slice(0, 1);
+            (c.id === 'bell' && q > 0) || special?.allCharge
+              ? others
+              : others.slice(0, 1);
           for (const x of targets)
             launch({
               ...base,
@@ -452,6 +688,7 @@ export function simulateDuel(d: Duel) {
       barriers: structuredClone(barriers),
       corrosion: corrosion.map((row) => [...row]),
       stored: { ...stored },
+      heroMeters: heroMeters.map((row) => [...row]),
       energy: [...energy],
       timers: timers.map((a) => [...a]),
       cd,

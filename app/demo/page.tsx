@@ -545,6 +545,9 @@ export default function Demo() {
           <a className="ed-lab-link" href="/lab">
             流派试验场 ↗
           </a>
+          <a className="ed-lab-link" href="/heroes">
+            英雄回响 ↗
+          </a>
         </nav>
         <div className="ed-inventory-page-body">
           {inventoryTab === 'catalog' ? (

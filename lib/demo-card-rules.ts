@@ -15,6 +15,10 @@ export const rarityOf = (id: string) =>
   cardDef(id).rarity ?? FIXED_RARITY[id] ?? 0;
 export function combatValue(id: string, level: number, quality = 0) {
   const c = cardDef(id);
+  if (c.hero)
+    return (
+      Math.round(c.power * (1 + level * 0.12) * (1 + quality * 0.15) * 10) / 10
+    );
   if (c.school)
     return (
       Math.round(

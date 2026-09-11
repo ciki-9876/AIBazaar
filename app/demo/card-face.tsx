@@ -80,7 +80,7 @@ export default function CardFace({
         }
       />
       <span className="ed-enhance">Lv {card.level}</span>
-      {card.id === 'recoil' && (
+      {(card.id === 'recoil' || c.mechanic?.recoil) && (
         <span
           className="ed-recoil-stored"
           title="下次攻击附加并消耗这些反冲伤害"
@@ -109,6 +109,28 @@ export default function CardFace({
           {value}
           {c.kind === 'charge' ? 's' : ''}
         </span>
+        {c.mechanic?.heal && (
+          <span title="治疗宿主">
+            <Heart size={12} />
+            {Math.round(
+              c.mechanic.heal *
+                (1 + card.level * 0.12) *
+                (1 + card.quality * 0.15) *
+                10,
+            ) / 10}
+          </span>
+        )}
+        {c.mechanic?.repair && (
+          <span title="修复屏障">
+            <Shield size={12} />
+            {Math.round(
+              c.mechanic.repair *
+                (1 + card.level * 0.12) *
+                (1 + card.quality * 0.15) *
+                10,
+            ) / 10}
+          </span>
+        )}
         {c.id === 'distiller' && (
           <span title="治疗宿主">
             <Heart size={12} />
