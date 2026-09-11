@@ -1,9 +1,8 @@
+import { CARDS, cardDef } from './demo-cards.ts';
 import { layout } from './cargo-layout.ts';
 import { rarityOf, growthCost, growthRefund } from './demo-card-rules.ts';
 import { rng, hash } from './design-model.ts';
 import {
-  CARDS,
-  cardDef,
   FOUR,
   FACILITIES,
   RARITY as OLD_RARITY,

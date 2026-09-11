@@ -2416,14 +2416,14 @@
   position: absolute;
   inset: 0;
   background: #eee9cc25;
-  transform-origin: left;
-  transform: scaleX(var(--cooldown-progress));
+  transform-origin: top center;
+  transform: scaleY(var(--cooldown-progress));
   pointer-events: none;
   z-index: 0;
-  transition: transform 0.1s linear;
+  transition: none;
 }
 .ed-board.enemy .ed-card-v2 .ed-card-wash {
-  transform-origin: right;
+  transform-origin: top center;
 }
 .ed-effect-values {
   position: absolute;
@@ -4807,5 +4807,51 @@ body:has(.elevator-demo) {
 @media (max-height: 800px) {
   .in-combat .ed-main > .ed-combat {
     grid-template-rows: 30px minmax(0, 1fr) 70px;
+  }
+}
+/* Cooldown now flows downwards on both sides; reserve the central combat belt. */
+.ed-corrosion-badge {
+  font-style: normal;
+  font-size: 12px;
+  color: #98e6b2;
+  white-space: nowrap;
+}
+.ed-recoil-stored {
+  position: absolute;
+  right: 7px;
+  top: 8px;
+  font-size: 12px;
+  color: #ffe0a3;
+  z-index: 4;
+}
+.ed-lab-link {
+  color: #dcc787;
+  font-size: 14px;
+  text-decoration: none;
+  padding: 9px 12px;
+}
+.elevator-demo .ed-card-v2 .ed-card-wash,
+.elevator-demo .ed-board.enemy .ed-card-v2 .ed-card-wash {
+  transform-origin: top center;
+  transform: scaleY(var(--cooldown-progress));
+}
+.in-combat .ed-vertical-battle {
+  grid-template-rows: 52px 46px minmax(140px, 1fr) clamp(
+      64px,
+      9vh,
+      110px
+    ) minmax(140px, 1fr) 46px 52px;
+}
+.in-combat .ed-battle-divider {
+  border-top: 1px solid #b3a87430;
+  border-bottom: 1px solid #b3a87430;
+  background: linear-gradient(180deg, #070d0788, transparent, #070d0788);
+}
+@media (max-height: 800px) {
+  .in-combat .ed-vertical-battle {
+    grid-template-rows: 42px 42px minmax(125px, 1fr) 64px minmax(
+        125px,
+        1fr
+      ) 42px 42px;
   }
 }

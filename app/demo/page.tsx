@@ -86,7 +86,7 @@ import {
 import type { Run, Action, Zone, Item } from '@/lib/demo-engine';
 import { simulateDuel } from '@/lib/demo-combat';
 import type { FighterCard, CombatFrame } from '@/lib/demo-combat';
-import { cardDef } from '@/lib/prototype-v04';
+import { cardDef } from '@/lib/demo-cards';
 import './demo.css';
 const zoneName: Record<Zone, string> = {
   bag: '随身背包',
@@ -381,6 +381,7 @@ export default function Demo() {
                   >
                     <CardFace
                       card={card}
+                      stored={fr?.stored?.[card.uid] ?? 0}
                       enemy={enemy}
                       progress={
                         fr
@@ -541,6 +542,9 @@ export default function Demo() {
               {label}
             </button>
           ))}
+          <a className="ed-lab-link" href="/lab">
+            流派试验场 ↗
+          </a>
         </nav>
         <div className="ed-inventory-page-body">
           {inventoryTab === 'catalog' ? (
@@ -1318,10 +1322,18 @@ export default function Demo() {
             <div>
               <Shield size={14} />
               <strong>{['上路', '中路', '下路'][lane]}屏障</strong>
+              {!!fr.corrosion?.[side]?.[lane] && (
+                <em
+                  className="ed-corrosion-badge"
+                  title="每层每秒伤害 1，并削减屏障上限 1；破路后持续伤害宿主。"
+                >
+                  侵蚀 {Math.round(fr.corrosion[side][lane] * 10) / 10}
+                </em>
+              )}
               <span>
                 {barrier.broken
                   ? '已损毁 · 宿主暴露'
-                  : `${Math.ceil(barrier.hp)} / ${barrier.maxHp}`}
+                  : `${Math.ceil(barrier.hp)} / ${Math.ceil(barrier.maxHp)}`}
               </span>
             </div>
             <div
@@ -1416,7 +1428,7 @@ export default function Demo() {
             底色：灰色普通、蓝色罕见、黄色稀有、暗金传说、红色奇迹。品质：基础单线框、精制双线框、大师雕角框。左上角为强化等级；蒙层铺满时发动。卡牌不承伤，后方屏障保护宿主。
           </p>
           <p>
-            直线流光：伤害红、治疗绿、屏障修复黄、灼烧橙、毒素墨绿、冰冻淡蓝。当前样卡尚无独立灼烧、毒素、冰冻效果，这三类已预留对应颜色。弹道飞行
+            直线流光：伤害红、治疗绿、屏障修复黄、灼烧橙、毒素墨绿、冰冻淡蓝。侵蚀使用墨绿弹道；灼烧与冰冻颜色为后续效果预留。弹道飞行
             0.75–1.5 秒后结算效果；暂停会冻结弹道位置。
           </p>
         </details>
@@ -1429,7 +1441,7 @@ export default function Demo() {
                 ...fr.hits.map((h) =>
                   h.kind === 'damage'
                     ? `${fr.time.toFixed(1)}s · ${h.source} → ${h.targetName}：屏障 −${h.barrierAbsorbed ?? 0} / 宿主 −${h.healthLoss ?? 0}`
-                    : `${fr.time.toFixed(1)}s · ${h.source} → ${h.targetName ?? (h.side ? '敌方' : '我方')} · ${h.kind === 'heal' ? '治疗' : h.kind === 'shield' ? '修复' : h.kind === 'charge' ? '充能' : '能量'} ${h.value}`,
+                    : `${fr.time.toFixed(1)}s · ${h.source} → ${h.targetName ?? (h.side ? '敌方' : '我方')} · ${h.kind === 'heal' ? '治疗' : h.kind === 'shield' ? '修复' : h.kind === 'charge' ? '充能' : h.kind === 'corrode' ? '叠加侵蚀' : '能量'} ${h.value}`,
                 ),
                 ...fr.log,
               ])

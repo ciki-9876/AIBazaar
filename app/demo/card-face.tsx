@@ -1,11 +1,11 @@
 'use client';
-import { Sword, Heart, Shield, Zap, FastForward } from 'lucide-react';
+import { Sword, Heart, Shield, Zap, FastForward, Droplets } from 'lucide-react';
 import { useEffect, useRef } from 'react';
 import type { CSSProperties } from 'react';
 import type { FighterCard } from '@/lib/demo-combat';
 import { describeCard } from '@/lib/card-description';
 import { combatValue } from '@/lib/demo-card-rules';
-import { cardDef } from '@/lib/prototype-v04';
+import { cardDef } from '@/lib/demo-cards';
 export function cardSpecial(card: FighterCard) {
   return describeCard(card)
     .innate.join(' ')
@@ -20,6 +20,7 @@ export default function CardFace({
   cooldown = 1,
   playing = false,
   speed = 1,
+  stored = 0,
 }: {
   card: FighterCard;
   enemy: boolean;
@@ -28,6 +29,7 @@ export default function CardFace({
   cooldown?: number;
   playing?: boolean;
   speed?: number;
+  stored?: number;
 }) {
   const wash = useRef<HTMLDivElement>(null),
     animation = useRef<Animation | null>(null),
@@ -44,9 +46,9 @@ export default function CardFace({
     const from = Math.max(0, Math.min(1, progress));
     animation.current = wash.current.animate(
       [
-        { transform: `scaleX(${from})` },
+        { transform: `scaleY(${from})` },
         {
-          transform: `scaleX(${waiting ? from : Math.min(1, from + 0.25 / Math.max(0.25, cooldown))})`,
+          transform: `scaleY(${waiting ? from : Math.min(1, from + 0.25 / Math.max(0.25, cooldown))})`,
         },
       ],
       { duration: 250 / speed, fill: 'forwards', easing: 'linear' },
@@ -63,7 +65,9 @@ export default function CardFace({
           ? Heart
           : c.kind === 'charge'
             ? FastForward
-            : Shield;
+            : c.kind === 'corrode'
+              ? Droplets
+              : Shield;
   return (
     <>
       <div
@@ -76,6 +80,14 @@ export default function CardFace({
         }
       />
       <span className="ed-enhance">Lv {card.level}</span>
+      {card.id === 'recoil' && (
+        <span
+          className="ed-recoil-stored"
+          title="下次攻击附加并消耗这些反冲伤害"
+        >
+          反冲 {Math.round(stored * 10) / 10}
+        </span>
+      )}
       <strong className="ed-card-name">{c.name}</strong>
       <Symbol className="ed-card-emblem" aria-hidden="true" />
       <div className="ed-special-copy">{cardSpecial(card)}</div>
@@ -88,13 +100,22 @@ export default function CardFace({
                 ? '治疗宿主'
                 : c.kind === 'charge'
                   ? '充能秒数'
-                  : '修复屏障'
+                  : c.kind === 'corrode'
+                    ? '叠加侵蚀层数'
+                    : '修复屏障'
           }
         >
           <Symbol size={12} />
           {value}
           {c.kind === 'charge' ? 's' : ''}
         </span>
+        {c.id === 'distiller' && (
+          <span title="治疗宿主">
+            <Heart size={12} />
+            {Math.round((5 + card.quality * 3) * (1 + card.level * 0.12) * 10) /
+              10}
+          </span>
+        )}
         {c.energyGain > 0 && (
           <span title="产生能量">
             <Zap size={11} />

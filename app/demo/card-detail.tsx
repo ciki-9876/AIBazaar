@@ -2,8 +2,10 @@ import { Clock3 } from 'lucide-react';
 import { describeCard } from '@/lib/card-description';
 import type { FighterCard } from '@/lib/demo-combat';
 import { RARITY, QUALITY } from '@/lib/demo-engine';
+import { cardDef, SCHOOLS } from '@/lib/demo-cards';
 export default function CardDetail({ card }: { card: FighterCard }) {
   const d = describeCard(card);
+  const school = cardDef(card.id).school;
   return (
     <div className="ed-card-description">
       <span className="ed-detail-cooldown">
@@ -11,6 +13,7 @@ export default function CardDetail({ card }: { card: FighterCard }) {
         {d.cd} 秒
       </span>
       <span className="ed-role">定位 · {d.role}</span>
+      {school && <span className="ed-role">流派 · {SCHOOLS[school]}</span>}
       <p className="ed-detail-grade">
         {RARITY[card.rarity].name} · {QUALITY[card.quality]} · Lv {card.level}
       </p>

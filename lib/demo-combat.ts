@@ -1,4 +1,4 @@
-import { cardDef } from './prototype-v04.ts';
+import { cardDef } from './demo-cards.ts';
 import { combatValue } from './demo-card-rules.ts';
 export type FighterCard = {
   uid: string;
@@ -24,7 +24,7 @@ export const flightTimeOf = (card: FighterCard) =>
   );
 export type Hit = {
   side: number;
-  kind: 'damage' | 'heal' | 'shield' | 'energy' | 'charge';
+  kind: 'damage' | 'heal' | 'shield' | 'energy' | 'charge' | 'corrode';
   value: number;
   source: string;
   sourceUid?: string;
@@ -43,6 +43,9 @@ export type Hit = {
   targetName?: string;
   barrierAbsorbed?: number;
   healthLoss?: number;
+  blocked?: number;
+  periodic?: boolean;
+  exposedBonus?: number;
 };
 export type Projectile = Hit & {
   id: string;
@@ -55,6 +58,8 @@ export type CombatFrame = {
   time: number;
   hp: number[];
   barriers: Barrier[][];
+  corrosion: number[][];
+  stored: Record<string, number>;
   energy: number[];
   timers: number[][];
   cd: number[][];
@@ -102,6 +107,12 @@ export function simulateDuel(d: Duel) {
   const frames: CombatFrame[] = [];
   let pending: Projectile[] = [],
     serial = 0;
+  const corrosion = [
+      [0, 0, 0],
+      [0, 0, 0],
+    ],
+    corrosionSource: (FighterCard | undefined)[][] = [[], []];
+  const stored: Record<string, number> = {};
   const repairLane = (side: number, lane: number) =>
     !barriers[side][lane].broken
       ? lane
@@ -122,18 +133,77 @@ export function simulateDuel(d: Duel) {
       damage = [0, 0];
     const arrivals = pending.filter((p) => p.impactAt <= time);
     pending = pending.filter((p) => p.impactAt > time);
+    if (step > 0 && step % 4 === 0)
+      for (let side = 0; side < 2; side++)
+        for (let lane = 0; lane < 3; lane++) {
+          const source = corrosionSource[side][lane];
+          if (corrosion[side][lane] && source)
+            arrivals.push({
+              id: `tick-${serial++}`,
+              kind: 'damage',
+              side,
+              value: corrosion[side][lane],
+              raw: corrosion[side][lane],
+              periodic: true,
+              source: '侵蚀 · ' + cardDef(source.id).name,
+              sourceUid: source.uid,
+              targetLane: lane,
+              visual: 'poison',
+              launchedAt: time,
+              impactAt: time,
+            });
+        }
+    // Resolve all impacts in a fixed phase order. Board-side iteration must
+    // not decide whether same-tick damage breaks a barrier before its repair.
+    const impactOrder = {
+      damage: 0,
+      corrode: 1,
+      shield: 2,
+      heal: 3,
+      energy: 4,
+      charge: 5,
+    };
+    arrivals.sort(
+      (a, b) =>
+        impactOrder[a.kind] - impactOrder[b.kind] ||
+        a.impactAt - b.impactAt ||
+        (a.sourceUid ?? '').localeCompare(b.sourceUid ?? ''),
+    );
     for (const shot of arrivals) {
       const hit: Hit = { ...shot },
         lane = hit.targetLane ?? 1;
       if (hit.kind === 'damage') {
         const barrier = barriers[hit.side][lane];
+        const buffer =
+          barrier.broken || hit.periodic
+            ? 0
+            : Math.max(
+                0,
+                ...boards[hit.side]
+                  .filter((c) => c.id === 'rubber' && laneOf(c) === lane)
+                  .map((c) => (8 + c.quality) * (1 + c.level * 0.12)),
+              );
+        hit.blocked = Math.min(hit.raw ?? hit.value, buffer);
+        hit.value =
+          Math.max(0, (hit.raw ?? hit.value) - hit.blocked) +
+          (barrier.broken ? (hit.exposedBonus ?? 0) : 0);
         hit.targetUid = barrier.broken
           ? `host-${hit.side}-lane-${lane}`
           : `barrier-${hit.side}-${lane}`;
         hit.targetName = `${laneName(lane)}${barrier.broken ? '宿主' : '屏障'}`;
-        hit.barrierAbsorbed = Math.min(barrier.hp, hit.raw ?? hit.value);
+        hit.barrierAbsorbed = Math.min(barrier.hp, hit.value);
         barrier.hp -= hit.barrierAbsorbed;
-        hit.healthLoss = (hit.raw ?? hit.value) - hit.barrierAbsorbed;
+        hit.healthLoss = hit.value - hit.barrierAbsorbed;
+        if (hit.periodic)
+          barrier.maxHp = Math.max(1, barrier.maxHp - hit.value);
+        if (!hit.periodic && hit.barrierAbsorbed > 0)
+          for (const c of boards[hit.side].filter(
+            (c) => c.id === 'recoil' && laneOf(c) === lane,
+          ))
+            stored[c.uid] = Math.min(
+              (40 + c.quality * 10) * (1 + c.level * 0.12),
+              (stored[c.uid] ?? 0) + hit.barrierAbsorbed * 0.5,
+            );
         damage[hit.side] += hit.healthLoss;
         if (!barrier.broken && barrier.hp <= 0) {
           barrier.broken = true;
@@ -141,6 +211,17 @@ export function simulateDuel(d: Duel) {
             `${hit.side ? '敌方' : '我方'}${laneName(lane)}屏障损毁，本场不会重建。`,
           );
         }
+      } else if (hit.kind === 'corrode') {
+        const before = corrosion[hit.side][lane];
+        corrosion[hit.side][lane] = Math.min(12, before + hit.value);
+        hit.value = corrosion[hit.side][lane] - before;
+        corrosionSource[hit.side][lane] = boards[1 - hit.side].find(
+          (c) => c.uid === hit.sourceUid,
+        );
+        hit.targetUid = barriers[hit.side][lane].broken
+          ? `host-${hit.side}-lane-${lane}`
+          : `barrier-${hit.side}-${lane}`;
+        hit.targetName = `${laneName(lane)}侵蚀 ${corrosion[hit.side][lane]} 层`;
       } else if (hit.kind === 'shield') {
         const target = repairLane(hit.side, lane);
         hit.value = 0;
@@ -206,9 +287,23 @@ export function simulateDuel(d: Duel) {
         timers[side][p.at] -= cd[side][p.at];
         energy[side] -= c.energyCost;
         fired.push(p.uid);
+        const growth = 1 + p.level * 0.12;
         const n = ++counts[side][p.at],
           v = combatValue(c.id, p.level, q);
         let amount = v;
+        if (c.id === 'nailer' && n <= 2) amount += (16 + q * 4) * growth;
+        if (c.id === 'springbow' && n <= 3) amount += (16 + q * 4) * growth;
+        if (c.id === 'culture') amount += (n - 1) * (8 + q * 2) * growth;
+        if (
+          c.id === 'counterweight' &&
+          !barriers[side][lane].broken &&
+          barriers[side][lane].hp > barriers[side][lane].maxHp * 0.5
+        )
+          amount += (20 + q * 5) * growth;
+        if (c.id === 'recoil') {
+          amount += stored[p.uid] ?? 0;
+          stored[p.uid] = 0;
+        }
         if (q > 0 && n % 3 === 0)
           amount +=
             {
@@ -228,15 +323,20 @@ export function simulateDuel(d: Duel) {
         const base = { source: c.name, sourceUid: p.uid, targetLane: lane };
         if (c.kind === 'damage') {
           const targetLane =
-            c.id === 'coil'
-              ? [0, 1, 2]
-                  .filter((i) => i !== lane)
-                  .sort(
-                    (a, b) =>
-                      barriers[1 - side][a].hp - barriers[1 - side][b].hp ||
-                      a - b,
-                  )[0]
-              : lane;
+            c.id === 'culture' && corrosion[1 - side].some((v) => v > 0)
+              ? [0, 1, 2].sort(
+                  (a, b) =>
+                    corrosion[1 - side][b] - corrosion[1 - side][a] || a - b,
+                )[0]
+              : c.id === 'coil'
+                ? [0, 1, 2]
+                    .filter((i) => i !== lane)
+                    .sort(
+                      (a, b) =>
+                        barriers[1 - side][a].hp - barriers[1 - side][b].hp ||
+                        a - b,
+                    )[0]
+                : lane;
           launch({
             ...base,
             side: 1 - side,
@@ -245,7 +345,26 @@ export function simulateDuel(d: Duel) {
             raw: amount,
             visual: 'damage',
             targetLane,
+            exposedBonus: c.id === 'gapblade' ? (12 + q * 4) * growth : 0,
           });
+        }
+        if (c.kind === 'corrode') {
+          launch({
+            ...base,
+            side: 1 - side,
+            kind: 'corrode',
+            value: amount,
+            visual: 'poison',
+          });
+          if (c.id === 'distiller')
+            launch({
+              ...base,
+              side,
+              kind: 'heal',
+              value: (5 + q * 3) * growth,
+              visual: 'heal',
+              targetUid: `host-${side}-lane-${lane}`,
+            });
         }
         if (c.kind === 'shield') {
           const target = repairLane(side, lane);
@@ -281,7 +400,7 @@ export function simulateDuel(d: Duel) {
             visual: 'armor',
             targetUid: `host-${side}-lane-${lane}`,
           });
-        const advance =
+        let advance =
           c.kind === 'charge'
             ? v
             : c.id === 'wire' && q > 0 && n % 3 === 0
@@ -289,6 +408,9 @@ export function simulateDuel(d: Duel) {
                 ? 2
                 : 1
               : 0;
+        if (c.id === 'fuse' && n === 1) advance += 2 + q * 0.5;
+        if (c.id === 'catalyst' && corrosion[1 - side][lane] > 0)
+          advance += 0.8 + q * 0.2;
         if (advance) {
           const others = boards[side].filter(
             (x) =>
@@ -328,6 +450,8 @@ export function simulateDuel(d: Duel) {
       time,
       hp: [...hp],
       barriers: structuredClone(barriers),
+      corrosion: corrosion.map((row) => [...row]),
+      stored: { ...stored },
       energy: [...energy],
       timers: timers.map((a) => [...a]),
       cd,

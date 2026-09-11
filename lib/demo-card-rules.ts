@@ -1,4 +1,4 @@
-import { cardDef } from './prototype-v04.ts';
+import { cardDef } from './demo-cards.ts';
 export const FIXED_RARITY: Record<string, number> = {
   knife: 0,
   wire: 0,
@@ -11,9 +11,23 @@ export const FIXED_RARITY: Record<string, number> = {
   coil: 3,
   battery: 4,
 };
-export const rarityOf = (id: string) => FIXED_RARITY[id] ?? 0;
+export const rarityOf = (id: string) =>
+  cardDef(id).rarity ?? FIXED_RARITY[id] ?? 0;
 export function combatValue(id: string, level: number, quality = 0) {
   const c = cardDef(id);
+  if (c.school)
+    return (
+      Math.round(
+        (c.power +
+          (c.kind === 'corrode'
+            ? quality
+            : c.id === 'sealant'
+              ? quality * 4
+              : 0)) *
+          (1 + level * 0.12) *
+          10,
+      ) / 10
+    );
   return c.kind === 'charge'
     ? Math.round((c.power + level * 0.1 + (quality === 2 ? 0.5 : 0)) * 10) / 10
     : c.power +

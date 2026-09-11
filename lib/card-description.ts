@@ -1,4 +1,4 @@
-import { cardDef } from './prototype-v04.ts';
+import { cardDef } from './demo-cards.ts';
 import { combatValue } from './demo-card-rules.ts';
 import type { FighterCard } from './demo-combat.ts';
 export const CARD_ROLES: Record<string, string> = {
@@ -21,7 +21,7 @@ export function describeCard(card: FighterCard) {
     {
       kind: c.kind,
       value,
-      text: `${c.kind === 'damage' ? '伤害' : c.kind === 'heal' ? '宿主治疗' : c.kind === 'charge' ? '充能' : '屏障修复'} ${value}${c.kind === 'charge' ? ' 秒' : ''}`,
+      text: `${c.kind === 'damage' ? '伤害' : c.kind === 'heal' ? '宿主治疗' : c.kind === 'charge' ? '充能' : c.kind === 'corrode' ? '侵蚀层数' : '屏障修复'} ${value}${c.kind === 'charge' ? ' 秒' : ''}`,
     },
   ];
   if (c.energyGain)
@@ -38,7 +38,7 @@ export function describeCard(card: FighterCard) {
     });
   const innate: string[] = [],
     lock = q === 0 ? '精制解锁：' : '';
-  if (c.kind === 'shield')
+  if (c.kind === 'shield' && !c.school)
     innate.push(
       '修复本路屏障；本路已损毁时，改为修复其他路剩余比例最低的屏障。',
     );
@@ -73,8 +73,34 @@ export function describeCard(card: FighterCard) {
         ? '充能三路全部其他卡牌，自身冷却延长 1 秒。'
         : '给同路另一张牌充能；精制后改为三路全部其他牌，冷却延长 1 秒。',
     );
+  if (c.school) {
+    const growth = 1 + card.level * 0.12,
+      n = (v: number) => Math.round(v * growth * 10) / 10;
+    const rules: Record<string, string> = {
+      nailer: `前 2 次发动额外造成 ${n(16 + q * 4)} 伤害。`,
+      fuse: `给同路另一张牌充能；首次额外充能 ${2 + q * 0.5} 秒。`,
+      gapblade: `命中时目标屏障已破，伤害 +${n(12 + q * 4)}。`,
+      springbow: `前 3 次发动额外造成 ${n(16 + q * 4)} 伤害。`,
+      recoil: `本路屏障承受直接伤害的 50% 储为反冲，上限 ${n(40 + q * 10)}；下次攻击消耗并附加。`,
+      sealant: '修复本路屏障；本路已破则支援剩余比例最低的完整屏障。',
+      rubber: `本路完整屏障受到直接伤害 −${n(8 + q)}；同路不叠加，不能减免侵蚀。`,
+      counterweight: `发动时本路屏障高于一半，伤害 +${n(20 + q * 5)}。`,
+      acid: '每层侵蚀每秒削减 1 屏障上限并造成 1 伤害，最多 12 层；破路后持续伤害宿主。',
+      culture: `每次发动比上次多 ${n(8 + q * 2)} 伤害。攻击侵蚀最深的一路，同层数优先上路；无侵蚀则攻击本路。`,
+      catalyst: `给同路另一张牌充能；敌方本路有侵蚀时，额外充能 ${Math.round((0.8 + q * 0.2) * 10) / 10} 秒。`,
+      distiller:
+        '叠加侵蚀，并治疗宿主。侵蚀每层每秒伤害 1、削减屏障上限 1，最多 12 层。',
+    };
+    innate.push(rules[c.id]);
+    if (c.id === 'distiller')
+      effects.push({
+        kind: 'heal',
+        value: n(5 + q * 3),
+        text: `宿主治疗 ${n(5 + q * 3)}`,
+      });
+  }
   return {
-    role: CARD_ROLES[c.id],
+    role: c.role ?? CARD_ROLES[c.id],
     cd: c.cd + (c.id === 'bell' && q > 0 ? 1 : 0),
     effects,
     innate,

@@ -61,7 +61,7 @@ export default function BattleEffects({
   const frame = frames[cursor];
   const endpoint = (hit: CombatFrame['hits'][number]) => {
     const lane = hit.targetLane ?? 1;
-    if (hit.kind === 'damage')
+    if (hit.kind === 'damage' || hit.kind === 'corrode')
       return (
         hit.targetUid ??
         (frame.barriers[hit.side][lane].broken
