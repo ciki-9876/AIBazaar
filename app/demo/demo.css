@@ -4544,8 +4544,10 @@ body:has(.elevator-demo) {
   font-size: 24px;
   font-variant-numeric: tabular-nums;
 }
-.in-combat .ed-battle-scroll {
+.in-combat .ed-combat > .ed-battle-scroll {
   grid-row: 2;
+}
+.in-combat .ed-battle-scroll {
   height: 100%;
   overflow: hidden;
 }

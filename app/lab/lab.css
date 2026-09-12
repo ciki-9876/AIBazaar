@@ -31,6 +31,13 @@
   gap: 8px;
   min-height: 0;
 }
+.lab-replay > .ed-battle-scroll {
+  grid-row: 1;
+  min-height: 0;
+}
+.lab-replay > .lab-controls {
+  grid-row: 2;
+}
 .lab-health {
   height: 7px;
   background: #101b16;
