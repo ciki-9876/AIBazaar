@@ -1839,6 +1839,25 @@
   overflow: auto;
   padding: 4px 12px 12px 0;
 }
+.ed-catalog-filters {
+  flex-wrap: wrap;
+  flex-shrink: 0;
+  margin-bottom: 12px;
+}
+.elevator-demo .ed-card-v2 .ed-card-owner {
+  display: block;
+  width: fit-content;
+  margin: 4px auto 0;
+  padding: 1px 6px;
+  border: 1px solid #c5c8ac55;
+  border-radius: 3px;
+  background: #121b18b3;
+  color: #e1ddc2;
+  font-size: 12px;
+  font-weight: 400;
+  line-height: 1.4;
+  text-shadow: none;
+}
 .elevator-demo button.ed-atlas-tile {
   display: flex;
   flex-direction: column;

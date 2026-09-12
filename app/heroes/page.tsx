@@ -395,7 +395,7 @@ export default function Heroes() {
               </div>
               <section>
                 <h3>{cardDef(selected).name}</h3>
-                <CardDetail card={specimen} heroContext />
+                <CardDetail card={specimen} />
               </section>
               <div className="lab-select-pair">
                 <label>

@@ -65,7 +65,6 @@ import {
   nodeName,
   itemCount,
   openCells,
-  CARDS,
   searchCost,
   eventAt,
   nodeTitle,
@@ -86,7 +85,8 @@ import {
 import type { Run, Action, Zone, Item } from '@/lib/demo-engine';
 import { simulateDuel } from '@/lib/demo-combat';
 import type { FighterCard, CombatFrame } from '@/lib/demo-combat';
-import { cardDef } from '@/lib/demo-cards';
+import { cardDef, ALL_CARDS } from '@/lib/demo-cards';
+import { HEROES, heroOwner } from '@/lib/heroes';
 import './demo.css';
 const zoneName: Record<Zone, string> = {
   bag: '随身背包',
@@ -111,7 +111,8 @@ export default function Demo() {
     [tab, setTab] = useState('base'),
     [selected, setSelected] = useState<string | null>(null),
     [inventoryTab, setInventoryTab] = useState('build'),
-    [catalogId, setCatalogId] = useState(CARDS[0].id),
+    [catalogId, setCatalogId] = useState(ALL_CARDS[0].id),
+    [catalogOwner, setCatalogOwner] = useState('all'),
     [scanUid, setScanUid] = useState<string | undefined>(),
     [inspection, setInspection] = useState<{
       uid: string;
@@ -514,7 +515,13 @@ export default function Demo() {
       ...(run.phase === 'base' ? [['warehouse', '仓库']] : []),
       ['catalog', '卡牌图鉴'],
     ];
-    const definition = CARDS.find((c) => c.id === catalogId) ?? CARDS[0];
+    const catalogCards = ALL_CARDS.filter(
+      (c) =>
+        catalogOwner === 'all' ||
+        (heroOwner(c.id) ?? 'neutral') === catalogOwner,
+    );
+    const definition =
+      catalogCards.find((c) => c.id === catalogId) ?? catalogCards[0];
     const owned = run.items.filter(
       (x) => x.type === 'card' && x.id === definition.id,
     );
@@ -522,7 +529,7 @@ export default function Demo() {
       uid: 'catalog-' + definition.id,
       id: definition.id,
       at: 0,
-      rarity: rarityOf(catalogId),
+      rarity: rarityOf(definition.id),
       quality: 0,
       level: 0,
     };
@@ -553,7 +560,9 @@ export default function Demo() {
           {inventoryTab === 'catalog' ? (
             <>
               <section className="ed-panel ed-atlas-panel">
-                <h3>卡牌图鉴 · {CARDS.length} 种</h3>
+                <h3>
+                  卡牌图鉴 · {catalogCards.length} / {ALL_CARDS.length} 种
+                </h3>
                 <p>
                   已拥有{' '}
                   {
@@ -563,10 +572,37 @@ export default function Demo() {
                         .map((x) => x.id),
                     ).size
                   }{' '}
-                  / {CARDS.length}
+                  / {ALL_CARDS.length}
                 </p>
+                <nav
+                  className="ed-inventory-tabs ed-catalog-filters"
+                  aria-label="按卡牌归属筛选"
+                >
+                  {[
+                    { id: 'all', name: '全部' },
+                    { id: 'neutral', name: '中立' },
+                    ...HEROES,
+                  ].map((owner) => (
+                    <button
+                      key={owner.id}
+                      aria-pressed={catalogOwner === owner.id}
+                      className={catalogOwner === owner.id ? 'active' : ''}
+                      onClick={() => {
+                        setCatalogOwner(owner.id);
+                        const first = ALL_CARDS.find(
+                          (c) =>
+                            owner.id === 'all' ||
+                            (heroOwner(c.id) ?? 'neutral') === owner.id,
+                        );
+                        if (first) setCatalogId(first.id);
+                      }}
+                    >
+                      {owner.name}
+                    </button>
+                  ))}
+                </nav>
                 <div className="ed-atlas-grid">
-                  {CARDS.map((c) => {
+                  {catalogCards.map((c) => {
                     const cards = run.items.filter(
                       (x) => x.type === 'card' && x.id === c.id,
                     );

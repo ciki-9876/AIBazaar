@@ -221,7 +221,7 @@ export default function Replay({
       {hover && !paused && (
         <div className="lab-card-preview">
           <h3>{cardDef(hover.id).name}</h3>
-          <CardDetail card={hover} heroContext={!!duel.heroes} />
+          <CardDetail card={hover} />
         </div>
       )}
     </section>

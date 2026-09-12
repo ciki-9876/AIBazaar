@@ -4,16 +4,10 @@ import type { FighterCard } from '@/lib/demo-combat';
 import { RARITY, QUALITY } from '@/lib/demo-engine';
 import { cardDef, SCHOOLS } from '@/lib/demo-cards';
 import { heroDef, heroOwner } from '@/lib/heroes';
-export default function CardDetail({
-  card,
-  heroContext = false,
-}: {
-  card: FighterCard;
-  heroContext?: boolean;
-}) {
+export default function CardDetail({ card }: { card: FighterCard }) {
   const d = describeCard(card);
   const school = cardDef(card.id).school;
-  const hero = heroContext ? heroOwner(card.id) : cardDef(card.id).hero;
+  const hero = heroOwner(card.id);
   return (
     <div className="ed-card-description">
       <span className="ed-detail-cooldown">
@@ -22,9 +16,9 @@ export default function CardDetail({
       </span>
       <span className="ed-role">定位 · {d.role}</span>
       {school && <span className="ed-role">流派 · {SCHOOLS[school]}</span>}
-      {hero && (
-        <span className="ed-role">{heroDef(hero).name} · 专属记忆遗物</span>
-      )}
+      <span className="ed-role">
+        归属 · {hero ? heroDef(hero).name : '中立'}
+      </span>
       <p className="ed-detail-grade">
         {RARITY[card.rarity].name} · {QUALITY[card.quality]} · Lv {card.level}
       </p>

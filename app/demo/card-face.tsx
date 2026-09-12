@@ -6,6 +6,7 @@ import type { FighterCard } from '@/lib/demo-combat';
 import { describeCard } from '@/lib/card-description';
 import { combatValue } from '@/lib/demo-card-rules';
 import { cardDef } from '@/lib/demo-cards';
+import { heroDef, heroOwner } from '@/lib/heroes';
 export function cardSpecial(card: FighterCard) {
   return describeCard(card)
     .innate.join(' ')
@@ -88,7 +89,12 @@ export default function CardFace({
           反冲 {Math.round(stored * 10) / 10}
         </span>
       )}
-      <strong className="ed-card-name">{c.name}</strong>
+      <strong className="ed-card-name">
+        {c.name}
+        <small className="ed-card-owner">
+          {heroOwner(c.id) ? heroDef(heroOwner(c.id)!).name : '中立'}
+        </small>
+      </strong>
       <Symbol className="ed-card-emblem" aria-hidden="true" />
       <div className="ed-special-copy">{cardSpecial(card)}</div>
       <div className="ed-effect-values">
