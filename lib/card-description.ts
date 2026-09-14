@@ -13,7 +13,20 @@ export const CARD_ROLES: Record<string, string> = {
   bell: '跨路辅助',
   cell: '能量',
 };
-export function describeCard(card: FighterCard) {
+type Description = {
+  role: string;
+  cd: number;
+  effects: { kind: string; value: number; text: string }[];
+  innate: string[];
+  unlocked: string[];
+  future: { quality: number; effects: string[]; innate: string[] }[];
+  summary: string;
+  weather: { name: string; text: string }[];
+};
+export function describeCard(
+  card: FighterCard,
+  includeFuture = true,
+): Description {
   const c = cardDef(card.id),
     q = card.quality,
     value = combatValue(c.id, card.level, q);
@@ -71,7 +84,7 @@ export function describeCard(card: FighterCard) {
     innate.push(
       q > 0
         ? '充能三路全部其他卡牌，自身冷却延长 1 秒。'
-        : '给同路另一张牌充能；精制后改为三路全部其他牌，冷却延长 1 秒。',
+        : '给同路另一张牌充能。',
     );
   if (c.school) {
     const growth = 1 + card.level * 0.12,
@@ -155,11 +168,58 @@ export function describeCard(card: FighterCard) {
         text: `屏障修复 ${n(m.repair)}`,
       });
   }
+  const gated = [
+    'knife',
+    'wire',
+    'bottle',
+    'brick',
+    'box',
+    'shelter',
+    'coil',
+    'bell',
+  ];
+  const active = innate.filter((line) => !line.startsWith('精制解锁：'));
+  const unlocked =
+    q > 0 && gated.includes(c.id)
+      ? active.filter(
+          (line) =>
+            !line.startsWith('修复本路') && !line.startsWith('越线支援'),
+        )
+      : [];
+  const base = active.filter((line) => !unlocked.includes(line));
+  const future = includeFuture
+    ? [1, 2]
+        .filter((tier) => tier > q)
+        .map((quality) => {
+          const next = describeCard({ ...card, quality }, false);
+          return {
+            quality,
+            effects: next.effects.map((e) => e.text),
+            innate: [...next.innate, ...next.unlocked],
+          };
+        })
+    : [];
+  const short: Record<string, string> = {
+    springbow: '前3次追加伤害',
+    nailer: '前2次追加伤害',
+    fuse: `同路首发+${2 + q * 0.5}s`,
+    wire: q > 0 ? '每3次充能同路另一牌' : '',
+    shelter: q > 0 ? '修复屏障；每3次同路充能' : '修复本路；破路后支援',
+    knife: q > 0 ? '每3次追加伤害' : '',
+    bell: q > 0 ? '充能全部其他牌' : '充能同路另一牌',
+    coil: '支援其他路薄弱屏障',
+    box: q > 0 ? '溢出治疗修复屏障' : '',
+    bottle: q > 0 ? '每3次额外治疗' : '',
+    brick: q > 0 ? '每3次追加伤害' : '',
+  };
   return {
     role: c.role ?? CARD_ROLES[c.id],
     cd: c.cd + (c.id === 'bell' && q > 0 ? 1 : 0),
     effects,
-    innate,
+    innate: base,
+    unlocked,
+    future,
+    summary: short[c.id] ?? active[0] ?? '',
     weather: [] as { name: string; text: string }[],
   };
 }

@@ -4,15 +4,10 @@ import { useEffect, useRef } from 'react';
 import type { CSSProperties } from 'react';
 import type { FighterCard } from '@/lib/demo-combat';
 import { describeCard } from '@/lib/card-description';
-import { combatValue } from '@/lib/demo-card-rules';
 import { cardDef } from '@/lib/demo-cards';
 import { heroDef, heroOwner } from '@/lib/heroes';
 export function cardSpecial(card: FighterCard) {
-  return describeCard(card)
-    .innate.join(' ')
-    .replaceAll('精制解锁：', '精制：')
-    .replaceAll('每第 3 次', '每3次')
-    .replaceAll('卡牌', '牌');
+  return describeCard(card).summary;
 }
 export default function CardFace({
   card,
@@ -58,7 +53,7 @@ export default function CardFace({
     return () => animation.current?.cancel();
   }, [progress, cooldown, speed, waiting]);
   const c = cardDef(card.id),
-    value = combatValue(card.id, card.level, card.quality),
+    description = describeCard(card),
     Symbol =
       c.kind === 'damage'
         ? Sword
@@ -97,64 +92,31 @@ export default function CardFace({
       </strong>
       <Symbol className="ed-card-emblem" aria-hidden="true" />
       <div className="ed-special-copy">{cardSpecial(card)}</div>
+      <span className="ed-card-detail-hint">
+        {describeCard(card).cd}s · 点击详情
+      </span>
       <div className="ed-effect-values">
-        <span
-          title={
-            c.kind === 'damage'
-              ? '造成伤害'
-              : c.kind === 'heal'
-                ? '治疗宿主'
-                : c.kind === 'charge'
-                  ? '充能秒数'
-                  : c.kind === 'corrode'
-                    ? '叠加侵蚀层数'
-                    : '修复屏障'
-          }
-        >
-          <Symbol size={12} />
-          {value}
-          {c.kind === 'charge' ? 's' : ''}
-        </span>
-        {c.mechanic?.heal && (
-          <span title="治疗宿主">
-            <Heart size={12} />
-            {Math.round(
-              c.mechanic.heal *
-                (1 + card.level * 0.12) *
-                (1 + card.quality * 0.15) *
-                10,
-            ) / 10}
-          </span>
-        )}
-        {c.mechanic?.repair && (
-          <span title="修复屏障">
-            <Shield size={12} />
-            {Math.round(
-              c.mechanic.repair *
-                (1 + card.level * 0.12) *
-                (1 + card.quality * 0.15) *
-                10,
-            ) / 10}
-          </span>
-        )}
-        {c.id === 'distiller' && (
-          <span title="治疗宿主">
-            <Heart size={12} />
-            {Math.round((5 + card.quality * 3) * (1 + card.level * 0.12) * 10) /
-              10}
-          </span>
-        )}
-        {c.energyGain > 0 && (
-          <span title="产生能量">
-            <Zap size={11} />
-            {c.energyGain + (c.id === 'cell' && card.quality === 2 ? 1 : 0)}
-          </span>
-        )}
-        {c.energyCost > 0 && (
-          <span title="消耗能量">
-            <Zap size={11} />-{c.energyCost}
-          </span>
-        )}
+        {description.effects.map((effect, i) => {
+          const Icon =
+            effect.kind === 'damage'
+              ? Sword
+              : effect.kind === 'heal'
+                ? Heart
+                : effect.kind === 'charge'
+                  ? FastForward
+                  : effect.kind === 'corrode'
+                    ? Droplets
+                    : effect.kind === 'energy'
+                      ? Zap
+                      : Shield;
+          return (
+            <span key={i} title={effect.text}>
+              <Icon size={12} />
+              {effect.value}
+              {effect.kind === 'charge' ? 's' : ''}
+            </span>
+          );
+        })}
       </div>
       {waiting && <span className="ed-power-wait">等待能量</span>}
       <span className="ed-quality-mark" aria-hidden="true">

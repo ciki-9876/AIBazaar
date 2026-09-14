@@ -28,13 +28,35 @@ export default function CardDetail({ card }: { card: FighterCard }) {
         ))}
       </div>
       <section>
-        <h4>固有效果</h4>
+        <h4>当前基础效果</h4>
         {d.innate.length ? (
           d.innate.map((line, i) => <p key={i}>{line}</p>)
         ) : (
-          <p>无额外固有效果</p>
+          <p>按上述周期发动，无额外条件。</p>
         )}
       </section>
+      {d.unlocked.length > 0 && (
+        <section>
+          <h4>当前已解锁 · {QUALITY[card.quality]}</h4>
+          {d.unlocked.map((line, i) => (
+            <p key={i}>{line}</p>
+          ))}
+        </section>
+      )}
+      {d.future.length > 0 && (
+        <details className="ed-future-effects">
+          <summary>未来品阶效果 · 当前未生效</summary>
+          {d.future.map((tier) => (
+            <section key={tier.quality}>
+              <h4>{QUALITY[tier.quality]}后</h4>
+              <p>{tier.effects.join(' · ')}</p>
+              {tier.innate.map((line, i) => (
+                <p key={i}>{line}</p>
+              ))}
+            </section>
+          ))}
+        </details>
+      )}
     </div>
   );
 }

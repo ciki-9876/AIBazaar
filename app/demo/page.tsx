@@ -11,6 +11,10 @@ import CargoGrid, { CargoProvider, CarryButton } from './cargo-grid';
 import CostButton from './cost-button';
 import ElevatorRoom from './elevator-room';
 import IdentifyTable from './identify-table';
+import BuildBoard from './build-board';
+import { describeCard } from '@/lib/card-description';
+import { identificationState, makeDuel } from '@/lib/demo-engine';
+import { battleEvidence, formatHit } from '@/lib/battle-evidence';
 import ScrollChrome from './scroll-chrome';
 import {
   Coins,
@@ -85,7 +89,7 @@ import {
 import type { Run, Action, Zone, Item } from '@/lib/demo-engine';
 import { simulateDuel } from '@/lib/demo-combat';
 import type { FighterCard, CombatFrame } from '@/lib/demo-combat';
-import { cardDef, ALL_CARDS } from '@/lib/demo-cards';
+import { cardDef, ALL_CARDS, CARDS } from '@/lib/demo-cards';
 import { HEROES, heroOwner } from '@/lib/heroes';
 import './demo.css';
 const zoneName: Record<Zone, string> = {
@@ -110,6 +114,9 @@ export default function Demo() {
     [notice, setNotice] = useState(''),
     [tab, setTab] = useState('base'),
     [selected, setSelected] = useState<string | null>(null),
+    [placing, setPlacing] = useState<string | null>(null),
+    [refineUid, setRefineUid] = useState<string | null>(null),
+    [pinned, setPinned] = useState(false),
     [inventoryTab, setInventoryTab] = useState('build'),
     [catalogId, setCatalogId] = useState(ALL_CARDS[0].id),
     [catalogOwner, setCatalogOwner] = useState('all'),
@@ -132,6 +139,7 @@ export default function Demo() {
     [speed, setSpeed] = useState(1);
   const baseInspect = tab === 'inventory';
   const fileRef = useRef<HTMLInputElement>(null);
+  const storageKey = useRef(SAVE_KEY);
   useEffect(() => {
     if (!sleeping) return;
     const t = setTimeout(() => {
@@ -145,7 +153,7 @@ export default function Demo() {
     if (hoverClose.current) clearTimeout(hoverClose.current);
   };
   const hideInspection = () => {
-    if (baseInspect) return;
+    if (baseInspect || pinned) return;
     keepInspection();
     hoverClose.current = setTimeout(() => setInspection(null), 220);
   };
@@ -155,8 +163,10 @@ export default function Demo() {
     target: HTMLElement,
     clicked = false,
   ) => {
+    if (pinned && !clicked) return;
     if (baseInspect && !clicked) return;
     keepInspection();
+    setPinned(clicked);
     const rect = target.getBoundingClientRect();
     const width = Math.min(360, window.innerWidth - 24);
     const x =
@@ -173,7 +183,10 @@ export default function Demo() {
   };
   useEffect(() => {
     const close = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') setInspection(null);
+      if (e.key === 'Escape') {
+        setInspection(null);
+        setPinned(false);
+      }
     };
     window.addEventListener('keydown', close);
     return () => {
@@ -220,7 +233,11 @@ export default function Demo() {
   // oxlint-disable-next-line react/react-compiler -- Restore explicitly device-local game state after hydration.
   useEffect(() => {
     try {
-      const raw = localStorage.getItem(SAVE_KEY);
+      const qa =
+        process.env.NODE_ENV === 'development' &&
+        new URLSearchParams(window.location.search).get('qa') === 'phase1';
+      storageKey.current = qa ? SAVE_KEY + '.qa.phase1' : SAVE_KEY;
+      const raw = localStorage.getItem(storageKey.current);
       if (raw) {
         const parsed: unknown = JSON.parse(raw);
         if (validSave(parsed)) {
@@ -228,7 +245,10 @@ export default function Demo() {
           setTab(parsed.phase === 'floor' ? 'floor' : 'base');
         } else
           setNotice('存档格式无法识别，已保留原文件。可以导入备份或重新开局。');
-      } else commit(newRun(crypto.getRandomValues(new Uint32Array(1))[0]));
+      } else
+        commit(
+          newRun(qa ? 10909 : crypto.getRandomValues(new Uint32Array(1))[0]),
+        );
     } catch {
       setSaved('本机存档不可用，请导出备份');
     }
@@ -238,7 +258,7 @@ export default function Demo() {
   useEffect(() => {
     if (!ready || run.phase === 'intro') return;
     try {
-      localStorage.setItem(SAVE_KEY, JSON.stringify(run));
+      localStorage.setItem(storageKey.current, JSON.stringify(run));
       setSaved('本机自动保存');
     } catch {
       setSaved('保存失败 · 请立即导出备份');
@@ -254,12 +274,39 @@ export default function Demo() {
     return () => clearTimeout(timer);
   }, [battle, playing, cursor, speed]);
   const frame = battle?.frames[Math.min(cursor, battle.frames.length - 1)];
-  const f = currentFloor(run),
-    terrain = ['上路', '中路', '下路'];
+  const previewDuel =
+    run.phase === 'floor' &&
+    ['patrol', 'elite', 'guardian'].includes(currentNode(run))
+      ? makeDuel(
+          run,
+          currentNode(run) === 'guardian' &&
+            run.encounter !== null &&
+            !run.encounterDone
+            ? 'survivor'
+            : 'guardian',
+        )
+      : null;
+  const goBuild = (uid?: string) => {
+    setTab('inventory');
+    setInventoryTab('build');
+    setPlacing(null);
+    if (uid) {
+      setSelected(uid);
+      setPinned(true);
+      setInspection({
+        uid,
+        source: 'inventory',
+        scope: `${run.phase}:inventory:build`,
+        x: 12,
+        y: 12,
+      });
+    }
+  };
+  const f = currentFloor(run);
   const resetRun = () => {
     commit(newRun(crypto.getRandomValues(new Uint32Array(1))[0]));
     try {
-      localStorage.removeItem(SAVE_KEY);
+      localStorage.removeItem(storageKey.current);
     } catch {}
     setTab('base');
     setSelected(null);
@@ -304,7 +351,6 @@ export default function Demo() {
           <div className="ed-lane" key={lane}>
             <div className="ed-lane-label">
               <b>{['上路', '中路', '下路'][lane]}</b>
-              <span>{terrain[lane]}</span>
             </div>
             <div className="ed-lane-cells">
               {[0, 1, 2].map((col) => {
@@ -374,6 +420,15 @@ export default function Demo() {
                     }
                     onBlur={hideInspection}
                     onClick={(e) => {
+                      if (enemy) {
+                        showInspection(
+                          card.uid,
+                          'enemy',
+                          e.currentTarget,
+                          true,
+                        );
+                        return;
+                      }
                       const item = run.items.find((x) => x.uid === card.uid);
                       if (!enemy && item)
                         selectItem(item, 'board', e.currentTarget);
@@ -648,6 +703,11 @@ export default function Demo() {
               <aside className="ed-panel ed-fixed-details">
                 <h3>{definition.name}</h3>
                 <p>
+                  {CARDS.some((c) => c.id === definition.id)
+                    ? '当前冒险可获得 · 搜刮 / 游商 / 战利品'
+                    : '仅英雄试验场展示 · 尚未接入冒险掉落'}
+                </p>
+                <p>
                   {owned.length
                     ? '当前拥有 ' + owned.length + ' 张'
                     : '尚未拥有 · 展示基础属性'}
@@ -664,13 +724,17 @@ export default function Demo() {
           ) : (
             <>
               {inventoryTab === 'build' ? (
-                <section className="ed-panel ed-build-board">
-                  <h3>上阵卡组</h3>
-                  <p>单击卡牌查看详情；上下阵由按钮自动安排。</p>
-                  <div className="ed-board-scroll">
-                    {cardGrid(playerCards(run))}
-                  </div>
-                </section>
+                <BuildBoard
+                  run={run}
+                  selected={selected}
+                  placing={placing}
+                  onSelect={(item, target) => {
+                    setPlacing(null);
+                    selectItem(item, 'inventory', target);
+                  }}
+                  onPlacing={setPlacing}
+                  onAction={dispatch}
+                />
               ) : (
                 grid(inventoryTab as Zone)
               )}
@@ -1091,6 +1155,7 @@ export default function Demo() {
                 NODE {run.node + 1} / {nodeName[node]}
               </p>
               <h2>{nodeTitle(run)}</h2>
+              {enemyIntel()}
               {node === 'event' ? (
                 <>
                   <p>{ev.text}</p>
@@ -1337,6 +1402,50 @@ export default function Demo() {
       </>
     );
   }
+  function enemyIntel() {
+    if (!previewDuel) return null;
+    const threats = [0, 1, 2].map((lane) =>
+      previewDuel.enemy
+        .filter(
+          (c) =>
+            Math.floor(c.at / 3) === lane &&
+            ['damage', 'corrode'].includes(cardDef(c.id).kind),
+        )
+        .reduce(
+          (sum, c) =>
+            sum + describeCard(c).effects[0].value / describeCard(c).cd,
+          0,
+        ),
+    );
+    const lane = threats.indexOf(Math.max(...threats));
+    const mechanism =
+      previewDuel.enemy.find((c) =>
+        ['nailer', 'springbow', 'fuse', 'sealant', 'bottle'].includes(c.id),
+      ) ?? previewDuel.enemy[0];
+    return (
+      <section className="ed-enemy-intel">
+        <h3>开战前 · 敌情</h3>
+        <p>
+          主要威胁：{['上路', '中路', '下路'][lane]} · 敌方宿主{' '}
+          {previewDuel.maxHp[1]}
+        </p>
+        <p>
+          {cardDef(mechanism.id).name}：
+          {describeCard(mechanism).summary ||
+            describeCard(mechanism)
+              .effects.map((e) => e.text)
+              .join(' · ')}
+        </p>
+        <details>
+          <summary>查看本场敌阵 · 点击卡牌可固定详情</summary>
+          <div className="ed-board-scroll">
+            {cardGrid(previewDuel.enemy, true)}
+          </div>
+        </details>
+        <button onClick={() => goBuild()}>根据敌情布阵</button>
+      </section>
+    );
+  }
 
   function barrierRow(side: number, fr: CombatFrame) {
     return (
@@ -1394,6 +1503,7 @@ export default function Demo() {
   function combat() {
     if (!battle || !frame || !run.duel) return null;
     const finished = cursor >= battle.frames.length - 1;
+    const evidence = battleEvidence(run.duel, battle.frames);
     return (
       <section className={'ed-combat' + (finished ? ' is-finished' : '')}>
         <p className="ed-stage-warning">
@@ -1477,14 +1587,9 @@ export default function Demo() {
             {battle.frames
               .slice(0, cursor + 1)
               .flatMap((fr) => [
-                ...fr.hits.map((h) =>
-                  h.kind === 'damage'
-                    ? `${fr.time.toFixed(1)}s · ${h.source} → ${h.targetName}：屏障 −${h.barrierAbsorbed ?? 0} / 宿主 −${h.healthLoss ?? 0}`
-                    : `${fr.time.toFixed(1)}s · ${h.source} → ${h.targetName ?? (h.side ? '敌方' : '我方')} · ${h.kind === 'heal' ? '治疗' : h.kind === 'shield' ? '修复' : h.kind === 'charge' ? '充能' : h.kind === 'corrode' ? '叠加侵蚀' : '能量'} ${h.value}`,
-                ),
+                ...fr.hits.map((h) => formatHit(run.duel!, h, fr.time)),
                 ...fr.log,
               ])
-              .slice(-30)
               .map((line, i) => (
                 <p key={i}>{line}</p>
               ))}
@@ -1510,6 +1615,42 @@ export default function Demo() {
                       ? '电梯启动了回收。'
                       : '负伤继续前进。'}
               </h2>
+              <div className="ed-result-evidence">
+                <p>
+                  宿主实际损伤：我方 {evidence.hostDamage[0]} / 敌方{' '}
+                  {evidence.hostDamage[1]} · 我方剩余{' '}
+                  {Math.ceil(evidence.hp[0])}/{run.duel.maxHp[0]}
+                </p>
+                <p>{evidence.break}</p>
+                <p>{evidence.contribution}</p>
+                <details>
+                  <summary>详细统计与破路记录</summary>
+                  {evidence.breaks.map((line, i) => (
+                    <p key={i}>{line}</p>
+                  ))}
+                  {evidence.stats.map((s) => (
+                    <p key={s.uid}>
+                      {s.name} [{s.uid}] · 对敌方屏障实际伤害 {s.barrierDamage}
+                    </p>
+                  ))}
+                  <p>
+                    充能记录表示冷却计时推进，不等于缩短战斗时间；贡献不代表单牌决定胜负。
+                  </p>
+                  <details>
+                    <summary>逐事件日志</summary>
+                    {battle.frames
+                      .flatMap((fr) => [
+                        ...fr.hits.map((hit) =>
+                          formatHit(run.duel!, hit, fr.time),
+                        ),
+                        ...fr.log.map((line) => `${fr.time}s · ${line}`),
+                      ])
+                      .map((line, i) => (
+                        <p key={i}>{line}</p>
+                      ))}
+                  </details>
+                </details>
+              </div>
               <p>
                 {battle.timedOut
                   ? run.duel.kind === 'survivor' ||
@@ -1604,7 +1745,7 @@ export default function Demo() {
   const inspected =
     inspection && inspection.scope === `${run.phase}:${tab}:${inventoryTab}`
       ? (inspection.source === 'enemy'
-          ? run.duel?.enemy.map((c) => ({
+          ? (run.duel ?? previewDuel)?.enemy.map((c) => ({
               ...c,
               type: 'card' as const,
               zone: 'board' as const,
@@ -1722,19 +1863,43 @@ export default function Demo() {
               ) : (
                 <>
                   {inspected.type === 'physical' && (
-                    <button
-                      disabled={run.phase !== 'base' && run.level < 3}
-                      onClick={() =>
-                        run.phase === 'base'
-                          ? (setScanUid(inspected.uid), setTab('identify'))
-                          : itemAction({ type: 'scan', id: inspected.uid })
-                      }
-                    >
-                      {run.phase === 'base' ? '前往鉴定台' : '鉴定 · 1 电荷'}
-                    </button>
+                    <div className="ed-identify-status">
+                      <p>{identificationState(run).reason}</p>
+                      <p>
+                        {run.phase === 'base'
+                          ? '基地鉴定免费，不消耗电力或鉴定电荷。'
+                          : `鉴定电荷 ${run.charges} / 4 · 本次消耗 1 电荷；电力用于基地补充电荷。`}
+                      </p>
+                      <button
+                        disabled={!identificationState(run).allowed}
+                        onClick={() =>
+                          run.phase === 'base'
+                            ? (setScanUid(inspected.uid),
+                              setInspection(null),
+                              setPinned(false),
+                              setTab('identify'))
+                            : itemAction({ type: 'scan', id: inspected.uid })
+                        }
+                      >
+                        {run.phase === 'base'
+                          ? '前往免费鉴定台'
+                          : '鉴定 · 1 电荷'}
+                      </button>
+                    </div>
                   )}
                   {inspected.type === 'card' && (
                     <>
+                      <button
+                        onClick={() => {
+                          goBuild(inspected.uid);
+                          setPlacing(inspected.uid);
+                        }}
+                      >
+                        手动落点 ·{' '}
+                        {inspected.zone === 'board'
+                          ? '移动 / 换位'
+                          : '上阵 / 替换'}
+                      </button>
                       <button
                         className="ed-primary"
                         onClick={() =>
@@ -1768,11 +1933,9 @@ export default function Demo() {
                               inspected.quality >= 2 ||
                               !refineIngredient(run, inspected)
                             }
-                            onClick={() =>
-                              itemAction({ type: 'refine', id: inspected.uid })
-                            }
+                            onClick={() => setRefineUid(inspected.uid)}
                           >
-                            吞噬同卡 · 升至
+                            查看吞噬方案 · 升至
                             {QUALITY[Math.min(2, inspected.quality + 1)]}
                           </button>
                           <small>
@@ -1780,6 +1943,105 @@ export default function Demo() {
                               ? `消耗：${itemName(inspected)} · ${QUALITY[inspected.quality]} · Lv ${refineIngredient(run, inspected)!.level}（未上阵）。返还素材卡 80% 强化废料。`
                               : '需要一张未上阵、同名、同品阶卡牌；不消耗金币。'}
                           </small>
+                          {refineUid === inspected.uid &&
+                            refineIngredient(run, inspected) && (
+                              <section className="ed-refine-preview">
+                                <h4>吞噬前核对副本与成长变化</h4>
+                                <p>
+                                  保留：{itemName(inspected)} [{inspected.uid}]
+                                  · Lv {inspected.level} ·{' '}
+                                  {QUALITY[inspected.quality]} →{' '}
+                                  {QUALITY[Math.min(2, inspected.quality + 1)]}
+                                </p>
+                                <p>
+                                  消耗：
+                                  {itemName(refineIngredient(run, inspected)!)}{' '}
+                                  [{refineIngredient(run, inspected)!.uid}] ·{' '}
+                                  {
+                                    zoneName[
+                                      refineIngredient(run, inspected)!.zone
+                                    ]
+                                  }{' '}
+                                  · Lv {refineIngredient(run, inspected)!.level}
+                                </p>
+                                <p>
+                                  周期{' '}
+                                  {
+                                    describeCard({
+                                      ...inspected,
+                                      at: inspected.at ?? 0,
+                                      rarity: inspected.rarity ?? 0,
+                                    }).cd
+                                  }{' '}
+                                  →{' '}
+                                  {
+                                    describeCard({
+                                      ...inspected,
+                                      at: inspected.at ?? 0,
+                                      rarity: inspected.rarity ?? 0,
+                                      quality: Math.min(
+                                        2,
+                                        inspected.quality + 1,
+                                      ),
+                                    }).cd
+                                  }{' '}
+                                  秒
+                                </p>
+                                <p>
+                                  当前：
+                                  {describeCard({
+                                    ...inspected,
+                                    at: 0,
+                                    rarity: inspected.rarity ?? 0,
+                                  })
+                                    .effects.map((e) => e.text)
+                                    .join(' · ')}
+                                </p>
+                                <CardDetail
+                                  card={{
+                                    ...inspected,
+                                    at: 0,
+                                    rarity: inspected.rarity ?? 0,
+                                    quality: Math.min(2, inspected.quality + 1),
+                                  }}
+                                />
+                                <button
+                                  onClick={() => {
+                                    itemAction({
+                                      type: 'refine',
+                                      id: inspected.uid,
+                                    });
+                                    setRefineUid(null);
+                                  }}
+                                >
+                                  确认吞噬此副本
+                                </button>
+                                <button onClick={() => setRefineUid(null)}>
+                                  取消吞噬
+                                </button>
+                              </section>
+                            )}
+                          {inspected.zone !== 'board' &&
+                            run.items.find(
+                              (x) =>
+                                x.zone === 'board' &&
+                                x.id === inspected.id &&
+                                x.quality === inspected.quality,
+                            ) && (
+                              <button
+                                onClick={() => {
+                                  const main = run.items.find(
+                                    (x) =>
+                                      x.zone === 'board' &&
+                                      x.id === inspected.id &&
+                                      x.quality === inspected.quality,
+                                  )!;
+                                  goBuild(main.uid);
+                                }}
+                              >
+                                查看已上阵同卡的吞噬方案
+                              </button>
+                            )}
                         </>
                       )}
                     </>
@@ -2117,6 +2379,7 @@ export default function Demo() {
                   <IdentifyTable
                     items={run.items}
                     initialUid={scanUid}
+                    onBuild={goBuild}
                     onScan={(uid) => {
                       const next = dispatch({ type: 'scan', id: uid });
                       if (next) setNotice('物品已交由鉴定台处理。');
@@ -2144,7 +2407,10 @@ export default function Demo() {
         {inspected && inspection && !baseInspect && (
           <dialog
             open
-            className="ed-item-tooltip ed-inspect-dialog"
+            className={
+              'ed-item-tooltip ed-inspect-dialog' +
+              (pinned ? ' ed-pinned-detail' : '')
+            }
             aria-modal={false}
             tabIndex={-1}
             aria-label="物品详情"
@@ -2158,6 +2424,20 @@ export default function Demo() {
             onFocusCapture={keepInspection}
             onBlurCapture={hideInspection}
           >
+            <button
+              className="ed-close-detail"
+              onClick={() => {
+                setInspection(null);
+                setPinned(false);
+              }}
+            >
+              关闭详情
+            </button>
+            {run.phase === 'combat' && (
+              <p className="ed-detail-play-state">
+                {playing ? '战斗继续播放' : '战斗已暂停'} · 详情不改变播放状态
+              </p>
+            )}
             {itemDetailBody()}
           </dialog>
         )}
@@ -2257,6 +2537,11 @@ export default function Demo() {
                 ? '消耗 1 补给，恢复 50 精力。'
                 : '没有补给，仅恢复 15 精力。'}
               {!run.used && '今天尚未出勤，睡眠会放弃今天的出发机会。'}
+            </p>
+            <p>
+              基地可用密封补给总量：{itemCount(run, 'supply', false)} →{' '}
+              {Math.max(0, itemCount(run, 'supply', false) - 1)}
+              。按现有物品顺序从仓库、背包或安全容器扣除，具体来源显示在睡眠结果中。
             </p>
             <button
               className="ed-primary"

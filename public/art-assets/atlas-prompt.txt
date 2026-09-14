@@ -1,0 +1,9 @@
+Use case: stylized-concept
+Asset type: square atlas of nine fictional maintenance and laboratory inventory objects for a liminal industrial survival game art prototype.
+Primary request: exactly nine isolated ordinary props in an evenly spaced 3 by 3 layout on a flat dark warm graphite background.
+Top row, left to right: compact orange cordless drill; coil of insulated copper cable; tightly coiled mechanical spring assembly.
+Middle row, left to right: small metal hand scraper; rectangular shock absorber panel; tube of repair adhesive.
+Bottom row, left to right: laboratory wash bottle; petri dish with moss; glass distillation flask.
+Style: richly detailed charcoal and technical ink illustration, dirty ivory highlights, tiny subdued ochre paint spots. Distinct silhouettes, consistent three-quarter object angle, scratched metal and convincing glass material.
+Composition: square image. Every object centered separately in its own equal-sized cell, contained well inside it with generous padding and empty borders. Background uniform throughout, subtle localized shading. Exactly three objects per row and three rows.
+Constraints: ordinary fictional maintenance and laboratory props only. No people, no actions, no construction instructions. No text, no labels, no lettering, no numbers, no grid lines, no borders, no UI, no logos, no watermark.

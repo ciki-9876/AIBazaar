@@ -362,7 +362,16 @@ export function simulateDuel(d: Duel) {
         );
       else if (hit.kind === 'charge') {
         const target = boards[hit.side].find((c) => c.uid === hit.targetUid);
-        if (target) timers[hit.side][target.at] += hit.value;
+        if (target) {
+          const before = timers[hit.side][target.at];
+          timers[hit.side][target.at] += hit.value;
+          hit.value = timers[hit.side][target.at] - before;
+          hit.targetLane = laneOf(target);
+          hit.targetName = `${laneName(laneOf(target))}·${cardDef(target.id).name}`;
+        } else {
+          hit.value = 0;
+          hit.targetName = '无可用充能目标';
+        }
       }
       hits.push(hit);
     }
@@ -655,6 +664,10 @@ export function simulateDuel(d: Duel) {
             (c.id === 'bell' && q > 0) || special?.allCharge
               ? others
               : others.slice(0, 1);
+          if (!targets.length)
+            log.push(
+              `${side ? '敌方' : '我方'}·${c.name} [${p.uid}]：无同路充能目标，实际生效 0 秒。`,
+            );
           for (const x of targets)
             launch({
               ...base,
@@ -679,6 +692,10 @@ export function simulateDuel(d: Duel) {
               visual: 'charge',
               targetUid: target.uid,
             });
+          else
+            log.push(
+              `${side ? '敌方' : '我方'}·${c.name} [${p.uid}]：无同路充能目标，实际生效 0 秒。`,
+            );
         }
       }
     }

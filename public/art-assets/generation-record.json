@@ -1,0 +1,24 @@
+{
+  "mode": "built-in imagegen",
+  "environment": {
+    "file": "D:/CodexGames/public/art-assets/charcoal-scene.png",
+    "dimensions": [
+      1672,
+      941
+    ],
+    "prompt": "Use case: stylized-concept\nAsset type: landscape background art for an F9 liminal elevator survival game prototype.\nPrimary request: an original 2D charcoal and ink mixed-media illustration, inspired by the hand-rendered, desaturated crosshatched rendering vocabulary of This War of Mine, but absolutely not a war setting.\nScene: derelict industrial elevator checkpoint with crosshatched concrete, exposed cables, collapsed office partitions, and a tiny faded amber utility bulb.\nComposition: wide horizontal landscape, preferably 16:9. A small lone survivor in a heavy jacket stands at the extreme left, an indistinct guard stands at the extreme right. Preserve a HUGE empty dark middle and lower area as usable negative space for a UI battlefield; no foreground objects obstruct that space. The architecture frames this quiet empty area.\nLighting/mood: pale dusty overhead shafts of light, eerie restrained liminal solitude.\nPalette and texture: warm black graphite, dusty ash gray, dirty ivory highlights, sparse amber. Coarse charcoal paper grain, dry brush ink, rough hatching, convincing industrial wear, strong silhouetted edges.\nConstraints: original scene, no fantasy, no warfare, no text, no signs with writing, no UI, no cards, no logos, no watermark."
+  },
+  "atlas": {
+    "file": "D:/CodexGames/public/art-assets/object-atlas.png",
+    "dimensions": [
+      1254,
+      1254
+    ],
+    "cell": [
+      418,
+      418
+    ],
+    "prompt": "Use case: stylized-concept\nAsset type: square atlas of nine fictional maintenance and laboratory inventory objects for a liminal industrial survival game art prototype.\nPrimary request: exactly nine isolated ordinary props in an evenly spaced 3 by 3 layout on a flat dark warm graphite background.\nTop row, left to right: compact orange cordless drill; coil of insulated copper cable; tightly coiled mechanical spring assembly.\nMiddle row, left to right: small metal hand scraper; rectangular shock absorber panel; tube of repair adhesive.\nBottom row, left to right: laboratory wash bottle; petri dish with moss; glass distillation flask.\nStyle: richly detailed charcoal and technical ink illustration, dirty ivory highlights, tiny subdued ochre paint spots. Distinct silhouettes, consistent three-quarter object angle, scratched metal and convincing glass material.\nComposition: square image. Every object centered separately in its own equal-sized cell, contained well inside it with generous padding and empty borders. Background uniform throughout, subtle localized shading. Exactly three objects per row and three rows.\nConstraints: ordinary fictional maintenance and laboratory props only. No people, no actions, no construction instructions. No text, no labels, no lettering, no numbers, no grid lines, no borders, no UI, no logos, no watermark.\n",
+    "note": "Maintenance concept props; see prototype scope for card-specific stand-ins."
+  }
+}

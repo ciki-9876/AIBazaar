@@ -4851,6 +4851,353 @@ body:has(.elevator-demo) {
   text-decoration: none;
   padding: 9px 12px;
 }
+
+/* Phase-one planning: readable summaries and persistent, lightweight details. */
+.elevator-demo .ed-card-v2 .ed-special-copy,
+.elevator-demo .ed-board.enemy .ed-card-v2 .ed-special-copy,
+.elevator-demo.in-combat .ed-vertical-battle .ed-card-v2 .ed-special-copy {
+  display: block !important;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  overflow: hidden;
+  position: absolute;
+  inset: auto 8px 52px;
+  width: auto;
+  height: 21px;
+  min-height: 21px;
+  max-height: 21px;
+  line-height: 21px;
+  font-size: 14px;
+  margin: 0;
+  padding: 0;
+}
+.ed-card-detail-hint {
+  position: absolute;
+  bottom: 34px;
+  left: 8px;
+  right: 8px;
+  font-size: 12px;
+  line-height: 18px;
+  color: #f0ddb0;
+}
+.elevator-demo.in-combat .ed-card-emblem {
+  display: none;
+}
+.elevator-demo .ed-card-v2 {
+  min-height: 150px;
+}
+.elevator-demo .ed-card-v2 .ed-card-name {
+  font-size: 16px;
+}
+.ed-future-effects {
+  margin-top: 16px;
+  border-top: 1px solid #a69c6155;
+  padding-top: 12px;
+}
+.ed-card-description {
+  font-size: 16px;
+  line-height: 1.65;
+}
+.ed-card-description p {
+  overflow-wrap: anywhere;
+}
+.ed-card-description h4,
+.ed-card-description summary {
+  font-size: 14px;
+}
+.ed-identify-result {
+  max-height: none;
+  overflow: visible;
+}
+.ed-identify-page {
+  overflow-y: auto;
+  grid-template-rows: auto minmax(0, 1fr) auto;
+}
+.ed-identify-candidates {
+  max-height: 150px;
+}
+.ed-identify-list > p {
+  grid-column: 1 / -1;
+}
+.ed-identify-page.done .ed-identify-stage {
+  display: grid;
+  grid-template-columns: minmax(180px, 0.7fr) minmax(0, 1.3fr);
+  align-items: start;
+}
+.ed-identify-page.done .ed-identify-plinth {
+  margin-top: 40px;
+}
+.ed-identify-page.done .ed-identify-stage > button {
+  display: none;
+}
+.ed-identify-page.done .ed-identify-result {
+  width: auto;
+}
+.ed-identify-result > .ed-primary {
+  margin-bottom: 16px;
+}
+.elevator-demo .ed-identify-result .ed-card-description p,
+.elevator-demo .ed-fixed-details .ed-card-description p,
+.elevator-demo .ed-pinned-detail .ed-card-description p {
+  font-size: 16px;
+  line-height: 1.65;
+}
+.ed-identify-status p {
+  font-size: 14px;
+  line-height: 1.65;
+}
+.ed-inventory-page-body > .ed-build-board {
+  overflow-y: auto;
+  display: block;
+}
+.ed-build-board .ed-board-scroll {
+  overflow-x: auto;
+  flex-shrink: 0;
+}
+.ed-planning-board {
+  min-width: 400px;
+}
+.ed-planning-board .ed-lane-cells {
+  min-height: 150px;
+  direction: ltr;
+}
+.elevator-demo .ed-board.ed-planning-board .ed-lane-cells {
+  direction: ltr;
+}
+.elevator-demo .ed-planning-board .ed-card-v2 {
+  min-height: 150px;
+  height: 150px;
+}
+.elevator-demo .ed-planning-board .ed-card-v2 .ed-card-name {
+  position: absolute;
+  top: 26px;
+  left: 8px;
+  right: 8px;
+  margin: 0;
+  line-height: 20px;
+}
+.ed-planning-board .ed-slot {
+  min-height: 150px;
+  display: grid;
+  place-items: center;
+  font-size: 14px;
+}
+.ed-card-description .ed-detail-cooldown {
+  position: static;
+  display: inline-flex;
+  margin: 0 8px 10px 0;
+  float: none;
+}
+.elevator-demo.in-combat .ed-vertical-battle .ed-lane-cells,
+.elevator-demo.in-combat .ed-vertical-battle .ed-card.ed-card-v2 {
+  min-height: 160px;
+}
+.ed-planning-board {
+  margin-top: 12px;
+}
+.ed-build-board .ed-build-candidates {
+  margin-top: 8px;
+}
+.ed-build-candidates {
+  margin-top: 20px;
+}
+.ed-build-candidates > div {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.ed-build-candidates button {
+  display: grid;
+  gap: 5px;
+  text-align: left;
+  padding: 10px;
+}
+.ed-build-candidates small {
+  font-size: 14px;
+}
+.ed-placement {
+  margin-top: 16px;
+  border: 1px solid #bdc38e;
+  padding: 12px;
+  background: #243026;
+}
+.ed-placement p,
+.ed-build-board > p {
+  font-size: 14px;
+  line-height: 1.6;
+}
+.ed-target-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 6px;
+  margin: 12px 0;
+}
+.ed-target-grid button {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 9px;
+  font-size: 14px;
+}
+.ed-target-grid small {
+  font-size: 12px;
+}
+.ed-target-grid .legal {
+  border: 1px solid #a4bf83;
+  background: #304331;
+}
+.ed-target-grid .invalid {
+  color: #a5aaa2;
+  border: 1px dashed #7b8272;
+}
+.ed-target-grid .preview {
+  background: #515d35;
+  outline: 2px solid #f0dca0;
+}
+.ed-enemy-intel {
+  padding: 14px;
+  border: 1px solid #c3a77066;
+  margin: 12px 0;
+  background: #20271c;
+}
+.ed-enemy-intel p {
+  font-size: 16px;
+  line-height: 1.6;
+}
+.ed-enemy-intel details {
+  margin: 12px 0;
+}
+.ed-enemy-intel .ed-board {
+  min-width: 400px;
+}
+.ed-enemy-intel .ed-board-scroll {
+  overflow-x: auto;
+}
+.ed-close-detail {
+  position: sticky;
+  top: 0;
+  float: right;
+  z-index: 2;
+  background: #253127;
+}
+.ed-detail-play-state {
+  clear: both;
+  font-size: 14px;
+}
+.elevator-demo .ed-pinned-detail {
+  position: fixed;
+  inset: 16px 16px 16px auto !important;
+  width: min(380px, calc(100vw - 24px));
+  max-height: calc(100dvh - 32px) !important;
+  overflow-y: auto;
+  margin: 0;
+  z-index: 100;
+  box-shadow: -6px 0 24px #0006;
+}
+.ed-result-evidence {
+  font-size: 14px;
+  line-height: 1.6;
+}
+.ed-result-evidence p {
+  margin: 5px 0;
+  overflow-wrap: anywhere;
+}
+.ed-result-evidence details {
+  margin-top: 8px;
+}
+.ed-refine-preview {
+  flex-basis: 100%;
+  border: 1px solid #bfa364;
+  padding: 12px;
+  background: #243026;
+}
+.ed-refine-preview p {
+  font-size: 14px;
+  line-height: 1.65;
+  overflow-wrap: anywhere;
+}
+.ed-refine-preview button {
+  margin: 8px 8px 0 0;
+}
+.in-combat .ed-main > .ed-combat.is-finished {
+  grid-template-rows: 38px minmax(300px, 1fr) auto;
+  overflow-y: auto;
+}
+.in-combat .ed-combat.is-finished .ed-battle-result {
+  height: auto;
+  max-height: 38vh;
+  overflow-y: auto;
+  align-items: start;
+  padding: 14px;
+}
+.in-combat .ed-combat.is-finished .ed-battle-result > div {
+  display: block;
+}
+.in-combat .ed-combat.is-finished .ed-battle-result .ed-result-evidence p {
+  display: block;
+}
+@media (max-width: 700px) {
+  .ed-inventory-page-body {
+    display: flex;
+    flex-direction: column;
+    overflow-y: auto;
+  }
+  .ed-inventory-page-body > .ed-panel {
+    flex: 0 0 auto;
+    max-height: none;
+    overflow: visible;
+  }
+  .ed-inventory-page-body > .ed-fixed-details {
+    max-height: 55dvh;
+    overflow-y: auto;
+  }
+  .ed-identify-stage {
+    min-width: 0;
+  }
+  .ed-identify-page.done .ed-identify-stage {
+    display: flex;
+  }
+  .ed-identify-page.done .ed-identify-plinth {
+    min-height: 80px;
+    margin-top: 0;
+  }
+  .ed-identify-page.done .ed-identify-plinth > svg {
+    display: none;
+  }
+  .elevator-demo.in-combat {
+    padding: 12px;
+  }
+  .in-combat .ed-combat > .ed-section-title {
+    flex-direction: row;
+    align-items: center;
+    gap: 8px;
+  }
+  .in-combat .ed-combat > .ed-section-title h2,
+  .in-combat .ed-combat > .ed-section-title > span {
+    font-size: 16px;
+    white-space: nowrap;
+  }
+  .in-combat .ed-battle-scroll {
+    overflow: auto;
+  }
+  .in-combat .ed-vertical-battle {
+    min-width: 1200px;
+    min-height: 620px;
+  }
+  .in-combat .ed-combat.is-finished .ed-battle-result {
+    flex-wrap: wrap;
+    max-height: 45dvh;
+  }
+  .in-combat .ed-combat.is-finished .ed-battle-result > div {
+    flex: 1 0 100%;
+  }
+  .in-combat .ed-combat.is-finished .ed-battle-result > svg {
+    display: none;
+  }
+  .in-combat .ed-combat .ed-battle-log-details[open] {
+    width: calc(100vw - 32px);
+  }
+}
 .elevator-demo .ed-card-v2 .ed-card-wash,
 .elevator-demo .ed-board.enemy .ed-card-v2 .ed-card-wash {
   transform-origin: top center;

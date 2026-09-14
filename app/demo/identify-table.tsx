@@ -16,10 +16,12 @@ export default function IdentifyTable({
   items,
   onScan,
   initialUid,
+  onBuild,
 }: {
   items: Item[];
   onScan: (uid: string) => Item | null;
   initialUid?: string;
+  onBuild: (uid: string) => void;
 }) {
   const [chosen, setChosen] = useState<Item | null>(
     () =>
@@ -100,7 +102,7 @@ export default function IdentifyTable({
     (x) => x.type === 'physical' && x.uid !== chosen?.uid,
   );
   return (
-    <section className="ed-identify-page">
+    <section className={'ed-identify-page ' + phase}>
       <header>
         <small>初始设施 · 免费鉴定 · 每种卡牌稀有度固定</small>
         <h2>将实体转化为卡牌</h2>
@@ -143,6 +145,9 @@ export default function IdentifyTable({
         {phase === 'done' && chosen && (
           <div className="ed-identify-result">
             <p>鉴定完成，已放回{ORIGIN[chosen.zone]}。</p>
+            <button className="ed-primary" onClick={() => onBuild(chosen.uid)}>
+              带着这张牌去布阵
+            </button>
             <CardDetail
               card={{ ...chosen, at: 0, rarity: chosen.rarity ?? 0 }}
             />

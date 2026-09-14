@@ -2,11 +2,7 @@ import { CARDS, cardDef } from './demo-cards.ts';
 import { layout } from './cargo-layout.ts';
 import { rarityOf, growthCost, growthRefund } from './demo-card-rules.ts';
 import { rng, hash } from './design-model.ts';
-import {
-  FOUR,
-  FACILITIES,
-  RARITY as OLD_RARITY,
-} from './prototype-v04.ts';
+import { FOUR, FACILITIES, RARITY as OLD_RARITY } from './prototype-v04.ts';
 import {
   floorRoute,
   sceneTitle,
@@ -405,6 +401,41 @@ export function autoBoardPosition(s: Run, item: Item): number | null {
   }
   return null;
 }
+export function identificationState(s: Run) {
+  const cost = s.phase === 'base' ? 0 : 1;
+  const reason =
+    s.phase === 'base'
+      ? '基地免费鉴定'
+      : s.level < 3
+        ? '未解锁 · 电梯 Lv.3 解锁便携鉴定'
+        : !hasTool(s, 'scanner')
+          ? '未携带鉴定仪 · 需放入背包或安全容器'
+          : s.charges < cost
+            ? '电荷不足 · 回基地设备台补充'
+            : '可鉴定';
+  return {
+    cost,
+    charges: s.charges,
+    allowed:
+      s.phase === 'base' ||
+      (s.phase === 'floor' &&
+        s.level >= 3 &&
+        hasTool(s, 'scanner') &&
+        s.charges >= cost),
+    reason,
+  };
+}
+export function previewPlacement(s: Run, id: string, at: number) {
+  try {
+    act(s, { type: 'place', id, at });
+    return { allowed: true, reason: '位置合法，确认后生效' };
+  } catch (e) {
+    return {
+      allowed: false,
+      reason: e instanceof Error ? e.message : '无法放置',
+    };
+  }
+}
 export function refineIngredient(s: Run, item: Item) {
   return s.items
     .filter(
@@ -498,6 +529,13 @@ export function merchantOffers(s: Run) {
       3,
     ),
   );
+  // A single low-cost, one-cell option survives old saves and needs no new loot system.
+  if (s.floor <= 3)
+    choices[0] = makeItem(
+      `offer-early-${s.floor}-${s.node}`,
+      'fuse',
+      'physical',
+    );
   return choices.filter(
     (x) =>
       unlockedItem(s, x.id) &&
@@ -761,10 +799,7 @@ function finishBots(s: Run) {
         floor.history = floor.history.slice(0, 12);
       }
     } else {
-      botRescue(
-        b,
-        `${b.floor} 层构筑强度 ${Math.round(b.strength)} 低于环境挑战 ${danger}`,
-      );
+      botRescue(b, `${b.floor} 层挑战未通过（环境波动后的表现未达要求）`);
       b.strength += 5;
     }
     b.stamina = Math.max(0, b.stamina - 25);
@@ -834,12 +869,30 @@ export function makeDuel(s: Run, kind: 'guardian' | 'survivor'): Duel {
     ids.push('bell');
     ats.push(2);
   }
+  if (kind === 'guardian' && floor <= 3 && stage !== 'normal') {
+    // Local early encounters: a same-lane burst pair, then a split repair line.
+    ids.splice(
+      0,
+      ids.length,
+      ...(stage === 'elite' ? ['nailer', 'fuse'] : ['springbow', 'sealant']),
+    );
+    ats.splice(0, ats.length, ...(stage === 'elite' ? [0, 2] : [3, 6]));
+  }
   const enemy = ids.map((id, i) => ({
     uid: `enemy-${i}`,
-    id: i === 0 && hash(`${s.seed}/${floor}/guard`) % 2 === 0 ? 'wire' : id,
+    id:
+      i === 0 &&
+      !(kind === 'guardian' && floor <= 3 && stage !== 'normal') &&
+      hash(`${s.seed}/${floor}/guard`) % 2 === 0
+        ? 'wire'
+        : id,
     at: ats[i],
     rarity: rarityOf(
-      i === 0 && hash(`${s.seed}/${floor}/guard`) % 2 === 0 ? 'wire' : id,
+      i === 0 &&
+        !(kind === 'guardian' && floor <= 3 && stage !== 'normal') &&
+        hash(`${s.seed}/${floor}/guard`) % 2 === 0
+        ? 'wire'
+        : id,
     ),
     quality: floor >= 5 ? 1 : 0,
     level: Math.floor((floor - 1) / 4),
@@ -865,6 +918,11 @@ export function makeDuel(s: Run, kind: 'guardian' | 'survivor'): Duel {
 }
 export function migrateCargo(source: Run): Run {
   const s = structuredClone(source);
+  for (const row of [...s.bots, ...(s.dailyReport?.rows ?? [])])
+    row.status = row.status.replace(
+      /构筑强度 \d+ 低于环境挑战 \d+/,
+      '挑战未通过（当时环境波动后的表现未达要求）',
+    );
   for (const item of [...s.items, ...s.floors.flatMap((f) => f.stock)])
     if (item.type === 'card') item.rarity = rarityOf(item.id);
   if (s.duel)
@@ -1108,6 +1166,42 @@ function applyAction(old: Run, a: Action): Run {
     return s;
   }
   need(s.phase !== 'combat', '战斗开始后不可修改物品或基地');
+  if (a.type === 'place') {
+    const x = s.items.find((item) => item.uid === a.id);
+    need(x?.type === 'card', '请选择已鉴定卡牌');
+    need(
+      s.phase === 'base' || x.zone !== 'warehouse',
+      '楼层中无法访问基地仓库',
+    );
+    need(Number.isInteger(a.at), '请选择落点');
+    const at = a.at!;
+    const overlaps = s.items.filter(
+      (other) =>
+        other.zone === 'board' &&
+        other.uid !== x.uid &&
+        other.at! < at + x.volume &&
+        other.at! + other.volume > at,
+    );
+    need(overlaps.length <= 1, '目标涉及多张牌，不支持连锁交换');
+    const other = overlaps[0];
+    if (other) {
+      need(at === other.at, '换位请点击目标卡牌的起始格');
+      other.zone = x.zone;
+      other.at = x.zone === 'board' ? x.at : undefined;
+      other.slot = undefined;
+    }
+    x.zone = 'board';
+    x.at = at;
+    x.slot = undefined;
+    say(
+      s,
+      other
+        ? `${itemName(x)}与${itemName(other)}已交换位置。`
+        : `${itemName(x)}已放至${['上路', '中路', '下路'][Math.floor(at / 3)]}第${(at % 3) + 1}格。`,
+    );
+    // act validates the entire candidate once before returning it; the original is untouched.
+    return s;
+  }
   if (a.type === 'equip' || a.type === 'unequip') {
     const item = s.items.find((x) => x.uid === a.id);
     need(item?.type === 'card', '请选择卡牌');
@@ -1142,19 +1236,16 @@ function applyAction(old: Run, a: Action): Run {
     const x = s.items.find((x) => x.uid === a.id);
     need(x && x.type === 'physical', '请选择未鉴定实体');
     if (s.phase === 'floor') {
-      need(s.level >= 3, '电梯 Lv.3 解锁便携鉴定');
+      const state = identificationState(s);
+      need(state.allowed, state.reason);
       need(x.zone === 'bag' || x.zone === 'safe', '只能鉴定随身携带的实体');
-      need(
-        hasTool(s, 'scanner') && s.charges > 0,
-        '楼层鉴定需要携带鉴定仪且有电荷',
-      );
-      s.charges--;
+      s.charges -= state.cost;
     }
     x.rarity = rarityOf(x.id);
     x.type = 'card';
     say(
       s,
-      `鉴定完成：${itemName(x)} / ${RARITY[x.rarity].name}。每种卡牌具有固定稀有度。`,
+      `鉴定完成：${itemName(x)} / ${RARITY[x.rarity].name}。${s.phase === 'floor' ? `本次消耗 1 电荷，剩余 ${s.charges} / 4 电荷；电力未消耗。` : '基地免费鉴定，不消耗电荷。'}`,
     );
     return s;
   }
@@ -1227,7 +1318,11 @@ function applyAction(old: Run, a: Action): Run {
     need(s.phase === 'base', '只能回到床上睡觉');
     planBots(s);
     finishBots(s);
-    const fed = itemCount(s, 'supply') > 0;
+    const supplyBefore = itemCount(s, 'supply');
+    const supplySource = s.items.find(
+      (x) => x.id === 'supply' && x.zone !== 'board',
+    );
+    const fed = supplyBefore > 0;
     if (fed) spendItem(s, 'supply');
     s.stamina = Math.min(100, s.stamina + (fed ? 50 : 15));
     s.quota--;
@@ -1264,7 +1359,7 @@ function applyAction(old: Run, a: Action): Run {
     }));
     say(
       s,
-      `第 ${s.day} 天：${fed ? '消耗 1 补给，恢复 50' : '缺少补给，仅恢复 15'} 精力；生命 -1。`,
+      `第 ${s.day} 天：${fed ? `消耗${supplySource?.zone === 'warehouse' ? '仓库' : supplySource?.zone === 'safe' ? '安全容器' : '背包'} 1 补给（基地可用总量 ${supplyBefore} → ${supplyBefore - 1}），恢复 50` : '缺少补给，仅恢复 15'} 精力；生命 -1。`,
     );
     endIfNeeded(s);
     return s;
