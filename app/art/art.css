@@ -1,3 +1,31 @@
+.mode-3d .art-stage {
+  height: clamp(640px, 78vh, 850px);
+}
+.mode-3d .art-hosts {
+  top: 62px;
+  bottom: 50px;
+  flex-direction: column;
+  align-items: flex-start;
+  left: 24px;
+  right: auto;
+}
+.mode-3d .art-host.side-1 {
+  order: 0;
+  text-align: left;
+}
+.mode-3d .art-host.side-1 > div > i {
+  margin-left: 0;
+}
+.mode-3d .art-host.side-0 {
+  order: 1;
+}
+.mode-3d .art-host {
+  width: 175px;
+}
+.mode-3d .art-webgl-cards {
+  bottom: 16px;
+  max-width: 65%;
+}
 .art-lab {
   --art-bg: #171715;
   --art-ink: #e5dfce;

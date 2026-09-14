@@ -3,7 +3,7 @@ import { useEffect, useRef, useState } from 'react';
 import * as THREE from 'three';
 import type { CombatFrame, Duel, FighterCard } from '@/lib/demo-combat';
 import { cardDef } from '@/lib/demo-cards';
-import { ATLAS, KIND, cardPosition, LANES } from './art-data';
+import { ATLAS, KIND, cardPosition } from './art-data';
 
 type Props = {
   duel: Duel;
@@ -48,7 +48,7 @@ export default function RoomBattle(props: Props) {
     let disposed = false;
     renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.7));
     renderer.shadowMap.enabled = true;
-    renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+    renderer.shadowMap.type = THREE.PCFShadowMap;
     renderer.outputColorSpace = THREE.SRGBColorSpace;
     renderer.toneMapping = THREE.ACESFilmicToneMapping;
     renderer.toneMappingExposure = 1.25;
@@ -63,7 +63,7 @@ export default function RoomBattle(props: Props) {
     scene.background = new THREE.Color('#111d20');
     scene.fog = new THREE.FogExp2('#16292c', 0.042);
     const camera = new THREE.PerspectiveCamera(43, 1, 0.1, 70);
-    camera.position.set(0, 12, 4.9);
+    camera.position.set(-2.8, 12.7, 0);
     camera.lookAt(0, 1.4, 0);
     const ambient = new THREE.HemisphereLight('#b0d9d9', '#3d3529', 2);
     scene.add(ambient);
@@ -168,9 +168,11 @@ export default function RoomBattle(props: Props) {
       const pipe = cylinder(0.075, 15, steel, 0, 5.5, z);
       pipe.rotation.z = Math.PI / 2;
     }
-    box(3, 0.18, 0.7, dark, 0, 6.4, 0);
-    box(2.7, 0.035, 0.4, glow, 0, 6.29, 0);
-    cylinder(0.025, 2.5, dark, 0, 7.7, 0);
+    const overhead = new THREE.Group();
+    scene.add(overhead);
+    box(3, 0.18, 0.7, dark, 0, 6.4, 0, overhead);
+    box(2.7, 0.035, 0.4, glow, 0, 6.29, 0, overhead);
+    cylinder(0.025, 2.5, dark, 0, 7.7, 0, overhead);
     for (const x of [-6, 6]) {
       box(1.2, 2.8, 1.2, steel, x, 1.4, -3.8);
       for (let y = 0.5; y < 2.6; y += 0.4)
@@ -270,12 +272,11 @@ export default function RoomBattle(props: Props) {
     person(5, true);
     person(-5, false);
     // Table-side meter housing and inspection tablet.
-    box(0.8, 0.24, 0.8, enamel, -3.3, 1.88, 2.36);
-    box(0.62, 0.02, 0.38, mat('#bad4b5', 0.2, 0.4), -3.3, 2.01, 2.3);
+    box(0.8, 0.24, 0.8, enamel, -4.55, 1.88, 2.36);
+    box(0.62, 0.02, 0.38, mat('#bad4b5', 0.2, 0.4), -4.55, 2.01, 2.3);
     for (let z = 2.1; z < 2.6; z += 0.15)
-      box(0.4, 0.021, 0.025, black, -3.3, 2.025, z);
+      box(0.4, 0.021, 0.025, black, -4.55, 2.025, z);
     const image = new Image();
-    image.src = '/art-assets/object-atlas.png';
     const cardMeshes: CardMesh[] = [];
     const pickables: THREE.Object3D[] = [];
     function cardTexture(card: FighterCard, side: number) {
@@ -342,6 +343,9 @@ export default function RoomBattle(props: Props) {
       ctx.fillText(`基础 / Lv.0 / ${d.size} 格`, w / 2, 479, w - 30);
       const tex = new THREE.CanvasTexture(canvas);
       tex.colorSpace = THREE.SRGBColorSpace;
+      // Readable from the near (player) edge after the vertical camera change.
+      tex.center.set(0.5, 0.5);
+      tex.rotation = -Math.PI / 2;
       tex.anisotropy = Math.min(8, renderer.capabilities.getMaxAnisotropy());
       resources.push(tex);
       return tex;
@@ -364,15 +368,15 @@ export default function RoomBattle(props: Props) {
         plate.userData.card = card;
         group.add(plate);
         pickables.push(plate);
-        box(pos.width - 0.09, 0.025, 0.055, black, 0, 0.068, 0.64, group);
+        box(0.055, 0.025, 1.34, black, -pos.width / 2 + 0.09, 0.068, 0, group);
         const fill = box(
-          pos.width - 0.09,
-          0.03,
           0.055,
+          0.03,
+          1.34,
           ochre,
-          0,
+          -pos.width / 2 + 0.09,
           0.071,
-          0.64,
+          0,
           group,
         );
         cardMeshes.push({ card, side, group, plate, fill, material });
@@ -386,6 +390,7 @@ export default function RoomBattle(props: Props) {
         m.material.needsUpdate = true;
       });
     };
+    image.src = '/art-assets/object-atlas.png';
     const barriers: {
       mesh: THREE.Mesh;
       side: number;
@@ -516,10 +521,11 @@ export default function RoomBattle(props: Props) {
         seat = 1 - t * t * (3 - 2 * t);
       }
       const wide = camera.aspect < 1.2 ? 1.4 : 1;
+      overhead.visible = seat > 0.72;
       const targetPos = new THREE.Vector3(
-        -6.35 * seat,
-        3.45 * seat + 10.7 * wide * (1 - seat),
-        0.18 * seat + 2.8 * (1 - seat),
+        -6.35 * seat - 2.8 * (1 - seat),
+        3.45 * seat + 12.7 * wide * (1 - seat),
+        0.18 * seat,
       );
       targetLook.set(0.4 * seat, 1.55 + 0.22 * seat, 0);
       camera.position.lerp(targetPos, p.reduced ? 1 : 1 - Math.exp(-dt * 5));
@@ -533,9 +539,9 @@ export default function RoomBattle(props: Props) {
               f.timers[m.side][m.card.at] / (f.cd[m.side][m.card.at] || 1),
             ),
           ),
-          width = cardPosition(m.card, m.side).width - 0.09;
-        m.fill.scale.x = progress;
-        m.fill.position.x = (-(1 - progress) * width) / 2;
+          width = 1.34;
+        m.fill.scale.z = progress;
+        m.fill.position.z = (-(1 - progress) * width) / 2;
         const firing = f.fired.includes(m.card.uid);
         m.group.position.y =
           1.8 +
@@ -570,7 +576,7 @@ export default function RoomBattle(props: Props) {
         b.label.style.display = seat > 0.5 ? 'none' : 'block';
         b.label.className =
           'art-room-barrier-label' + (barrier.broken ? ' broken' : '');
-        b.label.textContent = `${LANES[b.lane]} ${barrier.broken ? '破损' : Math.ceil(barrier.hp)}${f.corrosion[b.side][b.lane] > 0 ? ' · 蚀' + f.corrosion[b.side][b.lane].toFixed(0) : ''}`;
+        b.label.textContent = `${['I', 'II', 'III'][b.lane]} ${barrier.broken ? '破损' : Math.ceil(barrier.hp)}${f.corrosion[b.side][b.lane] > 0 ? ' · 蚀' + f.corrosion[b.side][b.lane].toFixed(0) : ''}`;
       });
       const live = new Set(f.projectiles.map((v) => v.id));
       projectilePool.forEach((m, id) => {

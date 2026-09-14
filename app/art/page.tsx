@@ -18,7 +18,7 @@ import FlatBattle from './flat-battle';
 const RoomBattle = lazy(() => import('./room-battle'));
 
 export default function ArtLab() {
-  const [mode, setMode] = useState<'2d' | '3d'>('2d');
+  const [mode, setMode] = useState<'2d' | '3d'>('3d');
   const [school, setSchool] = useState<School>('erosion');
   const [cursor, setCursor] = useState(0),
     [playing, setPlaying] = useState(false),
@@ -37,7 +37,7 @@ export default function ArtLab() {
     const id = requestAnimationFrame(() => {
       setReduced(window.matchMedia('(prefers-reduced-motion: reduce)').matches);
       const m = new URLSearchParams(window.location.search).get('mode');
-      if (m === '3d') setMode('3d');
+      if (m === '2d') setMode('2d');
     });
     return () => cancelAnimationFrame(id);
   }, []);
@@ -119,6 +119,9 @@ export default function ArtLab() {
             <i>B</i> 3D · 工业异象
           </button>
         </nav>
+        <Link className="art-doc-link" href="/art/base">
+          3D 电梯基地
+        </Link>
         <Link className="art-doc-link" href="/art/direction">
           完整方案 <ArrowUpRight />
         </Link>
@@ -251,7 +254,8 @@ export default function ArtLab() {
           <span>
             {LANES.map((l, i) => (
               <em key={l}>
-                {['I', 'II', 'III'][i]} {l}
+                {['I', 'II', 'III'][i]}{' '}
+                {mode === '3d' ? ['左路', '中路', '右路'][i] : l}
               </em>
             ))}
           </span>
