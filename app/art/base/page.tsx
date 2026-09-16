@@ -1,6 +1,6 @@
+/* oxlint-disable next/no-html-link-for-pages -- Static export uses document navigation; client RSC navigation is unavailable on the host. */
 'use client';
 import { lazy, Suspense, useEffect, useReducer, useState } from 'react';
-import Link from 'next/link';
 import {
   ArrowLeft,
   Box,
@@ -16,6 +16,7 @@ import {
   BAYS,
   FACILITIES,
   initialBase,
+  furnishedBase,
   reduceBase,
   canPlace,
   type FacilityKind,
@@ -23,8 +24,14 @@ import {
 import type { BaseView } from './base-scene';
 import './base.css';
 const Scene = lazy(() => import('./base-scene'));
-export default function BasePrototype() {
-  const [state, dispatch] = useReducer(reduceBase, undefined, initialBase),
+export default function BasePrototype({
+  refined = false,
+}: {
+  refined?: boolean;
+}) {
+  const [state, dispatch] = useReducer(reduceBase, refined, (v) =>
+      v ? furnishedBase() : initialBase(),
+    ),
     [view, setView] = useState<BaseView>('cabin'),
     [selected, setSelected] = useState<number | null>(1),
     [draft, setDraft] = useState<FacilityKind | null>(null),
@@ -45,8 +52,8 @@ export default function BasePrototype() {
     const id = setTimeout(() => setSleeping(false), 1000);
     return () => clearTimeout(id);
   }, [sleeping]);
-  const module = state.modules.find((m) => m.id === selected),
-    def = module ? FACILITIES[module.kind] : null,
+  const selectedModule = state.modules.find((m) => m.id === selected),
+    def = selectedModule ? FACILITIES[selectedModule.kind] : null,
     occupied = state.modules.reduce((n, m) => n + FACILITIES[m.kind].slots, 0),
     error = draft && slot !== null ? canPlace(state, draft, slot) : null;
   function select(id: number) {
@@ -71,18 +78,23 @@ export default function BasePrototype() {
   return (
     <main className="base-app">
       <header className="base-header">
-        <Link href="/art/?mode=3d" className="base-brand">
+        <a href="/art/?mode=3d" className="base-brand">
           f9 <span>幸存者电梯</span>
-        </Link>
+        </a>
         <nav>
-          <Link href="/art/?mode=3d">
+          <a href="/art/?mode=3d">
             <ArrowLeft />
             战斗试验
-          </Link>
-          <span>基地 / 3D</span>
-          <Link href="/art/maintenance">维护成本评估</Link>
+          </a>
+          <span>基地 / {refined ? 'LUX3D' : '3D'}</span>
+          <a href={refined ? '/art/base' : '/art/base/refined'}>
+            {refined ? '对照原版' : 'Lux3D 精修版'}
+          </a>
+          <a href="/art/maintenance">维护成本评估</a>
         </nav>
-        <span className="base-header-code">CABIN 09 / REV.02</span>
+        <span className="base-header-code">
+          CABIN 09 / {refined ? 'REV.03' : 'REV.02'}
+        </span>
       </header>
       <section className="base-status">
         <div>
@@ -117,6 +129,7 @@ export default function BasePrototype() {
             fallback={<div className="base-loading">正在接通舱内照明…</div>}
           >
             <Scene
+              refined={refined}
               state={state}
               view={view}
               selected={selected}
@@ -157,7 +170,7 @@ export default function BasePrototype() {
             </button>
             <button
               aria-pressed={view === 'focus'}
-              disabled={!module}
+              disabled={!selectedModule}
               onClick={() => setView('focus')}
             >
               近看
@@ -265,10 +278,11 @@ export default function BasePrototype() {
                 确认建造
               </button>
             </section>
-          ) : module && def ? (
+          ) : selectedModule && def ? (
             <section className="base-detail">
               <span className="base-eyebrow">
-                {def.code} / {BAYS[module.slot].label} / Mk.{module.level}
+                {def.code} / {BAYS[selectedModule.slot].label} / Mk.
+                {selectedModule.level}
               </span>
               <h1>{def.name}</h1>
               <p>{def.desc}</p>
@@ -278,23 +292,26 @@ export default function BasePrototype() {
               </div>
               <button
                 className="base-primary"
-                disabled={module.used}
-                onClick={() => dispatch({ type: 'use', id: module.id })}
+                disabled={selectedModule.used}
+                onClick={() => dispatch({ type: 'use', id: selectedModule.id })}
               >
                 <Zap />
-                {module.used ? '今日已使用' : '运行设施'}
+                {selectedModule.used ? '今日已使用' : '运行设施'}
               </button>
               <div className="base-secondary-actions">
                 <button
                   disabled={
-                    module.level >= 3 || state.stock.scrap < module.level * 4
+                    selectedModule.level >= 3 ||
+                    state.stock.scrap < selectedModule.level * 4
                   }
-                  onClick={() => dispatch({ type: 'upgrade', id: module.id })}
+                  onClick={() =>
+                    dispatch({ type: 'upgrade', id: selectedModule.id })
+                  }
                 >
                   <Wrench />
-                  {module.level >= 3
+                  {selectedModule.level >= 3
                     ? '外观已满级'
-                    : `升级外观 · ${module.level * 4} 零件`}
+                    : `升级外观 · ${selectedModule.level * 4} 零件`}
                 </button>
                 <button onClick={() => setConfirm(!confirm)}>拆除</button>
               </div>
@@ -306,7 +323,7 @@ export default function BasePrototype() {
                   </p>
                   <button
                     onClick={() => {
-                      dispatch({ type: 'demolish', id: module.id });
+                      dispatch({ type: 'demolish', id: selectedModule.id });
                       setSelected(null);
                       setConfirm(false);
                     }}
@@ -375,7 +392,7 @@ export default function BasePrototype() {
             aria-label="重置基地沙盘"
             title="重置基地沙盘"
             onClick={() => {
-              dispatch({ type: 'reset' });
+              dispatch({ type: 'reset', furnished: refined });
               setSelected(1);
               setDraft(null);
               setSlot(null);

@@ -806,6 +806,100 @@
   background: radial-gradient(ellipse at 50% 50%, transparent 35%, #02080ab0);
   mix-blend-mode: multiply;
 }
+.art-card-text-layer {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  overflow: hidden;
+}
+.art-lab button.art-physical-card {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  justify-content: flex-start;
+  gap: 0;
+  padding: 8px 13px 7px;
+  border: 3px solid #b2a174;
+  border-radius: 5px;
+  overflow: hidden;
+  background: #1a2b26;
+  color: #f2e8cf;
+  box-shadow: inset 0 0 0 4px #3f5145;
+  backface-visibility: hidden;
+  cursor: pointer;
+  text-align: left;
+  font-family: 'Microsoft YaHei', sans-serif;
+  line-height: 1.2;
+}
+.art-physical-card.side-1 {
+  border-color: #a79a80;
+}
+.art-card-caption {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  min-height: 42px;
+}
+.art-card-caption strong {
+  font-size: 36px;
+  font-weight: 600;
+  letter-spacing: 1px;
+}
+.art-card-caption span {
+  font-size: 27px;
+  color: #ddbb74;
+}
+.art-card-illustration {
+  flex: 1;
+  min-height: 25px;
+  margin: 5px 0;
+  background-image: url('/art-assets/object-atlas.png');
+  background-size: 300% 300%;
+  border: 1px solid #8b967b60;
+}
+.art-card-numbers {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  font-size: 29px;
+  font-variant-numeric: tabular-nums;
+}
+.art-card-numbers b {
+  font-weight: 500;
+  color: #ead6a2;
+}
+.art-physical-card small {
+  font-size: 17px;
+  color: #afbea4;
+  margin-top: 4px;
+  padding-bottom: 5px;
+  background: linear-gradient(
+      to right,
+      #ccad69 var(--charge),
+      #34493d var(--charge)
+    )
+    bottom / 100% 3px no-repeat;
+}
+.art-lab button.art-physical-card.selected,
+.art-lab button.art-physical-card:focus-visible {
+  border-color: #ffdf91;
+  outline: 4px solid #ffe1a066;
+}
+.art-lab button.art-physical-card.firing {
+  box-shadow: inset 0 0 20px #ffe0a150;
+}
+.art-lab button.art-physical-card.compact {
+  display: grid;
+  grid-template-columns: 104px 1fr;
+  grid-template-rows: 42px 1fr 28px;
+  column-gap: 10px;
+}
+.art-physical-card.compact .art-card-illustration { grid-column: 1; grid-row: 1 / 4; margin: 0; }
+.art-physical-card.compact .art-card-caption { grid-column: 2; grid-row: 1; }
+.art-physical-card.compact .art-card-caption strong { font-size: 30px; letter-spacing: 0; }
+.art-physical-card.compact .art-card-caption span { display: none; }
+.art-physical-card.compact .art-card-numbers { grid-column: 2; grid-row: 2; flex-direction: column; justify-content: center; font-size: 26px; }
+.art-physical-card.compact small { grid-column: 2; grid-row: 3; }
 .art-reduced *,
 .art-reduced *:before,
 .art-reduced *:after {

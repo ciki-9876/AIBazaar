@@ -1,4 +1,4 @@
-import Link from 'next/link';
+/* oxlint-disable next/no-html-link-for-pages -- Static export uses document navigation; client RSC navigation is unavailable on the host. */
 import Image from 'next/image';
 import { common, flat, room, delivery, type Chapter } from './content';
 function Chapters({ items }: { items: Chapter[] }) {
@@ -26,7 +26,7 @@ export default function Direction() {
   return (
     <main className="art-dossier">
       <header>
-        <Link href="/art/">← 返回战斗美术试验</Link>
+        <a href="/art/">← 返回战斗美术试验</a>
         <span className="art-kicker" style={{ marginTop: 30 }}>
           F9 / ART DIRECTION STUDY / 2026.09
         </span>
@@ -102,7 +102,7 @@ export default function Direction() {
       <section id="flat">
         <h2>A / 2D · 炭笔档案</h2>
         <div className="art-plan-links">
-          <Link href="/art/?mode=2d">进入 2D 战斗原型 →</Link>
+          <a href="/art/?mode=2d">进入 2D 战斗原型 →</a>
         </div>
         <Image
           src="/art-assets/charcoal-scene.png"
@@ -117,7 +117,7 @@ export default function Direction() {
       <section id="room">
         <h2>B / 3D · 工业异象</h2>
         <div className="art-plan-links">
-          <Link href="/art/?mode=3d">进入 3D 战斗原型 →</Link>
+          <a href="/art/?mode=3d">进入 3D 战斗原型 →</a>
         </div>
         <p className="art-note">
           主艺术锚点是《Pacific
@@ -183,9 +183,9 @@ export default function Direction() {
           imagegen 生成；提示词记录保存在素材目录。
         </p>
       </section>
-      <Link className="art-return" href="/art/">
+      <a className="art-return" href="/art/">
         回到原型 ↑
-      </Link>
+      </a>
     </main>
   );
 }

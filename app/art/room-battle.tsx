@@ -1,6 +1,12 @@
 'use client';
 import { useEffect, useRef, useState } from 'react';
 import * as THREE from 'three';
+import {
+  CSS3DObject,
+  CSS3DRenderer,
+} from 'three/examples/jsm/renderers/CSS3DRenderer.js';
+import { combatValue } from '@/lib/demo-card-rules';
+import { flightProgress } from './playback';
 import type { CombatFrame, Duel, FighterCard } from '@/lib/demo-combat';
 import { cardDef } from '@/lib/demo-cards';
 import { ATLAS, KIND, cardPosition } from './art-data';
@@ -8,6 +14,8 @@ import { ATLAS, KIND, cardPosition } from './art-data';
 type Props = {
   duel: Duel;
   frame: CombatFrame;
+  frames: CombatFrame[];
+  playbackTime: { current: number };
   entry: number;
   countdown: number;
   view: 'tactical' | 'seat';
@@ -22,6 +30,8 @@ type CardMesh = {
   plate: THREE.Mesh;
   fill: THREE.Mesh;
   material: THREE.MeshStandardMaterial;
+  face: CSS3DObject;
+  cooldownText: HTMLElement;
 };
 export default function RoomBattle(props: Props) {
   const mount = useRef<HTMLDivElement>(null),
@@ -45,7 +55,6 @@ export default function RoomBattle(props: Props) {
       queueMicrotask(() => setError(true));
       return;
     }
-    let disposed = false;
     renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.7));
     renderer.shadowMap.enabled = true;
     renderer.shadowMap.type = THREE.PCFShadowMap;
@@ -59,6 +68,10 @@ export default function RoomBattle(props: Props) {
       event.preventDefault();
       setError(true);
     }
+    const cssRenderer = new CSS3DRenderer();
+    cssRenderer.domElement.className = 'art-card-text-layer';
+    el.appendChild(cssRenderer.domElement);
+    const textScene = new THREE.Scene();
     const scene = new THREE.Scene();
     scene.background = new THREE.Color('#111d20');
     scene.fog = new THREE.FogExp2('#16292c', 0.042);
@@ -276,79 +289,51 @@ export default function RoomBattle(props: Props) {
     box(0.62, 0.02, 0.38, mat('#bad4b5', 0.2, 0.4), -4.55, 2.01, 2.3);
     for (let z = 2.1; z < 2.6; z += 0.15)
       box(0.4, 0.021, 0.025, black, -4.55, 2.025, z);
-    const image = new Image();
     const cardMeshes: CardMesh[] = [];
     const pickables: THREE.Object3D[] = [];
-    function cardTexture(card: FighterCard, side: number) {
+    function cardFace(card: FighterCard, side: number, width: number) {
       const d = cardDef(card.id),
-        canvas = document.createElement('canvas');
-      canvas.width = d.size === 1 ? 256 : 512;
-      canvas.height = 512;
-      const ctx = canvas.getContext('2d')!;
-      const w = canvas.width;
-      ctx.fillStyle = side ? '#3c4844' : '#566359';
-      ctx.fillRect(0, 0, w, 512);
-      ctx.fillStyle = '#182823';
-      ctx.fillRect(10, 10, w - 20, 492);
-      ctx.strokeStyle = '#b5a675';
-      ctx.lineWidth = 3;
-      ctx.strokeRect(13, 13, w - 26, 486);
-      for (let i = 0; i < 55; i++) {
-        ctx.strokeStyle = i % 2 ? '#ffffff0d' : '#00000028';
-        ctx.beginPath();
-        const x = (i * 107) % w,
-          y = (i * 193) % 512;
-        ctx.moveTo(x, y);
-        ctx.lineTo(x + 12, y - 4);
-        ctx.stroke();
-      }
-      ctx.fillStyle = '#c5b276';
-      ctx.font = '19px Bahnschrift, sans-serif';
-      ctx.fillText(`${'•'.repeat(card.rarity + 1)}  F9`, 26, 45);
-      if (image.complete && image.naturalWidth) {
-        const index = ATLAS[card.id] ?? 0,
-          sw = image.naturalWidth / 3,
-          sh = image.naturalHeight / 3;
-        ctx.drawImage(
-          image,
-          (index % 3) * sw,
-          Math.floor(index / 3) * sh,
-          sw,
-          sh,
-          22,
-          63,
-          w - 44,
-          280,
-        );
-      }
-      ctx.fillStyle = '#e2dec5';
-      ctx.textAlign = 'center';
-      ctx.font = `${d.size === 1 ? 30 : 35}px SimSun, serif`;
-      ctx.fillText(d.name, w / 2, 379, w - 30);
-      ctx.fillStyle = '#b8c4ac';
-      ctx.font = '21px Microsoft YaHei, sans-serif';
-      ctx.fillText(
-        `${d.power} ${KIND[d.kind] ?? '效果'} · ${d.cd}s`,
-        w / 2,
-        423,
-        w - 30,
+        element = document.createElement('button');
+      element.type = 'button';
+      element.className = `art-physical-card side-${side}${d.size === 1 ? ' compact' : ''}`;
+      element.style.width = '320px';
+      element.style.height = `${((width - 0.045) / 1.46) * 320}px`;
+      element.setAttribute(
+        'aria-label',
+        `${side ? '敌方' : '我方'} ${d.name}，查看卡牌`,
       );
-      ctx.strokeStyle = '#a79569';
-      ctx.beginPath();
-      ctx.moveTo(22, 451);
-      ctx.lineTo(w - 22, 451);
-      ctx.stroke();
-      ctx.fillStyle = '#9caa91';
-      ctx.font = '16px sans-serif';
-      ctx.fillText(`基础 / Lv.0 / ${d.size} 格`, w / 2, 479, w - 30);
-      const tex = new THREE.CanvasTexture(canvas);
-      tex.colorSpace = THREE.SRGBColorSpace;
-      // Readable from the near (player) edge after the vertical camera change.
-      tex.center.set(0.5, 0.5);
-      tex.rotation = -Math.PI / 2;
-      tex.anisotropy = Math.min(8, renderer.capabilities.getMaxAnisotropy());
-      resources.push(tex);
-      return tex;
+      element.addEventListener('click', () => latest.current.onSelect(card));
+      const header = document.createElement('div');
+      header.className = 'art-card-caption';
+      const name = document.createElement('strong');
+      name.textContent = d.name;
+      const rarity = document.createElement('span');
+      rarity.textContent = '·'.repeat(card.rarity + 1);
+      header.appendChild(name);
+      header.appendChild(rarity);
+      const art = document.createElement('div');
+      art.className = 'art-card-illustration';
+      art.setAttribute('aria-hidden', 'true');
+      const index = ATLAS[card.id] ?? 0;
+      art.style.backgroundPosition = `${(index % 3) * 50}% ${Math.floor(index / 3) * 50}%`;
+      const footer = document.createElement('div');
+      footer.className = 'art-card-numbers';
+      const value = document.createElement('b');
+      value.textContent = `${combatValue(card.id, card.level, card.quality)} ${KIND[d.kind] ?? '效果'}`;
+      const cooldownText = document.createElement('span');
+      cooldownText.textContent = `${d.cd}s`;
+      footer.appendChild(value);
+      footer.appendChild(cooldownText);
+      const meta = document.createElement('small');
+      meta.textContent = `Lv.${card.level} / ${d.size} 格`;
+      [header, art, footer, meta].forEach((child) =>
+        element.appendChild(child),
+      );
+      const face = new CSS3DObject(element);
+      face.rotation.set(-Math.PI / 2, 0, -Math.PI / 2);
+      face.scale.setScalar(1.46 / 320);
+      textScene.add(face);
+      return { face, cooldownText };
     }
     [props.duel.player, props.duel.enemy].forEach((board, side) =>
       board.forEach((card) => {
@@ -357,8 +342,10 @@ export default function RoomBattle(props: Props) {
         scene.add(group);
         group.position.set(pos.x, 1.8, pos.z);
         box(pos.width, 0.095, 1.52, side ? dark : enamel, 0, 0, 0, group);
-        const material = mat('#ffffff', 0.1, 0.72);
-        material.map = cardTexture(card, side);
+        const material = mat(side ? '#283d39' : '#435448', 0.35, 0.48);
+        const { face, cooldownText } = cardFace(card, side, pos.width);
+        for (const z of [-0.72, 0.72])
+          box(pos.width, 0.025, 0.025, ochre, 0, 0.061, z, group);
         const plate = new THREE.Mesh(
           new THREE.PlaneGeometry(pos.width - 0.045, 1.46),
           material,
@@ -379,18 +366,18 @@ export default function RoomBattle(props: Props) {
           0,
           group,
         );
-        cardMeshes.push({ card, side, group, plate, fill, material });
+        cardMeshes.push({
+          card,
+          side,
+          group,
+          plate,
+          fill,
+          material,
+          face,
+          cooldownText,
+        });
       }),
     );
-    image.onload = () => {
-      if (disposed) return;
-      cardMeshes.forEach((m) => {
-        m.material.map?.dispose();
-        m.material.map = cardTexture(m.card, m.side);
-        m.material.needsUpdate = true;
-      });
-    };
-    image.src = '/art-assets/object-atlas.png';
     const barriers: {
       mesh: THREE.Mesh;
       side: number;
@@ -419,7 +406,8 @@ export default function RoomBattle(props: Props) {
         labels.current?.appendChild(label);
         barriers.push({ mesh, side, lane, material: m, label });
       }
-    const projectilePool = new Map<string, THREE.Mesh>();
+    const projectilePool = new Map<string, THREE.Group>();
+    const freeProjectiles: THREE.Group[] = [];
     const projectileMat: Record<string, THREE.MeshBasicMaterial> = {};
     for (const [k, v] of Object.entries({
       damage: '#ffd899',
@@ -459,6 +447,7 @@ export default function RoomBattle(props: Props) {
       const width = el!.clientWidth,
         height = el!.clientHeight;
       renderer.setSize(width, height);
+      cssRenderer.setSize(width, height);
       camera.aspect = width / height;
       camera.updateProjectionMatrix();
     }
@@ -467,8 +456,6 @@ export default function RoomBattle(props: Props) {
     resize();
     let seenEntry = latest.current.entry,
       entryStart = -10000,
-      oldTime = -1,
-      frameStart = performance.now(),
       lastTick = performance.now();
     const look = new THREE.Vector3(0, 1.45, 0),
       targetLook = new THREE.Vector3(),
@@ -497,7 +484,11 @@ export default function RoomBattle(props: Props) {
     }
     renderer.setAnimationLoop((now: number) => {
       const p = latest.current,
-        f = p.frame,
+        visualTime = p.playbackTime.current,
+        f =
+          p.frames[
+            Math.min(Math.floor((visualTime + 1e-9) * 4), p.frames.length - 1)
+          ] ?? p.frame,
         dt = Math.min(0.06, (now - lastTick) / 1000);
       lastTick = now;
       if (p.entry !== seenEntry) {
@@ -507,10 +498,6 @@ export default function RoomBattle(props: Props) {
           camera.position.set(-6.35, 3.45, 0.18);
           look.set(0.4, 1.77, 0);
         }
-      }
-      if (f.time !== oldTime) {
-        oldTime = f.time;
-        frameStart = now;
       }
       let seat = p.view === 'seat' ? 1 : 0;
       if (p.countdown > 3 && !p.reduced) {
@@ -536,7 +523,8 @@ export default function RoomBattle(props: Props) {
             0.01,
             Math.min(
               1,
-              f.timers[m.side][m.card.at] / (f.cd[m.side][m.card.at] || 1),
+              (f.timers[m.side][m.card.at] + (visualTime - f.time)) /
+                (f.cd[m.side][m.card.at] || 1),
             ),
           ),
           width = 1.34;
@@ -547,8 +535,27 @@ export default function RoomBattle(props: Props) {
           1.8 +
           (p.selected === m.card.uid ? 0.17 : 0) +
           (firing && !p.reduced
-            ? Math.max(0, 1 - (now - frameStart) / 220) * 0.11
+            ? Math.max(0, 1 - (visualTime - f.time) / 0.22) * 0.11
             : 0);
+        m.face.position
+          .copy(m.group.position)
+          .add(new THREE.Vector3(0, 0.058, 0));
+        m.face.element.classList.toggle('selected', p.selected === m.card.uid);
+        m.face.element.classList.toggle('firing', firing);
+        m.face.element.setAttribute(
+          'aria-pressed',
+          String(p.selected === m.card.uid),
+        );
+        m.face.element.style.setProperty('--charge', `${progress * 100}%`);
+        const remaining = Math.max(
+          0,
+          (f.cd[m.side][m.card.at] || 0) -
+            f.timers[m.side][m.card.at] -
+            (visualTime - f.time),
+        );
+        const text = `${remaining.toFixed(1)}s`;
+        if (m.cooldownText.textContent !== text)
+          m.cooldownText.textContent = text;
         m.material.emissive.set(
           p.selected === m.card.uid
             ? '#6c6336'
@@ -579,20 +586,23 @@ export default function RoomBattle(props: Props) {
         b.label.textContent = `${['I', 'II', 'III'][b.lane]} ${barrier.broken ? '破损' : Math.ceil(barrier.hp)}${f.corrosion[b.side][b.lane] > 0 ? ' · 蚀' + f.corrosion[b.side][b.lane].toFixed(0) : ''}`;
       });
       const live = new Set(f.projectiles.map((v) => v.id));
-      projectilePool.forEach((m, id) => {
+      projectilePool.forEach((mesh, id) => {
         if (!live.has(id)) {
-          scene.remove(m);
+          mesh.visible = false;
+          freeProjectiles.push(mesh);
           projectilePool.delete(id);
         }
       });
       f.projectiles.forEach((v) => {
         let mesh = projectilePool.get(v.id);
         if (!mesh) {
-          mesh = new THREE.Mesh(
-            sparkGeometry,
-            projectileMat[v.kind] ?? projectileMat.damage,
-          );
-          scene.add(mesh);
+          mesh = freeProjectiles.pop() ?? new THREE.Group();
+          if (!mesh.children.length) {
+            for (let i = 0; i < 5; i++)
+              mesh.add(new THREE.Mesh(sparkGeometry, projectileMat.damage));
+            scene.add(mesh);
+          }
+          mesh.visible = true;
           projectilePool.set(v.id, mesh);
         }
         const from = at(v.sourceUid, 1 - v.side, v.targetLane ?? 1),
@@ -602,17 +612,27 @@ export default function RoomBattle(props: Props) {
             v.targetLane ?? 1,
             v.kind === 'heal' || v.kind === 'energy',
           );
-        const t = Math.max(
-          0,
-          Math.min(1, (f.time - v.launchedAt) / (v.impactAt - v.launchedAt)),
-        );
-        mesh.position.lerpVectors(from, to, t);
-        mesh.position.y += Math.sin(t * Math.PI) * 0.25;
-        mesh.scale.set(v.kind === 'damage' ? 2.7 : 1.3, 1, 1);
+        const t = flightProgress(visualTime, v.launchedAt, v.impactAt);
+        mesh.children.forEach((particle, i) => {
+          const part = particle as THREE.Mesh;
+          const trailT = Math.max(0, t - i * 0.022);
+          part.visible = i === 0 || (!p.reduced && t > i * 0.022);
+          part.material = projectileMat[v.kind] ?? projectileMat.damage;
+          part.position.lerpVectors(from, to, trailT);
+          part.position.y +=
+            Math.sin(trailT * Math.PI) * (v.kind === 'damage' ? 0.18 : 0.38);
+          const size = Math.max(0.2, 1 - i * 0.18);
+          part.scale.set(
+            v.kind === 'damage' ? size * 2.4 : size * 1.4,
+            size,
+            size,
+          );
+          part.rotation.y = -Math.atan2(to.z - from.z, to.x - from.x);
+        });
       });
       hits.forEach((m, i) => {
         const h = f.hits[i];
-        m.visible = !!h && now - frameStart < 240;
+        m.visible = !!h && visualTime - f.time < 0.24;
         if (h) {
           m.position.copy(
             at(
@@ -624,19 +644,20 @@ export default function RoomBattle(props: Props) {
           );
           m.position.y = 2.2;
           m.material = projectileMat[h.kind] ?? projectileMat.damage;
-          const s = 1 + (now - frameStart) / 65;
+          const s = 1 + (visualTime - f.time) / 0.065;
           m.scale.set(s, s, s);
         }
       });
       renderer.render(scene, camera);
+      cssRenderer.render(textScene, camera);
     });
     return () => {
-      disposed = true;
       renderer.setAnimationLoop(null);
       observer.disconnect();
       renderer.domElement.removeEventListener('pointerup', select);
       renderer.domElement.removeEventListener('webglcontextlost', onLost);
-      image.onload = null;
+      cardMeshes.forEach((m) => m.face.element.remove());
+      cssRenderer.domElement.remove();
       barriers.forEach((b) => b.label.remove());
       scene.traverse((obj) => {
         if (obj instanceof THREE.Mesh) obj.geometry.dispose();

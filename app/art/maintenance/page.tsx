@@ -1,9 +1,9 @@
-import Link from 'next/link';
+/* oxlint-disable next/no-html-link-for-pages -- Static export uses document navigation; client RSC navigation is unavailable on the host. */
 export default function Maintenance() {
   return (
     <main className="art-dossier">
       <header>
-        <Link href="/art/base/">← 返回 3D 电梯基地</Link>
+        <a href="/art/base/">← 返回 3D 电梯基地</a>
         <h1>
           3D 会不会让后续迭代
           <br />
@@ -14,8 +14,8 @@ export default function Maintenance() {
           3D，同时尽早固定镜头、卡匣规范与设施组件。
         </p>
         <nav>
-          <Link href="/art/?mode=3d">修正后的战斗</Link>
-          <Link href="/art/base/">电梯基地原型</Link>
+          <a href="/art/?mode=3d">修正后的战斗</a>
+          <a href="/art/base/">电梯基地原型</a>
           <a href="/f9-3d-maintenance.md" download>
             下载评估 ↓
           </a>
@@ -149,9 +149,9 @@ export default function Maintenance() {
         原有 2D 美术方向仍保留用于回看，后续重点转为
         3D。基地的程序化模型、光影和交互是方向原型，正式资产仍需进一步制作。
       </p>
-      <Link className="art-return" href="/art/base/">
+      <a className="art-return" href="/art/base/">
         进入基地 →
-      </Link>
+      </a>
     </main>
   );
 }

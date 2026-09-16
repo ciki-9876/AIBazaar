@@ -2,7 +2,12 @@ import * as T from 'three';
 import { BAYS, FACILITIES, footprint, type Module } from './base-state';
 import type { SceneKit } from './scene-kit';
 
-export function facilityModel(k: SceneKit, module: Module, expanded: boolean) {
+export function facilityModel(
+  k: SceneKit,
+  module: Module,
+  expanded: boolean,
+  asset?: T.Object3D,
+) {
   const { box: b, cylinder: c, pipe: p, m, glow, glass, label, gauge } = k,
     root = new T.Group(),
     s = FACILITIES[module.kind].slots,
@@ -21,7 +26,9 @@ export function facilityModel(k: SceneKit, module: Module, expanded: boolean) {
   for (const x of [-w / 2 + 0.14, w / 2 - 0.14])
     for (const z of [-0.72, 0.72])
       b(root, 0.11, 0.18, 0.11, m.rubber, x, 0.17, z);
-  if (module.kind === 'generator') {
+  if (asset) {
+    root.add(asset.clone(true));
+  } else if (module.kind === 'generator') {
     b(root, 1.7, 1.05, 1.38, m.enamel, 0, 0.87, 0, true);
     b(root, 1.52, 0.2, 1.46, m.brass, 0, 1.48, 0, true);
     const housing = c(root, 0.41, 0.35, m.steel, 0, 0.92, 0.78);

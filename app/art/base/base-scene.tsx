@@ -1,6 +1,8 @@
 'use client';
 import { useEffect, useRef, useState } from 'react';
 import * as T from 'three';
+import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
+import { RoomEnvironment } from 'three/examples/jsm/environments/RoomEnvironment.js';
 import {
   BAYS,
   FACILITIES,
@@ -13,6 +15,7 @@ import { createSceneKit } from './scene-kit';
 import { facilityModel } from './facility-models';
 export type BaseView = 'cabin' | 'build' | 'focus';
 type Props = {
+  refined?: boolean;
   state: BaseState;
   view: BaseView;
   selected: number | null;
@@ -30,12 +33,16 @@ export default function BaseScene(props: Props) {
     overlay = useRef<HTMLDivElement>(null),
     latest = useRef(props);
   const [error, setError] = useState(false);
+  const [assetsReady, setAssetsReady] = useState(0);
+  const [assetError, setAssetError] = useState(false);
   useEffect(() => {
     latest.current = props;
   }, [props]);
   useEffect(() => {
     const el = mount.current;
     if (!el) return;
+    setAssetsReady(0);
+    setAssetError(false);
     let renderer: T.WebGLRenderer;
     try {
       renderer = new T.WebGLRenderer({
@@ -47,19 +54,34 @@ export default function BaseScene(props: Props) {
       return;
     }
     const k = createSceneKit(),
-      { box: b, cylinder: c, pipe: pipe, m, glow, cyan, label } = k;
+      { box: b, cylinder: c, pipe, m, glow, cyan, label } = k;
     renderer.setPixelRatio(Math.min(devicePixelRatio, 1.6));
     renderer.shadowMap.enabled = true;
     renderer.shadowMap.type = T.PCFShadowMap;
     renderer.outputColorSpace = T.SRGBColorSpace;
     renderer.toneMapping = T.ACESFilmicToneMapping;
-    renderer.toneMappingExposure = 1.23;
+    renderer.toneMappingExposure = props.refined ? 1.08 : 1.23;
     el.appendChild(renderer.domElement);
     renderer.domElement.setAttribute(
       'aria-label',
       '电梯生活舱三维场景，可拖动环视和点击设施',
     );
     const scene = new T.Scene();
+    let disposed = false;
+    const imported: T.Object3D[] = [];
+    const assets: Partial<Record<FacilityKind, T.Object3D>> = {};
+    let assetRevision = 0;
+    let luxShell: T.Object3D | null = null;
+    let luxWalls: T.Object3D | undefined;
+    let luxDoors: T.Object3D[] = [];
+    const pmrem = props.refined ? new T.PMREMGenerator(renderer) : null;
+    const environmentRoom = props.refined ? new RoomEnvironment() : null;
+    const environment =
+      pmrem && environmentRoom ? pmrem.fromScene(environmentRoom, 0.04) : null;
+    if (environment) {
+      scene.environment = environment.texture;
+      scene.environmentIntensity = 0.22;
+    }
     scene.background = new T.Color('#101c22');
     scene.fog = new T.FogExp2('#14252a', 0.025);
     const camera = new T.PerspectiveCamera(49, 1, 0.1, 80);
@@ -197,6 +219,68 @@ export default function BaseScene(props: Props) {
         b(g, 1.9, 0.018, 0.05, m.brass, 0, 0.065, z);
       return g;
     });
+    const oldShell = scene.children.filter(
+      (o) => o instanceof T.Mesh || o === walls || doors.includes(o as T.Group),
+    );
+    function disposeAsset(root: T.Object3D) {
+      const materials = new Set<T.Material>(),
+        textures = new Set<T.Texture>(),
+        geometries = new Set<T.BufferGeometry>();
+      root.traverse((o) => {
+        if (o instanceof T.Mesh) {
+          geometries.add(o.geometry);
+          for (const m of Array.isArray(o.material) ? o.material : [o.material])
+            materials.add(m);
+        }
+      });
+      for (const m of materials) {
+        for (const v of Object.values(m))
+          if (v instanceof T.Texture) textures.add(v);
+        m.dispose();
+      }
+      textures.forEach((t) => t.dispose());
+      geometries.forEach((g) => g.dispose());
+    }
+    if (props.refined) {
+      const loader = new GLTFLoader();
+      for (const id of ['shell', ...Object.keys(FACILITIES)]) {
+        loader.load(
+          `/art-assets/lux3d/${id}.glb`,
+          (gltf) => {
+            if (disposed) {
+              disposeAsset(gltf.scene);
+              return;
+            }
+            const root = gltf.scene;
+            imported.push(root);
+            root.traverse((o) => {
+              if (o instanceof T.Mesh) {
+                o.castShadow = true;
+                o.receiveShadow = true;
+              }
+            });
+            if (id === 'shell') {
+              oldShell.forEach((o) => (o.visible = false));
+              luxShell = root;
+              scene.add(root);
+              luxWalls = root.getObjectByName('ShellWalls');
+              luxDoors = ['DoorLeft', 'DoorRight']
+                .map((name) => root.getObjectByName(name))
+                .filter((o): o is T.Object3D => !!o);
+              luxDoors.forEach((d) =>
+                d.traverse((o) => (o.userData.hotspot = 'door')),
+              );
+            } else assets[id as FacilityKind] = root;
+            assetRevision++;
+            setAssetsReady((n) => n + 1);
+          },
+          undefined,
+          () => {
+            if (!disposed) setAssetError(true);
+          },
+        );
+      }
+    }
     const moduleRoot = new T.Group();
     scene.add(moduleRoot);
     let moduleKey = '',
@@ -254,7 +338,7 @@ export default function BaseScene(props: Props) {
       ray.setFromCamera(pointer, camera);
       const candidates = [
         ...moduleRoot.children,
-        ...doors,
+        ...(luxDoors.length ? luxDoors : doors),
         ...(latest.current.view === 'build'
           ? pads.filter((pad, i) => latest.current.state.expanded || i < 6)
           : []),
@@ -303,15 +387,21 @@ export default function BaseScene(props: Props) {
         pitch = 0;
         zoom = 1;
       }
-      const key = JSON.stringify([s.modules, s.expanded]);
+      const key = JSON.stringify([s.modules, s.expanded, assetRevision]);
       if (key !== moduleKey) {
         moduleKey = key;
         moduleRoot.clear();
         s.modules.forEach((mod) =>
-          moduleRoot.add(facilityModel(k, mod, s.expanded)),
+          moduleRoot.add(facilityModel(k, mod, s.expanded, assets[mod.kind])),
         );
       }
-      const gkey = JSON.stringify([p.draft, p.slot, s.expanded, s.modules]);
+      const gkey = JSON.stringify([
+        p.draft,
+        p.slot,
+        s.expanded,
+        s.modules,
+        assetRevision,
+      ]);
       if (gkey !== ghostKey) {
         ghostKey = gkey;
         if (ghost) {
@@ -327,6 +417,7 @@ export default function BaseScene(props: Props) {
             k,
             { id: -1, kind: p.draft, slot: p.slot, level: 1, used: false },
             s.expanded,
+            assets[p.draft],
           );
           ghost.traverse((o) => {
             if (o instanceof T.Mesh) {
@@ -354,11 +445,12 @@ export default function BaseScene(props: Props) {
         mat.opacity = p.slot === i ? 0.27 : 0.08;
       });
       hatch.forEach((h) => (h.visible = !s.expanded));
-      walls.visible = p.view !== 'build';
+      walls.visible = !luxShell && p.view !== 'build';
+      if (luxWalls) luxWalls.visible = p.view !== 'build';
       mainLight.color.set(p.emergency ? '#cf7f5d' : '#ffdb9c');
-      mainLight.intensity = p.emergency ? 95 : 180;
-      ambient.intensity = p.emergency ? 1.3 : 2.3;
-      doors.forEach((g, i) => {
+      mainLight.intensity = p.emergency ? 95 : p.refined ? 145 : 180;
+      ambient.intensity = p.emergency ? 1.3 : p.refined ? 1.7 : 2.3;
+      (luxDoors.length ? luxDoors : doors).forEach((g, i) => {
         const target = (i ? 1 : -1) * (p.door ? 2.02 : 0.74);
         g.position.x = T.MathUtils.lerp(
           g.position.x,
@@ -417,6 +509,7 @@ export default function BaseScene(props: Props) {
       renderer.render(scene, camera);
     });
     return () => {
+      disposed = true;
       renderer.setAnimationLoop(null);
       observer.disconnect();
       renderer.domElement.removeEventListener('pointerdown', down);
@@ -426,14 +519,25 @@ export default function BaseScene(props: Props) {
       renderer.domElement.removeEventListener('webglcontextlost', onLost);
       pads.forEach((p) => (p.material as T.Material).dispose());
       ghostMat.dispose();
+      imported.forEach(disposeAsset);
+      environment?.dispose();
+      environmentRoom?.dispose();
+      pmrem?.dispose();
       k.dispose();
       renderer.dispose();
       renderer.domElement.remove();
     };
-  }, []);
+  }, [props.refined]);
   return (
     <>
       <div className="base-canvas" ref={mount} />
+      {props.refined && assetsReady < 6 && (
+        <output className="base-asset-progress">
+          {assetError
+            ? '部分模型加载失败，请刷新重试。'
+            : `正在载入精修模型 ${assetsReady} / 6`}
+        </output>
+      )}
       <div ref={overlay} className="base-world-labels">
         {BAYS.map((b) => (
           <button key={b.id} data-bay={b.id} onClick={() => props.onSlot(b.id)}>

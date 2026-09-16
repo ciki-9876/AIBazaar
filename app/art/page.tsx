@@ -1,6 +1,6 @@
+/* oxlint-disable next/no-html-link-for-pages -- Static export uses document navigation; client RSC navigation is unavailable on the host. */
 'use client';
-import { useEffect, useMemo, useState, lazy, Suspense } from 'react';
-import Link from 'next/link';
+import { useEffect, useMemo, useRef, useState, lazy, Suspense } from 'react';
 import {
   Play,
   Pause,
@@ -15,9 +15,11 @@ import { simulateDuel, type FighterCard } from '@/lib/demo-combat';
 import { cardDef, type School } from '@/lib/demo-cards';
 import { ATLAS, LANES } from './art-data';
 import FlatBattle from './flat-battle';
+import { advanceReplay } from './playback';
 const RoomBattle = lazy(() => import('./room-battle'));
 
 export default function ArtLab() {
+  const playbackTime = useRef(0);
   const [mode, setMode] = useState<'2d' | '3d'>('3d');
   const [school, setSchool] = useState<School>('erosion');
   const [cursor, setCursor] = useState(0),
@@ -43,12 +45,28 @@ export default function ArtLab() {
   }, []);
   useEffect(() => {
     if (!playing || finished || countdown) return;
-    const id = setInterval(
-      () => setCursor((c) => Math.min(c + 1, result.frames.length - 1)),
-      250 / speed,
-    );
-    return () => clearInterval(id);
-  }, [playing, finished, speed, countdown, result.frames.length]);
+    let last = performance.now(),
+      id = 0;
+    const tick = (now: number) => {
+      playbackTime.current = advanceReplay(
+        playbackTime.current,
+        now - last,
+        speed,
+        result.duration,
+      );
+      last = now;
+      setCursor(
+        Math.min(
+          Math.floor((playbackTime.current + 1e-9) * 4),
+          result.frames.length - 1,
+        ),
+      );
+      if (playbackTime.current < result.duration)
+        id = requestAnimationFrame(tick);
+    };
+    id = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(id);
+  }, [playing, finished, speed, countdown, result]);
   useEffect(() => {
     if (!countdown) return;
     const id = setTimeout(() => {
@@ -84,6 +102,7 @@ export default function ArtLab() {
     };
   }, [cursor, sound, playing, countdown, fr.hits]);
   function reset() {
+    playbackTime.current = 0;
     setPlaying(false);
     setCursor(0);
     setCountdown(0);
@@ -98,6 +117,7 @@ export default function ArtLab() {
     history.replaceState(null, '', u);
   }
   function start() {
+    playbackTime.current = 0;
     setCursor(0);
     setPlaying(false);
     setEntry((e) => e + 1);
@@ -108,9 +128,9 @@ export default function ArtLab() {
   return (
     <main className={`art-lab mode-${mode} ${reduced ? 'art-reduced' : ''}`}>
       <header className="art-header">
-        <Link href="/" className="art-logo">
+        <a href="/" className="art-logo">
           f9<span>美术试验 / 01</span>
-        </Link>
+        </a>
         <nav aria-label="美术方案">
           <button aria-pressed={mode === '2d'} onClick={() => changeMode('2d')}>
             <i>A</i> 2D · 炭笔档案
@@ -119,12 +139,12 @@ export default function ArtLab() {
             <i>B</i> 3D · 工业异象
           </button>
         </nav>
-        <Link className="art-doc-link" href="/art/base">
+        <a className="art-doc-link" href="/art/base/refined/">
           3D 电梯基地
-        </Link>
-        <Link className="art-doc-link" href="/art/direction">
+        </a>
+        <a className="art-doc-link" href="/art/direction">
           完整方案 <ArrowUpRight />
-        </Link>
+        </a>
       </header>
       <section className="art-title">
         <div>
@@ -161,6 +181,8 @@ export default function ArtLab() {
             <RoomBattle
               duel={duel}
               frame={fr}
+              frames={result.frames}
+              playbackTime={playbackTime}
               entry={entry}
               countdown={countdown}
               view={view}
@@ -314,6 +336,7 @@ export default function ArtLab() {
           onChange={(e) => {
             setPlaying(false);
             setCountdown(0);
+            playbackTime.current = result.frames[+e.target.value].time;
             setCursor(+e.target.value);
             setView('tactical');
           }}
@@ -405,7 +428,7 @@ export default function ArtLab() {
           />
           减少动态
         </label>
-        <Link href="/art/direction">从世界到细节，阅读两套完整设计 →</Link>
+        <a href="/art/direction">从世界到细节，阅读两套完整设计 →</a>
       </footer>
     </main>
   );

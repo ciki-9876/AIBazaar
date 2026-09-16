@@ -2476,6 +2476,8 @@ export default function Demo() {
                 重新开始
               </button>
               <a href="/design/">设计档案 ↗</a>
+              <a href="/art/?mode=3d">3D 原型 · 战斗 ↗</a>
+              <a href="/art/base/refined/">3D 原型 · 电梯基地 ↗</a>
               <a href="/legacy/">旧版实验 ↗</a>
             </div>
           </DialogContent>

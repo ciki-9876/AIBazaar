@@ -1,6 +1,35 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { initialBase, reduceBase, canPlace, footprint } from './base-state.ts';
+import {
+  initialBase,
+  furnishedBase,
+  reduceBase,
+  canPlace,
+  footprint,
+} from './base-state.ts';
+
+test('refined base fills eight distinct slots and reset restores all five facilities', () => {
+  const initial = furnishedBase();
+  const slots = initial.modules.flatMap((m) =>
+    footprint(m.kind, m.slot, initial.expanded),
+  );
+  assert.equal(initial.modules.length, 5);
+  assert.equal(slots.length, 8);
+  assert.equal(new Set(slots).size, 8);
+  const cleared = reduceBase(initial, { type: 'demolish', id: 5 });
+  assert.equal(canPlace(cleared, 'storage', 6), null);
+  const rebuilt = reduceBase(cleared, {
+    type: 'build',
+    kind: 'storage',
+    slot: 6,
+  });
+  assert.equal(new Set(rebuilt.modules.map((m) => m.id)).size, 5);
+  assert.deepEqual(
+    reduceBase(rebuilt, { type: 'reset', furnished: true }),
+    furnishedBase(),
+  );
+  assert.deepEqual(reduceBase(rebuilt, { type: 'reset' }), initialBase());
+});
 
 test('facility placement respects same-wall footprints and expansion', () => {
   const s = initialBase();

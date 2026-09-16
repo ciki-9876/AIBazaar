@@ -151,14 +151,25 @@ export function canPlace(
   if (state.stock.scrap < FACILITIES[kind].cost) return '零件不足。';
   return null;
 }
+export function furnishedBase(): BaseState {
+  const s = initialBase();
+  s.expanded = true;
+  s.serial = 6;
+  s.modules.push(
+    { id: 4, kind: 'workshop', slot: 5, level: 1, used: false },
+    { id: 5, kind: 'storage', slot: 6, level: 1, used: false },
+  );
+  s.message = '完整陈设已就绪。选中设施近看，或拆除后重新布置。';
+  return s;
+}
 export type BaseAction =
   | { type: 'build'; kind: FacilityKind; slot: number }
   | { type: 'upgrade' | 'demolish' | 'use'; id: number }
   | { type: 'sleep' }
   | { type: 'expand' }
-  | { type: 'reset' };
+  | { type: 'reset'; furnished?: boolean };
 export function reduceBase(s: BaseState, a: BaseAction): BaseState {
-  if (a.type === 'reset') return initialBase();
+  if (a.type === 'reset') return a.furnished ? furnishedBase() : initialBase();
   const next = {
     ...s,
     stock: { ...s.stock },
