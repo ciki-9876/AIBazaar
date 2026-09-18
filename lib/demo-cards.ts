@@ -1,5 +1,5 @@
-import { CARDS as ORIGINAL, type CardDef } from './prototype-v04.ts';
-import { HERO_CARDS, type HeroId, type HeroMechanic } from './hero-cards.ts';
+import type { CardDef } from './card-types.ts';
+import type { HeroId, HeroMechanic } from './hero-cards.ts';
 export type School = 'rush' | 'erosion' | 'bastion';
 export type SystemCard = CardDef & {
   school?: School;
@@ -41,8 +41,8 @@ export const SYSTEM_CARDS: SystemCard[] = [
     'nailer',
     '破门钉枪',
     2,
-    3,
-    16,
+    6,
+    33,
     'damage',
     'rush',
     1,
@@ -53,7 +53,7 @@ export const SYSTEM_CARDS: SystemCard[] = [
     'fuse',
     '引信线',
     1,
-    5,
+    8,
     1,
     'charge',
     'rush',
@@ -65,8 +65,8 @@ export const SYSTEM_CARDS: SystemCard[] = [
     'gapblade',
     '猎隙刃',
     1,
-    3,
-    10,
+    6,
+    20,
     'damage',
     'rush',
     0,
@@ -77,8 +77,8 @@ export const SYSTEM_CARDS: SystemCard[] = [
     'springbow',
     '卷簧弩',
     2,
-    5,
-    22,
+    8,
+    45,
     'damage',
     'rush',
     2,
@@ -89,8 +89,8 @@ export const SYSTEM_CARDS: SystemCard[] = [
     'recoil',
     '反冲板',
     2,
-    4,
-    24,
+    6,
+    49,
     'damage',
     'bastion',
     1,
@@ -101,8 +101,8 @@ export const SYSTEM_CARDS: SystemCard[] = [
     'sealant',
     '补漏胶',
     1,
-    3,
-    28,
+    5,
+    24,
     'shield',
     'bastion',
     0,
@@ -113,7 +113,7 @@ export const SYSTEM_CARDS: SystemCard[] = [
     'rubber',
     '缓冲垫',
     1,
-    6,
+    8,
     4,
     'shield',
     'bastion',
@@ -125,8 +125,8 @@ export const SYSTEM_CARDS: SystemCard[] = [
     'counterweight',
     '配重锤',
     2,
-    5,
-    18,
+    7,
+    36,
     'damage',
     'bastion',
     2,
@@ -137,8 +137,8 @@ export const SYSTEM_CARDS: SystemCard[] = [
     'acid',
     '蚀液喷壶',
     2,
-    5,
-    4,
+    6,
+    8,
     'corrode',
     'erosion',
     1,
@@ -149,8 +149,8 @@ export const SYSTEM_CARDS: SystemCard[] = [
     'culture',
     '培养皿',
     2,
-    5,
-    8,
+    6,
+    6,
     'damage',
     'erosion',
     2,
@@ -161,7 +161,7 @@ export const SYSTEM_CARDS: SystemCard[] = [
     'catalyst',
     '催化管',
     1,
-    4,
+    5,
     0.8,
     'charge',
     'erosion',
@@ -173,7 +173,7 @@ export const SYSTEM_CARDS: SystemCard[] = [
     'distiller',
     '蒸馏器',
     1,
-    7,
+    8,
     1,
     'corrode',
     'erosion',
@@ -182,9 +182,9 @@ export const SYSTEM_CARDS: SystemCard[] = [
     '同路叠加侵蚀，同时治疗宿主 5；升阶每阶治疗 +3，侵蚀多叠 1 层。',
   ),
 ];
-export const CARDS: SystemCard[] = [...ORIGINAL, ...SYSTEM_CARDS];
-// Hero trials are isolated from adventure loot until the switching proposal is accepted.
-export const ALL_CARDS: SystemCard[] = [...CARDS, ...HERO_CARDS];
+export const CARDS: SystemCard[] = [...SYSTEM_CARDS];
+// One authoritative live catalog. Old IDs exist only in save migration.
+export const ALL_CARDS: SystemCard[] = CARDS;
 export const cardDef = (id: string) => {
   const c = ALL_CARDS.find((c) => c.id === id);
   if (!c) throw Error('未知卡牌');

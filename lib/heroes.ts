@@ -48,15 +48,7 @@ export const HEROES: {
   },
 ];
 export const heroDef = (id: HeroId) => HEROES.find((h) => h.id === id)!;
-// Ownership belongs to this hero proposal; adventure keeps its previous rules.
+// The twelve-card catalog has no hero ownership restrictions.
 export function heroOwner(id: string): HeroId | undefined {
-  const c = cardDef(id);
-  return (
-    c.hero ??
-    (c.school
-      ? ({ rush: 'breaker', bastion: 'mender', erosion: 'archivist' } as const)[
-          c.school
-        ]
-      : undefined)
-  );
+  return cardDef(id).hero;
 }

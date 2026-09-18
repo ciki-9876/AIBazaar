@@ -86,9 +86,11 @@ export default function CardFace({
       )}
       <strong className="ed-card-name">
         {c.name}
-        <small className="ed-card-owner">
-          {heroOwner(c.id) ? heroDef(heroOwner(c.id)!).name : '中立'}
-        </small>
+        {heroOwner(c.id) && (
+          <small className="ed-card-owner">
+            {heroDef(heroOwner(c.id)!).name}
+          </small>
+        )}
       </strong>
       <Symbol className="ed-card-emblem" aria-hidden="true" />
       <div className="ed-special-copy">{cardSpecial(card)}</div>

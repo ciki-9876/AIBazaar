@@ -1,26 +1,34 @@
 import { hash, rng } from './design-model.ts';
+import { FIELD_NODES } from './field-items.ts';
 export function floorRoute(seed: number, floor: number) {
-  const random = rng(hash(`${seed}/${floor}/route-v3`));
-  const optional = ['event', 'puzzle', 'rest', 'hazard', 'cache', 'bargain'];
-  for (let i = optional.length - 1; i > 0; i--) {
-    const j = Math.floor(random() * (i + 1));
-    [optional[i], optional[j]] = [optional[j], optional[i]];
-  }
-  const stops = [
-    'search',
-    'merchant',
-    ...optional.slice(0, 4 + Math.floor(random() * 3)),
-  ];
-  for (let i = stops.length - 1; i > 0; i--) {
-    const j = Math.floor(random() * (i + 1));
-    [stops[i], stops[j]] = [stops[j], stops[i]];
-  }
+  // Search before the first workshop gives a normal acquisition route.
+  const first =
+    floor === 1
+      ? 'pressure'
+      : floor === 2
+        ? 'purify'
+        : FIELD_NODES[(floor - 3) % 6];
+  const alternatives = FIELD_NODES.filter((x) => x !== first);
+  const second =
+    alternatives[hash(`${seed}/${floor}/route-v4`) % alternatives.length];
+  const r = rng(hash(`${seed}/${floor}/route-v4-order`));
+  const extra = ['event', 'puzzle', 'cache', 'bargain', 'hazard']
+    .map((value) => ({ value, order: r() }))
+    .sort((a, b) => a.order - b.order)
+    .map((x) => x.value)
+    .slice(0, 1 + Math.floor(r() * 3));
+  const middle = [second, 'rest', ...extra]
+    .map((value) => ({ value, order: r() }))
+    .sort((a, b) => a.order - b.order)
+    .map((x) => x.value);
   return [
-    ...stops.slice(0, 2),
+    'search',
+    first,
     'patrol',
-    ...stops.slice(2, 4),
+    'merchant',
+    ...middle.slice(0, 2),
     'elite',
-    ...stops.slice(4),
+    ...middle.slice(2),
     'guardian',
   ];
 }

@@ -1,11 +1,9 @@
 import type { Metadata } from 'next';
-import './design.css';
-import './detail.css';
-import './v03.css';
-import './v04.css';
+import '../demo/demo.css';
+import './current.css';
 export const metadata: Metadata = {
-  title: 'f9 · 电梯幸存者 / 设计验收台',
-  description: '电梯幸存者的系统原型、产品规则与逐模块验收。',
+  title: 'F9 · 实体工具与卡牌手册',
+  description: '12件实体、6类现场机关与三路战斗构筑。',
 };
 export default function DesignLayout({
   children,

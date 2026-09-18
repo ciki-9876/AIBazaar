@@ -2,26 +2,38 @@ import { CARDS, cardDef } from './demo-cards.ts';
 import { layout } from './cargo-layout.ts';
 import { rarityOf, growthCost, growthRefund } from './demo-card-rules.ts';
 import { rng, hash } from './design-model.ts';
-import { FOUR, FACILITIES, RARITY as OLD_RARITY } from './prototype-v04.ts';
+import { FOUR, FACILITIES, RARITY as OLD_RARITY } from './demo-config.ts';
 import {
   floorRoute,
   sceneTitle,
   eventSpec,
   puzzleSpec,
 } from './demo-content.ts';
-import { WEATHER as OLD_WEATHER } from './prototype-v03.ts';
+import { WEATHER as OLD_WEATHER } from './demo-config.ts';
 import { simulateDuel } from './demo-combat.ts';
 import type { Duel, FighterCard } from './demo-combat.ts';
+import {
+  OBJECTS,
+  FIELD_NODES,
+  FIELD_TITLES,
+  fieldTask,
+  isFieldNode,
+} from './field-items.ts';
+import {
+  RETIRED_CARDS,
+  RETIRED_SALE_CREDIT,
+  retiredSize,
+} from './card-migration.ts';
 export { CARDS, RARITY, WEATHER };
 export const RARITY_LABELS = ['普通', '罕见', '稀有', '传说', '奇迹'];
 const RARITY = OLD_RARITY.map((r, i) => ({ ...r, name: RARITY_LABELS[i] }));
 const WEATHER = OLD_WEATHER.map((weather, index) => ({
   ...weather,
   explore: [
-    '搜索消耗 10 精力；潮湿地形适合导电索，强风会延缓普通卡。',
-    '搜索消耗 10 精力；寒冷与强风延缓冷却，精制遮雨棚可以保护同路牌。',
+    '搜索消耗 10 精力；本轮天气只作场景表现。',
+    '搜索消耗 10 精力；可携带实体工具应对现场机关。',
     '隐蔽路线使搜索只需 6 精力，适合补给紧张时出发。',
-    '搜索消耗 10 精力；炎热地形适合精制蓄热砖，强风需要提前应对。',
+    '搜索消耗 10 精力；带回实体后，可保留工具用途或转化上阵。',
   ][index],
 }));
 export const SAVE_KEY = 'f9.elevator.demo1.local';
@@ -61,7 +73,8 @@ export type Item = {
   at?: number;
 };
 export type Floor = {
-  routeVersion?: 2 | 3;
+  routeVersion?: 2 | 3 | 4;
+  workResolved?: string[];
   battleRewards?: string[];
   soldOffers?: string[];
   id: number;
@@ -158,6 +171,10 @@ function spendItem(s: Run, id: string, amount = 1) {
 }
 export const checkpoint = (s: Run) => s.stopFloor ?? s.best;
 export type Run = {
+  catalogVersion?: 2;
+  utilityUsed?: string[];
+  fieldPrep?: { hp: number; barrier: number[]; steps: number };
+  fieldResearch?: { vitality: number; credit: number };
   stopFloor?: number;
   departureFloor?: number;
   interaction?: 'search' | 'trade' | null;
@@ -250,7 +267,11 @@ export const NAMES: Record<string, string> = {
   core: '任务核心',
 };
 export function itemName(x: Item) {
-  return NAMES[x.id] ?? cardDef(x.id).name;
+  return (
+    NAMES[x.id] ??
+    (x.type === 'physical' ? OBJECTS[x.id]?.name : undefined) ??
+    cardDef(x.id).name
+  );
 }
 export function makeItem(
   uid: string,
@@ -298,7 +319,8 @@ export function newRun(seed = Date.now() >>> 0): Run {
       detail: theme[1],
       focus: theme[2],
       nodes: floorRoute(seed, i + 1),
-      routeVersion: 3,
+      routeVersion: 4,
+      workResolved: [],
       soldOffers: [],
       stock: [
         loot(theme[2], 'resource', 3),
@@ -307,8 +329,15 @@ export function newRun(seed = Date.now() >>> 0): Run {
         loot('scrap', 'resource', 3),
         loot('fuel', 'resource', 1),
         loot('medicine', 'resource', 1),
-        ...Array.from({ length: 6 }, () =>
-          loot(CARDS[Math.floor(random() * CARDS.length)].id, 'physical'),
+        ...Array.from({ length: 6 }, (_, index) =>
+          loot(
+            index === 0 && i < 2
+              ? i === 0
+                ? 'rubber'
+                : 'distiller'
+              : CARDS[Math.floor(random() * CARDS.length)].id,
+            'physical',
+          ),
         ),
       ],
       searched: false,
@@ -320,6 +349,10 @@ export function newRun(seed = Date.now() >>> 0): Run {
   });
   return {
     version: 1,
+    catalogVersion: 2,
+    utilityUsed: [],
+    fieldPrep: { hp: 0, barrier: [0, 0, 0], steps: 0 },
+    fieldResearch: { vitality: 0, credit: 0 },
     stopFloor: 0,
     departureFloor: 0,
     seed,
@@ -462,6 +495,7 @@ export const layoutAt = (s: Run) =>
   hash(`${s.seed}/${s.floor}/${s.day}/layout`) % 3;
 export const currentFloor = (s: Run) => s.floors[s.floor - 1];
 export const nodeName: Record<string, string> = {
+  ...FIELD_TITLES,
   event: '异象事件',
   search: '搜刮区域',
   puzzle: '密码机关',
@@ -477,6 +511,129 @@ export const nodeName: Record<string, string> = {
 };
 export const currentNode = (s: Run) => currentFloor(s)?.nodes[s.node] ?? 'exit';
 export const searchCost = (s: Run) => Math.max(2, 10 - (s.prepared ? 4 : 0));
+export const travelCost = (s: Run) => ((s.fieldPrep?.steps ?? 0) > 0 ? 1 : 3);
+export const upgradeCost = (s: Run) =>
+  5 + s.level - (s.fieldResearch?.credit ?? 0);
+export function fieldToolState(s: Run, uid: string) {
+  const item = s.items.find((x) => x.uid === uid),
+    node = currentNode(s);
+  if (s.phase !== 'floor' || !isFieldNode(node))
+    return { allowed: false, reason: '只能在对应现场节点使用' };
+  if (currentFloor(s).workResolved?.includes(node))
+    return { allowed: false, reason: '本层此处已处理，不能重复领取' };
+  if (!item || item.type !== 'physical' || !['bag', 'safe'].includes(item.zone))
+    return { allowed: false, reason: '需要随身携带尚未转化的实体' };
+  if (OBJECTS[item.id]?.node !== node)
+    return { allowed: false, reason: '这件工具不适用于此处' };
+  if (s.utilityUsed?.includes(uid))
+    return { allowed: false, reason: '这件工具本次出勤已使用' };
+  return { allowed: true, reason: '可使用；操作2精力，前往下一节点另计路费' };
+}
+export function fieldWorkPreview(s: Run, uid: string, lane = 0) {
+  const tool = fieldToolState(s, uid),
+    item = s.items.find((x) => x.uid === uid),
+    def = item ? OBJECTS[item.id] : null;
+  const values = {
+    stamina: s.stamina - 2,
+    power: s.power,
+    material: s.material,
+    fieldPrep: structuredClone(
+      s.fieldPrep ?? { hp: 0, barrier: [0, 0, 0], steps: 0 },
+    ),
+    fieldResearch: structuredClone(
+      s.fieldResearch ?? { vitality: 0, credit: 0 },
+    ),
+  };
+  const prep = values.fieldPrep,
+    research = values.fieldResearch;
+  if (def && Number.isInteger(lane) && lane >= 0 && lane < 3)
+    switch (def.effect) {
+      case 'salvage':
+        values.material += 2;
+        prep.barrier[lane] = Math.min(36, prep.barrier[lane] + 12);
+        break;
+      case 'gold':
+        values.material += 4;
+        break;
+      case 'power':
+        values.power += 3;
+        break;
+      case 'vitality':
+        prep.hp = Math.min(32, prep.hp + 16);
+        break;
+      case 'route':
+        prep.steps = 3;
+        break;
+      case 'credit':
+        research.credit = Math.min(4, research.credit + 2);
+        break;
+      case 'barrier':
+        prep.barrier[lane] = Math.min(36, prep.barrier[lane] + 24);
+        break;
+      case 'rest':
+        values.stamina = Math.min(100, values.stamina + 12);
+        break;
+      case 'etch':
+        values.material += 6;
+        break;
+      case 'research':
+        research.vitality = Math.min(10, research.vitality + 2);
+        break;
+      case 'pump':
+        values.power += 2;
+        prep.barrier[lane] = Math.min(36, prep.barrier[lane] + 8);
+        break;
+      case 'water':
+        values.stamina = Math.min(100, values.stamina + 20);
+        break;
+    }
+  const road =
+    s.node + 1 < currentFloor(s).nodes.length ? (prep.steps > 0 ? 1 : 3) : 0;
+  const hpBefore =
+      240 +
+      (s.level - 1) * 10 +
+      (s.fieldResearch?.vitality ?? 0) +
+      (s.fieldPrep?.hp ?? 0),
+    hpAfter = 240 + (s.level - 1) * 10 + research.vitality + prep.hp;
+  const barriersBefore = Array.from(
+    { length: 3 },
+    (_, i) => Math.round(hpBefore * 0.3) + (s.fieldPrep?.barrier[i] ?? 0),
+  );
+  const barriersAfter = Array.from(
+    { length: 3 },
+    (_, i) => Math.round(hpAfter * 0.3) + prep.barrier[i],
+  );
+  const deltas: string[] = [];
+  if (values.material !== s.material)
+    deltas.push(`金币 +${values.material - s.material}`);
+  if (values.power !== s.power)
+    deltas.push(`电力 +${values.power - s.power}（不是鉴定电荷）`);
+  if (['vitality', 'research'].includes(def?.effect ?? ''))
+    deltas.push(`宿主上限 ${hpBefore}→${hpAfter}`);
+  if (
+    ['salvage', 'barrier', 'pump', 'vitality', 'research'].includes(
+      def?.effect ?? '',
+    )
+  )
+    deltas.push(
+      `三路屏障 ${barriersBefore.join('/')}→${barriersAfter.join('/')}`,
+    );
+  if (def?.effect === 'credit')
+    deltas.push(`升级抵扣 ${s.fieldResearch?.credit ?? 0}→${research.credit}`);
+  if (def?.effect === 'route')
+    deltas.push(
+      `便捷路程 ${s.fieldPrep?.steps ?? 0}→${prep.steps} 段（包含本次离开）`,
+    );
+  deltas.push(`结算后精力 ${s.stamina}→${values.stamina - road}`);
+  const reason = !tool.allowed
+    ? tool.reason
+    : s.stamina < 2
+      ? '操作需要2精力'
+      : values.stamina < road
+        ? '精力不足以完成操作并前往下一节点'
+        : '';
+  return { values, road, allowed: !reason, reason, summary: deltas.join('；') };
+}
 export function puzzle(s: Run) {
   return puzzleSpec(s.seed, s.floor, s.node);
 }
@@ -487,6 +644,7 @@ export const eventAt = (s: Run) => {
     : spec;
 };
 export const nodeTitle = (s: Run, index = s.node) =>
+  FIELD_TITLES[currentFloor(s).nodes[index] as keyof typeof FIELD_TITLES] ??
   sceneTitle(currentFloor(s).name, currentFloor(s).nodes[index] ?? 'exit');
 export const sellPrice = (x: Item) =>
   x.type === 'card'
@@ -533,7 +691,7 @@ export function merchantOffers(s: Run) {
   if (s.floor <= 3)
     choices[0] = makeItem(
       `offer-early-${s.floor}-${s.node}`,
-      'fuse',
+      s.floor === 1 ? 'rubber' : 'distiller',
       'physical',
     );
   return choices.filter(
@@ -858,15 +1016,15 @@ export function makeDuel(s: Run, kind: 'guardian' | 'survivor'): Duel {
   const scale = stage === 'normal' ? 0.55 : stage === 'elite' ? 0.8 : 1;
   const ids =
     floor <= 2
-      ? ['knife']
+      ? ['gapblade']
       : floor <= 4
-        ? ['knife', 'brick']
+        ? ['gapblade', 'nailer']
         : floor <= 6
-          ? ['knife', 'brick', 'bottle']
-          : ['knife', 'brick', 'shelter', 'wire'];
+          ? ['gapblade', 'nailer', 'distiller']
+          : ['gapblade', 'nailer', 'recoil', 'sealant'];
   const ats = [0, 3, 6, 8];
   if (floor >= 9) {
-    ids.push('bell');
+    ids.push('catalyst');
     ats.push(2);
   }
   if (kind === 'guardian' && floor <= 3 && stage !== 'normal') {
@@ -884,26 +1042,39 @@ export function makeDuel(s: Run, kind: 'guardian' | 'survivor'): Duel {
       i === 0 &&
       !(kind === 'guardian' && floor <= 3 && stage !== 'normal') &&
       hash(`${s.seed}/${floor}/guard`) % 2 === 0
-        ? 'wire'
+        ? 'gapblade'
         : id,
     at: ats[i],
     rarity: rarityOf(
       i === 0 &&
         !(kind === 'guardian' && floor <= 3 && stage !== 'normal') &&
         hash(`${s.seed}/${floor}/guard`) % 2 === 0
-        ? 'wire'
+        ? 'gapblade'
         : id,
     ),
     quality: floor >= 5 ? 1 : 0,
     level: Math.floor((floor - 1) / 4),
   }));
+  const playerHp =
+    240 +
+    (s.level - 1) * 10 +
+    (s.fieldResearch?.vitality ?? 0) +
+    (s.fieldPrep?.hp ?? 0);
+  const enemyHp =
+    Math.round((65 + floor * 17) * scale) + (kind === 'survivor' ? 20 : 0);
   return {
     player: playerCards(s),
     enemy,
-    maxHp: [
-      240 + (s.level - 1) * 10,
-      Math.round((65 + floor * 17) * scale) + (kind === 'survivor' ? 20 : 0),
+    maxHp: [playerHp, enemyHp],
+    barrierHp: [
+      Array.from(
+        { length: 3 },
+        (_, lane) =>
+          Math.round(playerHp * 0.3) + (s.fieldPrep?.barrier[lane] ?? 0),
+      ),
+      Array(3).fill(Math.round(enemyHp * 0.3)),
     ],
+    heroPassives: false,
     weather: 0,
     weatherEnabled: false,
     layout: layoutAt(s),
@@ -917,7 +1088,75 @@ export function makeDuel(s: Run, kind: 'guardian' | 'survivor'): Duel {
   };
 }
 export function migrateCargo(source: Run): Run {
+  need(
+    source &&
+      (source.catalogVersion === undefined || source.catalogVersion === 2),
+    '卡池版本不支持',
+  );
   const s = structuredClone(source);
+  const checkOldBoard = (
+    cards: { id: string; at?: number }[],
+    open = Array.from({ length: 9 }, (_, i) => i),
+  ) => {
+    if (!cards.some((c) => RETIRED_CARDS[c.id])) return;
+    const used = new Set<number>();
+    for (const c of cards) {
+      const size = RETIRED_CARDS[c.id] ? retiredSize(c.id) : cardDef(c.id).size,
+        at = c.at;
+      need(
+        Number.isInteger(at) &&
+          at! >= 0 &&
+          at! + size <= 9 &&
+          Math.floor(at! / 3) === Math.floor((at! + size - 1) / 3),
+        '旧阵容跨路或位置无效',
+      );
+      for (let cell = at!; cell < at! + size; cell++) {
+        need(
+          open.includes(cell) && !used.has(cell),
+          '旧阵容占用冲突或格位未解锁',
+        );
+        used.add(cell);
+      }
+    }
+  };
+  checkOldBoard(
+    s.items.filter((x) => x.zone === 'board'),
+    openCells(s),
+  );
+  if (s.duel) {
+    checkOldBoard(s.duel.player);
+    checkOldBoard(s.duel.enemy);
+  }
+  let migrated = 0,
+    credit = 0;
+  for (const item of [...s.items, ...s.floors.flatMap((f) => f.stock)]) {
+    if (!['physical', 'card'].includes(item.type) || !RETIRED_CARDS[item.id])
+      continue;
+    need(item.volume === retiredSize(item.id), '旧物品尺寸无效');
+    if (s.items.includes(item) && item.type === 'card')
+      credit += RETIRED_SALE_CREDIT[item.id] ?? 0;
+    item.id = RETIRED_CARDS[item.id];
+    item.volume = cardDef(item.id).size;
+    migrated++;
+  }
+  if (s.duel) {
+    for (const card of [...s.duel.player, ...s.duel.enemy])
+      if (RETIRED_CARDS[card.id]) {
+        card.id = RETIRED_CARDS[card.id];
+        migrated++;
+      }
+    delete s.duel.heroes;
+    s.duel.heroPassives = false;
+  }
+  if (migrated) {
+    s.material += credit;
+    s.notice = `旧卡已转入12张新卡池；保留编号、位置、品质与等级，原3格牌缩为2格。售价值补差 +${credit} 金币；进行中战斗按已迁移快照重播。`;
+  }
+  s.catalogVersion = 2;
+  s.utilityUsed ??= [];
+  s.fieldPrep ??= { hp: 0, barrier: [0, 0, 0], steps: 0 };
+  s.fieldResearch ??= { vitality: 0, credit: 0 };
+  for (const f of s.floors) f.workResolved ??= [];
   for (const row of [...s.bots, ...(s.dailyReport?.rows ?? [])])
     row.status = row.status.replace(
       /构筑强度 \d+ 低于环境挑战 \d+/,
@@ -992,11 +1231,18 @@ export function act(old: Run, a: Action): Run {
     next.node > old.node &&
     next.node < currentFloor(next).nodes.length
   ) {
+    const cost = travelCost(next);
     if (a.type !== 'resolve')
-      need(next.stamina >= 3, '前往下个节点需要 3 精力，可先使用苹果或撤离');
-    next.stamina = Math.max(0, next.stamina - 3);
-    say(next, `${next.notice} 路程消耗 3 精力。`);
+      need(
+        next.stamina >= cost,
+        `前往下个节点需要 ${cost} 精力，可先恢复精力或撤离`,
+      );
+    next.stamina = Math.max(0, next.stamina - cost);
+    if (next.fieldPrep && next.fieldPrep.steps > 0) next.fieldPrep.steps--;
+    say(next, `${next.notice} 路程消耗 ${cost} 精力。`);
   }
+  if (next.phase === 'base' && ['floor', 'combat'].includes(old.phase))
+    next.fieldPrep = { hp: 0, barrier: [0, 0, 0], steps: 0 };
   validateItems(next);
   for (const floor of next.floors) floor.stock = layout(floor.stock, 4, 96);
   return next;
@@ -1011,14 +1257,14 @@ function applyAction(old: Run, a: Action): Run {
   if (a.type === 'begin') {
     need(s.phase === 'intro', '协议已确认');
     s.phase = 'base';
-    const knife = makeItem('starter-knife', 'knife', 'card', 'board');
+    const knife = makeItem('starter-gapblade', 'gapblade', 'card', 'board');
     knife.rarity = 0;
     knife.at = 6;
-    const wire = makeItem('starter-wire', 'wire', 'card', 'board');
+    const wire = makeItem('starter-sealant', 'sealant', 'card', 'board');
     wire.rarity = 0;
     wire.at = 0;
-    const shelter = makeItem('starter-shelter', 'shelter', 'card', 'board');
-    shelter.rarity = rarityOf('shelter');
+    const shelter = makeItem('starter-nailer', 'nailer', 'card', 'board');
+    shelter.rarity = rarityOf('nailer');
     shelter.at = 3;
     s.items = [
       ...s.items.filter((x) =>
@@ -1029,10 +1275,11 @@ function applyAction(old: Run, a: Action): Run {
       shelter,
       makeItem('apple', 'apple', 'tool'),
       makeItem('lighter', 'lighter', 'tool'),
+      makeItem('starter-object-rubber', 'rubber', 'physical'),
     ];
     say(
       s,
-      '协议生效：100 名幸存者各自困于电梯。终端已鉴定水果刀，并通过送物口发放导电索与遮雨棚。门外只能向上；未通关撤离会回到原停靠点。',
+      '协议生效：猎隙刃、破门钉枪与补漏胶已上阵。背包里的缓冲垫可以在泄压气室使用，也可回家免费转化为卡牌。门外只能向上；未通关撤离会回到原停靠点。',
     );
     return s;
   }
@@ -1378,9 +1625,10 @@ function applyAction(old: Run, a: Action): Run {
       s.moduleCap += 2;
       s.material -= 6;
     } else if (a.type === 'upgrade') {
-      const cost = 5 + s.level;
+      const cost = upgradeCost(s);
       need(s.level < 6 && s.material >= cost, `升级需 ${cost} 金币，上限 Lv.6`);
       s.material -= cost;
+      s.fieldResearch!.credit = 0;
       s.level++;
       if (s.level === 3 && !s.items.some((x) => x.id === 'scanner'))
         s.items.push(makeItem('scanner', 'scanner', 'tool', 'warehouse'));
@@ -1513,19 +1761,17 @@ function applyAction(old: Run, a: Action): Run {
     planBots(s);
     s.departureFloor = checkpoint(s);
     s.floor = a.floor!;
-    if (
-      currentFloor(s).routeVersion !== 3 &&
-      !currentFloor(s).visitors.includes(0) &&
-      !currentFloor(s).cleared
-    ) {
+    if (currentFloor(s).routeVersion !== 4) {
       currentFloor(s).nodes = floorRoute(s.seed, s.floor);
-      currentFloor(s).routeVersion = 3;
+      currentFloor(s).routeVersion = 4;
     }
     s.used = true;
     spendItem(s, 'supply');
     s.stamina -= 4;
     s.phase = 'floor';
     s.node = 0;
+    s.utilityUsed = [];
+    s.fieldPrep = { hp: 0, barrier: [0, 0, 0], steps: 0 };
     s.interaction = null;
     s.objective = false;
     s.puzzleErrors = 0;
@@ -1633,6 +1879,7 @@ function applyAction(old: Run, a: Action): Run {
         ? 'survivor'
         : 'guardian';
     s.duel = makeDuel(s, kind);
+    s.fieldPrep = { hp: 0, barrier: [0, 0, 0], steps: s.fieldPrep?.steps ?? 0 };
     s.phase = 'combat';
     say(
       s,
@@ -1643,6 +1890,58 @@ function applyAction(old: Run, a: Action): Run {
     return s;
   }
   const node = currentNode(s);
+  if (a.type === 'field-work') {
+    need(isFieldNode(node), '当前不是物品机关节点');
+    const done = currentFloor(s).workResolved!;
+    if (done.includes(node)) {
+      need(a.choice === -2, '此处已处理，不能再次领取奖励');
+      s.node++;
+      say(s, '沿已处理的通道继续前进，没有重复奖励。');
+      return s;
+    }
+    if (a.choice === -1) {
+      need(s.stamina >= 6, '绕行需要6精力，另计前往下个节点的路费');
+      s.stamina -= 6;
+      done.push(node);
+      s.node++;
+      say(s, '绕过机关，不消耗工具，不领取奖励。');
+      return s;
+    }
+    const state = fieldToolState(s, a.id ?? '');
+    need(state.allowed, state.reason);
+    const x = s.items.find((x) => x.uid === a.id)!,
+      def = OBJECTS[x.id],
+      task = fieldTask(s.seed, s.floor, node);
+    need(
+      Number.isInteger(a.choice) && a.choice! >= 0 && a.choice! <= 999,
+      '请完成机关操作',
+    );
+    need(
+      Number.isInteger(a.at) && a.at! >= 0 && a.at! < 3,
+      '请选择准备作用的路线',
+    );
+    need(s.stamina >= 2, '操作需要2精力');
+    s.stamina -= 2;
+    if (a.choice !== task.answer) {
+      s.puzzleErrors++;
+      say(s, '读数不匹配，操作消耗2精力；工具未消耗、未领奖，可以调整或绕行。');
+      return s;
+    }
+    // The same pure calculation powers UI preview and the atomic successful commit.
+    s.stamina += 2;
+    const preview = fieldWorkPreview(s, x.uid, a.at);
+    need(preview.allowed, preview.reason);
+    Object.assign(s, preview.values);
+    s.utilityUsed!.push(x.uid);
+    if (def.consumed) s.items = s.items.filter((i) => i.uid !== x.uid);
+    done.push(node);
+    s.node++;
+    say(
+      s,
+      `${def.name}：${preview.summary}。操作消耗2精力；${def.consumed ? '所选本体已用尽，无法再转化' : '本体保留，本次出勤不能再次使用'}。`,
+    );
+    return s;
+  }
   if (a.type === 'next-node') {
     need(
       (s.interaction === 'search' && node === 'search') ||
@@ -1819,6 +2118,38 @@ export function validSave(value: unknown): value is Run {
   try {
     const s = migrateCargo(value as Run);
     need(s && s.version === 1 && Number.isInteger(s.seed), '存档版本不支持');
+    need(
+      s.catalogVersion === 2 &&
+        Array.isArray(s.utilityUsed) &&
+        s.utilityUsed.length <= 200 &&
+        s.utilityUsed.every((x) => typeof x === 'string' && x.length < 100),
+      '工具使用记录无效',
+    );
+    need(
+      s.fieldPrep &&
+        Number.isInteger(s.fieldPrep.hp) &&
+        s.fieldPrep.hp >= 0 &&
+        s.fieldPrep.hp <= 32 &&
+        Number.isInteger(s.fieldPrep.steps) &&
+        s.fieldPrep.steps >= 0 &&
+        s.fieldPrep.steps <= 3 &&
+        Array.isArray(s.fieldPrep.barrier) &&
+        s.fieldPrep.barrier.length === 3 &&
+        s.fieldPrep.barrier.every(
+          (x) => Number.isInteger(x) && x >= 0 && x <= 36,
+        ),
+      '出勤准备无效',
+    );
+    need(
+      s.fieldResearch &&
+        Number.isInteger(s.fieldResearch.vitality) &&
+        s.fieldResearch.vitality >= 0 &&
+        s.fieldResearch.vitality <= 10 &&
+        Number.isInteger(s.fieldResearch.credit) &&
+        s.fieldResearch.credit >= 0 &&
+        s.fieldResearch.credit <= 4,
+      '研究收益无效',
+    );
     for (const height of [s.stopFloor, s.departureFloor])
       need(
         height === undefined ||
@@ -1942,6 +2273,7 @@ export function validSave(value: unknown): value is Run {
               'bargain',
               'rest',
               'hazard',
+              ...FIELD_NODES,
             ].includes(n),
           ) &&
           Array.isArray(f.stock) &&
@@ -1954,6 +2286,13 @@ export function validSave(value: unknown): value is Run {
           (Array.isArray(f.soldOffers) &&
             f.soldOffers.every((id) => typeof id === 'string')),
         '商人库存无效',
+      );
+      need(
+        Array.isArray(f.workResolved) &&
+          f.workResolved.length <= 6 &&
+          new Set(f.workResolved).size === f.workResolved.length &&
+          f.workResolved.every(isFieldNode),
+        '物品机关记录无效',
       );
       need(
         f.battleRewards === undefined ||

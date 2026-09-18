@@ -11,9 +11,12 @@ import CargoGrid, { CargoProvider, CarryButton } from './cargo-grid';
 import CostButton from './cost-button';
 import ElevatorRoom from './elevator-room';
 import IdentifyTable from './identify-table';
+import { floorRoute } from '@/lib/demo-content';
+import FieldWork, { ObjectInfo } from './field-work';
+import { isFieldNode, OBJECTS, FIELD_TITLES } from '@/lib/field-items';
 import BuildBoard from './build-board';
 import { describeCard } from '@/lib/card-description';
-import { identificationState, makeDuel } from '@/lib/demo-engine';
+import { identificationState, makeDuel, makeItem } from '@/lib/demo-engine';
 import { battleEvidence, formatHit } from '@/lib/battle-evidence';
 import ScrollChrome from './scroll-chrome';
 import {
@@ -85,12 +88,12 @@ import {
   puzzle,
   playerCards,
   ranking,
+  upgradeCost,
 } from '@/lib/demo-engine';
 import type { Run, Action, Zone, Item } from '@/lib/demo-engine';
 import { simulateDuel } from '@/lib/demo-combat';
 import type { FighterCard, CombatFrame } from '@/lib/demo-combat';
-import { cardDef, ALL_CARDS, CARDS } from '@/lib/demo-cards';
-import { HEROES, heroOwner } from '@/lib/heroes';
+import { cardDef, ALL_CARDS, CARDS, SCHOOLS } from '@/lib/demo-cards';
 import './demo.css';
 const zoneName: Record<Zone, string> = {
   bag: '随身背包',
@@ -233,22 +236,45 @@ export default function Demo() {
   // oxlint-disable-next-line react/react-compiler -- Restore explicitly device-local game state after hydration.
   useEffect(() => {
     try {
+      const params = new URLSearchParams(window.location.search);
       const qa =
         process.env.NODE_ENV === 'development' &&
-        new URLSearchParams(window.location.search).get('qa') === 'phase1';
-      storageKey.current = qa ? SAVE_KEY + '.qa.phase1' : SAVE_KEY;
+        ['phase1', 'items'].includes(params.get('qa') ?? '');
+      const work =
+        qa && params.get('qa') === 'items' ? params.get('work') : null;
+      storageKey.current = qa
+        ? SAVE_KEY + '.qa.' + params.get('qa') + (work ? '.' + work : '')
+        : SAVE_KEY;
       const raw = localStorage.getItem(storageKey.current);
       if (raw) {
         const parsed: unknown = JSON.parse(raw);
         if (validSave(parsed)) {
+          if (
+            parsed.catalogVersion !== 2 &&
+            !localStorage.getItem(storageKey.current + '.pre-catalog12')
+          )
+            localStorage.setItem(storageKey.current + '.pre-catalog12', raw);
           commit(parsed);
           setTab(parsed.phase === 'floor' ? 'floor' : 'base');
         } else
           setNotice('存档格式无法识别，已保留原文件。可以导入备份或重新开局。');
-      } else
-        commit(
-          newRun(qa ? 10909 : crypto.getRandomValues(new Uint32Array(1))[0]),
+      } else {
+        let fresh = newRun(
+          qa ? 10909 : crypto.getRandomValues(new Uint32Array(1))[0],
         );
+        if (work && isFieldNode(work)) {
+          fresh = act(act(fresh, { type: 'begin' }), {
+            type: 'enter',
+            floor: 1,
+          });
+          currentFloor(fresh).nodes = [work, 'patrol', 'guardian'];
+          for (const [id, obj] of Object.entries(OBJECTS))
+            if (obj.node === work)
+              fresh.items.push(makeItem('qa-' + id, id, 'physical'));
+          setTab('floor');
+        }
+        commit(fresh);
+      }
     } catch {
       setSaved('本机存档不可用，请导出备份');
     }
@@ -328,6 +354,11 @@ export default function Demo() {
       if (file.size > 2000000) throw Error('存档文件过大');
       const value: unknown = JSON.parse(await file.text());
       if (!validSave(value)) throw Error('存档不兼容或内容损坏');
+      if (value.catalogVersion !== 2)
+        localStorage.setItem(
+          storageKey.current + '.pre-catalog12.import',
+          JSON.stringify(value),
+        );
       commit(value);
       setTab(value.phase === 'floor' ? 'floor' : 'base');
       setCursor(0);
@@ -493,9 +524,6 @@ export default function Demo() {
             aria-label={`${side ? '敌方' : '我方'}生命`}
             className="ed-hp"
           />
-          <p>
-            <Zap size={13} /> {fr.energy[side]} 能量
-          </p>
         </div>
         <div className="ed-floats" aria-hidden="true">
           {(
@@ -571,9 +599,7 @@ export default function Demo() {
       ['catalog', '卡牌图鉴'],
     ];
     const catalogCards = ALL_CARDS.filter(
-      (c) =>
-        catalogOwner === 'all' ||
-        (heroOwner(c.id) ?? 'neutral') === catalogOwner,
+      (c) => catalogOwner === 'all' || c.school === catalogOwner,
     );
     const definition =
       catalogCards.find((c) => c.id === catalogId) ?? catalogCards[0];
@@ -607,8 +633,8 @@ export default function Demo() {
           <a className="ed-lab-link" href="/lab">
             流派试验场 ↗
           </a>
-          <a className="ed-lab-link" href="/heroes">
-            英雄回响 ↗
+          <a className="ed-lab-link" href="/design">
+            物品用途手册 ↗
           </a>
         </nav>
         <div className="ed-inventory-page-body">
@@ -631,12 +657,14 @@ export default function Demo() {
                 </p>
                 <nav
                   className="ed-inventory-tabs ed-catalog-filters"
-                  aria-label="按卡牌归属筛选"
+                  aria-label="按流派筛选"
                 >
                   {[
                     { id: 'all', name: '全部' },
-                    { id: 'neutral', name: '中立' },
-                    ...HEROES,
+                    ...Object.entries(SCHOOLS).map(([id, name]) => ({
+                      id,
+                      name,
+                    })),
                   ].map((owner) => (
                     <button
                       key={owner.id}
@@ -645,9 +673,7 @@ export default function Demo() {
                       onClick={() => {
                         setCatalogOwner(owner.id);
                         const first = ALL_CARDS.find(
-                          (c) =>
-                            owner.id === 'all' ||
-                            (heroOwner(c.id) ?? 'neutral') === owner.id,
+                          (c) => owner.id === 'all' || c.school === owner.id,
                         );
                         if (first) setCatalogId(first.id);
                       }}
@@ -702,6 +728,7 @@ export default function Demo() {
               </section>
               <aside className="ed-panel ed-fixed-details">
                 <h3>{definition.name}</h3>
+                <ObjectInfo id={definition.id} />
                 <p>
                   {CARDS.some((c) => c.id === definition.id)
                     ? '当前冒险可获得 · 搜刮 / 游商 / 战利品'
@@ -820,7 +847,7 @@ export default function Demo() {
                 扩建 +2 槽
               </CostButton>
               <CostButton
-                cost={5 + run.level}
+                cost={upgradeCost(run)}
                 disabled={run.level >= 6}
                 onClick={() => dispatch({ type: 'upgrade' })}
               >
@@ -1008,6 +1035,31 @@ export default function Demo() {
                 <div>
                   <h3>{fl.name}</h3>
                   <p>{fl.detail}</p>
+                  {(fl.routeVersion === 4
+                    ? fl.nodes
+                    : floorRoute(run.seed, fl.id)
+                  )
+                    .filter(isFieldNode)
+                    .map((node) => {
+                      const tools = Object.entries(OBJECTS).filter(
+                        ([, o]) => o.node === node,
+                      );
+                      const carried = run.items.filter(
+                        (x) =>
+                          x.type === 'physical' &&
+                          ['bag', 'safe'].includes(x.zone) &&
+                          tools.some(([id]) => id === x.id),
+                      ).length;
+                      return (
+                        <p className="ed-tool-forecast" key={node}>
+                          {FIELD_TITLES[node]} ·{' '}
+                          {fl.workResolved?.includes(node)
+                            ? '已处理，无重复奖励'
+                            : tools.map(([, o]) => o.name).join(' / ') +
+                              `（已带${carried}件实体）`}
+                        </p>
+                      );
+                    })}
                   <div className="ed-tags">
                     <span>物资 {fl.stock.length}</span>
                     <span>挑战 {16 + fl.id * 5}</span>
@@ -1155,8 +1207,21 @@ export default function Demo() {
                 NODE {run.node + 1} / {nodeName[node]}
               </p>
               <h2>{nodeTitle(run)}</h2>
+              <p className="ed-preparation-summary">
+                待用准备：下场宿主 +{run.fieldPrep?.hp ?? 0} · 三路屏障 +
+                {run.fieldPrep?.barrier.join('/') ?? '0/0/0'} · 便捷路程{' '}
+                {run.fieldPrep?.steps ?? 0} 段。撤离后清空。研究：宿主永久 +
+                {run.fieldResearch?.vitality ?? 0} · 升级抵扣{' '}
+                {run.fieldResearch?.credit ?? 0} 金币。
+              </p>
               {enemyIntel()}
-              {node === 'event' ? (
+              {isFieldNode(node) ? (
+                <FieldWork
+                  key={`${run.floor}-${node}`}
+                  run={run}
+                  onAction={dispatch}
+                />
+              ) : node === 'event' ? (
                 <>
                   <p>{ev.text}</p>
                   <div className="ed-actions">
@@ -1420,7 +1485,7 @@ export default function Demo() {
     const lane = threats.indexOf(Math.max(...threats));
     const mechanism =
       previewDuel.enemy.find((c) =>
-        ['nailer', 'springbow', 'fuse', 'sealant', 'bottle'].includes(c.id),
+        ['nailer', 'springbow', 'fuse', 'sealant', 'distiller'].includes(c.id),
       ) ?? previewDuel.enemy[0];
     return (
       <section className="ed-enemy-intel">
@@ -1815,27 +1880,27 @@ export default function Demo() {
                   rarity: inspected.rarity ?? 0,
                 }}
               />
+            ) : inspected.type === 'physical' ? (
+              <ObjectInfo id={inspected.id} />
             ) : (
               <p>
-                {inspected.type === 'physical'
-                  ? '带回电梯免费鉴定后成为卡牌。'
-                  : inspected.id === 'apple'
-                    ? '食用恢复 25 精力。'
-                    : inspected.id === 'scanner'
-                      ? `携带后可在楼层鉴定实体。剩余 ${run.charges} 电荷。`
-                      : inspected.id === 'lighter'
-                        ? '可以用于特定事件。'
-                        : ((
-                            {
-                              supply:
-                                '密封补给：出勤或睡眠消耗 1；携带时可食用恢复 25 精力。',
-                              fuel: '燃料罐：发电机消耗 1 罐产生 8 电力。',
-                              medicine:
-                                '医疗包：使用恢复 35 精力，或用于医疗设施与休整。',
-                              scrap:
-                                '废料束：强化卡牌的主要材料；也可回收金币或加工燃料。',
-                            } as Record<string, string>
-                          )[inspected.id] ?? `数量 ${inspected.amount}。`)}
+                {inspected.id === 'apple'
+                  ? '食用恢复 25 精力。'
+                  : inspected.id === 'scanner'
+                    ? `携带后可在楼层鉴定实体。剩余 ${run.charges} 电荷。`
+                    : inspected.id === 'lighter'
+                      ? '可以用于特定事件。'
+                      : ((
+                          {
+                            supply:
+                              '密封补给：出勤或睡眠消耗 1；携带时可食用恢复 25 精力。',
+                            fuel: '燃料罐：发电机消耗 1 罐产生 8 电力。',
+                            medicine:
+                              '医疗包：使用恢复 35 精力，或用于医疗设施与休整。',
+                            scrap:
+                              '废料束：强化卡牌的主要材料；也可回收金币或加工燃料。',
+                          } as Record<string, string>
+                        )[inspected.id] ?? `数量 ${inspected.amount}。`)}
               </p>
             )}
             <div
@@ -1955,7 +2020,9 @@ export default function Demo() {
                                 </p>
                                 <p>
                                   消耗：
-                                  {itemName(refineIngredient(run, inspected)!)}{' '}
+                                  {itemName(
+                                    refineIngredient(run, inspected)!,
+                                  )}{' '}
                                   [{refineIngredient(run, inspected)!.uid}] ·{' '}
                                   {
                                     zoneName[
@@ -2181,7 +2248,7 @@ export default function Demo() {
                 世界只剩向上。
               </h1>
               <p>
-                一张床，一张桌子。水果刀、苹果、打火机。
+                一张床，一张桌子。一套初始卡牌，和一件还未转化的缓冲垫。
                 <br />
                 你在一部没有下行按钮的电梯里醒来。
               </p>
@@ -2225,7 +2292,7 @@ export default function Demo() {
                           精力: '出勤、探索和撤离需要精力；睡眠、苹果和药品可以恢复。',
                           补给: '出勤消耗 1；睡眠消耗 1 并恢复更多精力。',
                           金币: '购买物品、升级电梯和建造设施。',
-                          电力: '设备充能、种植和探索整备。战斗能量独立计算。',
+                          电力: '设备充能、种植和探索整备。电力与鉴定电荷分别计算。',
                           燃料: '发电机将 1 燃料转为 8 电力。',
                           药品: '医疗站或休整点消耗药品恢复精力。',
                           废料: '强化卡牌，也可回收金币或制成燃料。',
@@ -2478,7 +2545,7 @@ export default function Demo() {
               <a href="/design/">设计档案 ↗</a>
               <a href="/art/?mode=3d">3D 原型 · 战斗 ↗</a>
               <a href="/art/base/refined/">3D 原型 · 电梯基地 ↗</a>
-              <a href="/legacy/">旧版实验 ↗</a>
+              <a href="/legacy/">旧档备份 ↗</a>
             </div>
           </DialogContent>
         </Dialog>

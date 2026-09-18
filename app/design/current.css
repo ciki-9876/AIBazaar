@@ -1,0 +1,111 @@
+.object-handbook {
+  max-width: 1300px;
+  margin: auto;
+  padding: 2rem;
+  min-height: 100vh;
+  background: #101918;
+  color: #e2e7dc;
+  font-size: 16px;
+  line-height: 1.75;
+}
+.object-handbook header {
+  padding-bottom: 1rem;
+  border-bottom: 1px solid #4c5a47;
+}
+.object-handbook header a {
+  display: inline-block;
+  margin-right: 1.5rem;
+  color: #bed39b;
+}
+.object-handbook h1 {
+  font-size: 2.2rem;
+  margin: 1.5rem 0 0.6rem;
+}
+.object-handbook h2 {
+  font-size: 1.5rem;
+  color: #c9dda5;
+  margin: 2rem 0 1rem;
+}
+.object-handbook h3 {
+  font-size: 1.2rem;
+  color: #e0e9cc;
+  margin: 0.35rem 0;
+}
+.object-handbook h4 {
+  font-size: 1rem;
+  margin: 0.7rem 0;
+}
+.object-handbook section {
+  margin: 1.5rem 0;
+}
+.object-catalog {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 1rem;
+}
+.object-work-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 1rem;
+}
+.object-handbook article {
+  padding: 1.2rem;
+  background: #1b2622;
+  border: 1px solid #475440;
+  border-radius: 8px;
+  margin-bottom: 0.75rem;
+}
+.object-handbook p {
+  margin: 0.65rem 0;
+}
+.object-handbook small,
+.object-handbook article > span {
+  font-size: 0.875rem;
+  color: #b4c5ab;
+}
+.object-handbook .object-consumed {
+  color: #edb898;
+}
+.object-handbook hr {
+  border: 0;
+  border-top: 1px solid #425040;
+}
+.object-handbook button {
+  padding: 0.8rem;
+  background: #c4d69e;
+  color: #182015;
+  border: 0;
+  border-radius: 5px;
+  font-size: 1rem;
+  cursor: pointer;
+}
+@media (max-width: 900px) {
+  .object-catalog,
+  .object-work-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+@media (max-width: 600px) {
+  .object-handbook {
+    padding: 1rem;
+  }
+  .object-catalog,
+  .object-work-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.elevator-demo.object-handbook {
+  display: block;
+  height: 100dvh;
+  min-height: 0;
+  overflow-y: auto;
+  max-width: 1300px;
+  margin: auto;
+  padding: 2rem;
+}
+@media (max-width: 600px) {
+  .elevator-demo.object-handbook {
+    padding: 1rem;
+  }
+}

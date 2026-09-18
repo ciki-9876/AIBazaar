@@ -13,17 +13,7 @@ export type FighterCard = {
 };
 export const COMBAT_LIMIT = 90;
 export const flightTimeOf = (card: FighterCard) =>
-  Math.max(
-    0.5,
-    Math.min(
-      3,
-      Math.round(
-        (card.flightTime ??
-          { coil: 0.75, brick: 1.5, knife: 1, wire: 1, bell: 1.25 }[card.id] ??
-          1.25) * 4,
-      ) / 4,
-    ),
-  );
+  Math.max(0.5, Math.min(3, Math.round((card.flightTime ?? 1.25) * 4) / 4));
 export type Hit = {
   side: number;
   kind: 'damage' | 'heal' | 'shield' | 'energy' | 'charge' | 'corrode';
@@ -115,9 +105,7 @@ export function simulateDuel(d: Duel) {
   );
   const timers = [Array(9).fill(0), Array(9).fill(0)],
     counts = [Array(9).fill(0), Array(9).fill(0)];
-  const cap = boards.map(
-    (b) => 10 + (b.some((c) => c.id === 'battery') ? 6 : 0),
-  );
+  const cap = boards.map(() => 10);
   const frames: CombatFrame[] = [];
   let pending: Projectile[] = [],
     serial = 0;
@@ -186,13 +174,6 @@ export function simulateDuel(d: Duel) {
       return [0, 1, 2].sort(
         (a, b) => corrosion[1 - side][b] - corrosion[1 - side][a] || a - b,
       )[0];
-    if (id === 'coil')
-      return [0, 1, 2]
-        .filter((i) => i !== lane)
-        .sort(
-          (a, b) =>
-            barriers[1 - side][a].hp - barriers[1 - side][b].hp || a - b,
-        )[0];
     return lane;
   };
   for (let step = 0; step <= COMBAT_LIMIT * 4; step++) {
@@ -383,7 +364,7 @@ export function simulateDuel(d: Duel) {
         const c = cardDef(p.id),
           q = p.quality,
           lane = laneOf(p);
-        cd[side][p.at] = c.cd + (c.id === 'bell' && q > 0 ? 1 : 0);
+        cd[side][p.at] = c.cd;
         if (!step || hp.some((h) => h <= 0)) continue;
         timers[side][p.at] += 0.25;
         if (timers[side][p.at] < cd[side][p.at]) continue;
@@ -434,14 +415,6 @@ export function simulateDuel(d: Duel) {
           amount += stored[p.uid] ?? 0;
           stored[p.uid] = 0;
         }
-        if (q > 0 && n % 3 === 0)
-          amount +=
-            {
-              knife: q === 2 ? 12 : 6,
-              brick: q === 2 ? 30 : 18,
-              coil: q === 2 ? 24 : 12,
-              bottle: q === 2 ? 25 : 15,
-            }[c.id] ?? 0;
         const launch = (hit: Hit, overflowCap = 0) =>
           pending.push({
             ...hit,
@@ -523,9 +496,7 @@ export function simulateDuel(d: Duel) {
                   });
               }
               if (def.kind === 'charge') {
-                const all =
-                  def.mechanic?.allCharge ||
-                  (def.id === 'bell' && recorded.quality > 0);
+                const all = def.mechanic?.allCharge;
                 const targets = boards[side].filter(
                   (x) => x.uid !== recorded.uid && (laneOf(x) === lane || all),
                 );
@@ -628,25 +599,18 @@ export function simulateDuel(d: Duel) {
               visual: 'heal',
               targetUid: `host-${side}-lane-${lane}`,
             },
-            c.id === 'box' && q > 0 ? (q === 2 ? 20 : 12) : 0,
+            0,
           );
         if (c.energyGain)
           launch({
             ...base,
             side,
             kind: 'energy',
-            value: c.energyGain + (c.id === 'cell' && q === 2 ? 1 : 0),
+            value: c.energyGain,
             visual: 'armor',
             targetUid: `host-${side}-lane-${lane}`,
           });
-        let advance =
-          c.kind === 'charge'
-            ? v
-            : c.id === 'wire' && q > 0 && n % 3 === 0
-              ? q === 2
-                ? 2
-                : 1
-              : 0;
+        let advance = c.kind === 'charge' ? v : 0;
         if (c.id === 'fuse' && n === 1) advance += 2 + q * 0.5;
         if (special?.firstCharge && n === 1)
           advance += special.firstCharge * heroGrowth;
@@ -655,15 +619,9 @@ export function simulateDuel(d: Duel) {
         if (advance) {
           const others = boards[side].filter(
             (x) =>
-              x.uid !== p.uid &&
-              (laneOf(x) === lane ||
-                (c.id === 'bell' && q > 0) ||
-                special?.allCharge),
+              x.uid !== p.uid && (laneOf(x) === lane || special?.allCharge),
           );
-          const targets =
-            (c.id === 'bell' && q > 0) || special?.allCharge
-              ? others
-              : others.slice(0, 1);
+          const targets = special?.allCharge ? others : others.slice(0, 1);
           if (!targets.length)
             log.push(
               `${side ? '敌方' : '我方'}·${c.name} [${p.uid}]：无同路充能目标，实际生效 0 秒。`,
@@ -678,24 +636,6 @@ export function simulateDuel(d: Duel) {
               targetUid: x.uid,
               targetLane: laneOf(x),
             });
-        }
-        if (c.id === 'shelter' && q > 0 && n % 3 === 0) {
-          const target = boards[side].find(
-            (x) => x.uid !== p.uid && laneOf(x) === lane,
-          );
-          if (target)
-            launch({
-              ...base,
-              side,
-              kind: 'charge',
-              value: q === 2 ? 2 : 1,
-              visual: 'charge',
-              targetUid: target.uid,
-            });
-          else
-            log.push(
-              `${side ? '敌方' : '我方'}·${c.name} [${p.uid}]：无同路充能目标，实际生效 0 秒。`,
-            );
         }
       }
     }

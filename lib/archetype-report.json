@@ -13,12 +13,27 @@
       "draw": 0,
       "timeout": 0,
       "asymmetry": 0,
-      "median": 19.25,
-      "p90": 19.25
+      "median": 25.25,
+      "p90": 25.25
     },
     {
       "school": "bastion",
       "opponent": "rush",
+      "hp": 300,
+      "quality": 0,
+      "level": 0,
+      "cases": 288,
+      "win": 90,
+      "loss": 120,
+      "draw": 78,
+      "timeout": 0,
+      "asymmetry": 0,
+      "median": 25.25,
+      "p90": 28.25
+    },
+    {
+      "school": "erosion",
+      "opponent": "bastion",
       "hp": 300,
       "quality": 0,
       "level": 0,
@@ -28,13 +43,58 @@
       "draw": 0,
       "timeout": 0,
       "asymmetry": 0,
-      "median": 26.25,
-      "p90": 29.25
+      "median": 27,
+      "p90": 29
+    },
+    {
+      "school": "rush",
+      "opponent": "erosion",
+      "hp": 240,
+      "quality": 0,
+      "level": 0,
+      "cases": 288,
+      "win": 288,
+      "loss": 0,
+      "draw": 0,
+      "timeout": 0,
+      "asymmetry": 0,
+      "median": 19.25,
+      "p90": 19.25
+    },
+    {
+      "school": "bastion",
+      "opponent": "rush",
+      "hp": 240,
+      "quality": 0,
+      "level": 0,
+      "cases": 288,
+      "win": 72,
+      "loss": 108,
+      "draw": 108,
+      "timeout": 0,
+      "asymmetry": 0,
+      "median": 19.25,
+      "p90": 25.25
     },
     {
       "school": "erosion",
       "opponent": "bastion",
-      "hp": 300,
+      "hp": 240,
+      "quality": 0,
+      "level": 0,
+      "cases": 288,
+      "win": 144,
+      "loss": 24,
+      "draw": 120,
+      "timeout": 0,
+      "asymmetry": 0,
+      "median": 24,
+      "p90": 25.25
+    },
+    {
+      "school": "rush",
+      "opponent": "erosion",
+      "hp": 360,
       "quality": 0,
       "level": 0,
       "cases": 288,
@@ -44,56 +104,26 @@
       "timeout": 0,
       "asymmetry": 0,
       "median": 26.5,
-      "p90": 27
-    },
-    {
-      "school": "rush",
-      "opponent": "erosion",
-      "hp": 240,
-      "quality": 0,
-      "level": 0,
-      "cases": 288,
-      "win": 288,
-      "loss": 0,
-      "draw": 0,
-      "timeout": 0,
-      "asymmetry": 0,
-      "median": 16.25,
-      "p90": 16.25
+      "p90": 28.25
     },
     {
       "school": "bastion",
       "opponent": "rush",
-      "hp": 240,
+      "hp": 360,
       "quality": 0,
       "level": 0,
       "cases": 288,
-      "win": 288,
-      "loss": 0,
-      "draw": 0,
+      "win": 132,
+      "loss": 120,
+      "draw": 36,
       "timeout": 0,
       "asymmetry": 0,
-      "median": 21.25,
-      "p90": 25.25
+      "median": 31.25,
+      "p90": 31.25
     },
     {
       "school": "erosion",
       "opponent": "bastion",
-      "hp": 240,
-      "quality": 0,
-      "level": 0,
-      "cases": 288,
-      "win": 288,
-      "loss": 0,
-      "draw": 0,
-      "timeout": 0,
-      "asymmetry": 0,
-      "median": 24,
-      "p90": 24
-    },
-    {
-      "school": "rush",
-      "opponent": "erosion",
       "hp": 360,
       "quality": 0,
       "level": 0,
@@ -101,87 +131,57 @@
       "win": 288,
       "loss": 0,
       "draw": 0,
+      "timeout": 0,
+      "asymmetry": 0,
+      "median": 31,
+      "p90": 32
+    },
+    {
+      "school": "rush",
+      "opponent": "erosion",
+      "hp": 300,
+      "quality": 1,
+      "level": 2,
+      "cases": 288,
+      "win": 288,
+      "loss": 0,
+      "draw": 0,
+      "timeout": 0,
+      "asymmetry": 0,
+      "median": 17.25,
+      "p90": 19.25
+    },
+    {
+      "school": "bastion",
+      "opponent": "rush",
+      "hp": 300,
+      "quality": 1,
+      "level": 2,
+      "cases": 288,
+      "win": 48,
+      "loss": 168,
+      "draw": 72,
+      "timeout": 0,
+      "asymmetry": 0,
+      "median": 19.25,
+      "p90": 20.5
+    },
+    {
+      "school": "erosion",
+      "opponent": "bastion",
+      "hp": 300,
+      "quality": 1,
+      "level": 2,
+      "cases": 288,
+      "win": 84,
+      "loss": 84,
+      "draw": 120,
       "timeout": 0,
       "asymmetry": 0,
       "median": 25.25,
       "p90": 25.25
     },
     {
-      "school": "bastion",
-      "opponent": "rush",
-      "hp": 360,
-      "quality": 0,
-      "level": 0,
-      "cases": 288,
-      "win": 288,
-      "loss": 0,
-      "draw": 0,
-      "timeout": 0,
-      "asymmetry": 0,
-      "median": 31.25,
-      "p90": 36.25
-    },
-    {
-      "school": "erosion",
-      "opponent": "bastion",
-      "hp": 360,
-      "quality": 0,
-      "level": 0,
-      "cases": 288,
-      "win": 288,
-      "loss": 0,
-      "draw": 0,
-      "timeout": 0,
-      "asymmetry": 0,
-      "median": 30,
-      "p90": 31.25
-    },
-    {
-      "school": "rush",
-      "opponent": "erosion",
-      "hp": 300,
-      "quality": 1,
-      "level": 2,
-      "cases": 288,
-      "win": 288,
-      "loss": 0,
-      "draw": 0,
-      "timeout": 0,
-      "asymmetry": 0,
-      "median": 16.25,
-      "p90": 16.25
-    },
-    {
-      "school": "bastion",
-      "opponent": "rush",
-      "hp": 300,
-      "quality": 1,
-      "level": 2,
-      "cases": 288,
-      "win": 288,
-      "loss": 0,
-      "draw": 0,
-      "timeout": 0,
-      "asymmetry": 0,
-      "median": 21.25,
-      "p90": 21.25
-    },
-    {
-      "school": "erosion",
-      "opponent": "bastion",
-      "hp": 300,
-      "quality": 1,
-      "level": 2,
-      "cases": 288,
-      "win": 264,
-      "loss": 24,
-      "draw": 0,
-      "timeout": 0,
-      "asymmetry": 0,
-      "median": 22.25,
-      "p90": 25
-    },
-    {
       "school": "rush",
       "opponent": "erosion",
       "hp": 400,
@@ -193,8 +193,8 @@
       "draw": 0,
       "timeout": 0,
       "asymmetry": 0,
-      "median": 13.25,
-      "p90": 13.25
+      "median": 17.25,
+      "p90": 19.25
     },
     {
       "school": "bastion",
@@ -203,13 +203,13 @@
       "quality": 2,
       "level": 5,
       "cases": 288,
-      "win": 288,
-      "loss": 0,
-      "draw": 0,
+      "win": 0,
+      "loss": 192,
+      "draw": 96,
       "timeout": 0,
       "asymmetry": 0,
-      "median": 21.25,
-      "p90": 21.25
+      "median": 19.25,
+      "p90": 19.25
     },
     {
       "school": "erosion",
@@ -218,13 +218,13 @@
       "quality": 2,
       "level": 5,
       "cases": 288,
-      "win": 222,
-      "loss": 24,
-      "draw": 42,
+      "win": 96,
+      "loss": 192,
+      "draw": 0,
       "timeout": 0,
       "asymmetry": 0,
-      "median": 23,
-      "p90": 26.25
+      "median": 25.25,
+      "p90": 27
     }
   ],
   "ablation": [
@@ -233,105 +233,112 @@
       "removed": null,
       "cases": 18,
       "wins": 6,
-      "meanDuration": 21.25
+      "meanDuration": 23.92
     },
     {
       "school": "rush",
       "removed": "nailer",
       "cases": 18,
-      "wins": 6,
-      "meanDuration": 22.81
+      "wins": 7,
+      "meanDuration": 23.58
     },
     {
       "school": "rush",
       "removed": "fuse",
       "cases": 18,
       "wins": 6,
-      "meanDuration": 22.03
+      "meanDuration": 23.92
     },
     {
       "school": "rush",
       "removed": "springbow",
       "cases": 18,
-      "wins": 6,
-      "meanDuration": 23.81
+      "wins": 0,
+      "meanDuration": 24.5
     },
     {
       "school": "rush",
       "removed": "gapblade",
       "cases": 18,
       "wins": 6,
-      "meanDuration": 23.36
+      "meanDuration": 24.33
     },
     {
       "school": "bastion",
       "removed": null,
       "cases": 18,
-      "wins": 7,
-      "meanDuration": 34.72
+      "wins": 4,
+      "meanDuration": 27.83
     },
     {
       "school": "bastion",
       "removed": "recoil",
       "cases": 18,
-      "wins": 9,
-      "meanDuration": 38.72
+      "wins": 0,
+      "meanDuration": 28.97
     },
     {
       "school": "bastion",
       "removed": "rubber",
       "cases": 18,
-      "wins": 7,
-      "meanDuration": 33.39
+      "wins": 0,
+      "meanDuration": 27.17
     },
     {
       "school": "bastion",
       "removed": "sealant",
       "cases": 18,
-      "wins": 5,
-      "meanDuration": 29.14
+      "wins": 0,
+      "meanDuration": 26.94
     },
     {
       "school": "bastion",
       "removed": "counterweight",
       "cases": 18,
       "wins": 7,
-      "meanDuration": 36.17
+      "meanDuration": 27.9
     },
     {
       "school": "erosion",
       "removed": null,
       "cases": 18,
       "wins": 6,
-      "meanDuration": 24.17
+      "meanDuration": 26.42
     },
     {
       "school": "erosion",
       "removed": "acid",
       "cases": 18,
-      "wins": 6,
-      "meanDuration": 25.67
+      "wins": 0,
+      "meanDuration": 27.83
     },
     {
       "school": "erosion",
       "removed": "catalyst",
       "cases": 18,
       "wins": 6,
-      "meanDuration": 24.17
+      "meanDuration": 26.42
     },
     {
       "school": "erosion",
       "removed": "culture",
       "cases": 18,
       "wins": 6,
-      "meanDuration": 25.5
+      "meanDuration": 27.08
     },
     {
       "school": "erosion",
       "removed": "distiller",
       "cases": 18,
       "wins": 6,
-      "meanDuration": 24.17
+      "meanDuration": 26.42
+    },
+    {
+      "school": "erosion",
+      "removed": "sealant",
+      "cases": 18,
+      "wins": 6,
+      "meanDuration": 26.42
     }
   ],
   "substitutions": [
@@ -340,11 +347,11 @@
       "opponent": "bastion",
       "tested": 24,
       "best": {
-        "slot": 0,
-        "removed": "nailer",
-        "added": "acid",
-        "wins": 1,
-        "draws": 0,
+        "slot": 3,
+        "removed": "springbow",
+        "added": "recoil",
+        "wins": 4,
+        "draws": 2,
         "cases": 6
       }
     },
@@ -368,8 +375,8 @@
       "best": {
         "slot": 2,
         "removed": "catalyst",
-        "added": "sealant",
-        "wins": 2,
+        "added": "gapblade",
+        "wins": 6,
         "draws": 0,
         "cases": 6
       }

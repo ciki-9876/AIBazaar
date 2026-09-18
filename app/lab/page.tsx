@@ -59,7 +59,7 @@ export default function Lab() {
   return (
     <main className="elevator-demo in-combat f9-lab">
       <header className="lab-header">
-        <a href="/heroes">英雄回响 ↗</a>
+        <a href="/design">物品用途手册 ↗</a>
         <a href="/demo">← 返回电梯</a>
         <h1>三路 · 流派试验场</h1>
         <button
@@ -262,10 +262,10 @@ export default function Lab() {
           </p>
           <h3>当前判断</h3>
           <p>
-            克制链清楚，但纯流派克制偏硬。趣味点是针对对手换一张牌、调整搭配，不应变成只猜流派名称。尚未经过真实玩家体验测试。
+            基础品质的标准配方存在预期克制；加入变体或升到大师后，部分关系会反转。此表包含这些未收敛场景，不能视为所有成长阶段已平衡。尚未经过独立玩家测试。
           </p>
           <p>
-            可尝试：固守对侵蚀，把缓冲垫换成猎隙刃；侵蚀对速攻，把催化管换成补漏胶；速攻对固守，用蚀液喷壶替换一张钉枪。观察收益与代价。
+            可尝试：固定血量与成长，仅交换上、中、下路。对照关键破路时点与实际充能目标；相同胜负也可能有不同过程。
           </p>
           <a href="/archetype-design.md" target="_blank" rel="noreferrer">
             完整卡表、方法与评估 ↗

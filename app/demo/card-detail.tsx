@@ -16,9 +16,7 @@ export default function CardDetail({ card }: { card: FighterCard }) {
       </span>
       <span className="ed-role">定位 · {d.role}</span>
       {school && <span className="ed-role">流派 · {SCHOOLS[school]}</span>}
-      <span className="ed-role">
-        归属 · {hero ? heroDef(hero).name : '中立'}
-      </span>
+      {hero && <span className="ed-role">归属 · {heroDef(hero).name}</span>}
       <p className="ed-detail-grade">
         {RARITY[card.rarity].name} · {QUALITY[card.quality]} · Lv {card.level}
       </p>

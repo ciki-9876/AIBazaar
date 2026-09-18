@@ -5,6 +5,7 @@ import { Sparkles, Package, ArrowDown } from 'lucide-react';
 import { itemName, RARITY } from '@/lib/demo-engine';
 import type { Item } from '@/lib/demo-engine';
 import CardDetail from './card-detail';
+import { ObjectInfo } from './field-work';
 const COLORS = ['#91979b', '#579dec', '#e4ce5c', '#aa8035', '#ef575b'];
 const ORIGIN = {
   bag: '背包',
@@ -142,6 +143,19 @@ export default function IdentifyTable({
           <Sparkles size={16} />
           {phase === 'scanning' ? '鉴定中…' : '鉴定'}
         </button>
+        {chosen && phase === 'ready' && (
+          <div className="ed-identify-choice">
+            <ObjectInfo id={chosen.id} />
+            <button
+              onClick={() => {
+                setChosen(null);
+                setPhase('idle');
+              }}
+            >
+              先保留实体工具
+            </button>
+          </div>
+        )}
         {phase === 'done' && chosen && (
           <div className="ed-identify-result">
             <p>鉴定完成，已放回{ORIGIN[chosen.zone]}。</p>

@@ -5223,3 +5223,196 @@ body:has(.elevator-demo) {
       ) 42px 42px;
   }
 }
+.ed-field-work {
+  display: grid;
+  gap: 1rem;
+  font-size: 1rem;
+  line-height: 1.7;
+}
+.ed-field-work fieldset {
+  min-width: 0;
+  padding: 1rem;
+  border: 1px solid #414d4a;
+  border-radius: 8px;
+}
+.ed-field-work legend {
+  padding: 0 0.5rem;
+  color: #c8dca7;
+  font-size: 0.95rem;
+}
+.ed-field-readout {
+  display: grid;
+  gap: 0.35rem;
+  padding: 1rem;
+  background: #172226;
+  border-left: 3px solid #a5bc72;
+}
+.ed-field-readout span,
+.ed-hint {
+  font-size: 0.875rem;
+}
+.ed-field-tools {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.75rem;
+}
+.ed-field-tools > div {
+  padding: 0.8rem;
+  background: #18201e;
+  border: 1px solid #36413b;
+  border-radius: 6px;
+}
+.ed-field-tools p {
+  font-size: 0.9rem;
+  margin: 0.4rem 0;
+}
+.ed-field-controls {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin: 0.7rem 0;
+}
+.ed-field-work button[aria-pressed='true'] {
+  border-color: #c2d88d;
+  background: #344932;
+  color: #eaffc5;
+}
+.ed-field-sequence {
+  display: block;
+  min-height: 3rem;
+  padding: 0.7rem;
+  border: 1px dashed #718070;
+  font-size: 1.05rem;
+  letter-spacing: 0.03em;
+}
+.ed-field-range {
+  display: grid;
+  gap: 0.7rem;
+}
+.ed-field-range input[type='range'] {
+  width: 100%;
+  accent-color: #bad77c;
+}
+.ed-field-range input[type='number'] {
+  max-width: 8rem;
+  padding: 0.6rem;
+  background: #111916;
+  border: 1px solid #647261;
+  border-radius: 5px;
+  color: #edf4e6;
+}
+.ed-field-outcome {
+  padding: 1rem;
+  border: 1px solid #899b68;
+  background: #222c20;
+}
+.ed-field-outcome select {
+  padding: 0.5rem;
+  margin-left: 0.5rem;
+  background: #16201b;
+  color: #edf4e6;
+}
+.ed-field-reset {
+  margin-top: 0.75rem;
+}
+.ed-object-info {
+  font-size: 0.95rem;
+  line-height: 1.65;
+  padding: 1rem;
+  background: #192320;
+  border-left: 2px solid #8fba85;
+}
+.ed-object-info p {
+  margin: 0.5rem 0;
+}
+.ed-identify-choice {
+  width: min(100%, 640px);
+  margin: 1rem auto;
+  text-align: left;
+}
+.ed-preparation-summary {
+  font-size: 0.875rem;
+  line-height: 1.6;
+  padding: 0.7rem;
+  background: #202921;
+  border: 1px solid #404c3f;
+}
+.ed-field-work button {
+  min-height: 42px;
+  font-size: 0.9rem;
+  white-space: normal;
+}
+.ed-field-work .ed-actions {
+  align-items: stretch;
+}
+.ed-field-work .ed-actions button {
+  flex: 1 1 180px;
+}
+@media (max-width: 650px) {
+  .ed-field-tools {
+    grid-template-columns: 1fr;
+  }
+  .ed-field-work fieldset {
+    padding: 0.75rem;
+  }
+  .ed-field-controls > button {
+    flex: 1 1 100px;
+  }
+  .ed-preparation-summary {
+    font-size: 0.875rem;
+  }
+}
+
+/* Workshops scroll as one readable document, including at 800px-wide windows. */
+.elevator-demo .ed-main.view-floor {
+  overflow-y: auto;
+  padding-bottom: 20px;
+}
+.ed-main.view-floor > .ed-explore-grid {
+  flex: 0 0 auto;
+  overflow: visible;
+  align-items: start;
+}
+.ed-explore-grid > .ed-node {
+  overflow: visible;
+}
+.ed-node .ed-field-work p {
+  font-size: 16px;
+  line-height: 1.7;
+}
+@media (max-width: 700px) {
+  .ed-field-tools {
+    grid-template-columns: 1fr;
+  }
+  .ed-field-work fieldset {
+    padding: 0.7rem;
+  }
+  .ed-main.view-floor > .ed-explore-grid {
+    gap: 12px;
+  }
+}
+
+.ed-field-reset {
+  display: block;
+}
+.ed-field-work button:not(.ed-primary),
+.ed-identify-choice > button {
+  padding: 0.5rem 0.8rem;
+  border: 1px solid #596b48;
+  border-radius: 4px;
+  background: #25301e;
+}
+.ed-field-work button:disabled {
+  opacity: 0.45;
+}
+.ed-identify-choice > button {
+  margin-top: 0.6rem;
+  min-height: 42px;
+}
+
+.elevator-demo .ed-floor-tile .ed-tool-forecast {
+  font-size: 14px;
+  line-height: 1.6;
+  color: #c6d5ab;
+  margin-top: 6px;
+}

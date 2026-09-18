@@ -45,8 +45,8 @@ export const ARCHETYPES: {
     core: '叠侵蚀压低屏障上限，催化加速叠层，培养皿在长局逐渐接管输出。',
     weakness: '第一轮输出低；需要多次发动，害怕屏障在成长前被突破。',
     variants: [
-      ['acid', 'catalyst', 'culture', 'distiller', 'acid', 'distiller'],
-      ['culture', 'catalyst', 'acid', 'distiller', 'culture', 'distiller'],
+      ['acid', 'catalyst', 'culture', 'distiller', 'acid', 'sealant'],
+      ['culture', 'catalyst', 'acid', 'distiller', 'culture', 'sealant'],
     ],
   },
 ];
