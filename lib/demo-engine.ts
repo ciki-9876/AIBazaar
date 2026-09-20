@@ -173,6 +173,18 @@ function spendItem(s: Run, id: string, amount = 1) {
 }
 export const checkpoint = (s: Run) => s.stopFloor ?? s.best;
 export type Run = {
+  openingVersion?: 2;
+  bagUnlocked?: boolean;
+  equipmentExplained?: boolean;
+  energyExplained?: boolean;
+  tutorialRewardUid?: string;
+  loot?: {
+    item: Item;
+    source: 'battle' | 'workshop';
+    sourceName: string;
+    sourceUid?: string;
+    revealed: boolean;
+  } | null;
   tutorialBattleStep?: number;
   catalogVersion?: 2;
   utilityUsed?: string[];
@@ -364,12 +376,17 @@ export function newRun(seed = Date.now() >>> 0, tutorial = false): Run {
   ];
   if (tutorial)
     floors[0].stock = [
-      makeItem('tutorial-nailer', 'nailer', 'physical'),
+      makeItem('tutorial-sealant', 'sealant', 'physical'),
       makeItem('tutorial-rubber', 'rubber', 'physical'),
-      makeItem('tutorial-scanner', 'scanner', 'tool'),
     ];
   return {
-    ...(tutorial ? { tutorialBattleStep: 0 } : {}),
+    ...(tutorial
+      ? {
+          tutorialBattleStep: 0,
+          openingVersion: 2 as const,
+          bagUnlocked: false,
+        }
+      : {}),
     version: 1,
     catalogVersion: 2,
     utilityUsed: [],
@@ -389,7 +406,7 @@ export function newRun(seed = Date.now() >>> 0, tutorial = false): Run {
     fuel: 3,
     medicine: 2,
     scrap: 4,
-    charges: 1,
+    charges: tutorial ? 0 : 1,
     level: 1,
     moduleCap: 6,
     installed: [],
@@ -624,7 +641,13 @@ export function fieldWorkPreview(
           break;
       }
   const road =
-    s.node + 1 < currentFloor(s).nodes.length ? (prep.steps > 0 ? 1 : 3) : 0;
+    s.openingVersion === 2 && tutorialFloor(s) && currentNode(s) === 'pressure'
+      ? 0
+      : s.node + 1 < currentFloor(s).nodes.length
+        ? prep.steps > 0
+          ? 1
+          : 3
+        : 0;
   const hpBefore =
       240 +
       (s.level - 1) * 10 +
@@ -1307,7 +1330,12 @@ function applyAction(old: Run, a: Action): Run {
   if (a.type === 'begin') {
     need(s.phase === 'intro', '协议已确认');
     s.phase = 'base';
-    const knife = makeItem('starter-gapblade', 'gapblade', 'card', 'board');
+    const knife = makeItem(
+      s.openingVersion === 2 ? 'starter-slingshot' : 'starter-gapblade',
+      s.openingVersion === 2 ? 'slingshot' : 'gapblade',
+      'card',
+      'board',
+    );
     knife.rarity = 0;
     knife.at = 6;
     const wire = makeItem('starter-sealant', 'sealant', 'card', 'board');
@@ -1337,7 +1365,7 @@ function applyAction(old: Run, a: Action): Run {
     say(
       s,
       s.floors[0].routeVersion === 6
-        ? '协议生效：你握着一把猎隙刃，门外传来脚步声。'
+        ? '协议生效：你握紧手中的武器，门外传来脚步声。'
         : '协议生效：猎隙刃、破门钉枪与补漏胶已上阵。背包里的缓冲垫可以在泄压气室使用，也可回家免费转化为卡牌。门外只能向上；未通关撤离会回到原停靠点。',
     );
     return s;
@@ -1349,7 +1377,7 @@ function applyAction(old: Run, a: Action): Run {
       '不在首战引导中',
     );
     need(a.choice === (s.tutorialBattleStep ?? 0), '引导步骤已更新');
-    s.tutorialBattleStep = Math.min(6, (s.tutorialBattleStep ?? 0) + 1);
+    s.tutorialBattleStep = Math.min(7, (s.tutorialBattleStep ?? 0) + 1);
     return s;
   }
   if (a.type === 'resolve') {
@@ -1437,27 +1465,37 @@ function applyAction(old: Run, a: Action): Run {
               : 1;
       s.material += gold;
       rewardText = `战利品：金币 +${gold}。`;
-      if (defeatedCards.length && (kind === 'survivor' || stage === 'elite')) {
-        const card =
-          defeatedCards[
-            hash(`${s.seed}/${s.floor}/${rewardKey}`) % defeatedCards.length
-          ];
-        const loot = {
-          ...makeItem(`trophy-${s.serial++}`, card.id, 'card'),
-          rarity: card.rarity,
-          quality: card.quality,
-          level: card.level,
-        };
-        s.items.push(loot);
-        try {
-          validateItems(s);
-          rewardText += ` ${itemName(loot)}已放入背包。`;
-        } catch {
-          s.items = s.items.filter((x) => x.uid !== loot.uid);
-          s.material += 2;
-          rewardText += ' 背包空间不足，卡牌战利品折为 2 金币。';
-        }
-      }
+    }
+    const weapons = defeatedCards.filter((c) =>
+      ['damage', 'corrode'].includes(cardDef(c.id).kind),
+    );
+    if (weapons.length) {
+      const card =
+        weapons[
+          hash(`${s.seed}/${s.day}/${s.floor}/${rewardKey}/${s.serial}`) %
+            weapons.length
+        ];
+      const loot = {
+        ...makeItem(`trophy-${s.serial++}`, card.id, 'card'),
+        rarity: card.rarity,
+        quality: card.quality,
+        level: card.level,
+      };
+      s.loot = {
+        item: loot,
+        source: 'battle',
+        sourceName: '敌方武器',
+        sourceUid: card.uid,
+        revealed: false,
+      };
+      s.bagUnlocked = true;
+      if (
+        s.openingVersion === 2 &&
+        tutorialFloor(s) &&
+        currentNode(s) === 'patrol' &&
+        !s.tutorialRewardUid
+      )
+        s.tutorialRewardUid = loot.uid;
     }
     if (kind === 'survivor') {
       if (bot) botRescue(bot, '封锁对决败北');
@@ -1480,7 +1518,39 @@ function applyAction(old: Run, a: Action): Run {
     if (rewardText) say(s, `${s.notice} ${rewardText}`);
     return s;
   }
-  need(s.phase !== 'combat', '战斗开始后不可修改物品或基地');
+  if (a.type === 'equipment-explained') {
+    need(
+      s.items.some((x) => x.uid === s.tutorialRewardUid && x.zone === 'board'),
+      '先放置战利品',
+    );
+    s.equipmentExplained = true;
+    return s;
+  }
+  if (a.type === 'energy-explained') {
+    s.energyExplained = true;
+    return s;
+  }
+  if (a.type === 'reveal-loot') {
+    need(s.loot, '没有待领取战利品');
+    s.loot.revealed = true;
+    return s;
+  }
+  if (a.type === 'claim-loot') {
+    need(s.loot?.revealed, '先揭晓战利品');
+    const reward = s.loot!;
+    s.items.push({ ...reward.item });
+    validateItems(s);
+    if (reward.source === 'workshop' && reward.item.id === 'scanner')
+      s.charges++;
+    s.loot = null;
+    say(s, `${itemName(reward.item)}已收入背包。`);
+    return s;
+  }
+  const packing = ['place', 'equip', 'unequip', 'move', 'drop'].includes(
+    a.type,
+  );
+  need(!s.loot || packing, '请先领取战利品；空间不足时可打开背包整理');
+  need(s.phase !== 'combat' || packing, '战斗中只能整理行装；本场阵容已锁定');
   if (a.type === 'place') {
     const x = s.items.find((item) => item.uid === a.id);
     need(x?.type === 'card', '请选择已鉴定卡牌');
@@ -1552,7 +1622,13 @@ function applyAction(old: Run, a: Action): Run {
     need(x && x.type === 'physical', '请选择未鉴定实体');
     if (s.phase === 'floor') {
       if (tutorialFloor(s) && !s.objective)
-        need(x.id === 'nailer', '缓冲垫留作隔热工具，请先鉴定钉枪');
+        need(
+          s.openingVersion === 2
+            ? x.id === 'rubber' &&
+                currentFloor(s).workResolved?.includes('pressure')
+            : x.id === 'nailer',
+          '先完成气室，保留工具用于解谜',
+        );
       const state = identificationState(s);
       need(state.allowed, state.reason);
       need(x.zone === 'bag' || x.zone === 'safe', '只能鉴定随身携带的实体');
@@ -1589,9 +1665,9 @@ function applyAction(old: Run, a: Action): Run {
     const x = s.items.find((x) => x.uid === a.id);
     need(x, '物品不存在');
     need(x.zone !== 'board', '请先卸下卡牌');
-    need(s.phase === 'floor', '基地物品可回收，不需要丢弃');
+    need(['floor', 'combat'].includes(s.phase), '基地物品可回收，不需要丢弃');
     s.items = s.items.filter((i) => i.uid !== x.uid);
-    currentFloor(s).stock.push({ ...x, zone: 'bag' });
+    currentFloor(s).stock.push({ ...x, zone: 'bag', slot: undefined });
     say(s, '物品留在本层，可以再次拾取，也可能被其他幸存者带走。');
     return s;
   }
@@ -1971,6 +2047,22 @@ function applyAction(old: Run, a: Action): Run {
     say(s, '你推开内门。守卫转过身，归返信标就在它的身后。');
     return s;
   }
+  if (a.type === 'tutorial-continue') {
+    need(
+      s.openingVersion === 2 &&
+        tutorialFloor(s) &&
+        currentNode(s) === 'pressure' &&
+        currentFloor(s).workResolved?.includes('pressure'),
+      '气室尚未完成',
+    );
+    need(
+      s.items.some((x) => x.uid === 'tutorial-rubber' && x.type === 'card'),
+      '先鉴定缓冲垫',
+    );
+    s.node++;
+    say(s, '检修完成，前往守卫前室。');
+    return s;
+  }
   if (a.type === 'pipe-work') {
     need(tutorialFloor(s) && node === 'pressure', '当前不是引导气室');
     need(!currentFloor(s).workResolved?.includes(node), '气室已完成');
@@ -1978,16 +2070,34 @@ function applyAction(old: Run, a: Action): Run {
     need(a.id === 'tutorial-rubber', '需要刚才拾取的缓冲垫');
     const tool = fieldToolState(s, a.id);
     need(tool.allowed, tool.reason);
-    const preview = fieldWorkPreview(s, [a.id], 0);
+    const ids = s.openingVersion === 2 ? [a.id, 'tutorial-sealant'] : [a.id];
+    const lane = Math.floor(
+      (s.items.find((x) => x.uid === s.tutorialRewardUid && x.zone === 'board')
+        ?.at ?? 3) / 3,
+    );
+    const preview = fieldWorkPreview(s, ids, lane);
     need(preview.allowed, preview.reason);
     Object.assign(s, preview.values);
-    s.utilityUsed!.push(a.id);
+    s.utilityUsed!.push(...ids);
+    if (s.openingVersion === 2)
+      s.items = s.items.filter((x) => x.uid !== 'tutorial-sealant');
     currentFloor(s).workResolved!.push(node);
-    s.node++;
+    if (s.openingVersion === 2)
+      s.loot = {
+        item: makeItem('tutorial-scanner', 'scanner', 'tool'),
+        source: 'workshop',
+        sourceName: '气室检修箱',
+        revealed: false,
+      };
+    else s.node++;
     say(s, `蒸汽顺着管道排出。${preview.summary}，缓冲垫已收回。`);
     return s;
   }
   if (a.type === 'field-work') {
+    need(
+      !(s.openingVersion === 2 && tutorialFloor(s)),
+      '请完成气室检修与鉴定后继续',
+    );
     need(
       !tutorialFloor(s) || currentFloor(s).workResolved?.includes(node),
       '请接通泄压管道',
@@ -2056,7 +2166,19 @@ function applyAction(old: Run, a: Action): Run {
     return s;
   }
   if (a.type === 'next-node') {
-    if (tutorialFloor(s) && node === 'search')
+    if (tutorialFloor(s) && node === 'search' && s.openingVersion === 2)
+      need(
+        ['tutorial-rubber', 'tutorial-sealant'].every((uid) =>
+          s.items.some(
+            (x) =>
+              x.uid === uid &&
+              x.type === 'physical' &&
+              ['bag', 'safe'].includes(x.zone),
+          ),
+        ),
+        '先拾取两件解谜工具',
+      );
+    if (tutorialFloor(s) && node === 'search' && s.openingVersion !== 2)
       need(
         s.items.some(
           (x) => x.uid === 'tutorial-nailer' && x.zone === 'board',
@@ -2187,6 +2309,13 @@ function applyAction(old: Run, a: Action): Run {
     return s;
   }
   if (a.type === 'search') {
+    if (tutorialFloor(s) && s.openingVersion === 2)
+      need(
+        s.items.some(
+          (x) => x.uid === s.tutorialRewardUid && x.zone === 'board',
+        ),
+        '先打开背包，上阵刚获得的武器',
+      );
     need(node === 'search', '当前不是搜索节点');
     need(!s.interaction, '已经进入搜查状态，无需重复消耗精力');
     need(s.stamina >= searchCost(s), '搜索精力不足');
@@ -2247,11 +2376,31 @@ export function validSave(value: unknown): value is Run {
   try {
     const s = migrateCargo(value as Run);
     need(s && s.version === 1 && Number.isInteger(s.seed), '存档版本不支持');
+    if (s.loot) {
+      need(
+        ['battle', 'workshop'].includes(s.loot.source) &&
+          typeof s.loot.revealed === 'boolean' &&
+          typeof s.loot.sourceName === 'string',
+        '战利品记录无效',
+      );
+      validateItem(s.loot.item);
+      need(
+        s.phase === 'floor' &&
+          s.loot.item.zone === 'bag' &&
+          (s.loot.source === 'battle'
+            ? s.loot.item.type === 'card' &&
+              ['damage', 'corrode'].includes(cardDef(s.loot.item.id).kind)
+            : s.loot.item.id === 'scanner' && s.loot.item.type === 'tool'),
+        '战利品类型无效',
+      );
+      need(!s.items.some((x) => x.uid === s.loot!.item.uid), '战利品重复');
+    }
+
     need(
       s.tutorialBattleStep === undefined ||
         (Number.isInteger(s.tutorialBattleStep) &&
           s.tutorialBattleStep >= 0 &&
-          s.tutorialBattleStep <= 6),
+          s.tutorialBattleStep <= 7),
       '引导步骤无效',
     );
     need(

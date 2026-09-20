@@ -28,6 +28,7 @@ type Props = {
   run: Run;
   onAction: (a: Action) => unknown;
   intel: () => ReactNode;
+  onBuild: (uid?: string) => void;
 };
 export function CostIcons({
   supply = 0,
@@ -202,12 +203,109 @@ function Cache({ run, onAction }: Pick<Props, 'run' | 'onAction'>) {
     </section>
   );
 }
-function PipeRoom({ run, onAction }: Pick<Props, 'run' | 'onAction'>) {
+function ToolCache({ run, onAction }: Pick<Props, 'run' | 'onAction'>) {
+  const stock = currentFloor(run).stock;
+  return (
+    <section className="tutorial-cache">
+      <ContextHint
+        step={{
+          target: '.tutorial-loot',
+          title: '带走现场工具',
+          body: '缓冲垫可以隔热，补漏胶能封住漏口。下一间气室会用上它们，先保留物品形态。',
+        }}
+      />
+      <div className="tutorial-loot">
+        {stock.map((x) => (
+          <article key={x.uid}>
+            <Shield />
+            <strong>{itemName(x)}</strong>
+            <small>
+              {x.id === 'rubber' ? '隔热 · 使用后保留' : '补漏 · 使用后消耗'}
+            </small>
+            <button onClick={() => onAction({ type: 'pickup', id: x.uid })}>
+              拾取
+            </button>
+          </article>
+        ))}
+      </div>
+      {stock.length === 0 && (
+        <button
+          className="ed-primary"
+          onClick={() => onAction({ type: 'next-node' })}
+        >
+          前往气室 <ArrowRight />
+          <CostIcons energy={travelCost(run)} />
+        </button>
+      )}
+    </section>
+  );
+}
+function PipeReward({
+  run,
+  onAction,
+  onBuild,
+}: Pick<Props, 'run' | 'onAction' | 'onBuild'>) {
+  const pad = run.items.find((x) => x.uid === 'tutorial-rubber')!;
+  return (
+    <section className="tutorial-new-card">
+      <ContextHint
+        key={pad.type}
+        step={
+          pad.type === 'physical'
+            ? {
+                target: '.tutorial-scan',
+                title: '把留下的工具变成卡牌',
+                body: '检修箱里的鉴定仪有1次电荷。鉴定缓冲垫，就能把它放上战斗桌面；电荷与电力是两种资源。',
+              }
+            : {
+                target: '.tutorial-new-card h2',
+                title: '新的防御组件',
+                body: '缓冲垫现在是一张卡牌。可以打开背包查看当前能力、调整阵容，再继续探索。',
+              }
+        }
+      />
+      {pad.type === 'physical' ? (
+        <div className="tutorial-scan">
+          <ScanLine size={32} />
+          <span>鉴定电荷 {run.charges}</span>
+          <button
+            className="ed-primary"
+            onClick={() => onAction({ type: 'scan', id: pad.uid })}
+          >
+            鉴定缓冲垫 <ScanLine size={17} />1
+          </button>
+        </div>
+      ) : (
+        <>
+          <h2>{itemName(pad)}</h2>
+          <CardDetail
+            card={{ ...pad, at: pad.at ?? 0, rarity: pad.rarity ?? 0 }}
+          />
+          <button onClick={() => onBuild(pad.uid)}>打开背包</button>
+          <button
+            className="ed-primary"
+            onClick={() => onAction({ type: 'tutorial-continue' })}
+          >
+            继续前进 <ArrowRight />
+            <CostIcons energy={3} />
+          </button>
+        </>
+      )}
+    </section>
+  );
+}
+function PipeRoom({
+  run,
+  onAction,
+  onBuild,
+}: Pick<Props, 'run' | 'onAction' | 'onBuild'>) {
   const [installed, setInstalled] = useState(false);
   const [turns, setTurns] = useState(() => initialPipes(run.seed));
   const wet = pipeFlow(turns),
     solved = pipeConnected(turns);
   const done = currentFloor(run).workResolved?.includes('pressure');
+  if (done && run.openingVersion === 2)
+    return <PipeReward run={run} onAction={onAction} onBuild={onBuild} />;
   if (done)
     return (
       <button
@@ -232,8 +330,11 @@ function PipeRoom({ run, onAction }: Pick<Props, 'run' | 'onAction'>) {
             : {
                 target: '.pipe-tool',
                 title: '刚才的道具派上用场了',
-                body: '管道很烫。垫上刚拾取的缓冲垫，就能安全转动接口。完成后会收回缓冲垫。',
-                next: '装上缓冲垫',
+                body:
+                  run.openingVersion === 2
+                    ? '用缓冲垫隔热、补漏胶封口，再转动接口。泄压成功才消耗补漏胶，缓冲垫会留下；检修柜也将打开。'
+                    : '垫上缓冲垫就能安全转动接口，完成后会收回。',
+                next: '开始操作',
               }
         }
       />
@@ -244,12 +345,28 @@ function PipeRoom({ run, onAction }: Pick<Props, 'run' | 'onAction'>) {
           onClick={() => setInstalled(true)}
         >
           <Shield />
-          {installed ? '已隔热' : '垫上缓冲垫'}
+          {installed
+            ? '工具已就位'
+            : run.openingVersion === 2
+              ? '隔热并补漏'
+              : '垫上缓冲垫'}
           {installed && <Check />}
         </button>
         <span title="完成后恢复12精力">
           <Leaf /> +12
         </span>
+        {run.openingVersion === 2 && (
+          <>
+            <span title="下场猎隙刃所在路线屏障增加24">
+              <Shield />
+              +24
+            </span>
+            <span title="检修箱奖励">
+              <ScanLine />
+              鉴定仪
+            </span>
+          </>
+        )}
       </div>
       <fieldset
         className="pipe-board"
@@ -323,13 +440,18 @@ function PipeRoom({ run, onAction }: Pick<Props, 'run' | 'onAction'>) {
           }
         >
           {solved ? '打开泄压口' : '接通后泄压'} <Wind size={18} />
-          <CostIcons energy={5} />
+          <CostIcons energy={run.openingVersion === 2 ? 2 : 5} />
         </button>
       </div>
     </section>
   );
 }
-export default function TutorialFloor({ run, onAction, intel }: Props) {
+export default function TutorialFloor({
+  run,
+  onAction,
+  intel,
+  onBuild,
+}: Props) {
   const node = currentNode(run);
   const steps = [
     ['patrol', '遭遇'],
@@ -383,7 +505,7 @@ export default function TutorialFloor({ run, onAction, intel }: Props) {
         {node === 'patrol' ? (
           <div className="tutorial-first-fight">
             <Swords size={68} />
-            <p>巡逻者挡住去路。你握紧了手里的刀。</p>
+            <p>巡逻者挡住去路。你握紧了手里的武器。</p>
             <button
               className="ed-primary"
               onClick={() => onAction({ type: 'fight' })}
@@ -392,8 +514,33 @@ export default function TutorialFloor({ run, onAction, intel }: Props) {
             </button>
           </div>
         ) : node === 'search' ? (
-          run.interaction === 'search' ? (
-            <Cache run={run} onAction={onAction} />
+          run.openingVersion === 2 &&
+          !run.items.some(
+            (x) => x.uid === run.tutorialRewardUid && x.zone === 'board',
+          ) ? (
+            <div className="tutorial-first-fight">
+              <ContextHint
+                step={{
+                  target: '.ed-global-bag',
+                  title: '把战利品装备起来',
+                  body: '背包已经开启。先把猎隙刃放上战斗桌面，再搜刮物资箱。之后随时都能从这里整理行囊。',
+                }}
+              />
+              <Swords size={68} />
+              <p>新武器已经到手。</p>
+              <button
+                className="ed-primary"
+                onClick={() => onBuild(run.tutorialRewardUid)}
+              >
+                打开背包布阵
+              </button>
+            </div>
+          ) : run.interaction === 'search' ? (
+            run.openingVersion === 2 ? (
+              <ToolCache run={run} onAction={onAction} />
+            ) : (
+              <Cache run={run} onAction={onAction} />
+            )
           ) : (
             <div className="tutorial-first-fight">
               <Backpack size={68} />
@@ -407,7 +554,7 @@ export default function TutorialFloor({ run, onAction, intel }: Props) {
             </div>
           )
         ) : node === 'pressure' ? (
-          <PipeRoom run={run} onAction={onAction} />
+          <PipeRoom run={run} onAction={onAction} onBuild={onBuild} />
         ) : node === 'antechamber' || node === 'guardian' ? (
           <>
             {intel()}

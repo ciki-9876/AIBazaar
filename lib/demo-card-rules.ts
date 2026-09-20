@@ -6,7 +6,7 @@ export function cardMechanics(id: string, level: number, quality = 0) {
   return {
     openingCount: id === 'nailer' ? 2 : id === 'springbow' ? 3 : 0,
     openingBonus: (16 + quality * 4) * scale,
-    exposedBonus: id === 'gapblade' ? (12 + quality * 4) * scale : 0,
+    exposedBonus: id === 'gapblade' ? (6 + quality * 2) * scale : 0,
     buffer: id === 'rubber' ? (8 + quality) * scale : 0,
     recoilCap: (40 + quality * 10) * scale,
     growth: id === 'culture' ? (8 + quality * 2) * scale : 0,

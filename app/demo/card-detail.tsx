@@ -31,6 +31,11 @@ export default function CardDetail({ card }: { card: FighterCard }) {
   const hero = heroOwner(card.id);
   return (
     <div className="ed-card-description">
+      {['damage', 'corrode'].includes(cardDef(card.id).kind) && (
+        <span className="ed-hit-type">
+          {d.hitType === 'instant' ? '即时命中' : '弹道命中'}
+        </span>
+      )}
       <span className="ed-detail-cooldown">
         <Clock3 size={15} />
         {d.cd} 秒

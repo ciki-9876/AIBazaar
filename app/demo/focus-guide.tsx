@@ -26,6 +26,12 @@ export default function FocusGuide({
 }) {
   const [box, setBox] = useState<DOMRect | null>(null);
   const dialog = useRef<HTMLDialogElement>(null);
+  const [position, setPosition] = useState({
+    left: 16,
+    top: 16,
+    width: 360,
+    height: 220,
+  });
   useEffect(() => {
     const previous = document.activeElement as HTMLElement | null;
     const target = document.querySelector<HTMLElement>(step.target);
@@ -34,10 +40,49 @@ export default function FocusGuide({
       inline: 'nearest',
       behavior: 'instant',
     });
-    const measure = () => setBox(target?.getBoundingClientRect() ?? null);
+    const measure = () => {
+      const raw = target?.getBoundingClientRect();
+      if (!raw) return;
+      const r = {
+        left: Math.max(12, raw.left),
+        top: Math.max(12, raw.top),
+        right: Math.min(innerWidth - 12, raw.right),
+        bottom: Math.min(innerHeight - 12, raw.bottom),
+      };
+      const w = Math.min(360, innerWidth - 32),
+        h = dialog.current?.offsetHeight ?? 220,
+        gap = 22;
+      const cx = (r.left + r.right) / 2,
+        cy = (r.top + r.bottom) / 2;
+      const candidates = [
+        [r.right + gap, cy - h / 2],
+        [r.left - gap - w, cy - h / 2],
+        [cx - w / 2, r.top - gap - h],
+        [cx - w / 2, r.bottom + gap],
+      ].map(([left, top]) => ({
+        left: Math.max(16, Math.min(innerWidth - w - 16, left)),
+        top: Math.max(16, Math.min(innerHeight - h - 16, top)),
+      }));
+      const score = (p: { left: number; top: number }) =>
+        Math.max(0, Math.min(p.left + w, r.right) - Math.max(p.left, r.left)) *
+          Math.max(0, Math.min(p.top + h, r.bottom) - Math.max(p.top, r.top)) *
+          100 +
+        Math.hypot(p.left + w / 2 - cx, p.top + h / 2 - cy);
+      candidates.sort((a, b) => score(a) - score(b));
+      setBox(
+        new DOMRect(
+          r.left,
+          r.top,
+          Math.max(1, r.right - r.left),
+          Math.max(1, r.bottom - r.top),
+        ),
+      );
+      setPosition({ ...candidates[0], width: w, height: h });
+    };
     measure();
     const observer = new ResizeObserver(measure);
     if (target) observer.observe(target);
+    if (dialog.current) observer.observe(dialog.current);
     window.addEventListener('resize', measure);
     window.addEventListener('scroll', measure, true);
     dialog.current
@@ -87,15 +132,64 @@ export default function FocusGuide({
           }}
         />
       )}
+      {box && (
+        <svg className="focus-guide-connector" aria-hidden="true">
+          <defs>
+            <marker
+              id="guide-arrow"
+              markerWidth="9"
+              markerHeight="9"
+              refX="7"
+              refY="4"
+              orient="auto"
+            >
+              <path
+                d="M0 0 L8 4 L0 8"
+                fill="none"
+                stroke="#f1d27e"
+                strokeWidth="1.5"
+              />
+            </marker>
+          </defs>
+          {(() => {
+            const cx = position.left + position.width / 2,
+              cy = position.top + position.height / 2;
+            const tx = Math.max(box.left, Math.min(box.right, cx)),
+              ty = Math.max(box.top, Math.min(box.bottom, cy));
+            const sx = Math.max(
+                position.left,
+                Math.min(position.left + position.width, tx),
+              ),
+              sy = Math.max(
+                position.top,
+                Math.min(position.top + position.height, ty),
+              );
+            return (
+              <>
+                <path
+                  d={`M${sx} ${sy} L${tx} ${ty}`}
+                  stroke="#f1d27e"
+                  strokeWidth="2"
+                  fill="none"
+                  markerEnd="url(#guide-arrow)"
+                />
+                <circle cx={tx} cy={ty} r="4" fill="#f1d27e" />
+              </>
+            );
+          })()}
+        </svg>
+      )}
       <dialog
         open
         ref={dialog}
-        className={
-          'focus-guide-dialog ' +
-          (box && box.top > window.innerHeight / 2
-            ? 'guide-top'
-            : 'guide-bottom')
-        }
+        className="focus-guide-dialog anchored-guide"
+        style={{
+          left: position.left,
+          top: position.top,
+          width: position.width,
+          transform: 'none',
+          bottom: 'auto',
+        }}
         aria-modal="true"
         aria-labelledby="focus-guide-title"
       >

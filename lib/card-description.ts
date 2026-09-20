@@ -121,6 +121,7 @@ export function describeCard(card: FighterCard, includeFuture = true) {
   if (c.id === 'sealant' || c.id === 'rubber')
     notes.push('修复在效果到达时结算；期间屏障损毁会重新寻找可支援路线。');
   const short: Record<string, string> = {
+    slingshot: '弹丸命中造成伤害',
     nailer: `前2次伤害+${number(m.openingBonus)}`,
     springbow: `前3次伤害+${number(m.openingBonus)}`,
     fuse: `首次充能 +${number(m.firstCharge)}秒`,
@@ -157,6 +158,7 @@ export function describeCard(card: FighterCard, includeFuture = true) {
         })
     : [];
   return {
+    hitType: c.hitType ?? 'projectile',
     role: c.role ?? '',
     cd: c.cd,
     effects,

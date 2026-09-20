@@ -1,4 +1,5 @@
 export type CardDef = {
+  hitType?: 'instant' | 'projectile';
   id: string;
   name: string;
   size: number;

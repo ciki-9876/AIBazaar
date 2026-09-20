@@ -6,7 +6,8 @@ import { refineIngredient } from '@/lib/demo-engine';
 /* oxlint-disable next/no-html-link-for-pages -- Static Sites hosting needs native anchors; RSC-prefetch navigation is unsupported. */
 import { useState, useEffect, useMemo, useRef, useCallback } from 'react';
 import BattleEffects from './battle-effects';
-import FocusGuide, { type GuideStep } from './focus-guide';
+import LootScene from './loot-scene';
+import FocusGuide, { ContextHint, type GuideStep } from './focus-guide';
 import TutorialFloor, { CostIcons } from './tutorial-floor';
 import { tutorialFloor } from '@/lib/demo-engine';
 import CardFace from './card-face';
@@ -25,6 +26,7 @@ import { identificationState, makeDuel, makeItem } from '@/lib/demo-engine';
 import { battleEvidence, formatHit } from '@/lib/battle-evidence';
 import ScrollChrome from './scroll-chrome';
 import {
+  Sparkles,
   Coins,
   Settings,
   X,
@@ -146,7 +148,9 @@ export default function Demo() {
   const [cursor, setCursor] = useState(0),
     [playing, setPlaying] = useState(true),
     [speed, setSpeed] = useState(1);
-  const baseInspect = tab === 'inventory';
+  const [bagOpen, setBagOpen] = useState(false);
+  const bagReturnTab = useRef('floor');
+  const baseInspect = tab === 'inventory' || bagOpen;
   const fileRef = useRef<HTMLInputElement>(null);
   const storageKey = useRef(SAVE_KEY);
   useEffect(() => {
@@ -252,6 +256,8 @@ export default function Demo() {
           'first-floor',
           'onboarding6',
           'onboarding6-narrow',
+          'onboarding7',
+          'onboarding7-narrow',
         ].includes(params.get('qa') ?? '');
       const work =
         qa && params.get('qa') === 'items' ? params.get('work') : null;
@@ -315,53 +321,82 @@ export default function Demo() {
   const lessonStep = run.tutorialBattleStep ?? 0;
   const firstFire = Math.max(
     0,
-    battle?.frames.findIndex((fr) => fr.fired.includes('starter-gapblade')) ??
-      0,
+    battle?.frames.findIndex((fr) =>
+      fr.fired.includes(
+        run.openingVersion === 2 ? 'starter-slingshot' : 'starter-gapblade',
+      ),
+    ) ?? 0,
   );
   const firstImpact = Math.max(
     firstFire,
     battle?.frames.findIndex((fr) =>
       fr.hits.some(
-        (h) => h.sourceUid === 'starter-gapblade' && h.kind === 'damage',
+        (h) =>
+          h.sourceUid ===
+            (run.openingVersion === 2
+              ? 'starter-slingshot'
+              : 'starter-gapblade') && h.kind === 'damage',
       ),
     ) ?? 0,
   );
   const lessonActive =
     tutorialBattle &&
-    lessonStep < 6 &&
-    cursor >= [0, 0, 0, firstFire, firstImpact, firstImpact][lessonStep];
+    lessonStep < 7 &&
+    !bagOpen &&
+    cursor >=
+      [
+        0,
+        0,
+        0,
+        0,
+        run.openingVersion === 2 ? firstFire + 2 : firstFire,
+        firstImpact,
+        firstImpact,
+      ][lessonStep];
+  const starterId =
+    run.openingVersion === 2 ? 'starter-slingshot' : 'starter-gapblade';
+  const starterName = run.openingVersion === 2 ? '弹弓' : '猎隙刃';
   const lessons: GuideStep[] = [
     {
       target: '[data-entity="host-0"] .ed-actor-info b',
       title: '你要保护的是宿主',
-      body: '这是你的战斗生命。降到0就会战败；击败对面的宿主即可获胜。它与探索界面的生存次数不同。',
+      body: '这是你的战斗生命。降到0就会战败；击败对面的宿主即可获胜。',
+    },
+    {
+      target: '.ed-vertical-battle',
+      title: '先看整个战场：三条路线',
+      body: '桌面分为上路、中路、下路，画面从左到右排列。双方同名路线彼此对应；把武器放在哪一路，就从那一路进攻。',
     },
     {
       target: '[data-entity="barrier-0-2"]',
-      title: '三条路线，三道屏障',
-      body: '上、中、下路分别有一道屏障，挡在宿主前方。攻击先命中对应路线的屏障；屏障破裂后，这条路的攻击会直接伤到宿主。卡牌本身不会被打掉。',
+      title: '每条路都有自己的屏障',
+      body: '屏障先承受对应路线的攻击。屏障破裂后，这条路的攻击会直接伤到宿主。',
     },
     {
-      target: '[data-entity="starter-gapblade"]',
-      title: '刀会自己发动',
-      body: '卡面上的进度就是冷却。猎隙刃每6秒自动攻击一次，不需要点击。它放在下路，就攻击敌方下路。布阵在战斗外进行。',
+      target: `[data-entity="${starterId}"]`,
+      title: `${starterName}会自己发动`,
+      body: `进度走满，武器就会自动发动。${starterName}每3秒攻击一次；卡牌本身不会被打掉。`,
       next: '观察第一次出手',
     },
     {
-      target: '[data-entity="starter-gapblade"]',
-      title: '冷却完成，攻击出发',
-      body: '刀刚刚发动，进度重新开始。弹道需要飞到对面才结算伤害；现在暂停，方便看清这次攻击。',
+      target:
+        run.openingVersion === 2 ? '.ed-shot' : `[data-entity="${starterId}"]`,
+      title: run.openingVersion === 2 ? '弹丸已经发射' : '即时命中',
+      body:
+        run.openingVersion === 2
+          ? '弹弓属于弹道武器。弹丸需要飞到对面才结算伤害；冷兵器等即时武器会在发动时直接命中。'
+          : '猎隙刃属于即时武器，发动时直接结算伤害，不需要等待弹道飞行。',
       next: '观察命中',
     },
     {
       target: '[data-entity="barrier-1-2"]',
-      title: '下路屏障被击破',
-      body: '这次攻击击碎了敌方下路屏障，剩余伤害穿透到宿主。破掉的屏障不能再修复，后续下路攻击可以直击宿主。',
+      title: '敌方下路屏障被击破',
+      body: '刚才的攻击击碎了屏障，剩余伤害伤及宿主。后续下路攻击会直接命中宿主。',
     },
     {
       target: '[data-entity="host-1"] .ed-actor-info b',
-      title: '继续攻击，击败宿主',
-      body: '敌方宿主的生命已经减少。等下一次攻击命中，就能结束这场遭遇。接下来，去看看它身后的物资箱。',
+      title: '击败敌方宿主',
+      body: '敌方宿主的生命已经减少。等敌方宿主生命归0即可获得胜利。',
       next: '继续战斗',
     },
   ];
@@ -369,13 +404,14 @@ export default function Demo() {
     if (
       !battle ||
       !playing ||
+      bagOpen ||
       lessonActive ||
       cursor >= battle.frames.length - 1
     )
       return;
     const timer = setTimeout(() => setCursor((c) => c + 1), 250 / speed);
     return () => clearTimeout(timer);
-  }, [battle, playing, cursor, speed, lessonActive]);
+  }, [battle, playing, cursor, speed, lessonActive, bagOpen]);
   const frame = battle?.frames[Math.min(cursor, battle.frames.length - 1)];
   const previewDuel =
     run.phase === 'floor' &&
@@ -390,9 +426,14 @@ export default function Demo() {
         )
       : null;
   const goBuild = (uid?: string) => {
+    if (!bagOpen) bagReturnTab.current = tab;
+    setBagOpen(true);
+    uid ??= run.items.find(
+      (x) => x.uid === run.tutorialRewardUid && x.zone !== 'board',
+    )?.uid;
     setTab('inventory');
     setInventoryTab('build');
-    setPlacing(null);
+    setPlacing(uid ?? null);
     if (uid) {
       setSelected(uid);
       setPinned(true);
@@ -405,8 +446,22 @@ export default function Demo() {
       });
     }
   };
+  const closeBag = () => {
+    setBagOpen(false);
+    if (
+      !run.equipmentExplained &&
+      run.items.some(
+        (x) => x.uid === run.tutorialRewardUid && x.zone === 'board',
+      )
+    )
+      dispatch({ type: 'equipment-explained' });
+    setTab(bagReturnTab.current);
+    setInspection(null);
+    setPinned(false);
+  };
   const f = currentFloor(run);
   const resetRun = () => {
+    setBagOpen(false);
     commit(newRun(crypto.getRandomValues(new Uint32Array(1))[0], true));
     try {
       localStorage.removeItem(storageKey.current);
@@ -694,6 +749,42 @@ export default function Demo() {
     };
     return (
       <section className="ed-inventory-pages">
+        {bagOpen && run.phase === 'combat' && (
+          <p className="ed-packing-note">
+            战斗已暂停 · 布阵修改用于下一场，本场阵容保持不变
+          </p>
+        )}
+        {bagOpen &&
+          run.tutorialRewardUid &&
+          !run.equipmentExplained &&
+          run.items.some((x) => x.uid === run.tutorialRewardUid) &&
+          tutorialFloor(run) &&
+          inventoryTab === 'build' && (
+            <ContextHint
+              key={
+                run.items.find((x) => x.uid === run.tutorialRewardUid)?.zone ===
+                'board'
+                  ? 'placed'
+                  : 'placing'
+              }
+              step={
+                run.items.find((x) => x.uid === run.tutorialRewardUid)?.zone ===
+                'board'
+                  ? {
+                      target: '.ed-planning-board',
+                      title: '武器已经上阵',
+                      body: '武器从1件增加到2件，弹弓和猎隙刃会各自发动。这里也能移动、换位；关闭背包即可继续探索。',
+                    }
+                  : {
+                      target: placing
+                        ? '.ed-target-grid'
+                        : '.ed-build-candidates',
+                      title: '把战利品放上桌面',
+                      body: '先选一处已解锁的空格，查看落点，再确认放置。带锁的格子还不能使用；取消预览不会改变阵容。',
+                    }
+              }
+            />
+          )}
         <nav className="ed-inventory-tabs" aria-label="行装与构筑子页">
           {tabs.map(([id, label]) => (
             <button
@@ -808,9 +899,11 @@ export default function Demo() {
                 <h3>{definition.name}</h3>
                 <ObjectInfo id={definition.id} />
                 <p>
-                  {CARDS.some((c) => c.id === definition.id)
-                    ? '当前冒险可获得 · 搜刮 / 游商 / 战利品'
-                    : '仅英雄试验场展示 · 尚未接入冒险掉落'}
+                  {definition.id === 'slingshot'
+                    ? '新开局初始武器 · 不进入实体掉落池'
+                    : CARDS.some((c) => c.id === definition.id)
+                      ? '当前冒险可获得 · 搜刮 / 游商 / 战利品'
+                      : '仅英雄试验场展示 · 尚未接入冒险掉落'}
                 </p>
                 <p>
                   {owned.length
@@ -1076,10 +1169,21 @@ export default function Demo() {
             <p className="ed-kicker">01 / 第一站</p>
             <h2>{run.floors[0].name}</h2>
             <p>{run.floors[0].detail}</p>
-            <p>门外传来脚步声。握紧刀，找一条通往信标的路。</p>
-            <p className="ed-departure-cost">
+            <p>门外传来脚步声。握紧武器，找一条通往信标的路。</p>
+            <p className="ed-departure-cost" data-guide="departure-energy">
               出发 <CostIcons supply={1} energy={4} />
             </p>
+            {run.openingVersion === 2 && !run.energyExplained && (
+              <FocusGuide
+                step={{
+                  target: '[data-guide="departure-energy"]',
+                  title: '出发前，看看精力',
+                  body: `叶子代表精力。你目前有${run.stamina}点；这次出发消耗4点。搜刮、赶路和操作机关也需要精力，休息和补给可以恢复。`,
+                  next: '知道了，准备出发',
+                }}
+                onNext={() => dispatch({ type: 'energy-explained' })}
+              />
+            )}
             <button
               className="ed-primary"
               onClick={() => dispatch({ type: 'enter', floor: 1 })}
@@ -1203,7 +1307,14 @@ export default function Demo() {
   }
   function floor() {
     if (tutorialFloor(run))
-      return <TutorialFloor run={run} onAction={dispatch} intel={enemyIntel} />;
+      return (
+        <TutorialFloor
+          run={run}
+          onAction={dispatch}
+          intel={enemyIntel}
+          onBuild={goBuild}
+        />
+      );
     const node = currentNode(run),
       active = !!run.interaction,
       ev = eventAt(run);
@@ -1734,7 +1845,7 @@ export default function Demo() {
             {speed}× 速度
           </button>
           <button
-            disabled={tutorialBattle && lessonStep < 6}
+            disabled={tutorialBattle && lessonStep < 7}
             onClick={() => setCursor(battle.frames.length - 1)}
           >
             跳至结果
@@ -1768,12 +1879,15 @@ export default function Demo() {
           <section
             className={'ed-battle-result ' + (battle.winner === 0 ? 'won' : '')}
           >
-            <Trophy size={30} />
+            <div className="victory-emblem">
+              <Trophy size={48} />
+              <Sparkles size={24} />
+            </div>
             <div>
               {battle.timedOut && <p>90 秒平局，未击败敌人，不获得奖励。</p>}
               <h2>
                 {battle.winner === 0
-                  ? '你还活着。'
+                  ? '胜利'
                   : battle.winner === -1
                     ? battle.timedOut
                       ? '战斗陷入僵局。'
@@ -1784,43 +1898,47 @@ export default function Demo() {
                       ? '电梯启动了回收。'
                       : '负伤继续前进。'}
               </h2>
-              <div className="ed-result-evidence">
-                <p>
-                  宿主实际损伤：我方 {evidence.hostDamage[0]} / 敌方{' '}
-                  {evidence.hostDamage[1]} · 我方剩余{' '}
-                  {Math.ceil(evidence.hp[0])}/{run.duel.maxHp[0]}
-                </p>
-                <p>{evidence.break}</p>
-                <p>{evidence.contribution}</p>
-                <details>
-                  <summary>详细统计与破路记录</summary>
-                  {evidence.breaks.map((line, i) => (
-                    <p key={i}>{line}</p>
-                  ))}
-                  {evidence.stats.map((s) => (
-                    <p key={s.uid}>
-                      {s.name} [{s.uid}] · 对敌方屏障实际伤害 {s.barrierDamage}
-                    </p>
-                  ))}
+              <details className="victory-records">
+                <summary>对战记录</summary>{' '}
+                <div className="ed-result-evidence">
                   <p>
-                    充能记录表示冷却计时推进，不等于缩短战斗时间；贡献不代表单牌决定胜负。
+                    宿主实际损伤：我方 {evidence.hostDamage[0]} / 敌方{' '}
+                    {evidence.hostDamage[1]} · 我方剩余{' '}
+                    {Math.ceil(evidence.hp[0])}/{run.duel.maxHp[0]}
                   </p>
+                  <p>{evidence.break}</p>
+                  <p>{evidence.contribution}</p>
                   <details>
-                    <summary>逐事件日志</summary>
-                    {battle.frames
-                      .flatMap((fr) => [
-                        ...fr.hits.map((hit) =>
-                          formatHit(run.duel!, hit, fr.time),
-                        ),
-                        ...fr.log.map((line) => `${fr.time}s · ${line}`),
-                      ])
-                      .map((line, i) => (
-                        <p key={i}>{line}</p>
-                      ))}
+                    <summary>详细统计与破路记录</summary>
+                    {evidence.breaks.map((line, i) => (
+                      <p key={i}>{line}</p>
+                    ))}
+                    {evidence.stats.map((s) => (
+                      <p key={s.uid}>
+                        {s.name} [{s.uid}] · 对敌方屏障实际伤害{' '}
+                        {s.barrierDamage}
+                      </p>
+                    ))}
+                    <p>
+                      充能记录表示冷却计时推进，不等于缩短战斗时间；贡献不代表单牌决定胜负。
+                    </p>
+                    <details>
+                      <summary>逐事件日志</summary>
+                      {battle.frames
+                        .flatMap((fr) => [
+                          ...fr.hits.map((hit) =>
+                            formatHit(run.duel!, hit, fr.time),
+                          ),
+                          ...fr.log.map((line) => `${fr.time}s · ${line}`),
+                        ])
+                        .map((line, i) => (
+                          <p key={i}>{line}</p>
+                        ))}
+                    </details>
                   </details>
-                </details>
-              </div>
-              <p>
+                </div>
+              </details>
+              <p hidden={battle.winner === 0}>
                 {battle.timedOut
                   ? run.duel.kind === 'survivor' ||
                     run.duel.stage === 'boss' ||
@@ -1845,7 +1963,8 @@ export default function Demo() {
               className="ed-primary"
               onClick={() => dispatch({ type: 'resolve' })}
             >
-              确认结果 <ArrowRight size={17} />
+              {battle.winner === 0 ? '领取战利品' : '确认结果'}{' '}
+              <ArrowRight size={17} />
             </button>
             <button
               onClick={() => {
@@ -2012,7 +2131,8 @@ export default function Demo() {
             <div
               className={
                 'ed-actions ' +
-                (run.phase === 'combat' || inspection?.source === 'enemy'
+                ((run.phase === 'combat' && !bagOpen) ||
+                inspection?.source === 'enemy'
                   ? 'ed-hidden'
                   : '')
               }
@@ -2045,10 +2165,15 @@ export default function Demo() {
                           : `鉴定电荷 ${run.charges} / 4 · 本次消耗 1 电荷；电力用于基地补充电荷。`}
                       </p>
                       <button
-                        disabled={!identificationState(run).allowed}
+                        disabled={
+                          run.phase === 'combat' ||
+                          !!run.loot ||
+                          !identificationState(run).allowed
+                        }
                         onClick={() =>
                           run.phase === 'base'
-                            ? (setScanUid(inspected.uid),
+                            ? (setBagOpen(false),
+                              setScanUid(inspected.uid),
                               setInspection(null),
                               setPinned(false),
                               setTab('identify'))
@@ -2224,6 +2349,7 @@ export default function Demo() {
                   )}
                   {['apple', 'supply', 'medicine'].includes(inspected.id) && (
                     <button
+                      disabled={run.phase === 'combat' || !!run.loot}
                       onClick={() =>
                         itemAction({ type: 'consume', id: inspected.uid })
                       }
@@ -2266,6 +2392,7 @@ export default function Demo() {
                   {inspected.zone !== 'board' &&
                     (run.phase !== 'base' || run.level >= 2) && (
                       <button
+                        disabled={tutorialFloor(run)}
                         onClick={() =>
                           itemAction({
                             type: run.phase === 'base' ? 'recycle' : 'drop',
@@ -2278,13 +2405,14 @@ export default function Demo() {
                     )}
                 </>
               )}
-              {run.phase !== 'combat' && inspected.zone !== 'board' && (
-                <CarryButton
-                  item={inspected}
-                  from={inspection!.source}
-                  onCarry={() => setInspection(null)}
-                />
-              )}
+              {(run.phase !== 'combat' || bagOpen) &&
+                inspected.zone !== 'board' && (
+                  <CarryButton
+                    item={inspected}
+                    from={inspection!.source}
+                    onCarry={() => setInspection(null)}
+                  />
+                )}
             </div>
           </>
         )}
@@ -2304,7 +2432,7 @@ export default function Demo() {
         <FocusGuide
           step={lessons[lessonStep]}
           index={lessonStep}
-          total={6}
+          total={7}
           paused
           onNext={() => dispatch({ type: 'tutorial-step', choice: lessonStep })}
         />
@@ -2315,7 +2443,8 @@ export default function Demo() {
           (tutorialFloor(run) && ['floor', 'combat'].includes(run.phase)
             ? ' guided-expedition '
             : '') +
-          (run.phase === 'combat' ? 'in-combat ' : '') +
+          (run.phase === 'combat' && !bagOpen ? 'in-combat ' : '') +
+          (lessonActive && lessonStep === 1 ? ' lesson-lanes ' : '') +
           (run.phase === 'base' ? 'at-base ' : '') +
           (run.phase === 'base' && tab === 'base' ? 'in-room' : '') +
           (run.phase === 'base' &&
@@ -2327,6 +2456,17 @@ export default function Demo() {
             : '')
         }
       >
+        {run.phase !== 'intro' &&
+          (run.bagUnlocked || run.openingVersion !== 2) && (
+            <button
+              className="ed-global-bag"
+              onClick={() => (bagOpen ? closeBag() : goBuild())}
+              aria-label={bagOpen ? '返回游戏' : '打开背包与布阵'}
+            >
+              {bagOpen ? <X size={22} /> : <Backpack size={22} />}
+              {bagOpen ? '返回' : '背包'}
+            </button>
+          )}
         <header className="ed-header">
           <button
             className="ed-settings-button"
@@ -2468,7 +2608,8 @@ export default function Demo() {
                 </nav>
               </aside>
               <div className={`ed-main view-${tab}`}>
-                {tutorialFloor(run) &&
+                {!bagOpen &&
+                  tutorialFloor(run) &&
                   run.phase === 'floor' &&
                   tab === 'inventory' && (
                     <button
@@ -2482,7 +2623,7 @@ export default function Demo() {
                       返回房间 <ArrowRight size={18} />
                     </button>
                   )}
-                {run.phase === 'base' && tab !== 'base' && (
+                {!bagOpen && run.phase === 'base' && tab !== 'base' && (
                   <div className="ed-terminal-nav">
                     <span>
                       {['upgrades', 'survivors', 'log', 'prep'].includes(tab)
@@ -2534,7 +2675,8 @@ export default function Demo() {
                     <span>{notice || run.notice}</span>
                   </output>
                 )}
-                {run.phase !== 'combat' &&
+                {!bagOpen &&
+                  run.phase !== 'combat' &&
                   run.phase !== 'ended' &&
                   (tab === 'inventory' ? (
                     <Onboarding key="inventory" context="inventory" />
@@ -2556,7 +2698,23 @@ export default function Demo() {
                     !isFieldNode(currentNode(run)) ? (
                     <Onboarding key="explore" context="explore" />
                   ) : null)}
-                {run.phase === 'combat' ? (
+                {bagOpen ? (
+                  <section className="global-bag-view">
+                    <header>
+                      <h2>行囊与战斗桌面</h2>
+                      <button onClick={closeBag} aria-label="关闭背包">
+                        完成整理 <X size={19} />
+                      </button>
+                    </header>
+                    {inventory()}
+                  </section>
+                ) : run.loot ? (
+                  <LootScene
+                    loot={run.loot}
+                    onAction={dispatch}
+                    onBag={() => goBuild()}
+                  />
+                ) : run.phase === 'combat' ? (
                   combat()
                 ) : run.phase === 'ended' ? (
                   <>

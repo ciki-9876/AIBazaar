@@ -6366,3 +6366,304 @@ body:has(.elevator-demo) {
   margin-bottom: 18px;
   padding-bottom: 14px;
 }
+
+/* Anchored lessons, victory rewards and the persistent backpack. */
+.focus-guide-connector {
+  position: fixed;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  overflow: visible;
+}
+.focus-guide-dialog.anchored-guide {
+  margin: 0;
+  max-height: calc(100dvh - 32px);
+  overflow-y: auto;
+  padding: 22px;
+}
+.ed-global-bag {
+  position: fixed;
+  right: 24px;
+  top: 22px;
+  z-index: 90;
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  padding: 12px 18px;
+  background: #26362b;
+  color: #f1d27e;
+  border: 1px solid #8d8b56;
+  box-shadow: 0 6px 24px #0005;
+}
+.elevator-demo:has(.ed-global-bag) .ed-resources {
+  margin-right: 125px;
+}
+.global-bag-view {
+  width: 100%;
+  padding: 20px 0;
+}
+.global-bag-view > header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+  margin-bottom: 20px;
+}
+.global-bag-view > header h2 {
+  font-size: 24px;
+}
+.global-bag-view > header button {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+}
+.ed-packing-note {
+  padding: 12px;
+  background: #27382d;
+  border-left: 3px solid #d9bf69;
+}
+.ed-hit-type {
+  display: inline-flex;
+  padding: 4px 8px;
+  border: 1px solid #6a755e;
+  color: #d6dcb9;
+  font-size: 13px;
+}
+.loot-scene {
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+  min-height: 680px;
+  padding: 60px 24px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 22px;
+  text-align: center;
+  background:
+    radial-gradient(ellipse at 50% 45%, #47513288, transparent 65%), #111c17;
+  border: 1px solid #616345;
+}
+.loot-scene h1 {
+  font-size: clamp(30px, 4vw, 48px);
+  font-weight: 500;
+  color: #f3da8b;
+  margin: 0;
+}
+.loot-scene .ed-kicker {
+  letter-spacing: 0.22em;
+  font-size: 12px;
+  color: #c5ad69;
+}
+.loot-rays {
+  position: absolute;
+  z-index: -1;
+  inset: -50%;
+  opacity: 0.13;
+  background: repeating-conic-gradient(
+    from 10deg at 50% 50%,
+    transparent 0 18deg,
+    #dbd594 20deg,
+    transparent 24deg 40deg
+  );
+  pointer-events: none;
+}
+.loot-sealed {
+  width: 230px;
+  min-height: 245px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 24px;
+  color: #f3d580;
+  border: 1px solid #d1b969;
+  background: linear-gradient(150deg, #465239, #192820);
+  box-shadow:
+    0 0 60px #d9be6926,
+    inset 0 0 35px #d9be6914;
+}
+.loot-sealed:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 0 70px #d9be6955;
+}
+.loot-card {
+  width: min(100%, 340px);
+  padding: 28px;
+  text-align: left;
+  border: 1px solid #d4bb6a;
+  background: linear-gradient(140deg, #384432, #18251e);
+  box-shadow:
+    0 12px 65px #0008,
+    0 0 45px #c8ad5733;
+  animation: loot-reveal 0.65s ease-out both;
+}
+.loot-card h2 {
+  font-size: 30px;
+  color: #fff0b9;
+  margin: 10px 0 20px;
+}
+.loot-card p {
+  line-height: 1.8;
+  font-size: 16px;
+}
+.loot-card p b {
+  display: block;
+  color: #e4cb7e;
+}
+.loot-card small,
+.loot-hit-type {
+  color: #b5bfa7;
+}
+.loot-emblem {
+  display: grid;
+  place-items: center;
+  height: 95px;
+  margin-bottom: 18px;
+  color: #f0d581;
+  background: radial-gradient(ellipse, #cfbd6333, transparent 65%);
+}
+.loot-claim {
+  min-width: 220px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 25px;
+  padding: 15px 24px;
+}
+.loot-pack {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: transparent;
+}
+.in-combat .ed-combat.is-finished .ed-battle-result {
+  background:
+    radial-gradient(ellipse at top, #61603566, transparent 80%), #223225;
+  border-color: #d7ba67;
+  padding: 24px;
+  align-items: center;
+}
+.victory-emblem {
+  display: flex;
+  color: #f2ce69;
+  align-items: center;
+  filter: drop-shadow(0 0 12px #d5b74b88);
+  animation: loot-reveal 0.6s ease-out;
+}
+.in-combat .ed-combat.is-finished .ed-battle-result h2 {
+  font-size: 34px;
+  letter-spacing: 0.16em;
+  color: #ffe294;
+}
+.victory-records {
+  font-size: 13px;
+  margin-top: 12px;
+  color: #bec8b2;
+}
+.victory-records > summary {
+  cursor: pointer;
+}
+.lesson-lanes .ed-vertical-battle {
+  outline: 2px solid #cab966;
+  outline-offset: 4px;
+}
+@keyframes loot-reveal {
+  from {
+    opacity: 0;
+    transform: translateY(24px) scale(0.88);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+@media (max-width: 700px) {
+  .ed-global-bag {
+    right: 14px;
+    top: 14px;
+    padding: 9px 12px;
+  }
+  .loot-scene {
+    min-height: 590px;
+    padding: 45px 18px 25px;
+  }
+  .global-bag-view > header {
+    margin-top: 30px;
+  }
+  .global-bag-view > header h2 {
+    font-size: 20px;
+  }
+  .pipe-toolbar {
+    flex-wrap: wrap;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .loot-card,
+  .victory-emblem {
+    animation: none;
+  }
+  .loot-sealed:hover {
+    transform: none;
+  }
+}
+@media (max-width: 1600px) {
+  .elevator-demo.in-combat.lesson-lanes .ed-vertical-battle {
+    height: 430px;
+    min-width: 0;
+    grid-template-rows: 40px 36px 100px 42px 100px 36px 40px;
+    gap: 6px;
+  }
+  .elevator-demo.in-combat.lesson-lanes .ed-vertical-battle .ed-actor {
+    height: 40px;
+  }
+  .elevator-demo.in-combat.lesson-lanes .ed-vertical-battle .ed-lane-cells,
+  .elevator-demo.in-combat.lesson-lanes
+    .ed-vertical-battle
+    .ed-card.ed-card-v2 {
+    min-height: 0;
+    height: 100px;
+  }
+  .elevator-demo.in-combat.lesson-lanes
+    .ed-vertical-battle
+    .ed-card.ed-card-v2 {
+    padding: 22px 6px 6px;
+  }
+  .elevator-demo.in-combat.lesson-lanes
+    .ed-vertical-battle
+    .ed-card-v2
+    .ed-special-copy,
+  .elevator-demo.in-combat.lesson-lanes
+    .ed-vertical-battle
+    .ed-card-v2
+    .ed-effect-values,
+  .elevator-demo.in-combat.lesson-lanes
+    .ed-vertical-battle
+    .ed-card-v2
+    .ed-cooldown {
+    visibility: hidden;
+  }
+}
+@media (max-width: 1600px) {
+  .elevator-demo.in-combat.lesson-lanes .ed-vertical-battle {
+    height: 450px;
+    min-height: 450px;
+    grid-template-rows: 40px 46px 100px 42px 100px 46px 40px;
+  }
+}
+.elevator-demo .loot-emblem > svg {
+  width: 54px;
+  height: 54px;
+}
+.elevator-demo .loot-sealed > svg:first-child {
+  width: 68px;
+  height: 68px;
+}
+.elevator-demo .ed-battle-result > .victory-emblem {
+  flex: 0 0 80px;
+}
+.elevator-demo .victory-emblem > svg:first-child {
+  width: 48px;
+  height: 48px;
+}

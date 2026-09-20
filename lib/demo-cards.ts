@@ -22,6 +22,7 @@ const make = (
   rule: string,
 ): SystemCard => ({
   id,
+  hitType: id === 'gapblade' ? 'instant' : 'projectile',
   name,
   size,
   cd,
@@ -65,13 +66,13 @@ export const SYSTEM_CARDS: SystemCard[] = [
     'gapblade',
     '猎隙刃',
     1,
-    6,
-    20,
+    3,
+    10,
     'damage',
     'rush',
     0,
     '突破后输出',
-    '命中时目标屏障已损毁，则伤害 +12；升阶每阶再 +4。',
+    '命中时目标屏障已损毁，则伤害 +6；升阶每阶再 +2。',
   ),
   make(
     'springbow',
@@ -184,7 +185,19 @@ export const SYSTEM_CARDS: SystemCard[] = [
 ];
 export const CARDS: SystemCard[] = [...SYSTEM_CARDS];
 // One authoritative live catalog. Old IDs exist only in save migration.
-export const ALL_CARDS: SystemCard[] = CARDS;
+export const STARTER_SLING = make(
+  'slingshot',
+  '简易弹弓',
+  1,
+  3,
+  10,
+  'damage',
+  'rush',
+  0,
+  '初始 / 弹道输出',
+  '每3秒发射弹丸，命中后造成10伤害。',
+);
+export const ALL_CARDS: SystemCard[] = [...CARDS, STARTER_SLING];
 export const cardDef = (id: string) => {
   const c = ALL_CARDS.find((c) => c.id === id);
   if (!c) throw Error('未知卡牌');

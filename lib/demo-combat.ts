@@ -13,7 +13,9 @@ export type FighterCard = {
 };
 export const COMBAT_LIMIT = 90;
 export const flightTimeOf = (card: FighterCard) =>
-  Math.max(0.5, Math.min(3, Math.round((card.flightTime ?? 1.25) * 4) / 4));
+  cardDef(card.id).hitType === 'instant'
+    ? 0
+    : Math.max(0.5, Math.min(3, Math.round((card.flightTime ?? 1.25) * 4) / 4));
 export type Hit = {
   side: number;
   kind: 'damage' | 'heal' | 'shield' | 'energy' | 'charge' | 'corrode';
@@ -220,145 +222,153 @@ export function simulateDuel(d: Duel) {
       energy: 4,
       charge: 5,
     };
-    arrivals.sort(
-      (a, b) =>
-        impactOrder[a.kind] - impactOrder[b.kind] ||
-        a.impactAt - b.impactAt ||
-        Number(!!a.periodic) - Number(!!b.periodic) ||
-        (sourcePositions.get(a.sourceUid ?? '') ?? 9 + (a.targetLane ?? 1)) -
-          (sourcePositions.get(b.sourceUid ?? '') ?? 9 + (b.targetLane ?? 1)) ||
-        (a.source < b.source ? -1 : a.source > b.source ? 1 : 0),
-    );
-    for (const shot of arrivals) {
-      const hit: Hit = { ...shot },
-        lane = hit.targetLane ?? 1;
-      if (hit.kind === 'damage') {
-        const barrier = barriers[hit.side][lane];
-        const buffer =
-          barrier.broken || hit.periodic
-            ? 0
-            : Math.max(
-                0,
-                ...boards[hit.side]
-                  .filter(
-                    (c) =>
-                      (c.id === 'rubber' || cardDef(c.id).mechanic?.buffer) &&
-                      laneOf(c) === lane,
-                  )
-                  .map((c) =>
-                    c.id === 'rubber'
-                      ? cardMechanics(c.id, c.level, c.quality).buffer
-                      : cardDef(c.id).mechanic!.buffer! *
-                        (1 + c.level * 0.12) *
-                        (1 + c.quality * 0.15),
-                  ),
+    const resolveImpacts = (arrivals: Projectile[]) => {
+      damage.fill(0);
+      arrivals.sort(
+        (a, b) =>
+          impactOrder[a.kind] - impactOrder[b.kind] ||
+          a.impactAt - b.impactAt ||
+          Number(!!a.periodic) - Number(!!b.periodic) ||
+          (sourcePositions.get(a.sourceUid ?? '') ?? 9 + (a.targetLane ?? 1)) -
+            (sourcePositions.get(b.sourceUid ?? '') ??
+              9 + (b.targetLane ?? 1)) ||
+          (a.source < b.source ? -1 : a.source > b.source ? 1 : 0),
+      );
+      for (const shot of arrivals) {
+        const hit: Hit = { ...shot },
+          lane = hit.targetLane ?? 1;
+        if (hit.kind === 'damage') {
+          const barrier = barriers[hit.side][lane];
+          const buffer =
+            barrier.broken || hit.periodic
+              ? 0
+              : Math.max(
+                  0,
+                  ...boards[hit.side]
+                    .filter(
+                      (c) =>
+                        (c.id === 'rubber' || cardDef(c.id).mechanic?.buffer) &&
+                        laneOf(c) === lane,
+                    )
+                    .map((c) =>
+                      c.id === 'rubber'
+                        ? cardMechanics(c.id, c.level, c.quality).buffer
+                        : cardDef(c.id).mechanic!.buffer! *
+                          (1 + c.level * 0.12) *
+                          (1 + c.quality * 0.15),
+                    ),
+                );
+          hit.blocked = Math.min(hit.raw ?? hit.value, buffer);
+          hit.value =
+            Math.max(0, (hit.raw ?? hit.value) - hit.blocked) +
+            (barrier.broken
+              ? (hit.exposedBonus ?? 0)
+              : (hit.barrierBonus ?? 0));
+          hit.targetUid = barrier.broken
+            ? `host-${hit.side}-lane-${lane}`
+            : `barrier-${hit.side}-${lane}`;
+          hit.targetName = `${laneName(lane)}${barrier.broken ? '宿主' : '屏障'}`;
+          hit.barrierAbsorbed = Math.min(barrier.hp, hit.value);
+          barrier.hp -= hit.barrierAbsorbed;
+          hit.healthLoss = hit.value - hit.barrierAbsorbed;
+          if (hit.periodic)
+            barrier.maxHp = Math.max(1, barrier.maxHp - hit.value);
+          if (!hit.periodic && hit.barrierAbsorbed > 0)
+            for (const c of boards[hit.side].filter(
+              (c) =>
+                (c.id === 'recoil' || cardDef(c.id).mechanic?.recoil) &&
+                laneOf(c) === lane,
+            ))
+              stored[c.uid] = Math.min(
+                cardMechanics(c.id, c.level, c.quality).recoilCap,
+                (stored[c.uid] ?? 0) + hit.barrierAbsorbed * 0.5,
               );
-        hit.blocked = Math.min(hit.raw ?? hit.value, buffer);
-        hit.value =
-          Math.max(0, (hit.raw ?? hit.value) - hit.blocked) +
-          (barrier.broken ? (hit.exposedBonus ?? 0) : (hit.barrierBonus ?? 0));
-        hit.targetUid = barrier.broken
-          ? `host-${hit.side}-lane-${lane}`
-          : `barrier-${hit.side}-${lane}`;
-        hit.targetName = `${laneName(lane)}${barrier.broken ? '宿主' : '屏障'}`;
-        hit.barrierAbsorbed = Math.min(barrier.hp, hit.value);
-        barrier.hp -= hit.barrierAbsorbed;
-        hit.healthLoss = hit.value - hit.barrierAbsorbed;
-        if (hit.periodic)
-          barrier.maxHp = Math.max(1, barrier.maxHp - hit.value);
-        if (!hit.periodic && hit.barrierAbsorbed > 0)
-          for (const c of boards[hit.side].filter(
-            (c) =>
-              (c.id === 'recoil' || cardDef(c.id).mechanic?.recoil) &&
-              laneOf(c) === lane,
-          ))
-            stored[c.uid] = Math.min(
-              cardMechanics(c.id, c.level, c.quality).recoilCap,
-              (stored[c.uid] ?? 0) + hit.barrierAbsorbed * 0.5,
+          damage[hit.side] += hit.healthLoss;
+          if (!barrier.broken && barrier.hp <= 0) {
+            barrier.broken = true;
+            if (activeHero(1 - hit.side) === 'breaker') {
+              heroMeters[1 - hit.side][lane]++;
+              for (let target = 0; target < 3; target++)
+                heroCharge(1 - hit.side, target, time);
+            }
+            log.push(
+              `${hit.side ? '敌方' : '我方'}${laneName(lane)}屏障损毁，本场不会重建。`,
             );
-        damage[hit.side] += hit.healthLoss;
-        if (!barrier.broken && barrier.hp <= 0) {
-          barrier.broken = true;
-          if (activeHero(1 - hit.side) === 'breaker') {
-            heroMeters[1 - hit.side][lane]++;
-            for (let target = 0; target < 3; target++)
-              heroCharge(1 - hit.side, target, time);
           }
-          log.push(
-            `${hit.side ? '敌方' : '我方'}${laneName(lane)}屏障损毁，本场不会重建。`,
-          );
-        }
-      } else if (hit.kind === 'corrode') {
-        const before = corrosion[hit.side][lane];
-        corrosion[hit.side][lane] = Math.min(12, before + hit.value);
-        hit.value = corrosion[hit.side][lane] - before;
-        corrosionSource[hit.side][lane] = {
-          uid: hit.sourceUid ?? `host-${1 - hit.side}-lane-${lane}`,
-          name: hit.source,
-        };
-        hit.targetUid = barriers[hit.side][lane].broken
-          ? `host-${hit.side}-lane-${lane}`
-          : `barrier-${hit.side}-${lane}`;
-        hit.targetName = `${laneName(lane)}侵蚀 ${corrosion[hit.side][lane]} 层`;
-      } else if (hit.kind === 'shield') {
-        const target = repairLane(hit.side, lane);
-        hit.value = 0;
-        if (target !== undefined) {
-          const barrier = barriers[hit.side][target];
-          hit.value = Math.min(shot.value, barrier.maxHp - barrier.hp);
-          barrier.hp += hit.value;
-          onRepair(hit.side, target, hit.value, time);
-          hit.targetLane = target;
-          hit.targetUid = `barrier-${hit.side}-${target}`;
-          hit.targetName = `${laneName(target)}屏障修复`;
-        }
-      } else if (hit.kind === 'heal') {
-        hit.value = Math.min(shot.value, d.maxHp[hit.side] - hp[hit.side]);
-        hp[hit.side] += hit.value;
-        const target = repairLane(hit.side, lane);
-        if (shot.overflowCap && target !== undefined) {
-          const barrier = barriers[hit.side][target];
-          const value = Math.min(
-            shot.overflowCap,
-            shot.value - hit.value,
-            barrier.maxHp - barrier.hp,
-          );
-          barrier.hp += value;
-          onRepair(hit.side, target, value, time);
-          if (value)
-            hits.push({
-              ...hit,
-              kind: 'shield',
-              visual: 'armor',
-              value,
-              targetLane: target,
-              targetUid: `barrier-${hit.side}-${target}`,
-              targetName: '溢出治疗修复屏障',
-            });
-        }
-      } else if (hit.kind === 'energy')
-        energy[hit.side] = Math.min(
-          cap[hit.side],
-          energy[hit.side] + hit.value,
-        );
-      else if (hit.kind === 'charge') {
-        const target = boards[hit.side].find((c) => c.uid === hit.targetUid);
-        if (target) {
-          const before = timers[hit.side][target.at];
-          timers[hit.side][target.at] += hit.value;
-          hit.value = timers[hit.side][target.at] - before;
-          hit.targetLane = laneOf(target);
-          hit.targetName = `${laneName(laneOf(target))}·${cardDef(target.id).name}`;
-        } else {
+        } else if (hit.kind === 'corrode') {
+          const before = corrosion[hit.side][lane];
+          corrosion[hit.side][lane] = Math.min(12, before + hit.value);
+          hit.value = corrosion[hit.side][lane] - before;
+          corrosionSource[hit.side][lane] = {
+            uid: hit.sourceUid ?? `host-${1 - hit.side}-lane-${lane}`,
+            name: hit.source,
+          };
+          hit.targetUid = barriers[hit.side][lane].broken
+            ? `host-${hit.side}-lane-${lane}`
+            : `barrier-${hit.side}-${lane}`;
+          hit.targetName = `${laneName(lane)}侵蚀 ${corrosion[hit.side][lane]} 层`;
+        } else if (hit.kind === 'shield') {
+          const target = repairLane(hit.side, lane);
           hit.value = 0;
-          hit.targetName = '无可用充能目标';
+          if (target !== undefined) {
+            const barrier = barriers[hit.side][target];
+            hit.value = Math.min(shot.value, barrier.maxHp - barrier.hp);
+            barrier.hp += hit.value;
+            onRepair(hit.side, target, hit.value, time);
+            hit.targetLane = target;
+            hit.targetUid = `barrier-${hit.side}-${target}`;
+            hit.targetName = `${laneName(target)}屏障修复`;
+          }
+        } else if (hit.kind === 'heal') {
+          hit.value = Math.min(shot.value, d.maxHp[hit.side] - hp[hit.side]);
+          hp[hit.side] += hit.value;
+          const target = repairLane(hit.side, lane);
+          if (shot.overflowCap && target !== undefined) {
+            const barrier = barriers[hit.side][target];
+            const value = Math.min(
+              shot.overflowCap,
+              shot.value - hit.value,
+              barrier.maxHp - barrier.hp,
+            );
+            barrier.hp += value;
+            onRepair(hit.side, target, value, time);
+            if (value)
+              hits.push({
+                ...hit,
+                kind: 'shield',
+                visual: 'armor',
+                value,
+                targetLane: target,
+                targetUid: `barrier-${hit.side}-${target}`,
+                targetName: '溢出治疗修复屏障',
+              });
+          }
+        } else if (hit.kind === 'energy')
+          energy[hit.side] = Math.min(
+            cap[hit.side],
+            energy[hit.side] + hit.value,
+          );
+        else if (hit.kind === 'charge') {
+          const target = boards[hit.side].find((c) => c.uid === hit.targetUid);
+          if (target) {
+            const before = timers[hit.side][target.at];
+            timers[hit.side][target.at] += hit.value;
+            hit.value = timers[hit.side][target.at] - before;
+            hit.targetLane = laneOf(target);
+            hit.targetName = `${laneName(laneOf(target))}·${cardDef(target.id).name}`;
+          } else {
+            hit.value = 0;
+            hit.targetName = '无可用充能目标';
+          }
         }
+        hits.push(hit);
       }
-      hits.push(hit);
-    }
-    // Commit damage to both hosts before checking lethal results.
-    for (let side = 0; side < 2; side++)
-      hp[side] = Math.max(0, hp[side] - damage[side]);
+      // Commit damage to both hosts before checking lethal results.
+      for (let side = 0; side < 2; side++)
+        hp[side] = Math.max(0, hp[side] - damage[side]);
+    };
+    resolveImpacts(arrivals);
+    const instant: Projectile[] = [];
     for (let side = 0; side < 2; side++) {
       for (const p of boards[side]) {
         const c = cardDef(p.id),
@@ -418,7 +428,7 @@ export function simulateDuel(d: Duel) {
           stored[p.uid] = 0;
         }
         const launch = (hit: Hit, overflowCap = 0) =>
-          pending.push({
+          (flightTimeOf(p) === 0 ? instant : pending).push({
             ...hit,
             id: `projectile-${serial++}`,
             launchedAt: time,
@@ -641,6 +651,7 @@ export function simulateDuel(d: Duel) {
         }
       }
     }
+    resolveImpacts(instant);
     frames.push({
       time,
       hp: [...hp],
