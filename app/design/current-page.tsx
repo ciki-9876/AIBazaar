@@ -1,3 +1,4 @@
+import { sitePath } from '@/lib/site-path';
 import { describeCard } from '@/lib/card-description';
 /* oxlint-disable next/no-html-link-for-pages -- Native navigation is used by the existing portable Sites build. */
 import { CARDS, SCHOOLS } from '@/lib/demo-cards';
@@ -7,8 +8,8 @@ export default function DesignHome() {
   return (
     <main className="elevator-demo object-handbook">
       <header>
-        <a href="/">← 返回电梯</a>
-        <a href="/lab">打开三路试验场 ↗</a>
+        <a href={sitePath('/')}>← 返回电梯</a>
+        <a href={sitePath('/lab')}>打开三路试验场 ↗</a>
         <h1>一件旧物，两种未来</h1>
         <p>
           保留实体，解决门外的机关；带回基地免费鉴定，让它在战斗中运转。两种形态共用同一件物品，不能同时拥有。

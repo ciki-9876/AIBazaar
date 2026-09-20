@@ -1,5 +1,6 @@
 /* oxlint-disable next/no-html-link-for-pages -- Static export uses document navigation; client RSC navigation is unavailable on the host. */
 'use client';
+import { sitePath } from '@/lib/site-path';
 import { lazy, Suspense, useEffect, useReducer, useState } from 'react';
 import {
   ArrowLeft,
@@ -78,19 +79,19 @@ export default function BasePrototype({
   return (
     <main className="base-app">
       <header className="base-header">
-        <a href="/art/?mode=3d" className="base-brand">
+        <a href={sitePath('/art/?mode=3d')} className="base-brand">
           f9 <span>幸存者电梯</span>
         </a>
         <nav>
-          <a href="/art/?mode=3d">
+          <a href={sitePath('/art/?mode=3d')}>
             <ArrowLeft />
             战斗试验
           </a>
           <span>基地 / {refined ? 'LUX3D' : '3D'}</span>
-          <a href={refined ? '/art/base' : '/art/base/refined'}>
+          <a href={sitePath(refined ? '/art/base/' : '/art/base/refined/')}>
             {refined ? '对照原版' : 'Lux3D 精修版'}
           </a>
-          <a href="/art/maintenance">维护成本评估</a>
+          <a href={sitePath('/art/maintenance')}>维护成本评估</a>
         </nav>
         <span className="base-header-code">
           CABIN 09 / {refined ? 'REV.03' : 'REV.02'}

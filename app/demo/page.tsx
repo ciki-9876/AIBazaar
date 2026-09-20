@@ -1,4 +1,5 @@
 'use client';
+import { sitePath } from '@/lib/site-path';
 import { rarityOf, growthCost } from '@/lib/demo-card-rules';
 import { refineIngredient } from '@/lib/demo-engine';
 /* oxlint-disable react/react-compiler -- Event handlers read the authoritative run ref; mount effects restore explicitly local browser state. */
@@ -630,10 +631,10 @@ export default function Demo() {
               {label}
             </button>
           ))}
-          <a className="ed-lab-link" href="/lab">
+          <a className="ed-lab-link" href={sitePath('/lab')}>
             流派试验场 ↗
           </a>
-          <a className="ed-lab-link" href="/design">
+          <a className="ed-lab-link" href={sitePath('/design')}>
             物品用途手册 ↗
           </a>
         </nav>
@@ -2542,10 +2543,10 @@ export default function Demo() {
                 <RotateCcw size={16} />
                 重新开始
               </button>
-              <a href="/design/">设计档案 ↗</a>
-              <a href="/art/?mode=3d">3D 原型 · 战斗 ↗</a>
-              <a href="/art/base/refined/">3D 原型 · 电梯基地 ↗</a>
-              <a href="/legacy/">旧档备份 ↗</a>
+              <a href={sitePath('/design/')}>设计档案 ↗</a>
+              <a href={sitePath('/art/?mode=3d')}>3D 原型 · 战斗 ↗</a>
+              <a href={sitePath('/art/base/refined/')}>3D 原型 · 电梯基地 ↗</a>
+              <a href={sitePath('/legacy/')}>旧档备份 ↗</a>
             </div>
           </DialogContent>
         </Dialog>

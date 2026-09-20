@@ -1,4 +1,5 @@
 'use client';
+import { sitePath } from '@/lib/site-path';
 import { useEffect, useRef, useState } from 'react';
 import * as T from 'three';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
@@ -245,7 +246,7 @@ export default function BaseScene(props: Props) {
       const loader = new GLTFLoader();
       for (const id of ['shell', ...Object.keys(FACILITIES)]) {
         loader.load(
-          `/art-assets/lux3d/${id}.glb`,
+          sitePath(`/art-assets/lux3d/${id}.glb`),
           (gltf) => {
             if (disposed) {
               disposeAsset(gltf.scene);

@@ -1,5 +1,6 @@
 /* oxlint-disable next/no-html-link-for-pages -- Static export uses document navigation; client RSC navigation is unavailable on the host. */
 'use client';
+import { sitePath } from '@/lib/site-path';
 import { useEffect, useMemo, useRef, useState, lazy, Suspense } from 'react';
 import {
   Play,
@@ -128,7 +129,7 @@ export default function ArtLab() {
   return (
     <main className={`art-lab mode-${mode} ${reduced ? 'art-reduced' : ''}`}>
       <header className="art-header">
-        <a href="/" className="art-logo">
+        <a href={sitePath('/')} className="art-logo">
           f9<span>美术试验 / 01</span>
         </a>
         <nav aria-label="美术方案">
@@ -139,10 +140,10 @@ export default function ArtLab() {
             <i>B</i> 3D · 工业异象
           </button>
         </nav>
-        <a className="art-doc-link" href="/art/base/refined/">
+        <a className="art-doc-link" href={sitePath('/art/base/refined/')}>
           3D 电梯基地
         </a>
-        <a className="art-doc-link" href="/art/direction">
+        <a className="art-doc-link" href={sitePath('/art/direction')}>
           完整方案 <ArrowUpRight />
         </a>
       </header>
@@ -428,7 +429,9 @@ export default function ArtLab() {
           />
           减少动态
         </label>
-        <a href="/art/direction">从世界到细节，阅读两套完整设计 →</a>
+        <a href={sitePath('/art/direction')}>
+          从世界到细节，阅读两套完整设计 →
+        </a>
       </footer>
     </main>
   );

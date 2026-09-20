@@ -1,5 +1,6 @@
 'use client';
 /* oxlint-disable next/no-html-link-for-pages -- Native navigation is used by the existing portable Sites build. */
+import { sitePath } from '@/lib/site-path';
 import { useState } from 'react';
 import '../demo/demo.css';
 import '../design/current.css';
@@ -25,12 +26,12 @@ export default function LegacyBackup() {
   }
   return (
     <main className="elevator-demo object-handbook">
-      <a href="/">← 返回电梯</a>
+      <a href={sitePath('/')}>← 返回电梯</a>
       <h1>旧档备份</h1>
       <p>{message}</p>
       <button onClick={download}>导出旧午夜集市存档</button>
       <p>现在的冒险、图鉴和试验场统一使用12张卡牌。</p>
-      <a href="/design">查看实体工具与卡牌手册 ↗</a>
+      <a href={sitePath('/design')}>查看实体工具与卡牌手册 ↗</a>
     </main>
   );
 }

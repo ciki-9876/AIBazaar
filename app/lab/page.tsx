@@ -1,4 +1,5 @@
 'use client';
+import { sitePath } from '@/lib/site-path';
 import Replay from './battle-replay';
 /* oxlint-disable next/no-html-link-for-pages -- Native navigation for static Sites routes. */
 import { useMemo, useState } from 'react';
@@ -59,8 +60,8 @@ export default function Lab() {
   return (
     <main className="elevator-demo in-combat f9-lab">
       <header className="lab-header">
-        <a href="/design">物品用途手册 ↗</a>
-        <a href="/demo">← 返回电梯</a>
+        <a href={sitePath('/design')}>物品用途手册 ↗</a>
+        <a href={sitePath('/demo')}>← 返回电梯</a>
         <h1>三路 · 流派试验场</h1>
         <button
           onClick={() => {
@@ -267,7 +268,11 @@ export default function Lab() {
           <p>
             可尝试：固定血量与成长，仅交换上、中、下路。对照关键破路时点与实际充能目标；相同胜负也可能有不同过程。
           </p>
-          <a href="/archetype-design.md" target="_blank" rel="noreferrer">
+          <a
+            href={sitePath('/archetype-design.md')}
+            target="_blank"
+            rel="noreferrer"
+          >
             完整卡表、方法与评估 ↗
           </a>
         </aside>
