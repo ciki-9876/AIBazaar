@@ -58,7 +58,7 @@ export const OBJECTS: Record<
     verb: '接通回收线路',
     effect: 'power',
     consumed: false,
-    benefit: '电力 +3（不是鉴定电荷）',
+    benefit: '电力 +3',
     use: '按信号次序连接断路，将余电送回电梯。',
   },
   catalyst: {
@@ -104,7 +104,7 @@ export const OBJECTS: Record<
     effect: 'rest',
     consumed: false,
     benefit: '精力 +12',
-    use: '按泄压顺序隔离接口，利用安全气室恢复精力。',
+    use: '稳压后隔离接口，利用安全气室恢复精力。',
   },
   acid: {
     name: '蚀液喷壶',
@@ -158,50 +158,58 @@ export function fieldTask(seed: number, floor: number, node: FieldNode) {
   const variant = hash(`${seed}/${floor}/${node}/objects-v1`) % 3;
   const rows = {
     salvage: {
-      text: `夹层有三处标记：${['左', '中', '右'][variant]}侧标着空心铆钉。先沿空心铆钉的细缝作业，避免切断承重梁。`,
+      text: '承重梁深处传来金属碰撞声。上一支队伍把零件藏进夹层，只留下几枚不同的铆钉作为记号。',
       mode: 'point',
       answer: variant,
       options: ['左侧细缝', '中央细缝', '右侧细缝'],
-      hint: '承重梁不能拆；选择空心铆钉对应的位置。',
+      hint: `取出夹层零件，保全承重梁。${['左', '中', '右'][variant]}侧的空心铆钉旁留着拆卸痕迹。`,
     },
     relay: {
-      text: `继电灯记录的顺序是 ${['黄 → 蓝 → 红', '蓝 → 红 → 黄', '红 → 黄 → 蓝'][variant]}。按同样顺序接入三个端子。`,
+      text: '继电柜在黑暗里断续闪烁。残余电流还记得停机前的节拍，等待有人将它重新接回线路。',
       mode: 'sequence',
       answer: [201, 12, 120][variant],
       options: ['蓝', '红', '黄'],
-      hint: '按三次按钮组成顺序；提交前可以撤销。',
+      hint: `恢复供能脉冲。记录灯依次闪过：${['黄 → 蓝 → 红', '蓝 → 红 → 黄', '红 → 黄 → 蓝'][variant]}。`,
     },
     balance: {
-      text: `左臂长2，悬挂${3 + variant}单位负载；右臂长1。把右侧配重调到让两边力矩相等。`,
+      text: '载台悬在断桥之间，钢索被拉得吱呀作响。旧配重歪在一侧，桥对面的牵引装置仍然完好。',
       mode: 'balance',
       answer: (3 + variant) * 2,
       options: [],
-      hint: '力矩 = 重量 × 臂长。',
+      hint: `让载台恢复水平。左臂长2、负载${3 + variant}；右臂长1。`,
     },
     pressure: {
-      text: `压力表安全释放量是${[3, 5, 6][variant]}。三个阀门分别释放1、2、4单位；选中一组，合计恰好达标。`,
+      text: '热汽从门缝里嘶嘶冒出，老旧的气室正在颤抖。只有让压力回到绿区，才能靠近裂口，或在隔音舱里喘口气。',
       mode: 'valves',
       answer: [3, 5, 6][variant],
       options: ['阀门 1', '阀门 2', '阀门 4'],
-      hint: '总量恰好等于压力表读数。',
+      hint: `将释放量调至 ${[3, 5, 6][variant]}，让气室恢复安全。阀门铭牌：1、2、4。`,
     },
     chemistry: {
-      text: `这批样本每${2 + variant}份水需要1份试剂。已有${(2 + variant) * 3}份水，应加入几份试剂？`,
+      text: '实验台上还亮着一盏小灯。浑浊的样本里浮着金属薄片，另一端的菌群正缓慢苏醒。',
       mode: 'mixture',
       answer: 3,
       options: [],
-      hint: '按铭牌比例配制；工具决定产物是镀层还是适应性菌种。',
+      hint: `调出稳定溶液。铭牌水与试剂比例为 ${2 + variant}:1，容器内已有 ${(2 + variant) * 3} 份水。`,
     },
     purify: {
-      text: '原水混有泥沙与挥发性杂质。工艺铭牌：先沉淀去泥，再加热分离，最后冷凝收集。按次序设置三道工序。',
+      text: '井底的水带着刺鼻气味，分馏塔却仍有余温。清理旧管路后，这里或许能留下一壶净水，还有一些可回收的蒸汽。',
       mode: 'sequence',
       answer: 120,
       options: ['冷凝', '沉淀', '加热'],
-      hint: '铭牌给出了完整工艺顺序，不需要猜测。',
+      hint: '恢复分馏循环。褪色的工艺铭牌上依次画着：沉淀池、加热炉、冷凝管。',
     },
   };
   return {
     ...rows[node],
+    condition: {
+      salvage: '夹层打开后',
+      relay: '线路接通后',
+      balance: '载台平衡后',
+      pressure: '气室稳压后',
+      chemistry: '溶液稳定后',
+      purify: '循环恢复后',
+    }[node],
     kind: node,
     title: FIELD_TITLES[node],
     tools: Object.entries(OBJECTS)

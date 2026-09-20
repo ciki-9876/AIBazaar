@@ -105,7 +105,7 @@ export default function IdentifyTable({
   return (
     <section className={'ed-identify-page ' + phase}>
       <header>
-        <small>初始设施 · 免费鉴定 · 每种卡牌稀有度固定</small>
+        <small>免费鉴定</small>
         <h2>将实体转化为卡牌</h2>
       </header>
       <div className="ed-identify-stage">

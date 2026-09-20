@@ -231,6 +231,7 @@ export type Run = {
   clears: number[];
 };
 export type Action = {
+  ids?: string[];
   slot?: number;
   rotated?: boolean;
   type: string;
@@ -529,10 +530,19 @@ export function fieldToolState(s: Run, uid: string) {
     return { allowed: false, reason: '这件工具本次出勤已使用' };
   return { allowed: true, reason: '可使用；操作2精力，前往下一节点另计路费' };
 }
-export function fieldWorkPreview(s: Run, uid: string, lane = 0) {
-  const tool = fieldToolState(s, uid),
-    item = s.items.find((x) => x.uid === uid),
-    def = item ? OBJECTS[item.id] : null;
+export function fieldWorkPreview(
+  s: Run,
+  selection: string | string[],
+  lane = 0,
+) {
+  const ids = typeof selection === 'string' ? [selection] : selection;
+  const invalid = ids
+    .map((uid) => fieldToolState(s, uid))
+    .find((x) => !x.allowed);
+  const defs = ids
+    .map((uid) => s.items.find((x) => x.uid === uid))
+    .flatMap((item) => (item && OBJECTS[item.id] ? [OBJECTS[item.id]] : []));
+  const effects = defs.map((def) => def.effect);
   const values = {
     stamina: s.stamina - 2,
     power: s.power,
@@ -546,47 +556,48 @@ export function fieldWorkPreview(s: Run, uid: string, lane = 0) {
   };
   const prep = values.fieldPrep,
     research = values.fieldResearch;
-  if (def && Number.isInteger(lane) && lane >= 0 && lane < 3)
-    switch (def.effect) {
-      case 'salvage':
-        values.material += 2;
-        prep.barrier[lane] = Math.min(36, prep.barrier[lane] + 12);
-        break;
-      case 'gold':
-        values.material += 4;
-        break;
-      case 'power':
-        values.power += 3;
-        break;
-      case 'vitality':
-        prep.hp = Math.min(32, prep.hp + 16);
-        break;
-      case 'route':
-        prep.steps = 3;
-        break;
-      case 'credit':
-        research.credit = Math.min(4, research.credit + 2);
-        break;
-      case 'barrier':
-        prep.barrier[lane] = Math.min(36, prep.barrier[lane] + 24);
-        break;
-      case 'rest':
-        values.stamina = Math.min(100, values.stamina + 12);
-        break;
-      case 'etch':
-        values.material += 6;
-        break;
-      case 'research':
-        research.vitality = Math.min(10, research.vitality + 2);
-        break;
-      case 'pump':
-        values.power += 2;
-        prep.barrier[lane] = Math.min(36, prep.barrier[lane] + 8);
-        break;
-      case 'water':
-        values.stamina = Math.min(100, values.stamina + 20);
-        break;
-    }
+  for (const def of defs)
+    if (Number.isInteger(lane) && lane >= 0 && lane < 3)
+      switch (def.effect) {
+        case 'salvage':
+          values.material += 2;
+          prep.barrier[lane] = Math.min(36, prep.barrier[lane] + 12);
+          break;
+        case 'gold':
+          values.material += 4;
+          break;
+        case 'power':
+          values.power += 3;
+          break;
+        case 'vitality':
+          prep.hp = Math.min(32, prep.hp + 16);
+          break;
+        case 'route':
+          prep.steps = 3;
+          break;
+        case 'credit':
+          research.credit = Math.min(4, research.credit + 2);
+          break;
+        case 'barrier':
+          prep.barrier[lane] = Math.min(36, prep.barrier[lane] + 24);
+          break;
+        case 'rest':
+          values.stamina = Math.min(100, values.stamina + 12);
+          break;
+        case 'etch':
+          values.material += 6;
+          break;
+        case 'research':
+          research.vitality = Math.min(10, research.vitality + 2);
+          break;
+        case 'pump':
+          values.power += 2;
+          prep.barrier[lane] = Math.min(36, prep.barrier[lane] + 8);
+          break;
+        case 'water':
+          values.stamina = Math.min(100, values.stamina + 20);
+          break;
+      }
   const road =
     s.node + 1 < currentFloor(s).nodes.length ? (prep.steps > 0 ? 1 : 3) : 0;
   const hpBefore =
@@ -606,32 +617,40 @@ export function fieldWorkPreview(s: Run, uid: string, lane = 0) {
   const deltas: string[] = [];
   if (values.material !== s.material)
     deltas.push(`金币 +${values.material - s.material}`);
-  if (values.power !== s.power)
-    deltas.push(`电力 +${values.power - s.power}（不是鉴定电荷）`);
-  if (['vitality', 'research'].includes(def?.effect ?? ''))
+  if (values.power !== s.power) deltas.push(`电力 +${values.power - s.power}`);
+  if (effects.some((effect) => ['vitality', 'research'].includes(effect)))
     deltas.push(`宿主上限 ${hpBefore}→${hpAfter}`);
   if (
-    ['salvage', 'barrier', 'pump', 'vitality', 'research'].includes(
-      def?.effect ?? '',
+    effects.some((effect) =>
+      ['salvage', 'barrier', 'pump', 'vitality', 'research'].includes(effect),
     )
   )
-    deltas.push(
-      `三路屏障 ${barriersBefore.join('/')}→${barriersAfter.join('/')}`,
-    );
-  if (def?.effect === 'credit')
+    for (let i = 0; i < 3; i++) {
+      if (barriersBefore[i] !== barriersAfter[i] || i === lane)
+        deltas.push(
+          `下场${['上', '中', '下'][i]}路屏障 ${barriersBefore[i]}→${barriersAfter[i]}`,
+        );
+    }
+  if (effects.includes('credit'))
     deltas.push(`升级抵扣 ${s.fieldResearch?.credit ?? 0}→${research.credit}`);
-  if (def?.effect === 'route')
+  if (effects.includes('route'))
     deltas.push(
       `便捷路程 ${s.fieldPrep?.steps ?? 0}→${prep.steps} 段（包含本次离开）`,
     );
   deltas.push(`结算后精力 ${s.stamina}→${values.stamina - road}`);
-  const reason = !tool.allowed
-    ? tool.reason
-    : s.stamina < 2
-      ? '操作需要2精力'
-      : values.stamina < road
-        ? '精力不足以完成操作并前往下一节点'
-        : '';
+  const reason = !ids.length
+    ? '尚未选择工具'
+    : new Set(ids).size !== ids.length
+      ? '同一件工具不能重复选择'
+      : !Number.isInteger(lane) || lane < 0 || lane > 2
+        ? '请选择准备作用的路线'
+        : invalid
+          ? invalid.reason
+          : s.stamina < 2
+            ? '操作需要2精力'
+            : values.stamina < road
+              ? '精力不足以完成操作并前往下一节点'
+              : '';
   return { values, road, allowed: !reason, reason, summary: deltas.join('；') };
 }
 export function puzzle(s: Run) {
@@ -1907,11 +1926,20 @@ function applyAction(old: Run, a: Action): Run {
       say(s, '绕过机关，不消耗工具，不领取奖励。');
       return s;
     }
-    const state = fieldToolState(s, a.id ?? '');
-    need(state.allowed, state.reason);
-    const x = s.items.find((x) => x.uid === a.id)!,
-      def = OBJECTS[x.id],
-      task = fieldTask(s.seed, s.floor, node);
+    const ids = a.ids ?? (a.id ? [a.id] : []);
+    need(
+      Array.isArray(ids) &&
+        ids.length > 0 &&
+        ids.every((id) => typeof id === 'string'),
+      '请选择工具',
+    );
+    need(new Set(ids).size === ids.length, '同一件工具不能重复选择');
+    for (const uid of ids) {
+      const state = fieldToolState(s, uid);
+      need(state.allowed, state.reason);
+    }
+    const selected = ids.map((uid) => s.items.find((x) => x.uid === uid)!);
+    const task = fieldTask(s.seed, s.floor, node);
     need(
       Number.isInteger(a.choice) && a.choice! >= 0 && a.choice! <= 999,
       '请完成机关操作',
@@ -1924,21 +1952,24 @@ function applyAction(old: Run, a: Action): Run {
     s.stamina -= 2;
     if (a.choice !== task.answer) {
       s.puzzleErrors++;
-      say(s, '读数不匹配，操作消耗2精力；工具未消耗、未领奖，可以调整或绕行。');
+      say(s, '机关仍未稳定 · 精力 −2，工具完好。');
       return s;
     }
     // The same pure calculation powers UI preview and the atomic successful commit.
     s.stamina += 2;
-    const preview = fieldWorkPreview(s, x.uid, a.at);
+    const preview = fieldWorkPreview(s, ids, a.at);
     need(preview.allowed, preview.reason);
     Object.assign(s, preview.values);
-    s.utilityUsed!.push(x.uid);
-    if (def.consumed) s.items = s.items.filter((i) => i.uid !== x.uid);
+    s.utilityUsed!.push(...ids);
+    const consumed = new Set(
+      selected.filter((x) => OBJECTS[x.id].consumed).map((x) => x.uid),
+    );
+    s.items = s.items.filter((x) => !consumed.has(x.uid));
     done.push(node);
     s.node++;
     say(
       s,
-      `${def.name}：${preview.summary}。操作消耗2精力；${def.consumed ? '所选本体已用尽，无法再转化' : '本体保留，本次出勤不能再次使用'}。`,
+      `作业完成：${preview.summary}。${consumed.size ? `用尽 ${consumed.size} 件工具。` : ''}`,
     );
     return s;
   }
@@ -1950,7 +1981,7 @@ function applyAction(old: Run, a: Action): Run {
     );
     s.interaction = null;
     s.node++;
-    say(s, '已收好行囊，前往下个目的地。未带走的物资仍留在本层。');
+    say(s, '已收好行囊，继续前进。');
     return s;
   }
   if (a.type === 'open-trade') {

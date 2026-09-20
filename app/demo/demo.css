@@ -5416,3 +5416,171 @@ body:has(.elevator-demo) {
   color: #c6d5ab;
   margin-top: 6px;
 }
+
+/* Field work: one tool per row, with the quantity directly beside owned stock. */
+.ed-field-tools {
+  grid-template-columns: 1fr;
+  gap: 0;
+}
+.ed-field-tools > div {
+  display: grid;
+  grid-template-columns: 105px minmax(0, 1fr) 112px;
+  align-items: center;
+  gap: 14px;
+  border-radius: 0;
+  border-width: 0 0 1px;
+  padding: 16px 10px;
+  background: transparent;
+}
+.ed-field-tools > div:last-child {
+  border-bottom: 0;
+}
+.ed-field-tools > .is-selected {
+  background: #263024;
+}
+.ed-node .ed-field-tools p {
+  margin: 0;
+  font-size: 14px;
+  line-height: 1.6;
+  color: #bec7b2;
+}
+.ed-tool-quantity {
+  text-align: center;
+}
+.ed-tool-quantity > div {
+  display: grid;
+  grid-template-columns: 36px 36px 36px;
+  align-items: center;
+}
+.ed-field-work .ed-tool-quantity button {
+  padding: 0;
+  min-height: 36px;
+  font-size: 20px;
+}
+.ed-tool-quantity output {
+  font-variant-numeric: tabular-nums;
+  font-size: 17px;
+}
+.ed-tool-quantity small {
+  display: block;
+  font-size: 12px;
+  line-height: 1.5;
+  margin-top: 6px;
+  color: #b8c0ac;
+}
+.ed-field-lane {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-top: 12px;
+}
+.ed-field-lane select {
+  padding: 6px 12px;
+  background: #172019;
+  border: 1px solid #657155;
+  color: #e2e9d7;
+}
+.ed-node .ed-tool-consumed {
+  margin: 10px 0 0;
+  font-size: 14px;
+  color: #e2ba89;
+}
+.ed-field-reward {
+  border-top: 1px solid #354740;
+  margin-top: 10px;
+  padding-top: 10px;
+}
+.ed-node .ed-field-reward p {
+  margin: 3px 0 0;
+  font-size: 14px;
+  color: #c6d5ab;
+}
+.ed-node .ed-work-intent {
+  margin: 0;
+  font-size: 14px;
+  color: #c6d5ab;
+}
+.ed-field-work fieldset:disabled {
+  opacity: 0.55;
+}
+.ed-onboarding {
+  display: flex;
+  flex: 0 0 auto;
+  align-items: center;
+  gap: 20px;
+  padding: 16px 20px;
+  border: 1px solid #85743e;
+  background: #27291d;
+}
+.ed-onboarding small {
+  display: block;
+  font-size: 12px;
+  color: #c9b66f;
+  margin-bottom: 3px;
+}
+.ed-onboarding strong {
+  font-size: 16px;
+}
+.ed-node .ed-onboarding p,
+.ed-onboarding p {
+  margin: 5px 0 0;
+  font-size: 14px;
+  line-height: 1.7;
+  color: #d1d2bf;
+}
+.ed-tour-actions {
+  display: flex;
+  gap: 8px;
+  flex: 0 0 auto;
+}
+.ed-tour-actions button {
+  padding: 7px 10px;
+  border: 1px solid #796c40;
+}
+.ed-tour-focus {
+  outline: 2px solid #cfb85f;
+  outline-offset: 4px;
+}
+.elevator-demo .ed-guide-reopen {
+  align-self: flex-end;
+  justify-self: end;
+  padding: 2px 0;
+  min-height: 24px;
+  font-size: 12px;
+  background: none;
+  border: 0;
+  color: #aab499;
+}
+@media (max-width: 900px) {
+  .ed-onboarding {
+    flex-wrap: wrap;
+    gap: 10px;
+  }
+  .ed-tour-actions {
+    margin-left: auto;
+  }
+  .ed-field-tools > div {
+    grid-template-columns: 84px minmax(0, 1fr) 108px;
+    gap: 8px;
+    padding: 14px 0;
+  }
+  .ed-field-tools > div > strong {
+    font-size: 14px;
+  }
+}
+@media (max-width: 480px) {
+  .ed-field-tools > div {
+    grid-template-columns: minmax(0, 1fr) 108px;
+  }
+  .ed-field-tools > div > strong {
+    grid-column: 1;
+  }
+  .ed-field-tools > div > p {
+    grid-column: 1;
+    grid-row: 2;
+  }
+  .ed-tool-quantity {
+    grid-column: 2;
+    grid-row: 1 / 3;
+  }
+}

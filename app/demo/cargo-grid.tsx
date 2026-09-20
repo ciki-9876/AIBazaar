@@ -295,7 +295,6 @@ export default function CargoGrid({
           );
         })}
       </div>
-      <p className="ed-grid-help">悬停查看 · 拖动摆放 · 固定横向占格</p>
     </div>
   );
 }

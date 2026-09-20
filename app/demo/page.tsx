@@ -14,6 +14,7 @@ import ElevatorRoom from './elevator-room';
 import IdentifyTable from './identify-table';
 import { floorRoute } from '@/lib/demo-content';
 import FieldWork, { ObjectInfo } from './field-work';
+import Onboarding from './onboarding';
 import { isFieldNode, OBJECTS, FIELD_TITLES } from '@/lib/field-items';
 import BuildBoard from './build-board';
 import { describeCard } from '@/lib/card-description';
@@ -74,6 +75,7 @@ import {
   itemCount,
   openCells,
   searchCost,
+  travelCost,
   eventAt,
   nodeTitle,
   merchantOffers,
@@ -770,7 +772,7 @@ export default function Demo() {
                 {inspected ? (
                   itemDetailBody()
                 ) : (
-                  <p>单击物品或卡牌，在这里查看详情与操作。</p>
+                  <p>尚未选择物品</p>
                 )}
               </aside>
             </>
@@ -937,7 +939,6 @@ export default function Demo() {
           className={'ed-section-title ' + (tab === 'prep' ? 'ed-hidden' : '')}
         >
           <h2>把庇护所建起来</h2>
-          <span>每设施每日一次 · 拆除保留当日使用记录</span>
         </div>
         <div className={'ed-facilities ' + (tab === 'prep' ? 'ed-hidden' : '')}>
           {FACILITY.filter(
@@ -1103,7 +1104,7 @@ export default function Demo() {
     return (
       <section className="ed-panel">
         <h3>商人商品</h3>
-        <p>金币 {run.material} · 点击查看价格；拖入背包购买。</p>
+        <p>金币 {run.material}</p>
         <CargoGrid
           items={items}
           zone="shop"
@@ -1122,10 +1123,6 @@ export default function Demo() {
         node === 'guardian' && run.encounter && !run.encounterDone ? 1 : fights;
     return (
       <>
-        <p className="ed-route-cost">
-          前往下一个节点：基础消耗 3
-          精力；搜查、事件等消耗另计。击败敌人可获得金币，精英与幸存者另掉落一张携带卡牌。
-        </p>
         <section
           className={
             'ed-floor-scene scene-' +
@@ -1172,17 +1169,12 @@ export default function Demo() {
             <div className="ed-interaction-heading">
               <div>
                 <h2>{nodeTitle(run)}</h2>
-                <p>
-                  {run.interaction === 'search'
-                    ? '拾取的物品会立即出现在右侧背包；可以随时转移、鉴定和上阵。'
-                    : '商品与行装同屏，先整理出空间再购买。交易不会自动推进路线。'}
-                </p>
               </div>
               <button
                 className="ed-primary"
                 onClick={() => dispatch({ type: 'next-node' })}
               >
-                前往下个目的地 <ArrowRight size={16} />
+                继续前进 · {travelCost(run)} 精力 <ArrowRight size={16} />
               </button>
             </div>
             <div className="ed-interaction-grid">
@@ -1208,13 +1200,6 @@ export default function Demo() {
                 NODE {run.node + 1} / {nodeName[node]}
               </p>
               <h2>{nodeTitle(run)}</h2>
-              <p className="ed-preparation-summary">
-                待用准备：下场宿主 +{run.fieldPrep?.hp ?? 0} · 三路屏障 +
-                {run.fieldPrep?.barrier.join('/') ?? '0/0/0'} · 便捷路程{' '}
-                {run.fieldPrep?.steps ?? 0} 段。撤离后清空。研究：宿主永久 +
-                {run.fieldResearch?.vitality ?? 0} · 升级抵扣{' '}
-                {run.fieldResearch?.credit ?? 0} 金币。
-              </p>
               {enemyIntel()}
               {isFieldNode(node) ? (
                 <FieldWork
@@ -1242,20 +1227,14 @@ export default function Demo() {
                 </>
               ) : node === 'search' ? (
                 <>
-                  <p>
-                    {nodeTitle(run)}
-                    里还有未被带走的物资。打开搜查区域需要 {searchCost(
-                      run,
-                    )}{' '}
-                    精力。
-                  </p>
+                  <p>灰尘覆盖着旧箱子，角落里还有些没被带走的东西。</p>
                   <div className="ed-actions">
                     <button
                       className="ed-primary"
                       onClick={() => dispatch({ type: 'search' })}
                     >
                       <Search size={16} />
-                      搜查区域
+                      搜查区域 · {searchCost(run)} 精力
                     </button>
                     <button onClick={() => dispatch({ type: 'skip' })}>
                       跳过搜查
@@ -1265,8 +1244,7 @@ export default function Demo() {
               ) : node === 'merchant' ? (
                 <>
                   <p>
-                    {nodeTitle(run)}
-                    带来了不同的实体、工具与补给。可以用金币购买，也可以卖掉不需要的随身物品。
+                    游商把油布铺在地上，露出几件擦得发亮的工具。他拍了拍腰间的钱袋，示意你靠近。
                   </p>
                   <div className="ed-actions">
                     <button
@@ -1284,16 +1262,18 @@ export default function Demo() {
               ) : node === 'puzzle' ? (
                 <>
                   <p>{puzzle(run).text}</p>
-                  <p className="ed-hint">
-                    每次尝试 4 精力。提示：{puzzle(run).hint}
-                  </p>
+                  <div className="ed-field-readout">
+                    <span>现场提示</span>
+                    <strong>{puzzle(run).hint}</strong>
+                    <p>达成后：门锁开启，通往下一节点。</p>
+                  </div>
                   <div className="ed-actions">
                     {puzzle(run).options.map((n) => (
                       <button
                         key={n}
                         onClick={() => dispatch({ type: 'puzzle', choice: n })}
                       >
-                        输入 {n}
+                        输入 {n} · 4 精力
                       </button>
                     ))}
                   </div>
@@ -1319,8 +1299,7 @@ export default function Demo() {
               ) : node === 'hazard' ? (
                 <>
                   <p>
-                    {nodeTitle(run)}
-                    阻断前路。用电力启动防护装置，或消耗精力谨慎穿越。
+                    前方的警示灯忽明忽暗。防护装置早已断电，狭窄的过道里不断传来碎裂声。
                   </p>
                   <div className="ed-actions">
                     <button
@@ -1339,7 +1318,9 @@ export default function Demo() {
                 </>
               ) : node === 'cache' ? (
                 <>
-                  <p>里面还剩两件应急用品，只能拿走一件。</p>
+                  <p>
+                    旧箱里放着一只苹果和一枚打火机。箱盖摇摇欲坠，只够你伸手取走一件。
+                  </p>
                   <div className="ed-actions">
                     <button onClick={() => dispatch({ type: 'cache' })}>
                       拿走苹果
@@ -1358,12 +1339,14 @@ export default function Demo() {
                 </>
               ) : node === 'bargain' ? (
                 <>
-                  <p>装置愿意购买你的体力：12 精力换 4 金币。</p>
+                  <p>
+                    计量器亮起了绿灯。转动那只沉重的手轮，投币口便会吐出几枚金币。
+                  </p>
                   <div className="ed-actions">
                     <button
                       onClick={() => dispatch({ type: 'bargain', choice: 1 })}
                     >
-                      接受交易
+                      转动手轮 · −12 精力 / +4 金币
                     </button>
                     <button onClick={() => dispatch({ type: 'bargain' })}>
                       拒绝并前进
@@ -1377,11 +1360,12 @@ export default function Demo() {
                       ? '第一阶段 · 普通战'
                       : '第二阶段 · 精英战'}
                   </h3>
-                  <p>
-                    战败损失 35
-                    精力并进入下一个节点，生命与背包保留，不领取战斗奖励。最终
-                    BOSS 尚未到达。
-                  </p>
+                  <details>
+                    <summary>交战风险</summary>
+                    <p>
+                      战败损失35精力，无战斗奖励；保留生命和行装，继续前进。
+                    </p>
+                  </details>
                   <button
                     className="ed-primary"
                     onClick={() => dispatch({ type: 'fight' })}
@@ -1407,8 +1391,8 @@ export default function Demo() {
                   </div>
                   <p>
                     {run.encounter && !run.encounterDone
-                      ? '先击败相遇的幸存者，之后还有楼层守卫。两场之间可以整理，也可以提前撤离。'
-                      : '击败这名守卫后，本层战斗全部结束。随后撤离才会提交通关。'}
+                      ? '另一名幸存者挡住了通道。守卫的脚步声从他身后传来。'
+                      : '守卫站在归返信标前，握紧了武器。'}
                   </p>
                   <div className="ed-actions">
                     <button
@@ -1427,7 +1411,7 @@ export default function Demo() {
                 </>
               ) : (
                 <>
-                  <p>本层战斗全部完成。撤离后提交成绩，并把资源带回电梯。</p>
+                  <p>归返信标亮了。电梯仍在原处等你。</p>
                   <button
                     className="ed-primary"
                     onClick={() => dispatch({ type: 'extract' })}
@@ -1438,15 +1422,12 @@ export default function Demo() {
               )}
             </section>
             <aside className="ed-panel">
-              <h3>保留退路</h3>
-              <p>提前撤离保留物资，但不提交通关。正常返回需要 8 精力。</p>
+              <h3>归返</h3>
               <div className="ed-actions vertical">
                 <button onClick={() => dispatch({ type: 'extract' })}>
-                  现在撤离
+                  现在撤离 · 8 精力
                 </button>
-                <button onClick={() => setTab('inventory')}>
-                  整理行装 / 吃苹果
-                </button>
+                <button onClick={() => setTab('inventory')}>整理行装</button>
                 <button
                   className="ed-danger"
                   onClick={() => dispatch({ type: 'rescue' })}
@@ -1503,7 +1484,7 @@ export default function Demo() {
               .join(' · ')}
         </p>
         <details>
-          <summary>查看本场敌阵 · 点击卡牌可固定详情</summary>
+          <summary>查看敌阵</summary>
           <div className="ed-board-scroll">
             {cardGrid(previewDuel.enemy, true)}
           </div>
@@ -2391,6 +2372,15 @@ export default function Demo() {
                   <Radio size={15} />
                   <span>{notice || run.notice}</span>
                 </output>
+                {run.phase !== 'combat' &&
+                  run.phase !== 'ended' &&
+                  (tab === 'inventory' ? (
+                    <Onboarding key="inventory" context="inventory" />
+                  ) : tab === 'base' && run.phase === 'base' ? (
+                    <Onboarding key="room" context="room" />
+                  ) : tab === 'floor' && !isFieldNode(currentNode(run)) ? (
+                    <Onboarding key="explore" context="explore" />
+                  ) : null)}
                 {run.phase === 'combat' ? (
                   combat()
                 ) : run.phase === 'ended' ? (
@@ -2503,7 +2493,7 @@ export default function Demo() {
             </button>
             {run.phase === 'combat' && (
               <p className="ed-detail-play-state">
-                {playing ? '战斗继续播放' : '战斗已暂停'} · 详情不改变播放状态
+                {playing ? '战斗继续播放' : '战斗已暂停'}
               </p>
             )}
             {itemDetailBody()}

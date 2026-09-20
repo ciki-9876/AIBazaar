@@ -94,9 +94,7 @@ export default function CardFace({
       </strong>
       <Symbol className="ed-card-emblem" aria-hidden="true" />
       <div className="ed-special-copy">{cardSpecial(card)}</div>
-      <span className="ed-card-detail-hint">
-        {describeCard(card).cd}s · 点击详情
-      </span>
+      <span className="ed-card-detail-hint">{describeCard(card).cd}s</span>
       <div className="ed-effect-values">
         {description.effects.map((effect, i) => {
           const Icon =

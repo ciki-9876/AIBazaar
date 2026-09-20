@@ -14,7 +14,7 @@ import {
   travelCost,
 } from '@/lib/demo-engine';
 import type { Run, Action } from '@/lib/demo-engine';
-import { cardDef } from '@/lib/demo-cards';
+import Onboarding from './onboarding';
 
 export function ObjectInfo({ id }: { id: string }) {
   const object = OBJECTS[id];
@@ -26,13 +26,9 @@ export function ObjectInfo({ id }: { id: string }) {
         用于：{FIELD_TITLES[object.node]}。{object.use}
       </p>
       <p>{object.benefit}。</p>
-      <p className="ed-hint">
-        {object.consumed
-          ? '使用会耗尽这件本体。'
-          : '每件实体每次出勤可使用一次，使用后仍可转化。'}
-        战斗准备仅在本次出勤下一场战斗使用，撤离清空。鉴定后变为「
-        {cardDef(id).name}」，失去实体工具用途。
-      </p>
+      <small>
+        {object.consumed ? '使用后耗尽' : '本体保留 · 每次出勤限用一次'}
+      </small>
     </div>
   );
 }
@@ -52,18 +48,21 @@ export default function FieldWork({
       ['bag', 'safe'].includes(x.zone) &&
       task.tools.includes(x.id),
   );
-  const [uid, setUid] = useState(
-    () => candidates.find((x) => fieldToolState(run, x.uid).allowed)?.uid ?? '',
-  );
+  const [selected, setSelected] = useState<string[]>([]);
   const [value, setValue] = useState(0),
     [sequence, setSequence] = useState<number[]>([]),
     [lane, setLane] = useState(0);
-  const item = candidates.find((x) => x.uid === uid),
-    object = item ? OBJECTS[item.id] : null;
-  const preview = fieldWorkPreview(run, uid, lane);
+  const chosen = candidates.filter((x) => selected.includes(x.uid));
+  const preview = fieldWorkPreview(run, selected, lane);
+  const consumed = chosen.filter((x) => OBJECTS[x.id].consumed);
+  const hasBarrier = chosen.some((x) =>
+    ['salvage', 'barrier', 'pump'].includes(OBJECTS[x.id].effect),
+  );
   const clear = () => {
     setValue(0);
     setSequence([]);
+    setSelected([]);
+    setLane(0);
   };
   const answer =
     task.mode === 'sequence' ? sequence.reduce((n, x) => n * 10 + x, 0) : value;
@@ -71,7 +70,7 @@ export default function FieldWork({
   if (currentFloor(run).workResolved?.includes(node))
     return (
       <section className="ed-field-work">
-        <p>这处机关已经处理过。准备与奖励不会重复领取。</p>
+        <p>通道已经畅通，远处传来电梯的回声。</p>
         <button
           className="ed-primary"
           onClick={() => onAction({ type: 'field-work', choice: -2 })}
@@ -83,44 +82,111 @@ export default function FieldWork({
   return (
     <section className="ed-field-work" aria-label={task.title + '操作台'}>
       <p>{task.text}</p>
+      <Onboarding context="field" />
       <div className="ed-field-readout">
         <span>现场提示</span>
         <strong>{task.hint}</strong>
+        <div className="ed-field-reward" aria-live="polite">
+          <span>作业收获</span>
+          {selected.length ? (
+            <p>{preview.summary}</p>
+          ) : (
+            <p>
+              {task.tools
+                .map((id) => `${OBJECTS[id].name}：${OBJECTS[id].benefit}`)
+                .join('；')}
+            </p>
+          )}
+        </div>
       </div>
-      <fieldset>
-        <legend>1 · 选择实体工具</legend>
+      <fieldset className="ed-tool-selection">
+        <legend>携带工具</legend>
         <div className="ed-field-tools">
           {task.tools.map((id) => {
             const owned = candidates.filter((x) => x.id === id);
+            const available = owned.filter(
+              (x) => fieldToolState(run, x.uid).allowed,
+            );
+            const picked = owned.filter((x) => selected.includes(x.uid));
+            const next = available.find((x) => !selected.includes(x.uid));
+            const bag = owned.filter((x) => x.zone === 'bag').length;
             return (
-              <div key={id}>
+              <div key={id} className={picked.length ? 'is-selected' : ''}>
                 <strong>{OBJECTS[id].name}</strong>
                 <p>{OBJECTS[id].benefit}</p>
-                {owned.length ? (
-                  owned.map((x) => (
+                <div className="ed-tool-quantity">
+                  <div>
                     <button
-                      key={x.uid}
-                      aria-pressed={uid === x.uid}
-                      disabled={!fieldToolState(run, x.uid).allowed}
-                      onClick={() => setUid(x.uid)}
+                      aria-label={`减少${OBJECTS[id].name}`}
+                      disabled={!picked.length}
+                      onClick={() =>
+                        setSelected((v) =>
+                          v.filter(
+                            (uid) => uid !== picked[picked.length - 1].uid,
+                          ),
+                        )
+                      }
                     >
-                      {uid === x.uid ? '已选 · ' : ''}
-                      {x.zone === 'safe' ? '安全容器' : '背包'} ·{' '}
-                      {fieldToolState(run, x.uid).allowed
-                        ? '本次可用'
-                        : '本次已用'}
+                      −
                     </button>
-                  ))
-                ) : (
-                  <span className="ed-hint">未携带 · 卡牌形态不能替代</span>
-                )}
+                    <output aria-label={`${OBJECTS[id].name}使用数量`}>
+                      {picked.length}
+                    </output>
+                    <button
+                      aria-label={`增加${OBJECTS[id].name}`}
+                      disabled={!next}
+                      onClick={() =>
+                        next && setSelected((v) => [...v, next.uid])
+                      }
+                    >
+                      +
+                    </button>
+                  </div>
+                  <small>
+                    背包 {bag} 件
+                    {owned.length > bag
+                      ? ` · 安全箱 ${owned.length - bag}`
+                      : ''}
+                  </small>
+                  {available.length !== owned.length && (
+                    <small>本次可用 {available.length} 件</small>
+                  )}
+                </div>
               </div>
             );
           })}
         </div>
+        {hasBarrier && (
+          <label className="ed-field-lane">
+            加固路线{' '}
+            <select value={lane} onChange={(e) => setLane(+e.target.value)}>
+              {['上路', '中路', '下路'].map((name, i) => (
+                <option key={name} value={i}>
+                  {name}
+                </option>
+              ))}
+            </select>
+          </label>
+        )}
+        {consumed.length > 0 && (
+          <p className="ed-tool-consumed">
+            用尽：
+            {task.tools
+              .flatMap((id) => {
+                const count = consumed.filter((x) => x.id === id).length;
+                return count ? [`${OBJECTS[id].name} ×${count}`] : [];
+              })
+              .join('、')}
+          </p>
+        )}
       </fieldset>
-      <fieldset>
-        <legend>2 · 调整机关（预览不扣费）</legend>
+      <fieldset className="ed-device-controls" disabled={!selected.length}>
+        <legend>{task.title}</legend>
+        <p className="ed-work-intent">
+          {chosen.length
+            ? `${task.condition}：${[...new Set(chosen.map((x) => OBJECTS[x.id].verb))].join(' · ')}`
+            : '等待工具就位'}
+        </p>
         {task.mode === 'point' && (
           <div className="ed-field-controls">
             {task.options.map((text, i) => (
@@ -172,9 +238,6 @@ export default function FieldWork({
               value={value}
               onChange={(e) => setValue(+e.target.value)}
             />
-            <small>
-              左臂力矩 {task.answer} · 右臂力矩 {value}
-            </small>
           </label>
         )}
         {task.mode === 'valves' && (
@@ -213,54 +276,31 @@ export default function FieldWork({
           取消操作预览
         </button>
       </fieldset>
-      {object && (
-        <div className="ed-field-outcome">
-          <strong>成功后的实际变化 · {object.verb}</strong>
-          <p>{preview.summary}</p>
-          {['salvage', 'barrier', 'pump'].includes(object.effect) && (
-            <label>
-              屏障准备路线{' '}
-              <select value={lane} onChange={(e) => setLane(+e.target.value)}>
-                {['上路', '中路', '下路'].map((name, i) => (
-                  <option key={name} value={i}>
-                    {name}
-                  </option>
-                ))}
-              </select>
-            </label>
-          )}
-          <p>
-            {object.consumed
-              ? '本次会消耗所选实体，之后无法鉴定。' +
-                (object.effect === 'barrier'
-                  ? '达到屏障上限时增加0，仍会消耗本体。'
-                  : '')
-              : '本体保留，用过后仍可带回鉴定。'}
-          </p>
-        </div>
-      )}
-      <p className="ed-hint">
-        每次提交操作消耗2精力。读数错误不耗工具、不领奖，可调整重试；成功后另扣路费。取消预览不改变库存。
-      </p>
       <div className="ed-actions">
         <button
           className="ed-primary"
           disabled={!preview.allowed || !complete}
           onClick={() =>
-            onAction({ type: 'field-work', id: uid, choice: answer, at: lane })
+            onAction({
+              type: 'field-work',
+              ids: selected,
+              choice: answer,
+              at: lane,
+            })
           }
         >
-          确认{object?.consumed ? '并消耗本体' : ''} · 操作2＋路程{preview.road}
+          完成作业 · {2 + preview.road} 精力
         </button>
         <button
           disabled={run.stamina < 6 + travelCost(run)}
           onClick={() => onAction({ type: 'field-work', choice: -1 })}
         >
-          绕行 · 6＋路程{travelCost(run)}精力
+          放弃收获并绕行 · {6 + travelCost(run)} 精力
         </button>
       </div>
-      <p className="ed-hint">绕行会永久放弃本层该机关的奖励，之后不能补领。</p>
-      {!preview.allowed && <output>{preview.reason}</output>}
+      {selected.length > 0 && !preview.allowed && (
+        <output>{preview.reason}</output>
+      )}
     </section>
   );
 }

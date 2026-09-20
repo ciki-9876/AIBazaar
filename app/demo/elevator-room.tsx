@@ -206,7 +206,6 @@ export default function ElevatorRoom(p: Props) {
           行装与构筑 <small>看看你还有什么</small>
         </span>
       </button>
-      <span className="ed-room-caption">触碰房间里的物件。</span>
     </section>
   );
 }

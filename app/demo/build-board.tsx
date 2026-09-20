@@ -43,9 +43,6 @@ export default function BuildBoard({
   return (
     <section className="ed-panel ed-build-board">
       <h3>上阵构筑 · {openCells(run).length} / 9 格已解锁</h3>
-      <p>
-        选择卡牌查看能力，点击“手动落点”移动或换位。卡牌固定横向，不能跨路。
-      </p>
       <section className="ed-build-candidates">
         <h3>候选卡 · {candidates.length}</h3>
         <div>
@@ -67,12 +64,7 @@ export default function BuildBoard({
             </button>
           ))}
         </div>
-        {!candidates.length && (
-          <p>
-            暂时没有候选卡。1–3F 游商有一件 4
-            金币的未鉴定引信线，回家免费鉴定后可用来替换。
-          </p>
-        )}
+        {!candidates.length && <p>暂无备用卡牌。</p>}
       </section>
       {card && (
         <section className="ed-placement" aria-label="手动落点预览">
@@ -110,7 +102,7 @@ export default function BuildBoard({
           </div>
           <output>
             {at === null
-              ? '绿色格可作为起点；选择后预览，再确认。'
+              ? '尚未选择落点'
               : `${['上路', '中路', '下路'][Math.floor(at / 3)]}第${(at % 3) + 1}格起，占${card.volume}格。${other ? `与${itemName(other)}交换；对方移至${card.zone === 'board' ? ['上路', '中路', '下路'][Math.floor(card.at! / 3)] + '第' + ((card.at! % 3) + 1) + '格' : card.zone === 'warehouse' ? '仓库' : card.zone === 'safe' ? '安全容器' : '背包'}。` : ''}${preview?.reason}`}
           </output>
           <div className="ed-actions">
