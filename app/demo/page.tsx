@@ -769,11 +769,7 @@ export default function Demo() {
                 grid(inventoryTab as Zone)
               )}
               <aside className="ed-panel ed-fixed-details ed-inspect-dialog">
-                {inspected ? (
-                  itemDetailBody()
-                ) : (
-                  <p>尚未选择物品</p>
-                )}
+                {inspected ? itemDetailBody() : <p>尚未选择物品</p>}
               </aside>
             </>
           )}
@@ -857,43 +853,6 @@ export default function Demo() {
                 电梯升级
               </CostButton>
             </div>
-            <p className="ed-hint">
-              升级解锁战斗格；Lv.3 / Lv.5 同步扩充背包与安全容器。终端不占槽位。
-            </p>
-            <section className="ed-resource-cycle">
-              <h3>现在能做什么</h3>
-              <p>补给 → 出勤与睡眠 → 带回物资 → 免费鉴定 → 新卡牌。</p>
-              <p>
-                金币来自搜查、交易和首次通关，用来升级电梯。当前库存{' '}
-                {run.material}。
-              </p>
-              {run.level >= 2 && (
-                <p>
-                  同卡 → 吞噬升阶。废料 → 强化卡牌；多余物品 → 回收金币；药品 →
-                  医疗站 → 精力。
-                </p>
-              )}
-              {run.level >= 3 && (
-                <p>
-                  废料 → 储藏架 → 燃料 → 发电机 → 电力；电力与金币 → 设备台 →
-                  鉴定电荷。仪器必须随身携带。
-                </p>
-              )}
-              {run.level >= 4 && (
-                <p>
-                  电力与金币 → 种植架 → 密封补给物品，可用于出勤、睡眠和食用。
-                </p>
-              )}
-              {run.level >= 5 && (
-                <p>
-                  电力与金币 → 探索整备 → 下次出勤减少搜索消耗 →
-                  留出更多探索余量。
-                </p>
-              )}
-              {run.level >= 2 && (
-                <p>设施每日各使用一次；睡眠消耗有限生命，经营无法无限循环。</p>
-              )}
-            </section>
           </section>
           <section className="ed-panel">
             <p className="ed-kicker">PREPARATION</p>
@@ -1011,11 +970,6 @@ export default function Demo() {
             <p className="ed-kicker">THE ONLY DIRECTION IS UP</p>
             <h2>电梯通往哪里？</h2>
           </div>
-          <p>
-            每天一次出勤。可跳层；通关后才确认新停靠点。
-            <br />
-            未通关撤离返回出发点；救援另扣生命并丢失普通背包。
-          </p>
         </div>
         <div className="ed-floor-map">
           {run.floors.map((fl) => {
@@ -1615,8 +1569,6 @@ export default function Demo() {
           <button onClick={() => setCursor(battle.frames.length - 1)}>
             跳至结果
           </button>
-          <span>屏障损毁后，本路攻击直击宿主；卡牌始终运转。</span>
-          <small>90 秒未分胜负则平局，无击败奖励。</small>
         </div>
         <details className="ed-visual-guide">
           <summary>卡牌与弹道图例</summary>
@@ -2376,6 +2328,10 @@ export default function Demo() {
                   run.phase !== 'ended' &&
                   (tab === 'inventory' ? (
                     <Onboarding key="inventory" context="inventory" />
+                  ) : tab === 'map' ? (
+                    <Onboarding key="map" context="map" />
+                  ) : tab === 'upgrades' || tab === 'prep' ? (
+                    <Onboarding key="terminal" context="terminal" />
                   ) : tab === 'base' && run.phase === 'base' ? (
                     <Onboarding key="room" context="room" />
                   ) : tab === 'floor' && !isFieldNode(currentNode(run)) ? (

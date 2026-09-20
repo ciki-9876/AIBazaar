@@ -5584,3 +5584,29 @@ body:has(.elevator-demo) {
     grid-row: 1 / 3;
   }
 }
+
+.ed-main.view-upgrades,
+.ed-main.view-prep {
+  overflow-y: auto;
+}
+.ed-main.view-upgrades > .ed-terminal-content,
+.ed-main.view-prep > .ed-terminal-content {
+  flex: 0 0 auto;
+  overflow: visible;
+}
+
+.ed-main.view-base > .ed-onboarding {
+  position: fixed;
+  z-index: 30;
+  top: 80px;
+  right: 24px;
+  width: min(370px, calc(100vw - 48px));
+  flex-wrap: wrap;
+  box-shadow: 0 12px 40px #0006;
+}
+.ed-main.view-base > .ed-guide-reopen {
+  position: fixed;
+  z-index: 30;
+  top: 80px;
+  right: 24px;
+}
