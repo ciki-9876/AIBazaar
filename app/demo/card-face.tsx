@@ -93,8 +93,8 @@ export default function CardFace({
         )}
       </strong>
       <Symbol className="ed-card-emblem" aria-hidden="true" />
-      <div className="ed-special-copy">{cardSpecial(card)}</div>
-      <span className="ed-card-detail-hint">{describeCard(card).cd}s</span>
+      <div className="ed-special-copy">{description.summary}</div>
+      <span className="ed-card-detail-hint">{description.cd}s</span>
       <div className="ed-effect-values">
         {description.effects.map((effect, i) => {
           const Icon =
@@ -110,7 +110,7 @@ export default function CardFace({
                       ? Zap
                       : Shield;
           return (
-            <span key={i} title={effect.text}>
+            <span key={i} title={effect.text} aria-label={effect.text}>
               <Icon size={12} />
               {effect.value}
               {effect.kind === 'charge' ? 's' : ''}

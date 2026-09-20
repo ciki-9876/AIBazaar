@@ -5610,3 +5610,67 @@ body:has(.elevator-demo) {
   top: 80px;
   right: 24px;
 }
+
+/* Card language: a compact ability first; shared rules stay on demand. */
+.ed-current-abilities {
+  border-top: 1px solid #74826355;
+  margin-top: 12px;
+  padding-top: 6px;
+}
+.ed-card-description .ed-ability-line {
+  font-size: 16px;
+  line-height: 1.75;
+  margin: 10px 0;
+  overflow-wrap: anywhere;
+}
+.ed-ability-timing {
+  display: block;
+  color: #c9b66f;
+  font-size: 13px;
+  letter-spacing: 0.025em;
+}
+.ed-ability-line strong {
+  color: #dce9b5;
+  font-weight: 650;
+}
+.ed-keyword-reference {
+  margin-top: 16px;
+  padding-top: 12px;
+  border-top: 1px solid #74826355;
+}
+.ed-keyword-reference summary,
+.ed-future-effects summary {
+  cursor: pointer;
+  line-height: 1.6;
+}
+.ed-keyword-reference dl {
+  margin: 12px 0;
+}
+.ed-keyword-reference dt {
+  color: #dce9b5;
+  font-weight: 650;
+  margin-top: 12px;
+}
+.ed-keyword-reference dd {
+  margin: 4px 0 0;
+  font-size: 15px;
+  line-height: 1.7;
+  color: #c2cbbb;
+}
+.ed-card-description .ed-keyword-reference p {
+  font-size: 14px;
+  line-height: 1.7;
+  color: #b2bda9;
+}
+
+.elevator-demo .ed-card-v2 .ed-special-copy,
+.elevator-demo .ed-board.enemy .ed-card-v2 .ed-special-copy,
+.elevator-demo.in-combat .ed-vertical-battle .ed-card-v2 .ed-special-copy {
+  white-space: normal;
+  text-overflow: clip;
+  height: 40px;
+  min-height: 40px;
+  max-height: 40px;
+  line-height: 20px;
+  overflow-wrap: anywhere;
+}

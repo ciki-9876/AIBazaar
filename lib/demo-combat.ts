@@ -1,5 +1,5 @@
 import { cardDef } from './demo-cards.ts';
-import { combatValue } from './demo-card-rules.ts';
+import { cardMechanics, combatValue } from './demo-card-rules.ts';
 import { heroDef, heroOwner } from './heroes.ts';
 import type { HeroId } from './hero-cards.ts';
 export type FighterCard = {
@@ -247,7 +247,7 @@ export function simulateDuel(d: Duel) {
                   )
                   .map((c) =>
                     c.id === 'rubber'
-                      ? (8 + c.quality) * (1 + c.level * 0.12)
+                      ? cardMechanics(c.id, c.level, c.quality).buffer
                       : cardDef(c.id).mechanic!.buffer! *
                         (1 + c.level * 0.12) *
                         (1 + c.quality * 0.15),
@@ -273,7 +273,7 @@ export function simulateDuel(d: Duel) {
               laneOf(c) === lane,
           ))
             stored[c.uid] = Math.min(
-              (40 + c.quality * 10) * (1 + c.level * 0.12),
+              cardMechanics(c.id, c.level, c.quality).recoilCap,
               (stored[c.uid] ?? 0) + hit.barrierAbsorbed * 0.5,
             );
         damage[hit.side] += hit.healthLoss;
@@ -381,6 +381,7 @@ export function simulateDuel(d: Duel) {
           heroGrowth = growth * (1 + q * 0.15);
         const n = ++counts[side][p.at],
           v = combatValue(c.id, p.level, q);
+        const mechanism = cardMechanics(c.id, p.level, q);
         let amount = v;
         if (special?.opening && n <= special.opening[0])
           amount += special.opening[1] * heroGrowth;
@@ -402,15 +403,16 @@ export function simulateDuel(d: Duel) {
           )
         )
           amount += special.smallAllyBonus * heroGrowth;
-        if (c.id === 'nailer' && n <= 2) amount += (16 + q * 4) * growth;
-        if (c.id === 'springbow' && n <= 3) amount += (16 + q * 4) * growth;
-        if (c.id === 'culture') amount += (n - 1) * (8 + q * 2) * growth;
+        if (mechanism.openingCount && n <= mechanism.openingCount)
+          amount += mechanism.openingBonus;
+        if (c.id === 'culture')
+          amount += (n - 1) * mechanism.growthBase * growth;
         if (
           c.id === 'counterweight' &&
           !barriers[side][lane].broken &&
           barriers[side][lane].hp > barriers[side][lane].maxHp * 0.5
         )
-          amount += (20 + q * 5) * growth;
+          amount += mechanism.intactBonus;
         if (c.id === 'recoil' || special?.recoil) {
           amount += stored[p.uid] ?? 0;
           stored[p.uid] = 0;
@@ -526,7 +528,7 @@ export function simulateDuel(d: Duel) {
             targetLane,
             exposedBonus:
               c.id === 'gapblade'
-                ? (12 + q * 4) * growth
+                ? mechanism.exposedBonus
                 : (special?.exposed ?? 0) * heroGrowth,
             barrierBonus: (special?.barrierBonus ?? 0) * heroGrowth,
           });
@@ -566,7 +568,7 @@ export function simulateDuel(d: Duel) {
               ...base,
               side,
               kind: 'heal',
-              value: (5 + q * 3) * growth,
+              value: mechanism.heal,
               visual: 'heal',
               targetUid: `host-${side}-lane-${lane}`,
             });
@@ -611,11 +613,11 @@ export function simulateDuel(d: Duel) {
             targetUid: `host-${side}-lane-${lane}`,
           });
         let advance = c.kind === 'charge' ? v : 0;
-        if (c.id === 'fuse' && n === 1) advance += 2 + q * 0.5;
+        if (n === 1) advance += mechanism.firstCharge;
         if (special?.firstCharge && n === 1)
           advance += special.firstCharge * heroGrowth;
         if (c.id === 'catalyst' && corrosion[1 - side][lane] > 0)
-          advance += 0.8 + q * 0.2;
+          advance += mechanism.corrosionCharge;
         if (advance) {
           const others = boards[side].filter(
             (x) =>

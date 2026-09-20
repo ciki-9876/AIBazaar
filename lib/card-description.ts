@@ -1,84 +1,168 @@
 import { cardDef } from './demo-cards.ts';
-import { combatValue } from './demo-card-rules.ts';
+import { combatValue, cardMechanics } from './demo-card-rules.ts';
 import type { FighterCard } from './demo-combat.ts';
+
 export const CARD_ROLES: Record<string, string> = {};
+export const CARD_TERMS = {
+  damage: {
+    name: '伤害',
+    text: '伤害先由目标路线的屏障承受，超出部分伤及宿主；该路屏障已损毁时直接伤及宿主。卡牌本身不承伤。',
+  },
+  shield: {
+    name: '修复',
+    text: '恢复我方本路屏障的生命，不超过当前上限。本路已损毁则支援剩余生命比例最低的未损毁屏障，相同比例优先上路。全部损毁时无效，不能重建屏障。',
+  },
+  charge: {
+    name: '充能',
+    text: '推进我方同路最靠左的另一张卡的冷却进度，单位为秒；没有目标时不生效。这不是电力或鉴定电荷，也不代表战斗会缩短同样的时间。',
+  },
+  corrode: {
+    name: '侵蚀',
+    text: '每层每秒造成1点伤害，并削减该路屏障上限1点（上限最低为1）。每路最多12层；屏障损毁后持续伤及宿主。侵蚀伤害不触发直接伤害减免或反冲蓄积。',
+  },
+  heal: {
+    name: '治疗',
+    text: '恢复我方宿主的战斗生命，不超过上限。不会增加冒险中的生命次数。',
+  },
+} as const;
+export type CardTerm = keyof typeof CARD_TERMS;
+export type CardAbility = { when: string; text: string; terms: CardTerm[] };
+const number = (value: number) => Math.round(value * 100) / 100;
+
 export function describeCard(card: FighterCard, includeFuture = true) {
   const c = cardDef(card.id),
-    q = card.quality,
-    value = combatValue(c.id, card.level, q);
+    q = card.quality;
+  const value = combatValue(c.id, card.level, q);
+  const m = cardMechanics(c.id, card.level, q);
+  const term = c.kind as CardTerm;
   const effects = [
     {
       kind: c.kind,
       value,
-      text:
-        (c.kind === 'damage'
-          ? '伤害'
-          : c.kind === 'charge'
-            ? '充能'
-            : c.kind === 'corrode'
-              ? '侵蚀层数'
-              : '屏障修复') +
-        ' ' +
-        value +
-        (c.kind === 'charge' ? ' 秒' : ''),
+      text: `${CARD_TERMS[term].name} ${value}${term === 'charge' ? ' 秒' : term === 'corrode' ? ' 层' : ''}`,
     },
   ];
-  const innate: string[] = [];
-  const growth = 1 + card.level * 0.12,
-    n = (v: number) => Math.round(v * growth * 10) / 10;
-  const rules: Record<string, string> = {
-    nailer: `前 2 次发动额外造成 ${n(16 + q * 4)} 伤害。`,
-    fuse: `给同路起点最靠左的其他牌充能；无目标不生效；首次额外充能 ${2 + q * 0.5} 秒。`,
-    gapblade: `命中时目标屏障已破，伤害 +${n(12 + q * 4)}。`,
-    springbow: `前 3 次发动额外造成 ${n(16 + q * 4)} 伤害。`,
-    recoil: `本路屏障承受直接伤害的 50% 储为反冲，上限 ${n(40 + q * 10)}；下次攻击消耗并附加。`,
-    sealant: '修复本路屏障；本路已破则支援剩余比例最低的未损毁屏障。',
-    rubber: `本路未损毁屏障受到直接伤害 −${n(8 + q)}；同路不叠加，不能减免侵蚀。主动修复本路；本路已破则支援剩余比例最低的未损毁屏障。`,
-    counterweight: `发动时本路屏障剩余生命高于当前上限50%，伤害 +${n(20 + q * 5)}。`,
-    acid: '每层侵蚀每秒削减 1 屏障上限并造成 1 伤害，最多 12 层；破路后持续伤害宿主。',
-    culture: `每次发动比上次多 ${n(8 + q * 2)} 伤害。攻击侵蚀最深的一路，同层数优先上路；无侵蚀则攻击本路。`,
-    catalyst: `给同路起点最靠左的其他牌充能；无目标不生效；敌方本路有侵蚀时，额外充能 ${Math.round((0.8 + q * 0.2) * 10) / 10} 秒。`,
-    distiller:
-      '叠加侵蚀，并治疗宿主。侵蚀每层每秒伤害 1、削减屏障上限 1，最多 12 层。',
-  };
-  innate.push(rules[c.id]);
-  if (c.id === 'distiller')
+  const abilities: CardAbility[] = [];
+  const add = (when: string, text: string, terms: CardTerm[]) =>
+    abilities.push({ when, text, terms });
+  const target = c.id === 'culture' ? '敌方侵蚀层数最多的路线' : '敌方本路';
+  const action =
+    term === 'damage'
+      ? `对${target}造成${value}点伤害。`
+      : term === 'shield'
+        ? `修复${value}点屏障。`
+        : term === 'charge'
+          ? `为同路另一张卡充能${value}秒。`
+          : `对敌方本路施加${value}层侵蚀（每路上限12层）。`;
+  add(`每${c.cd}秒`, action, c.id === 'culture' ? [term, 'corrode'] : [term]);
+  const notes: string[] = [];
+  if (m.openingCount)
+    add(
+      `前${m.openingCount}次发动`,
+      `额外造成${number(m.openingBonus)}点伤害。`,
+      ['damage'],
+    );
+  if (c.id === 'fuse')
+    add('首次发动', `额外充能${number(m.firstCharge)}秒。`, ['charge']);
+  if (c.id === 'gapblade')
+    add(
+      '命中时',
+      `若目标路线的屏障已损毁，额外造成${number(m.exposedBonus)}点伤害。`,
+      ['damage'],
+    );
+  if (c.id === 'recoil') {
+    add(
+      '本路屏障承伤后',
+      `将实际承受的直接伤害的50%储为反冲，最多${number(m.recoilCap)}点。`,
+      ['damage'],
+    );
+    add('下次发动', '耗尽反冲，附加等量伤害。', ['damage']);
+    notes.push(
+      '只记录屏障实际吸收的直接伤害；被减免的伤害、溢出到宿主的伤害和侵蚀均不积存反冲。',
+    );
+  }
+  if (c.id === 'rubber') {
+    add('本路屏障未损毁时', `每次受到的直接伤害减少${number(m.buffer)}点。`, [
+      'damage',
+    ]);
+    notes.push('同路有多张缓冲垫时只取最高减免，不叠加；不能减免侵蚀。');
+  }
+  if (c.id === 'counterweight')
+    add(
+      '发动时',
+      `若我方本路屏障生命高于当前上限的50%，额外造成${number(m.intactBonus)}点伤害。`,
+      ['damage'],
+    );
+  if (c.id === 'culture') {
+    add('再次发动', `比上次多造成${number(m.growth)}点伤害。`, ['damage']);
+    notes.push(
+      '没有侵蚀时攻击本路；侵蚀层数相同优先上路。目标在发动时选定，成长只在本场战斗中积累。',
+    );
+  }
+  if (c.id === 'catalyst')
+    add(
+      '发动时',
+      `若敌方本路有侵蚀，额外充能${number(m.corrosionCharge)}秒。`,
+      ['corrode', 'charge'],
+    );
+  if (c.id === 'distiller') {
+    abilities[0].text += `治疗宿主${number(m.heal)}点生命。`;
+    abilities[0].terms.push('heal');
     effects.push({
       kind: 'heal',
-      value: n(5 + q * 3),
-      text: `宿主治疗 ${n(5 + q * 3)}`,
+      value: number(m.heal),
+      text: `治疗 ${number(m.heal)}`,
     });
+  }
+  if (['fuse', 'catalyst'].includes(c.id))
+    notes.push(
+      '充能目标在发动时选定；效果到达目标后推进冷却。加成不改变目标。',
+    );
+  if (c.id === 'sealant' || c.id === 'rubber')
+    notes.push('修复在效果到达时结算；期间屏障损毁会重新寻找可支援路线。');
   const short: Record<string, string> = {
-    nailer: '前2次追加伤害',
-    springbow: '前3次追加伤害',
-    fuse: '同路首发额外充能',
-    gapblade: '命中已破路时追加伤害',
-    recoil: '承伤蓄反冲；下次消耗',
-    sealant: '修复本路；破路后支援',
-    rubber: '本路直接伤害减免',
-    counterweight: '本路屏障过半追加伤害',
-    acid: '叠层侵蚀；削减上限',
-    culture: '逐次成长；追踪侵蚀',
-    catalyst: '敌本路有侵蚀则额外充能',
-    distiller: '侵蚀并治疗宿主',
+    nailer: `前2次伤害+${number(m.openingBonus)}`,
+    springbow: `前3次伤害+${number(m.openingBonus)}`,
+    fuse: `首次充能 +${number(m.firstCharge)}秒`,
+    gapblade: `破路伤害+${number(m.exposedBonus)}`,
+    recoil: `承伤蓄反冲`,
+    sealant: '破路转为支援',
+    rubber: `直接伤害 −${number(m.buffer)}`,
+    counterweight: `屏障过半伤害+${number(m.intactBonus)}`,
+    acid: '侵蚀上限12层',
+    culture: `伤害逐次+${number(m.growth)}`,
+    catalyst: `侵蚀时充能+${number(m.corrosionCharge)}秒`,
+    distiller: '侵蚀并治疗',
   };
-  const future: { quality: number; effects: string[]; innate: string[] }[] =
-    includeFuture
-      ? [1, 2]
-          .filter((tier) => tier > q)
-          .map((quality) => {
-            const next = describeCard({ ...card, quality }, false);
-            return {
-              quality,
-              effects: next.effects.map((e) => e.text),
-              innate: next.innate,
-            };
-          })
-      : [];
+  const keywords = [...new Set(abilities.flatMap((a) => a.terms))].map(
+    (id) => ({ id, ...CARD_TERMS[id] }),
+  );
+  const innate = abilities.map((a) => `${a.when}：${a.text}`);
+  const future: {
+    quality: number;
+    effects: string[];
+    innate: string[];
+    abilities: CardAbility[];
+  }[] = includeFuture
+    ? [1, 2]
+        .filter((tier) => tier > q)
+        .map((quality) => {
+          const next = describeCard({ ...card, quality }, false);
+          return {
+            quality,
+            effects: next.effects.map((e) => e.text),
+            innate: next.innate,
+            abilities: next.abilities,
+          };
+        })
+    : [];
   return {
     role: c.role ?? '',
     cd: c.cd,
     effects,
+    abilities,
+    keywords,
+    notes,
     innate,
     unlocked: [] as string[],
     future,

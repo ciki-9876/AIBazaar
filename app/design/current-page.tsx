@@ -1,5 +1,5 @@
 import { sitePath } from '@/lib/site-path';
-import { describeCard } from '@/lib/card-description';
+import CardDetail from '../demo/card-detail';
 /* oxlint-disable next/no-html-link-for-pages -- Native navigation is used by the existing portable Sites build. */
 import { CARDS, SCHOOLS } from '@/lib/demo-cards';
 import { OBJECTS, FIELD_NODES, FIELD_TITLES } from '@/lib/field-items';
@@ -50,15 +50,7 @@ export default function DesignHome() {
         <h2>12件实体与转化结果</h2>
         <div className="object-catalog">
           {CARDS.map((c) => {
-            const o = OBJECTS[c.id],
-              d = describeCard({
-                id: c.id,
-                uid: c.id,
-                at: 0,
-                quality: 0,
-                level: 0,
-                rarity: c.rarity ?? 0,
-              });
+            const o = OBJECTS[c.id];
             return (
               <article key={c.id}>
                 <span>
@@ -77,10 +69,16 @@ export default function DesignHome() {
                 </p>
                 <hr />
                 <h4>转化后：{c.name}</h4>
-                <p>
-                  周期 {d.cd}秒 · {d.effects.map((e) => e.text).join('；')}。
-                </p>
-                <p>{d.innate.join(' ')}</p>
+                <CardDetail
+                  card={{
+                    id: c.id,
+                    uid: c.id,
+                    at: 0,
+                    quality: 0,
+                    level: 0,
+                    rarity: c.rarity ?? 0,
+                  }}
+                />
               </article>
             );
           })}
