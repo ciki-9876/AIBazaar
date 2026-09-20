@@ -1,5 +1,7 @@
 'use client';
+import { useState } from 'react';
 type Props = {
+  arrival?: boolean;
   floor: number;
   day: number;
   used: boolean;
@@ -11,8 +13,14 @@ type Props = {
   onTerminal: () => void;
 };
 export default function ElevatorRoom(p: Props) {
+  const [observation, setObservation] = useState('');
+  const inspect = (text: string, action: () => void) =>
+    p.arrival ? setObservation(text) : action();
   return (
-    <section className="ed-room" aria-label="电梯房间">
+    <section
+      className={'ed-room' + (p.arrival ? ' ed-room-arrival' : '')}
+      aria-label="电梯房间"
+    >
       <svg
         className="ed-room-architecture"
         viewBox="0 0 1600 1000"
@@ -97,31 +105,41 @@ export default function ElevatorRoom(p: Props) {
       <div className="ed-room-grain" />
       <button
         className="ed-room-object ed-room-identify"
-        onClick={p.onIdentify}
-        aria-label="初始鉴定台，免费鉴定实体"
+        onClick={() =>
+          inspect('金属台面冰凉，一盏小灯静静亮着。', p.onIdentify)
+        }
+        aria-label={p.arrival ? '观察金属台' : '初始鉴定台，免费鉴定实体'}
       >
         <i>⌑</i>
         <span className="ed-object-label">
-          鉴定台<small>初始设施 · 免费鉴定</small>
+          {p.arrival ? (
+            '金属台'
+          ) : (
+            <>
+              鉴定台<small>初始设施 · 免费鉴定</small>
+            </>
+          )}
         </span>
       </button>
-      <div className="ed-room-whisper">
-        <span>
-          第 {String(p.day).padStart(2, '0')} 天 · 电梯 Lv.{p.level}
-        </span>
-        <h1>门还没有打开。</h1>
-        <p>
-          {p.used
-            ? '今天带回的东西，都在这里了。'
-            : '门外有九十九个和你一样的人。'}
-          <br />
-          头顶的灯，仍在替你亮着。
-        </p>
-      </div>
+      {!p.arrival && (
+        <div className="ed-room-whisper">
+          <span>
+            第 {String(p.day).padStart(2, '0')} 天 · 电梯 Lv.{p.level}
+          </span>
+          <h1>门还没有打开。</h1>
+          <p>
+            {p.used
+              ? '今天带回的东西，都在这里了。'
+              : '门外有九十九个和你一样的人。'}
+            <br />
+            头顶的灯，仍在替你亮着。
+          </p>
+        </div>
+      )}
       <button
         className="ed-room-object ed-room-door"
         onClick={p.onDoor}
-        aria-label="点击电梯门，选择楼层"
+        aria-label={p.arrival ? '看看门外' : '点击电梯门，选择楼层'}
       >
         <span className="ed-door-indicator">
           ↑ {String(p.floor).padStart(2, '0')}
@@ -129,29 +147,50 @@ export default function ElevatorRoom(p: Props) {
         <i className="ed-door-left" />
         <i className="ed-door-right" />
         <span className="ed-object-label">
-          选择楼层 <small>{p.used ? '明日再出发' : '门外的世界'}</small>
+          {p.arrival ? (
+            '看看门外'
+          ) : (
+            <>
+              选择楼层 <small>{p.used ? '明日再出发' : '门外的世界'}</small>
+            </>
+          )}
         </span>
       </button>
       <button
         className="ed-room-object ed-room-terminal"
-        onClick={p.onTerminal}
-        aria-label="点击墙上终端，打开电梯系统"
+        onClick={() => inspect('屏幕上只有一颗缓慢闪动的光点。', p.onTerminal)}
+        aria-label={p.arrival ? '观察屏幕' : '点击墙上终端，打开电梯系统'}
       >
         <span className="ed-terminal-glass">
-          <small>SURVIVOR PROTOCOL</small>
-          <b>100</b>
-          <span>你的信号仍在线</span>
-          <i>● SYSTEM READY</i>
+          {!p.arrival && (
+            <>
+              <small>SURVIVOR PROTOCOL</small>
+              <b>100</b>
+              <span>你的信号仍在线</span>
+              <i>● SYSTEM READY</i>
+            </>
+          )}
+          {p.arrival && (
+            <i className="ed-arrival-signal" aria-hidden="true">
+              ●
+            </i>
+          )}
         </span>
         <span className="ed-room-slot" />
         <span className="ed-object-label">
-          电梯系统 <small>改造 / 幸存者 / 日志</small>
+          {p.arrival ? (
+            '屏幕'
+          ) : (
+            <>
+              电梯系统 <small>改造 / 幸存者 / 日志</small>
+            </>
+          )}
         </span>
       </button>
       <button
         className="ed-room-object ed-room-bed"
-        onClick={p.onBed}
-        aria-label="点击床，睡到明天"
+        onClick={() => inspect('床铺还留着余温。', p.onBed)}
+        aria-label={p.arrival ? '观察床铺' : '点击床，睡到明天'}
       >
         <svg viewBox="0 0 500 290" aria-hidden="true">
           <path
@@ -173,13 +212,21 @@ export default function ElevatorRoom(p: Props) {
           />
         </svg>
         <span className="ed-object-label">
-          睡觉 <small>暂时把世界关在门外</small>
+          {p.arrival ? (
+            '床铺'
+          ) : (
+            <>
+              睡觉 <small>暂时把世界关在门外</small>
+            </>
+          )}
         </span>
       </button>
       <button
         className="ed-room-object ed-room-table"
-        onClick={p.onTable}
-        aria-label="点击桌面，整理行装与构筑"
+        onClick={() =>
+          inspect('桌上放着几件旧物，像是有人替你准备好了。', p.onTable)
+        }
+        aria-label={p.arrival ? '观察桌面' : '点击桌面，整理行装与构筑'}
       >
         <svg viewBox="0 0 500 340" aria-hidden="true">
           <path
@@ -203,9 +250,20 @@ export default function ElevatorRoom(p: Props) {
           <path d="M122 10Q146 -15 169 10L164 27H122z" fill="#d1c590" />
         </svg>
         <span className="ed-object-label">
-          行装与构筑 <small>看看你还有什么</small>
+          {p.arrival ? (
+            '桌面'
+          ) : (
+            <>
+              行装与构筑 <small>看看你还有什么</small>
+            </>
+          )}
         </span>
       </button>
+      {p.arrival && (
+        <output className="ed-arrival-observation" aria-live="polite">
+          {observation}
+        </output>
+      )}
     </section>
   );
 }

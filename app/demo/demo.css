@@ -5674,3 +5674,103 @@ body:has(.elevator-demo) {
   line-height: 20px;
   overflow-wrap: anywhere;
 }
+/* First arrival: the room is the navigation, the door is the invitation. */
+.first-arrival > .ed-resources,
+.first-arrival .ed-sidebar,
+.first-arrival .ed-main > .ed-notice {
+  display: none;
+}
+.ed-room-arrival .ed-object-label {
+  opacity: 0;
+  font-size: 14px;
+  transition:
+    opacity 0.2s,
+    transform 0.2s;
+}
+.ed-room-arrival .ed-room-object:hover .ed-object-label,
+.ed-room-arrival .ed-room-object:focus-visible .ed-object-label,
+.ed-room-arrival .ed-room-door .ed-object-label {
+  opacity: 1;
+}
+.ed-room-arrival .ed-room-door::after {
+  content: '';
+  position: absolute;
+  left: 50%;
+  top: 0;
+  bottom: 0;
+  width: 2px;
+  background: #e8d69a;
+  box-shadow: 0 0 24px 5px #e8d69a50;
+  pointer-events: none;
+}
+.ed-room-arrival .ed-room-door .ed-object-label {
+  bottom: -54px;
+  padding: 12px 24px;
+  color: #e8d69a;
+}
+.ed-arrival-observation {
+  position: absolute;
+  bottom: 6%;
+  left: 50%;
+  transform: translateX(-50%);
+  width: min(520px, 88%);
+  text-align: center;
+  font-size: 16px;
+  line-height: 1.8;
+  color: #e0ddc5;
+  z-index: 6;
+  pointer-events: none;
+  text-shadow: 0 2px 8px #000;
+}
+.ed-room-arrival .ed-terminal-glass .ed-arrival-signal {
+  font-size: 16px;
+  margin: 0;
+  animation: ed-arrival-pulse 4s ease-in-out infinite;
+}
+@keyframes ed-arrival-pulse {
+  50% {
+    opacity: 0.3;
+  }
+}
+@media (max-width: 700px) {
+  .ed-room-arrival .ed-room-door {
+    left: 36%;
+    width: 30%;
+    top: 28%;
+    height: 40%;
+  }
+  .ed-room-arrival .ed-room-identify {
+    left: 5%;
+    width: 22%;
+    top: 40%;
+  }
+  .ed-room-arrival .ed-room-terminal {
+    left: 75%;
+    width: 20%;
+    top: 38%;
+  }
+  .ed-room-arrival .ed-room-bed {
+    left: 1%;
+    bottom: 12%;
+    width: 35%;
+  }
+  .ed-room-arrival .ed-room-table {
+    right: 1%;
+    bottom: 12%;
+    width: 35%;
+  }
+  .ed-room-arrival .ed-room-terminal .ed-object-label {
+    bottom: -20px;
+  }
+  .ed-arrival-observation {
+    bottom: 5%;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .ed-room-arrival .ed-arrival-signal {
+    animation: none !important;
+  }
+  .ed-room-arrival .ed-object-label {
+    transition: none;
+  }
+}

@@ -242,7 +242,7 @@ export default function Demo() {
       const params = new URLSearchParams(window.location.search);
       const qa =
         process.env.NODE_ENV === 'development' &&
-        ['phase1', 'items'].includes(params.get('qa') ?? '');
+        ['phase1', 'items', 'arrival'].includes(params.get('qa') ?? '');
       const work =
         qa && params.get('qa') === 'items' ? params.get('work') : null;
       storageKey.current = qa
@@ -2130,7 +2130,14 @@ export default function Demo() {
           'elevator-demo ed-immersive ' +
           (run.phase === 'combat' ? 'in-combat ' : '') +
           (run.phase === 'base' ? 'at-base ' : '') +
-          (run.phase === 'base' && tab === 'base' ? 'in-room' : '')
+          (run.phase === 'base' && tab === 'base' ? 'in-room' : '') +
+          (run.phase === 'base' &&
+          tab === 'base' &&
+          run.day === 1 &&
+          !run.used &&
+          checkpoint(run) === 0
+            ? ' first-arrival'
+            : '')
         }
       >
         <header className="ed-header">
@@ -2153,6 +2160,7 @@ export default function Demo() {
           <section className="ed-intro ed-intro-room">
             <div inert className="ed-intro-backdrop">
               <ElevatorRoom
+                arrival
                 floor={0}
                 day={1}
                 used={false}
@@ -2171,7 +2179,7 @@ export default function Demo() {
             </div>
             <div>
               <p className="ed-kicker">未知位置 / 00:00</p>
-              {notice && (
+              {notice && notice !== '电梯没有下行按钮。' && (
                 <output className="ed-hint" aria-live="polite">
                   {notice}
                 </output>
@@ -2182,9 +2190,9 @@ export default function Demo() {
                 世界只剩向上。
               </h1>
               <p>
-                一张床，一张桌子。一套初始卡牌，和一件还未转化的缓冲垫。
-                <br />
                 你在一部没有下行按钮的电梯里醒来。
+                <br />
+                门外传来一阵轻响。
               </p>
               <div className="ed-actions">
                 <button
@@ -2192,18 +2200,9 @@ export default function Demo() {
                   disabled={!ready}
                   onClick={() => dispatch({ type: 'begin' })}
                 >
-                  这是哪儿？ <ArrowRight size={18} />
-                </button>
-                <button
-                  disabled={!ready}
-                  onClick={() => dispatch({ type: 'begin' })}
-                >
-                  我在做一个什么奇葩的梦？
+                  起身看看 <ArrowRight size={18} />
                 </button>
               </div>
-              <small className="ed-hint">
-                屏幕忽然闪了一下。它像是在等你说话。
-              </small>
             </div>
           </section>
         ) : (
@@ -2320,10 +2319,12 @@ export default function Demo() {
                   </div>
                 )}
 
-                <output className="ed-notice" aria-live="polite">
-                  <Radio size={15} />
-                  <span>{notice || run.notice}</span>
-                </output>
+                {!(notice || run.notice).startsWith('协议生效：') && (
+                  <output className="ed-notice" aria-live="polite">
+                    <Radio size={15} />
+                    <span>{notice || run.notice}</span>
+                  </output>
+                )}
                 {run.phase !== 'combat' &&
                   run.phase !== 'ended' &&
                   (tab === 'inventory' ? (
@@ -2332,7 +2333,9 @@ export default function Demo() {
                     <Onboarding key="map" context="map" />
                   ) : tab === 'upgrades' || tab === 'prep' ? (
                     <Onboarding key="terminal" context="terminal" />
-                  ) : tab === 'base' && run.phase === 'base' ? (
+                  ) : tab === 'base' &&
+                    run.phase === 'base' &&
+                    !(run.day === 1 && !run.used && checkpoint(run) === 0) ? (
                     <Onboarding key="room" context="room" />
                   ) : tab === 'floor' && !isFieldNode(currentNode(run)) ? (
                     <Onboarding key="explore" context="explore" />
@@ -2373,6 +2376,9 @@ export default function Demo() {
                   </>
                 ) : tab === 'base' ? (
                   <ElevatorRoom
+                    arrival={
+                      run.day === 1 && !run.used && checkpoint(run) === 0
+                    }
                     floor={checkpoint(run)}
                     day={run.day}
                     used={run.used}
