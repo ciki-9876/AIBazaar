@@ -250,7 +250,7 @@ export default function CargoGrid({
               key={item.uid}
               className={
                 'ed-spatial-item ' +
-                (item.type === 'card' ? `rarity-${item.rarity} is-card` : '')
+                `rarity-${item.id === 'scanner' || item.id === 'relic' ? 3 : (item.rarity ?? 0)} ${item.type === 'card' ? 'is-card' : ''}`
               }
               style={{
                 gridColumn: `${(item.slot! % columns) + 1} / span ${d.w}`,

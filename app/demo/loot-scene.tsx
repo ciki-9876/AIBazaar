@@ -8,7 +8,7 @@ import {
   ScanLine,
 } from 'lucide-react';
 import type { Run, Action } from '@/lib/demo-engine';
-import { itemName } from '@/lib/demo-engine';
+import { itemName, RARITY_LABELS } from '@/lib/demo-engine';
 import { describeCard } from '@/lib/card-description';
 export default function LootScene({
   loot,
@@ -33,37 +33,43 @@ export default function LootScene({
       <p className="ed-kicker">
         {loot.source === 'battle'
           ? 'VICTORY / 战利品'
-          : 'WORKSHOP CLEARED / 检修完成'}
+          : loot.sourceName === '终极宝箱' ? 'FLOOR CLEARED / 守卫宝箱' : 'WORKSHOP CLEARED / 检修完成'}
       </p>
-      <h1>{loot.source === 'battle' ? '把胜利带走' : '气室恢复了平静'}</h1>
+      <h1>
+        {loot.source === 'battle'
+          ? '胜利'
+          : loot.sourceName === '终极宝箱'
+            ? '终极宝箱'
+            : '气室恢复了平静'}
+      </h1>
       {!loot.revealed ? (
         <>
           <button
             className="loot-sealed"
             onClick={() => onAction({ type: 'reveal-loot' })}
-            aria-label={
-              loot.source === 'battle' ? '抽取敌方武器' : '打开检修箱'
-            }
+            aria-label={loot.source === 'battle' ? '抽取敌方武器' : '打开宝箱'}
           >
             <PackageOpen size={68} />
             <span>
-              {loot.source === 'battle' ? '抽取敌方武器' : '打开检修箱'}
+              {loot.source === 'battle' ? '抽取敌方武器' : '打开宝箱'}
             </span>
             <Sparkles size={22} />
           </button>
           <p>
             {loot.source === 'battle'
               ? '从刚击败的敌人武器中随机获得一件'
-              : '一只完好的鉴定仪，藏在检修柜里。'}
+              : '宝箱中封存着属于胜者的收获。'}
           </p>
         </>
       ) : (
         <>
-          <article className="loot-card">
+          <article
+            className={`loot-card rarity-${item.id === 'scanner' || item.id === 'relic' ? 3 : (item.rarity ?? 0)}`}
+          >
             <div className="loot-emblem">
-              {card ? <Swords size={54} /> : <ScanLine size={54} />}
+              {card || item.type === 'physical' ? <Swords size={54} /> : item.id === 'scanner' ? <ScanLine size={54} /> : <PackageOpen size={54} />}
             </div>
-            <small>{loot.sourceName}</small>
+            <small>{loot.sourceName} · {RARITY_LABELS[item.id === 'scanner' || item.id === 'relic' ? 3 : item.rarity ?? 0]}</small>
             <h2>{itemName(item)}</h2>
             {card ? (
               <>
@@ -80,9 +86,11 @@ export default function LootScene({
               </>
             ) : (
               <p>
-                携带鉴定仪，将实体转化为卡牌。
-                <br />
-                附带 1 次鉴定电荷。
+                {item.id === 'scanner'
+                  ? '鉴定一件实体，用后消失。'
+                  : item.id === 'relic'
+                    ? '镀金的旧日纪念章，商店愿意出高价收购。'
+                    : '未鉴定武器 · 使用鉴定仪揭晓能力'}
               </p>
             )}
           </article>

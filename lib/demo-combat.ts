@@ -82,7 +82,7 @@ export type Duel = {
   botId: number | null;
 };
 const laneOf = (c: FighterCard) => Math.floor(c.at / 3);
-const laneName = (lane: number) => ['上路', '中路', '下路'][lane];
+const laneName = (lane: number) => ['左路', '中路', '右路'][lane];
 export function simulateDuel(d: Duel) {
   for (const [side, board] of [d.player, d.enemy].entries())
     for (const card of board) {

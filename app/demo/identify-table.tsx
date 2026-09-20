@@ -105,7 +105,7 @@ export default function IdentifyTable({
   return (
     <section className={'ed-identify-page ' + phase}>
       <header>
-        <small>免费鉴定</small>
+        <small>鉴定</small>
         <h2>将实体转化为卡牌</h2>
       </header>
       <div className="ed-identify-stage">

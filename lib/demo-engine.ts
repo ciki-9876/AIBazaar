@@ -1,3 +1,9 @@
+import {
+  startMinigame,
+  MINIGAMES,
+  rewardStars,
+  type MinigameState,
+} from './minigame.ts';
 import { pipeConnected } from './tutorial-pipes.ts';
 import { CARDS, cardDef } from './demo-cards.ts';
 import { layout } from './cargo-layout.ts';
@@ -45,7 +51,7 @@ export const FACILITY = [
     name: '鉴定台',
     slots: 0,
     cost: 0,
-    desc: '初始设施，免费鉴定实体物品',
+    desc: 'Lv.4 开放，每次鉴定消耗 2 金币，不限次数',
     effect: 'identify',
   },
   ...FACILITIES.filter((f) => f.id !== 'weather'),
@@ -109,10 +115,10 @@ export const RESOURCE_LEVEL: Record<string, number> = {
   scrap: 2,
   power: 3,
   fuel: 3,
-  scanner: 3,
+  scanner: 1,
 };
 export const FACILITY_LEVEL: Record<string, number> = {
-  identify: 1,
+  identify: 4,
   clinic: 2,
   recycle: 2,
   generator: 3,
@@ -123,10 +129,10 @@ export const FACILITY_LEVEL: Record<string, number> = {
   adapt: 5,
 };
 export const LEVEL_GUIDE = [
-  '免费鉴定',
+  '物品、布阵与消耗品鉴定',
   '卡牌强化、吞噬升阶、医疗设施',
   '便携鉴定、电力与燃料设施',
-  '补给种植',
+  '鉴定台、补给种植',
   '探索整备',
   '九格战斗布局',
 ];
@@ -174,6 +180,21 @@ function spendItem(s: Run, id: string, amount = 1) {
 export const checkpoint = (s: Run) => s.stopFloor ?? s.best;
 export type Run = {
   openingVersion?: 2;
+  experienceVersion?: 3;
+  scannerVersion?: 2;
+  minigame?: MinigameState;
+  lootQueue?: NonNullable<Run['loot']>[];
+  homeGuide?: 'sell' | 'buy' | 'scan' | 'sleep' | 'done';
+  shopDay?: number;
+  shopBought?: number;
+  expedition?: {
+    active: boolean;
+    acquired: Item[];
+    spent: Record<string, number>;
+    gained: Record<string, number>;
+  };
+  identification?: { uid: string };
+  defenseExplained?: boolean;
   bagUnlocked?: boolean;
   equipmentExplained?: boolean;
   energyExplained?: boolean;
@@ -274,7 +295,8 @@ const THEMES = [
 export const NAMES: Record<string, string> = {
   apple: '苹果',
   lighter: '打火机',
-  scanner: '便携鉴定仪',
+  scanner: '鉴定仪',
+  relic: '镀金纪念章',
   material: '金币',
   supply: '密封补给',
   power: '储能电池',
@@ -384,10 +406,12 @@ export function newRun(seed = Date.now() >>> 0, tutorial = false): Run {
       ? {
           tutorialBattleStep: 0,
           openingVersion: 2 as const,
+          experienceVersion: 3 as const,
           bagUnlocked: false,
         }
       : {}),
     version: 1,
+    scannerVersion: 2,
     catalogVersion: 2,
     utilityUsed: [],
     fieldPrep: { hp: 0, barrier: [0, 0, 0], steps: 0 },
@@ -406,7 +430,7 @@ export function newRun(seed = Date.now() >>> 0, tutorial = false): Run {
     fuel: 3,
     medicine: 2,
     scrap: 4,
-    charges: tutorial ? 0 : 1,
+    charges: 0,
     level: 1,
     moduleCap: 6,
     installed: [],
@@ -476,28 +500,22 @@ export function autoBoardPosition(s: Run, item: Item): number | null {
 export const tutorialFloor = (s: Run) =>
   s.floor === 1 && s.floors[0]?.routeVersion === 6 && !s.clears.includes(1);
 export function identificationState(s: Run) {
-  const fieldUnlocked = s.level >= 3 || tutorialFloor(s);
-  const cost = s.phase === 'base' ? 0 : 1;
-  const reason =
-    s.phase === 'base'
-      ? '基地免费鉴定'
-      : !fieldUnlocked
-        ? '未解锁 · 电梯 Lv.3 解锁便携鉴定'
-        : !hasTool(s, 'scanner')
-          ? '未携带鉴定仪 · 需放入背包或安全容器'
-          : s.charges < cost
-            ? '电荷不足 · 回基地设备台补充'
-            : '可鉴定';
+  const table =
+    s.phase === 'base' && s.level >= 4 && s.installed.includes('identify');
+  const count = itemCount(s, 'scanner');
+  const allowed =
+    ['base', 'floor'].includes(s.phase) &&
+    (table ? s.material >= 2 : count > 0);
   return {
-    cost,
-    charges: s.charges,
-    allowed:
-      s.phase === 'base' ||
-      (s.phase === 'floor' &&
-        fieldUnlocked &&
-        hasTool(s, 'scanner') &&
-        s.charges >= cost),
-    reason,
+    cost: table ? 2 : 1,
+    charges: count,
+    allowed,
+    table,
+    reason: table
+      ? '鉴定台 · 2 金币 / 次'
+      : count
+        ? '消耗 1 个鉴定仪'
+        : '需要 1 个鉴定仪',
   };
 }
 export function previewPlacement(s: Run, id: string, at: number) {
@@ -588,7 +606,7 @@ export function fieldWorkPreview(
   const values = {
     stamina: s.stamina - 2,
     power: s.power,
-    material: s.material,
+    material: s.material + (ids.length ? 0 : 2),
     fieldPrep: structuredClone(
       s.fieldPrep ?? { hp: 0, barrier: [0, 0, 0], steps: 0 },
     ),
@@ -676,7 +694,7 @@ export function fieldWorkPreview(
     for (let i = 0; i < 3; i++) {
       if (barriersBefore[i] !== barriersAfter[i] || i === lane)
         deltas.push(
-          `下场${['上', '中', '下'][i]}路屏障 ${barriersBefore[i]}→${barriersAfter[i]}`,
+          `下场${['左', '中', '右'][i]}路屏障 ${barriersBefore[i]}→${barriersAfter[i]}`,
         );
     }
   if (effects.includes('credit'))
@@ -686,9 +704,8 @@ export function fieldWorkPreview(
       `便捷路程 ${s.fieldPrep?.steps ?? 0}→${prep.steps} 段（包含本次离开）`,
     );
   deltas.push(`结算后精力 ${s.stamina}→${values.stamina - road}`);
-  const reason = !ids.length
-    ? '尚未选择工具'
-    : new Set(ids).size !== ids.length
+  const reason =
+    new Set(ids).size !== ids.length
       ? '同一件工具不能重复选择'
       : !Number.isInteger(lane) || lane < 0 || lane > 2
         ? '请选择准备作用的路线'
@@ -714,13 +731,15 @@ export const nodeTitle = (s: Run, index = s.node) =>
   FIELD_TITLES[currentFloor(s).nodes[index] as keyof typeof FIELD_TITLES] ??
   sceneTitle(currentFloor(s).name, currentFloor(s).nodes[index] ?? 'exit');
 export const sellPrice = (x: Item) =>
-  x.type === 'card'
-    ? 2 + x.level + 2 * x.quality + (x.rarity ?? 0)
-    : x.type === 'physical'
-      ? 2
-      : x.type === 'resource'
-        ? Math.max(1, Math.floor(x.amount / 2))
-        : 1;
+  x.id === 'relic'
+    ? 30
+    : x.type === 'card'
+      ? 2 + x.level + 2 * x.quality + (x.rarity ?? 0)
+      : x.type === 'physical'
+        ? 2
+        : x.type === 'resource'
+          ? Math.max(1, Math.floor(x.amount / 2))
+          : 1;
 export const offerPrice = (x: Item) =>
   x.type === 'physical'
     ? 3 + x.volume
@@ -803,6 +822,7 @@ function validateItem(x: Item) {
         ? [
             'apple',
             'lighter',
+            'relic',
             'scanner',
             'supply',
             'fuel',
@@ -931,11 +951,6 @@ function validateItems(s: Run, persist = true) {
           placed,
         );
   }
-}
-function hasTool(s: Run, id: string) {
-  return s.items.some(
-    (x) => x.id === id && (x.zone === 'bag' || x.zone === 'safe'),
-  );
 }
 function consumeTool(s: Run, id: string) {
   const x = s.items.find(
@@ -1236,10 +1251,10 @@ export function migrateCargo(source: Run): Run {
       '挑战未通过（当时环境波动后的表现未达要求）',
     );
   for (const item of [...s.items, ...s.floors.flatMap((f) => f.stock)])
-    if (item.type === 'card') item.rarity = rarityOf(item.id);
+    if (item.type === 'card') item.rarity ??= rarityOf(item.id);
   if (s.duel)
     for (const card of [...s.duel.player, ...s.duel.enemy])
-      card.rarity = rarityOf(card.id);
+      card.rarity ??= rarityOf(card.id);
   for (const id of CONSUMABLES) {
     need(
       Number.isInteger(s[id]) && s[id] >= 0 && s[id] <= 10000,
@@ -1253,7 +1268,15 @@ export function migrateCargo(source: Run): Run {
   if (s.installed.includes('weather')) s.material += 8;
   s.installed = s.installed.filter((id) => id !== 'weather');
   s.facilityUsed = s.facilityUsed.filter((id) => id !== 'weather');
-  if (!s.installed.includes('identify')) s.installed.unshift('identify');
+  if (s.level >= 4 && !s.installed.includes('identify'))
+    s.installed.unshift('identify');
+  if (s.level < 4) s.installed = s.installed.filter((id) => id !== 'identify');
+  if (s.scannerVersion !== 2) {
+    const count = itemCount(s, 'scanner', false);
+    if (s.charges > count) grantItem(s, 'scanner', s.charges - count);
+    s.charges = 0;
+    s.scannerVersion = 2;
+  }
   s.forecast = false;
   if (s.duel) s.duel.weatherEnabled = false;
   s.dayStartBots ??= s.bots.map(({ id, floor, alive }) => ({
@@ -1316,6 +1339,38 @@ export function act(old: Run, a: Action): Run {
   }
   if (next.phase === 'base' && ['floor', 'combat'].includes(old.phase))
     next.fieldPrep = { hp: 0, barrier: [0, 0, 0], steps: 0 };
+  if (a.type === 'enter')
+    next.expedition = { active: true, acquired: [], spent: {}, gained: {} };
+  if (next.expedition?.active) {
+    const ledger = next.expedition;
+    for (const key of [
+      'stamina',
+      'material',
+      'power',
+      'quota',
+      'supply',
+      'scanner',
+    ]) {
+      const before = ['supply', 'scanner'].includes(key)
+        ? itemCount(old, key, false) + (key === 'supply' ? old.supply : 0)
+        : Number(old[key as keyof Run]);
+      const after = ['supply', 'scanner'].includes(key)
+        ? itemCount(next, key, false)
+        : Number(next[key as keyof Run]);
+      const delta = after - before;
+      if (delta) {
+        const bucket = delta > 0 ? ledger.gained : ledger.spent;
+        bucket[key] = (bucket[key] ?? 0) + Math.abs(delta);
+      }
+    }
+    for (const x of next.items)
+      if (
+        !old.items.some((y) => y.uid === x.uid) &&
+        !ledger.acquired.some((y) => y.uid === x.uid)
+      )
+        ledger.acquired.push({ ...x });
+    if (next.phase === 'base') ledger.active = false;
+  }
   validateItems(next);
   for (const floor of next.floors) floor.stock = layout(floor.stock, 4, 96);
   return next;
@@ -1377,7 +1432,7 @@ function applyAction(old: Run, a: Action): Run {
       '不在首战引导中',
     );
     need(a.choice === (s.tutorialBattleStep ?? 0), '引导步骤已更新');
-    s.tutorialBattleStep = Math.min(7, (s.tutorialBattleStep ?? 0) + 1);
+    s.tutorialBattleStep = Math.min(8, (s.tutorialBattleStep ?? 0) + 1);
     return s;
   }
   if (a.type === 'resolve') {
@@ -1515,7 +1570,135 @@ function applyAction(old: Run, a: Action): Run {
       s.node++;
       say(s, '楼层守卫已击败，全部战斗结束。主目标完成，成功撤离后提交记录。');
     }
+    if (stage === 'boss') {
+      const chest = [
+        {
+          item: makeItem(
+            tutorialFloor(s) && s.openingVersion === 2
+              ? 'tutorial-relic'
+              : `relic-${s.serial++}`,
+            'relic',
+            'tool',
+          ),
+          source: 'workshop' as const,
+          sourceName: '终极宝箱',
+          revealed: false,
+        },
+        {
+          item: makeItem(
+            tutorialFloor(s) && s.openingVersion === 2
+              ? 'tutorial-boss-weapon'
+              : `boss-weapon-${s.serial++}`,
+            'springbow',
+            'physical',
+          ),
+          source: 'workshop' as const,
+          sourceName: '终极宝箱',
+          revealed: false,
+        },
+      ];
+      s.lootQueue = chest;
+      if (!s.loot) s.loot = s.lootQueue.shift()!;
+    }
     if (rewardText) say(s, `${s.notice} ${rewardText}`);
+    return s;
+  }
+  if (a.type === 'close-identification') {
+    s.identification = undefined;
+    return s;
+  }
+  if (a.type === 'defense-explained') {
+    need(
+      s.items.some(
+        (x) =>
+          x.uid === 'tutorial-rubber' &&
+          x.zone === 'board' &&
+          Math.floor(x.at! / 3) === 1,
+      ),
+      '先把缓冲垫放到中路',
+    );
+    s.defenseExplained = true;
+    return s;
+  }
+  if (a.type === 'buy-scanner') {
+    need(s.phase === 'base', '请回电梯商店');
+    if (s.shopDay !== s.day) {
+      s.shopDay = s.day;
+      s.shopBought = 0;
+    }
+    need((s.shopBought ?? 0) < 2, '今日已售罄');
+    need(s.material >= 12, '需要 12 金币');
+    s.items.push(
+      makeItem(`scanner-${s.serial++}`, 'scanner', 'tool', 'warehouse'),
+    );
+    s.material -= 12;
+    s.shopBought = (s.shopBought ?? 0) + 1;
+    if (s.homeGuide === 'buy') s.homeGuide = 'scan';
+    say(s, '购入鉴定仪，消耗 12 金币。');
+    return s;
+  }
+  if (a.type === 'sell-relic') {
+    need(s.phase === 'base', '请回电梯商店');
+    const relic = s.items.find((x) => x.id === 'relic');
+    need(relic, '没有可售出的纪念章');
+    s.items = s.items.filter((x) => x.uid !== relic.uid);
+    s.material += 30;
+    if (s.homeGuide === 'sell') s.homeGuide = 'buy';
+    say(s, '售出镀金纪念章，获得 30 金币。');
+    return s;
+  }
+  if (a.type.startsWith('minigame-')) {
+    need(
+      s.phase === 'floor' && currentNode(s) === 'pressure',
+      '当前不在特殊玩法房间',
+    );
+    need(!currentFloor(s).workResolved?.includes('pressure'), '房间已经结算');
+    const game = (s.minigame ??= startMinigame(s.seed));
+    const definition = MINIGAMES[game.key as keyof typeof MINIGAMES];
+    need(!!definition, '未知玩法');
+    need(game.status === 'playing', '本次玩法已结束');
+    if (a.type === 'minigame-play') {
+      need(game.used < game.moves + game.bonus, '步数用尽，可以重置或使用道具');
+      game.board = definition.play(game.board, a.choice!);
+      game.used++;
+    } else if (a.type === 'minigame-tool') {
+      const tool = s.items.find(
+        (x) =>
+          x.uid === a.id &&
+          x.type === 'physical' &&
+          ['bag', 'safe'].includes(x.zone),
+      );
+      need(tool && ['sealant', 'rubber'].includes(tool.id), '需要可用实体工具');
+      // Reserve the only tutorial defensive specimen for the identification lesson.
+      need(
+        !(tutorialFloor(s) && tool.uid === 'tutorial-rubber'),
+        '留下缓冲垫用于鉴定；可以使用补漏胶增加步数',
+      );
+      s.items = s.items.filter((x) => x.uid !== tool.uid);
+      game.bonus += 4;
+    } else if (a.type === 'minigame-reset') {
+      game.board = definition.initial(s.seed);
+      game.used = 0;
+    } else if (a.type === 'minigame-skip') {
+      game.status = 'skipped';
+      s.node++;
+      say(s, '绕过气室，未领取奖励。');
+    } else if (a.type === 'minigame-complete') {
+      need(definition.complete(game.board), '管道尚未接通');
+      need(s.stamina >= 2, '需要 2 精力');
+      game.stars = rewardStars(game.moves + game.bonus - game.used);
+      game.status = 'completed';
+      s.stamina -= 2;
+      s.material += game.stars * 2;
+      currentFloor(s).workResolved!.push('pressure');
+      s.loot = {
+        item: makeItem('tutorial-scanner', 'scanner', 'tool'),
+        source: 'workshop',
+        sourceName: `${game.stars} 星检修箱`,
+        revealed: false,
+      };
+      say(s, `泄压成功 · ${game.stars} 星 · 金币 +${game.stars * 2}`);
+    } else throw Error('未知玩法操作');
     return s;
   }
   if (a.type === 'equipment-explained') {
@@ -1540,9 +1723,8 @@ function applyAction(old: Run, a: Action): Run {
     const reward = s.loot!;
     s.items.push({ ...reward.item });
     validateItems(s);
-    if (reward.source === 'workshop' && reward.item.id === 'scanner')
-      s.charges++;
-    s.loot = null;
+    s.loot = s.lootQueue?.shift() ?? null;
+    if (s.loot?.sourceName === reward.sourceName) s.loot.revealed = true;
     say(s, `${itemName(reward.item)}已收入背包。`);
     return s;
   }
@@ -1582,7 +1764,7 @@ function applyAction(old: Run, a: Action): Run {
       s,
       other
         ? `${itemName(x)}与${itemName(other)}已交换位置。`
-        : `${itemName(x)}已放至${['上路', '中路', '下路'][Math.floor(at / 3)]}第${(at % 3) + 1}格。`,
+        : `${itemName(x)}已放至${['左路', '中路', '右路'][Math.floor(at / 3)]}第${(at % 3) + 1}格。`,
     );
     // act validates the entire candidate once before returning it; the original is untouched.
     return s;
@@ -1632,13 +1814,22 @@ function applyAction(old: Run, a: Action): Run {
       const state = identificationState(s);
       need(state.allowed, state.reason);
       need(x.zone === 'bag' || x.zone === 'safe', '只能鉴定随身携带的实体');
-      s.charges -= state.cost;
     }
-    x.rarity = rarityOf(x.id);
+    const state = identificationState(s);
+    need(state.allowed, state.reason);
+    if (state.table) s.material -= 2;
+    else spendItem(s, 'scanner');
+    const roll = hash(`${s.seed}/identify/${x.uid}`) % 100;
+    x.rarity =
+      roll < 45 ? 0 : roll < 73 ? 1 : roll < 90 ? 2 : roll < 98 ? 3 : 4;
     x.type = 'card';
+    x.quality = x.rarity >= 4 ? 2 : x.rarity >= 2 ? 1 : 0;
+    s.identification = { uid: x.uid };
+    if (s.homeGuide === 'scan' && x.uid === 'tutorial-boss-weapon')
+      s.homeGuide = 'sleep';
     say(
       s,
-      `鉴定完成：${itemName(x)} / ${RARITY[x.rarity].name}。${s.phase === 'floor' ? `本次消耗 1 电荷，剩余 ${s.charges} / 4 电荷；电力未消耗。` : '基地免费鉴定，不消耗电荷。'}`,
+      `鉴定完成：${itemName(x)} / ${RARITY[x.rarity].name}。${state.table ? '消耗 2 金币。' : '消耗 1 个鉴定仪。'}`,
     );
     return s;
   }
@@ -1721,6 +1912,7 @@ function applyAction(old: Run, a: Action): Run {
     s.stamina = Math.min(100, s.stamina + (fed ? 50 : 15));
     s.quota--;
     s.day++;
+    if (s.homeGuide === 'sleep') s.homeGuide = 'done';
     s.used = false;
     s.botsDone = false;
     s.forecast = false;
@@ -1835,13 +2027,10 @@ function applyAction(old: Run, a: Action): Run {
             s.material += 3;
             break;
           case 'workshop':
-            need(
-              s.material >= 1 && s.power >= 2 && s.charges < 4,
-              '需要金币、电力且电荷未满',
-            );
-            s.material--;
+            need(s.material >= 8 && s.power >= 2, '需要 8 金币和 2 电力');
+            s.material -= 8;
             s.power -= 2;
-            s.charges++;
+            grantItem(s, 'scanner', 1);
             break;
           case 'storage':
             need(itemCount(s, 'scrap') >= 2, '需要 2 废料束');
@@ -1885,11 +2074,13 @@ function applyAction(old: Run, a: Action): Run {
       '已经拥有鉴定仪，可从仓库取回',
     );
     need(s.material >= 4 && s.power >= 2, '重新制造需要 4 金币与 2 电力');
-    s.items.push(makeItem(`scanner-${s.serial++}`, 'scanner', 'tool'));
+    s.items.push(
+      makeItem(`scanner-${s.serial++}`, 'scanner', 'tool', 'warehouse'),
+    );
     validateItems(s);
     s.material -= 4;
     s.power -= 2;
-    say(s, '鉴定仪已重新制造；剩余电荷沿用终端记录，设备台可补充电荷。');
+    say(s, '已制造一个一次性鉴定仪。');
     return s;
   }
   if (a.type === 'enter') {
@@ -1918,6 +2109,7 @@ function applyAction(old: Run, a: Action): Run {
     s.phase = 'floor';
     s.node = 0;
     s.utilityUsed = [];
+    s.minigame = undefined;
     s.fieldPrep = { hp: 0, barrier: [0, 0, 0], steps: 0 };
     s.interaction = null;
     s.objective = false;
@@ -1989,6 +2181,8 @@ function applyAction(old: Run, a: Action): Run {
       s.material += 4 + Math.ceil(s.floor / 2);
       grantItem(s, 'supply', 2);
     }
+    if (firstClear && s.floor === 1 && s.openingVersion === 2)
+      s.homeGuide = 'sell';
     deposit(s);
     finishBots(s);
     say(
@@ -2043,6 +2237,11 @@ function applyAction(old: Run, a: Action): Run {
   const node = currentNode(s);
   if (a.type === 'approach-guardian') {
     need(node === 'antechamber', '尚未到达守卫前室');
+    if (
+      s.experienceVersion === 3 &&
+      s.items.some((x) => x.uid === 'tutorial-rubber' && x.type === 'card')
+    )
+      need(s.defenseExplained, '先观察敌情，把缓冲垫放到中路');
     s.node++;
     say(s, '你推开内门。守卫转过身，归返信标就在它的身后。');
     return s;
@@ -2064,6 +2263,7 @@ function applyAction(old: Run, a: Action): Run {
     return s;
   }
   if (a.type === 'pipe-work') {
+    need(s.experienceVersion !== 3, '请使用当前机关的完成按钮');
     need(tutorialFloor(s) && node === 'pressure', '当前不是引导气室');
     need(!currentFloor(s).workResolved?.includes(node), '气室已完成');
     need(pipeConnected(a.turns), '管道尚未接通');
@@ -2120,9 +2320,7 @@ function applyAction(old: Run, a: Action): Run {
     }
     const ids = a.ids ?? (a.id ? [a.id] : []);
     need(
-      Array.isArray(ids) &&
-        ids.length > 0 &&
-        ids.every((id) => typeof id === 'string'),
+      Array.isArray(ids) && ids.every((id) => typeof id === 'string'),
       '请选择工具',
     );
     need(new Set(ids).size === ids.length, '同一件工具不能重复选择');
@@ -2390,17 +2588,46 @@ export function validSave(value: unknown): value is Run {
           (s.loot.source === 'battle'
             ? s.loot.item.type === 'card' &&
               ['damage', 'corrode'].includes(cardDef(s.loot.item.id).kind)
-            : s.loot.item.id === 'scanner' && s.loot.item.type === 'tool'),
+            : (['scanner', 'relic'].includes(s.loot.item.id) &&
+                s.loot.item.type === 'tool') ||
+              s.loot.item.type === 'physical'),
         '战利品类型无效',
       );
       need(!s.items.some((x) => x.uid === s.loot!.item.uid), '战利品重复');
     }
 
+    const rewardIds = new Set(s.items.map((x) => x.uid));
+    for (const reward of [s.loot, ...(s.lootQueue ?? [])].filter(Boolean)) {
+      validateItem(reward!.item);
+      need(!rewardIds.has(reward!.item.uid), '待领取物品重复');
+      rewardIds.add(reward!.item.uid);
+    }
+    if (s.minigame) {
+      const g = s.minigame;
+      need(
+        g.key === 'pressure' &&
+          Array.isArray(g.board) &&
+          g.board.length === 9 &&
+          g.board.every((n) => Number.isInteger(n) && n >= 0 && n < 4),
+        '玩法棋盘无效',
+      );
+      need(
+        [g.moves, g.bonus, g.used, g.stars].every(
+          (n) => Number.isInteger(n) && n >= 0,
+        ) &&
+          g.moves === 12 &&
+          g.bonus <= 10000 &&
+          g.used <= g.moves + g.bonus &&
+          g.stars <= 3 &&
+          ['playing', 'completed', 'skipped'].includes(g.status),
+        '玩法进度无效',
+      );
+    }
     need(
       s.tutorialBattleStep === undefined ||
         (Number.isInteger(s.tutorialBattleStep) &&
           s.tutorialBattleStep >= 0 &&
-          s.tutorialBattleStep <= 7),
+          s.tutorialBattleStep <= 8),
       '引导步骤无效',
     );
     need(

@@ -21,7 +21,7 @@ export const KIND: Record<string, string> = {
   shield: '修复',
   corrode: '侵蚀',
 };
-export const LANES = ['上路', '中路', '下路'];
+export const LANES = ['左路', '中路', '右路'];
 export function cardPosition(card: FighterCard, side: number) {
   const width = cardDef(card.id).size;
   const cell = card.at % 3;

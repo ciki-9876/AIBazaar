@@ -4,17 +4,21 @@ import type { FighterCard } from './demo-combat.ts';
 
 export const CARD_ROLES: Record<string, string> = {};
 export const CARD_TERMS = {
+  direct: {
+    name: '直接伤害',
+    text: '武器命中时一次结算的伤害，包括附加伤害；不包含侵蚀每秒造成的持续伤害。',
+  },
   damage: {
     name: '伤害',
     text: '伤害先由目标路线的屏障承受，超出部分伤及宿主；该路屏障已损毁时直接伤及宿主。卡牌本身不承伤。',
   },
   shield: {
     name: '修复',
-    text: '恢复我方本路屏障的生命，不超过当前上限。本路已损毁则支援剩余生命比例最低的未损毁屏障，相同比例优先上路。全部损毁时无效，不能重建屏障。',
+    text: '恢复同路我方屏障的生命，不超过当前上限。本路已损毁则支援剩余生命比例最低的未损毁屏障，相同比例优先左路。全部损毁时无效，不能重建屏障。',
   },
   charge: {
     name: '充能',
-    text: '推进我方同路最靠左的另一张卡的冷却进度，单位为秒；没有目标时不生效。这不是电力或鉴定电荷，也不代表战斗会缩短同样的时间。',
+    text: '推进同路我方最靠左的另一张卡的冷却进度，单位为秒；没有目标时不生效。不代表战斗会缩短同样的时间。',
   },
   corrode: {
     name: '侵蚀',
@@ -45,7 +49,7 @@ export function describeCard(card: FighterCard, includeFuture = true) {
   const abilities: CardAbility[] = [];
   const add = (when: string, text: string, terms: CardTerm[]) =>
     abilities.push({ when, text, terms });
-  const target = c.id === 'culture' ? '敌方侵蚀层数最多的路线' : '敌方本路';
+  const target = c.id === 'culture' ? '侵蚀层数最多那一路的敌方' : '同路敌方';
   const action =
     term === 'damage'
       ? `对${target}造成${value}点伤害。`
@@ -53,7 +57,7 @@ export function describeCard(card: FighterCard, includeFuture = true) {
         ? `修复${value}点屏障。`
         : term === 'charge'
           ? `为同路另一张卡充能${value}秒。`
-          : `对敌方本路施加${value}层侵蚀（每路上限12层）。`;
+          : `对同路敌方施加${value}层侵蚀（每路上限12层）。`;
   add(`每${c.cd}秒`, action, c.id === 'culture' ? [term, 'corrode'] : [term]);
   const notes: string[] = [];
   if (m.openingCount)
@@ -83,26 +87,26 @@ export function describeCard(card: FighterCard, includeFuture = true) {
   }
   if (c.id === 'rubber') {
     add('本路屏障未损毁时', `每次受到的直接伤害减少${number(m.buffer)}点。`, [
-      'damage',
+      'direct',
     ]);
     notes.push('同路有多张缓冲垫时只取最高减免，不叠加；不能减免侵蚀。');
   }
   if (c.id === 'counterweight')
     add(
       '发动时',
-      `若我方本路屏障生命高于当前上限的50%，额外造成${number(m.intactBonus)}点伤害。`,
+      `若同路我方屏障生命高于当前上限的50%，额外造成${number(m.intactBonus)}点伤害。`,
       ['damage'],
     );
   if (c.id === 'culture') {
     add('再次发动', `比上次多造成${number(m.growth)}点伤害。`, ['damage']);
     notes.push(
-      '没有侵蚀时攻击本路；侵蚀层数相同优先上路。目标在发动时选定，成长只在本场战斗中积累。',
+      '没有侵蚀时攻击本路；侵蚀层数相同优先左路。目标在发动时选定，成长只在本场战斗中积累。',
     );
   }
   if (c.id === 'catalyst')
     add(
       '发动时',
-      `若敌方本路有侵蚀，额外充能${number(m.corrosionCharge)}秒。`,
+      `若同路敌方有侵蚀，额外充能${number(m.corrosionCharge)}秒。`,
       ['corrode', 'charge'],
     );
   if (c.id === 'distiller') {
@@ -135,6 +139,9 @@ export function describeCard(card: FighterCard, includeFuture = true) {
     catalyst: `侵蚀时充能+${number(m.corrosionCharge)}秒`,
     distiller: '侵蚀并治疗',
   };
+  for (const ability of abilities)
+    if (ability.text.includes('直接伤害') && !ability.terms.includes('direct'))
+      ability.terms.push('direct');
   const keywords = [...new Set(abilities.flatMap((a) => a.terms))].map(
     (id) => ({ id, ...CARD_TERMS[id] }),
   );

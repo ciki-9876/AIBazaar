@@ -108,7 +108,13 @@ export default function ElevatorRoom(p: Props) {
         onClick={() =>
           inspect('金属台面冰凉，一盏小灯静静亮着。', p.onIdentify)
         }
-        aria-label={p.arrival ? '观察金属台' : '初始鉴定台，免费鉴定实体'}
+        aria-label={
+          p.arrival
+            ? '观察金属台'
+            : p.level >= 4
+              ? '鉴定台，2金币鉴定一次'
+              : '电梯商店'
+        }
       >
         <i>⌑</i>
         <span className="ed-object-label">
@@ -116,7 +122,8 @@ export default function ElevatorRoom(p: Props) {
             '金属台'
           ) : (
             <>
-              鉴定台<small>初始设施 · 免费鉴定</small>
+              {p.level >= 4 ? '鉴定台' : '电梯商店'}
+              <small>{p.level >= 4 ? '2 金币 / 次' : '消耗品与收购'}</small>
             </>
           )}
         </span>

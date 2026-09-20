@@ -70,7 +70,7 @@ export default function Replay({
           data-entity={`barrier-${side}-${lane}`}
         >
           <div>
-            <strong>{['上路', '中路', '下路'][lane]}</strong>
+            <strong>{['左路', '中路', '右路'][lane]}</strong>
             {duel.heroes?.[side] && (
               <em
                 className="hero-meter"
@@ -162,9 +162,9 @@ export default function Replay({
           {barriers(1)}
           {board(1)}
           <div className="ed-battle-divider">
-            <span>上路</span>
+            <span>左路</span>
             <strong>{fr.time.toFixed(2)} s</strong>
-            <span>下路</span>
+            <span>右路</span>
           </div>
           {board(0)}
           {barriers(0)}

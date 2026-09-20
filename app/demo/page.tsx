@@ -21,6 +21,8 @@ import FieldWork, { ObjectInfo } from './field-work';
 import Onboarding from './onboarding';
 import { isFieldNode, OBJECTS, FIELD_TITLES } from '@/lib/field-items';
 import BuildBoard from './build-board';
+import IdentificationReveal from './identification-reveal';
+import Homecoming from './homecoming';
 import { describeCard } from '@/lib/card-description';
 import { identificationState, makeDuel, makeItem } from '@/lib/demo-engine';
 import { battleEvidence, formatHit } from '@/lib/battle-evidence';
@@ -256,8 +258,8 @@ export default function Demo() {
           'first-floor',
           'onboarding6',
           'onboarding6-narrow',
-          'onboarding7',
-          'onboarding7-narrow',
+          'onboarding8',
+          'onboarding8-narrow',
         ].includes(params.get('qa') ?? '');
       const work =
         qa && params.get('qa') === 'items' ? params.get('work') : null;
@@ -341,10 +343,11 @@ export default function Demo() {
   );
   const lessonActive =
     tutorialBattle &&
-    lessonStep < 7 &&
+    lessonStep < 8 &&
     !bagOpen &&
     cursor >=
       [
+        0,
         0,
         0,
         0,
@@ -358,14 +361,19 @@ export default function Demo() {
   const starterName = run.openingVersion === 2 ? '弹弓' : '猎隙刃';
   const lessons: GuideStep[] = [
     {
-      target: '[data-entity="host-0"] .ed-actor-info b',
-      title: '你要保护的是宿主',
-      body: '这是你的战斗生命。降到0就会战败；击败对面的宿主即可获胜。',
+      target: '.ed-vertical-battle',
+      title: '先看整个棋盘',
+      body: '棋盘从左到右分为左路、中路、右路。你的卡牌在下方，敌人在上方；同路彼此对战。',
     },
     {
-      target: '.ed-vertical-battle',
-      title: '先看整个战场：三条路线',
-      body: '桌面分为上路、中路、下路，画面从左到右排列。双方同名路线彼此对应；把武器放在哪一路，就从那一路进攻。',
+      target: '[data-entity="host-0"] .ed-actor-info b',
+      title: '这是你的生命',
+      body: '这是你的宿主。生命降到 0 就会战败，屏障与防御卡可以保护它。',
+    },
+    {
+      target: '[data-entity="host-1"] .ed-actor-info b',
+      title: '这是敌人的生命',
+      body: '把敌方宿主的生命降到 0，就能获得胜利。',
     },
     {
       target: '[data-entity="barrier-0-2"]',
@@ -390,8 +398,8 @@ export default function Demo() {
     },
     {
       target: '[data-entity="barrier-1-2"]',
-      title: '敌方下路屏障被击破',
-      body: '刚才的攻击击碎了屏障，剩余伤害伤及宿主。后续下路攻击会直接命中宿主。',
+      title: '敌方右路屏障被击破',
+      body: '攻击先打屏障，超过屏障剩余生命的伤害会直接溢出到宿主。现在右路屏障已破，后续右路攻击将直接命中宿主。',
     },
     {
       target: '[data-entity="host-1"] .ed-actor-info b',
@@ -434,19 +442,21 @@ export default function Demo() {
     setTab('inventory');
     setInventoryTab('build');
     setPlacing(uid ?? null);
-    if (uid) {
-      setSelected(uid);
-      setPinned(true);
-      setInspection({
-        uid,
-        source: 'inventory',
-        scope: `${run.phase}:inventory:build`,
-        x: 12,
-        y: 12,
-      });
-    }
+    if (uid) setSelected(uid);
+    setPinned(false);
+    setInspection(null);
   };
   const closeBag = () => {
+    if (
+      tutorialFloor(run) &&
+      run.tutorialRewardUid &&
+      !run.items.some(
+        (x) => x.uid === run.tutorialRewardUid && x.zone === 'board',
+      )
+    ) {
+      setNotice('先把战利品拖到棋盘上。');
+      return;
+    }
     setBagOpen(false);
     if (
       !run.equipmentExplained &&
@@ -513,7 +523,7 @@ export default function Demo() {
         {[0, 1, 2].map((lane) => (
           <div className="ed-lane" key={lane}>
             <div className="ed-lane-label">
-              <b>{['上路', '中路', '下路'][lane]}</b>
+              <b>{['左路', '中路', '右路'][lane]}</b>
             </div>
             <div className="ed-lane-cells">
               {[0, 1, 2].map((col) => {
@@ -537,7 +547,7 @@ export default function Demo() {
                           '在卡牌详情中点击“上阵”，系统会自动选择合适空位。',
                         )
                       }
-                      aria-label={`${['上', '中', '下'][lane]}路第${col + 1}格${locked.includes(at) ? '未解锁' : '，放置所选卡牌'}`}
+                      aria-label={`${['左', '中', '右'][lane]}路第${col + 1}格${locked.includes(at) ? '未解锁' : '，放置所选卡牌'}`}
                     >
                       {locked.includes(at) ? (
                         <KeyRound size={15} />
@@ -636,7 +646,7 @@ export default function Demo() {
         <div className="ed-host-hitboxes" aria-label="宿主三路受击区域">
           {[0, 1, 2].map((lane) => (
             <span key={lane} data-entity={`host-${side}-lane-${lane}`}>
-              {['上路', '中路', '下路'][lane]}
+              {['左路', '中路', '右路'][lane]}
             </span>
           ))}
         </div>
@@ -761,6 +771,7 @@ export default function Demo() {
           tutorialFloor(run) &&
           inventoryTab === 'build' && (
             <ContextHint
+              mandatory
               key={
                 run.items.find((x) => x.uid === run.tutorialRewardUid)?.zone ===
                 'board'
@@ -776,11 +787,9 @@ export default function Demo() {
                       body: '武器从1件增加到2件，弹弓和猎隙刃会各自发动。这里也能移动、换位；关闭背包即可继续探索。',
                     }
                   : {
-                      target: placing
-                        ? '.ed-target-grid'
-                        : '.ed-build-candidates',
+                      target: '.ed-build-candidates',
                       title: '把战利品放上桌面',
-                      body: '先选一处已解锁的空格，查看落点，再确认放置。带锁的格子还不能使用；取消预览不会改变阵容。',
+                      body: '把左侧的猎隙刃拖到右侧棋盘的亮色空位。松手即可上阵；也可以点卡牌后点空位。先装备这把武器，再继续探索。',
                     }
               }
             />
@@ -936,9 +945,11 @@ export default function Demo() {
               ) : (
                 grid(inventoryTab as Zone)
               )}
-              <aside className="ed-panel ed-fixed-details ed-inspect-dialog">
-                {inspected ? itemDetailBody() : <p>尚未选择物品</p>}
-              </aside>
+              {inventoryTab !== 'build' && (
+                <aside className="ed-panel ed-fixed-details ed-inspect-dialog">
+                  {inspected ? itemDetailBody() : <p>尚未选择物品</p>}
+                </aside>
+              )}
             </>
           )}
         </div>
@@ -1063,7 +1074,7 @@ export default function Demo() {
                 </b>
               </span>
               <span className={run.level < 3 ? 'ed-hidden' : ''}>
-                鉴定电荷 <b>{run.charges} / 4</b>
+                鉴定仪 <b>{itemCount(run, 'scanner', false)} 个</b>
               </span>
               <span className={run.level < 5 ? 'ed-hidden' : ''}>
                 探索整备 <b>{run.adapted ? '已准备' : '未准备'}</b>
@@ -1705,7 +1716,7 @@ export default function Demo() {
       <section className="ed-enemy-intel">
         <h3>开战前 · 敌情</h3>
         <p>
-          主要威胁：{['上路', '中路', '下路'][lane]} · 敌方宿主{' '}
+          主要威胁：{['左路', '中路', '右路'][lane]} · 敌方宿主{' '}
           {previewDuel.maxHp[1]}
         </p>
         <p>
@@ -1748,7 +1759,7 @@ export default function Demo() {
           >
             <div>
               <Shield size={14} />
-              <strong>{['上路', '中路', '下路'][lane]}屏障</strong>
+              <strong>{['左路', '中路', '右路'][lane]}屏障</strong>
               {!!fr.corrosion?.[side]?.[lane] && (
                 <em
                   className="ed-corrosion-badge"
@@ -1767,7 +1778,7 @@ export default function Demo() {
               className="ed-barrier-track"
               // oxlint-disable-next-line jsx-a11y/prefer-tag-over-role -- Custom barrier track shares the game combat animation.
               role="progressbar"
-              aria-label={`${side ? '敌方' : '我方'}${['上路', '中路', '下路'][lane]}屏障`}
+              aria-label={`${side ? '敌方' : '我方'}${['左路', '中路', '右路'][lane]}屏障`}
               aria-valuemin={0}
               aria-valuemax={barrier.maxHp}
               aria-valuenow={Math.ceil(barrier.hp)}
@@ -1812,7 +1823,7 @@ export default function Demo() {
           </div>
           <span>{frame.time.toFixed(2)}s</span>
         </div>
-        <section className="ed-battle-scroll" aria-label="上下三路对战棋盘">
+        <section className="ed-battle-scroll" aria-label="双方三路对战棋盘">
           <div className="ed-vertical-battle" ref={battlefieldRef}>
             <BattleEffects
               surface={battlefieldRef}
@@ -1825,9 +1836,9 @@ export default function Demo() {
             {barrierRow(1, frame)}
             {cardGrid(run.duel.enemy, true, frame)}
             <div className="ed-battle-divider">
-              <span>上路</span>
+              <span>左路</span>
               <span>中路</span>
-              <span>下路</span>
+              <span>右路</span>
             </div>
             {cardGrid(run.duel.player, false, frame)}
             {barrierRow(0, frame)}
@@ -1845,7 +1856,7 @@ export default function Demo() {
             {speed}× 速度
           </button>
           <button
-            disabled={tutorialBattle && lessonStep < 7}
+            disabled={tutorialBattle && lessonStep < 8}
             onClick={() => setCursor(battle.frames.length - 1)}
           >
             跳至结果
@@ -2112,7 +2123,7 @@ export default function Demo() {
                 {inspected.id === 'apple'
                   ? '食用恢复 25 精力。'
                   : inspected.id === 'scanner'
-                    ? `携带后可在楼层鉴定实体。剩余 ${run.charges} 电荷。`
+                    ? '一次性消耗品：鉴定一件实体物品后消失。'
                     : inspected.id === 'lighter'
                       ? '可以用于特定事件。'
                       : ((
@@ -2161,8 +2172,8 @@ export default function Demo() {
                       <p>{identificationState(run).reason}</p>
                       <p>
                         {run.phase === 'base'
-                          ? '基地鉴定免费，不消耗电力或鉴定电荷。'
-                          : `鉴定电荷 ${run.charges} / 4 · 本次消耗 1 电荷；电力用于基地补充电荷。`}
+                          ? identificationState(run).reason
+                          : '本次消耗 1 个鉴定仪'}
                       </p>
                       <button
                         disabled={
@@ -2181,8 +2192,8 @@ export default function Demo() {
                         }
                       >
                         {run.phase === 'base'
-                          ? '前往免费鉴定台'
-                          : '鉴定 · 1 电荷'}
+                          ? '选择实体鉴定'
+                          : '鉴定 · 消耗 1 仪器'}
                       </button>
                     </div>
                   )}
@@ -2428,23 +2439,32 @@ export default function Demo() {
       onDismiss={hideInspection}
     >
       <ScrollChrome />
+      {run.identification &&
+        run.items.find((x) => x.uid === run.identification?.uid) && (
+          <IdentificationReveal
+            key={run.identification.uid}
+            item={run.items.find((x) => x.uid === run.identification?.uid)!}
+            onClose={() => dispatch({ type: 'close-identification' })}
+          />
+        )}
+
       {lessonActive && (
         <FocusGuide
           step={lessons[lessonStep]}
           index={lessonStep}
-          total={7}
+          total={8}
           paused
           onNext={() => dispatch({ type: 'tutorial-step', choice: lessonStep })}
         />
       )}
-      <main
+      <main inert={!!run.identification}
         className={
           'elevator-demo ed-immersive ' +
           (tutorialFloor(run) && ['floor', 'combat'].includes(run.phase)
             ? ' guided-expedition '
             : '') +
           (run.phase === 'combat' && !bagOpen ? 'in-combat ' : '') +
-          (lessonActive && lessonStep === 1 ? ' lesson-lanes ' : '') +
+          (lessonActive && lessonStep === 0 ? ' lesson-lanes ' : '') +
           (run.phase === 'base' ? 'at-base ' : '') +
           (run.phase === 'base' && tab === 'base' ? 'in-room' : '') +
           (run.phase === 'base' &&
@@ -2552,7 +2572,7 @@ export default function Demo() {
                           精力: '出勤、探索和撤离需要精力；睡眠、苹果和药品可以恢复。',
                           补给: '出勤消耗 1；睡眠消耗 1 并恢复更多精力。',
                           金币: '购买物品、升级电梯和建造设施。',
-                          电力: '设备充能、种植和探索整备。电力与鉴定电荷分别计算。',
+                          电力: '用于设备制造、种植和探索整备。',
                           燃料: '发电机将 1 燃料转为 8 电力。',
                           药品: '医疗站或休整点消耗药品恢复精力。',
                           废料: '强化卡牌，也可回收金币或制成燃料。',
@@ -2749,22 +2769,40 @@ export default function Demo() {
                     {survivors()}
                   </>
                 ) : tab === 'base' ? (
-                  <ElevatorRoom
-                    arrival={
-                      run.day === 1 && !run.used && checkpoint(run) === 0
-                    }
-                    floor={checkpoint(run)}
-                    day={run.day}
-                    used={run.used}
-                    level={run.level}
-                    onTable={() => setTab('inventory')}
-                    onIdentify={() => setTab('identify')}
-                    onDoor={() => setTab('map')}
-                    onBed={() => setSleepPrompt(true)}
-                    onTerminal={() => setTab('upgrades')}
-                  />
+                  <>
+                    {run.homeGuide && run.homeGuide !== 'done' && (
+                      <Homecoming
+                        run={run}
+                        onAction={dispatch}
+                        onSleep={() => setSleepPrompt(true)}
+                      />
+                    )}
+                    <ElevatorRoom
+                      arrival={
+                        run.day === 1 && !run.used && checkpoint(run) === 0
+                      }
+                      floor={checkpoint(run)}
+                      day={run.day}
+                      used={run.used}
+                      level={run.level}
+                      onTable={() => setTab('inventory')}
+                      onIdentify={() =>
+                        run.level >= 4 ? setTab('identify') : setTab('upgrades')
+                      }
+                      onDoor={() => setTab('map')}
+                      onBed={() => setSleepPrompt(true)}
+                      onTerminal={() => setTab('upgrades')}
+                    />
+                  </>
                 ) : tab === 'upgrades' || tab === 'prep' ? (
-                  terminal()
+                  <>
+                    <Homecoming
+                      run={run}
+                      onAction={dispatch}
+                      onSleep={() => setSleepPrompt(true)}
+                    />
+                    {terminal()}
+                  </>
                 ) : tab === 'map' ? (
                   map()
                 ) : tab === 'floor' ? (
@@ -2971,7 +3009,8 @@ export default function Demo() {
                 8 精力正常返回；完成守卫后撤离才会提交最高通关楼层。
               </p>
               <p>
-                实体需要鉴定才成为卡牌。基地终端免费，楼层鉴定需携带仪器并消耗电荷。上阵卡不占背包，1–3
+                实体使用一次性鉴定仪变成卡牌。Lv.4
+                鉴定台可降低鉴定成本。上阵卡不占背包，1–3
                 格卡不可跨路。安全容器独立计量。
               </p>
               <p>

@@ -11,7 +11,7 @@ export function formatHit(duel: Duel, hit: Hit, time: number) {
         ? 1 - hit.side
         : hit.side;
   const source = `${sideName(sourceSide)}·${hit.source} [${hit.sourceUid ?? '宿主'}]`;
-  const target = `${sideName(hit.side)}·${hit.targetName ?? (hit.targetLane !== undefined ? ['上路', '中路', '下路'][hit.targetLane] : '宿主')} [${hit.targetUid ?? '无目标实例'}]`;
+  const target = `${sideName(hit.side)}·${hit.targetName ?? (hit.targetLane !== undefined ? ['左路', '中路', '右路'][hit.targetLane] : '宿主')} [${hit.targetUid ?? '无目标实例'}]`;
   const effect =
     hit.kind === 'charge'
       ? `冷却计时实际推进 ${n(hit.value)} 秒${!hit.targetUid ? '（无目标，无收益）' : hit.value === 0 ? '（无收益）' : ''}`
@@ -30,7 +30,7 @@ export function battleEvidence(duel: Duel, frames: CombatFrame[]) {
       lanes.flatMap((b, lane) =>
         b.broken && !frames[i - 1]?.barriers[side][lane].broken
           ? [
-              `${n(frame.time)}s · ${sideName(side)}${['上路', '中路', '下路'][lane]}屏障首次损毁`,
+              `${n(frame.time)}s · ${sideName(side)}${['左路', '中路', '右路'][lane]}屏障首次损毁`,
             ]
           : [],
       ),

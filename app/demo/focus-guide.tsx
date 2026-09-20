@@ -210,13 +210,19 @@ export default function FocusGuide({
     document.body,
   );
 }
-export function ContextHint({ step }: { step: GuideStep }) {
+export function ContextHint({
+  step,
+  mandatory = false,
+}: {
+  step: GuideStep;
+  mandatory?: boolean;
+}) {
   const [open, setOpen] = useState(true);
   return open ? (
     <FocusGuide
       step={step}
       onNext={() => setOpen(false)}
-      onClose={() => setOpen(false)}
+      onClose={mandatory ? undefined : () => setOpen(false)}
     />
   ) : (
     <button

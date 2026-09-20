@@ -12,7 +12,7 @@ export default function DesignHome() {
         <a href={sitePath('/lab')}>打开三路试验场 ↗</a>
         <h1>一件旧物，两种未来</h1>
         <p>
-          保留实体，解决门外的机关；带回基地免费鉴定，让它在战斗中运转。两种形态共用同一件物品，不能同时拥有。
+          保留实体，解决门外的机关；带回基地鉴定，让它在战斗中运转。两种形态共用同一件物品，不能同时拥有。
         </p>
       </header>
       <section>
@@ -104,7 +104,7 @@ export default function DesignHome() {
               {[0, 1, 2]
                 .map(
                   (lane) =>
-                    `${['上', '中', '下'][lane]}路：${a.variants[0]
+                    `${['左', '中', '右'][lane]}路：${a.variants[0]
                       .slice(lane * 2, lane * 2 + 2)
                       .map((id) => CARDS.find((c) => c.id === id)!.name)
                       .join('＋')}`,

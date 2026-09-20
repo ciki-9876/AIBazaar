@@ -11,7 +11,7 @@ import { heroDef, heroOwner } from '@/lib/heroes';
 
 function Rule({ ability }: { ability: CardAbility }) {
   const names: string[] = ability.terms.map((id) => CARD_TERMS[id].name);
-  const pieces = ability.text.split(/(伤害|修复|充能|侵蚀|治疗)/);
+  const pieces = ability.text.split(/(直接伤害|修复|充能|侵蚀|治疗)/);
   return (
     <p className="ed-ability-line">
       <span className="ed-ability-timing">{ability.when}</span>

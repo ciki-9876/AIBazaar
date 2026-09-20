@@ -52,7 +52,7 @@ export const FACILITIES = [
     name: '便携设备台',
     slots: 2,
     cost: 6,
-    desc: '1 材料＋2 电力 → 1 鉴定电荷',
+    desc: '8 材料＋2 电力 → 1 鉴定仪',
     effect: 'workshop',
   },
   {

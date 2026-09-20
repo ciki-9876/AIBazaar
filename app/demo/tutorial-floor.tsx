@@ -1,5 +1,7 @@
 'use client';
 import { useState, type ReactNode } from 'react';
+import PressureGame from './minigame-room';
+import ExpeditionSummary from './expedition-summary';
 import {
   ArrowRight,
   Backpack,
@@ -80,7 +82,7 @@ function Cache({ run, onAction }: Pick<Props, 'run' | 'onAction'>) {
     scan: {
       target: '.tutorial-scan',
       title: '把物品变成卡牌',
-      body: '鉴定器有1次电荷。先鉴定钉枪；缓冲垫留着，下一间会用到。电荷与电力不同。',
+      body: '鉴定仪用一次就会消失。先鉴定钉枪；缓冲垫留给下一间。',
       next: '试试鉴定',
     },
     equip: {
@@ -102,7 +104,10 @@ function Cache({ run, onAction }: Pick<Props, 'run' | 'onAction'>) {
       {stock.length > 0 && (
         <div className="tutorial-loot">
           {stock.map((x) => (
-            <article key={x.uid}>
+            <article
+              key={x.uid}
+              className={`rarity-${x.id === 'scanner' ? 3 : (x.rarity ?? 0)}`}
+            >
               {x.id === 'scanner' ? (
                 <ScanLine />
               ) : x.id === 'rubber' ? (
@@ -128,9 +133,7 @@ function Cache({ run, onAction }: Pick<Props, 'run' | 'onAction'>) {
       {gun?.type === 'physical' && scanner && (
         <div className="tutorial-scan">
           <ScanLine size={32} />
-          <span>
-            鉴定器 <b>{run.charges}</b> 电荷
-          </span>
+          <span>鉴定仪 · 使用后消失</span>
           <button
             className="ed-primary"
             onClick={() => onAction({ type: 'scan', id: gun.uid })}
@@ -211,12 +214,15 @@ function ToolCache({ run, onAction }: Pick<Props, 'run' | 'onAction'>) {
         step={{
           target: '.tutorial-loot',
           title: '带走现场工具',
-          body: '缓冲垫可以隔热，补漏胶能封住漏口。下一间气室会用上它们，先保留物品形态。',
+          body: '补漏胶可以给气室操作增加余地；缓冲垫是一件防御组件，先以实体形态收好。',
         }}
       />
       <div className="tutorial-loot">
         {stock.map((x) => (
-          <article key={x.uid}>
+          <article
+            key={x.uid}
+            className={`rarity-${x.id === 'scanner' ? 3 : (x.rarity ?? 0)}`}
+          >
             <Shield />
             <strong>{itemName(x)}</strong>
             <small>
@@ -248,14 +254,14 @@ function PipeReward({
   const pad = run.items.find((x) => x.uid === 'tutorial-rubber')!;
   return (
     <section className="tutorial-new-card">
-      <ContextHint
+      {!run.identification && <ContextHint
         key={pad.type}
         step={
           pad.type === 'physical'
             ? {
                 target: '.tutorial-scan',
                 title: '把留下的工具变成卡牌',
-                body: '检修箱里的鉴定仪有1次电荷。鉴定缓冲垫，就能把它放上战斗桌面；电荷与电力是两种资源。',
+                body: '鉴定仪使用一次后消失。用它鉴定缓冲垫，揭晓这张防御卡的品质。',
               }
             : {
                 target: '.tutorial-new-card h2',
@@ -263,11 +269,11 @@ function PipeReward({
                 body: '缓冲垫现在是一张卡牌。可以打开背包查看当前能力、调整阵容，再继续探索。',
               }
         }
-      />
+      />}
       {pad.type === 'physical' ? (
         <div className="tutorial-scan">
           <ScanLine size={32} />
-          <span>鉴定电荷 {run.charges}</span>
+          <span className="rarity-3">鉴定仪 · 消耗 1 个</span>
           <button
             className="ed-primary"
             onClick={() => onAction({ type: 'scan', id: pad.uid })}
@@ -294,7 +300,7 @@ function PipeReward({
     </section>
   );
 }
-function PipeRoom({
+function LegacyPipeRoom({
   run,
   onAction,
   onBuild,
@@ -520,6 +526,7 @@ export default function TutorialFloor({
           ) ? (
             <div className="tutorial-first-fight">
               <ContextHint
+                mandatory
                 step={{
                   target: '.ed-global-bag',
                   title: '把战利品装备起来',
@@ -543,6 +550,14 @@ export default function TutorialFloor({
             )
           ) : (
             <div className="tutorial-first-fight">
+              <ContextHint
+                mandatory
+                step={{
+                  target: '.tutorial-first-fight',
+                  title: '搜刮房间',
+                  body: '这里通常能找到物资与未鉴定物品。打开箱子消耗10精力；右上角显示你目前的精力。拿取箱内物品不再消耗精力。',
+                }}
+              />
               <Backpack size={68} />
               <p>门后留着一只完好的物资箱。</p>
               <button
@@ -554,11 +569,30 @@ export default function TutorialFloor({
             </div>
           )
         ) : node === 'pressure' ? (
-          <PipeRoom run={run} onAction={onAction} onBuild={onBuild} />
+          run.openingVersion === 2 ? (
+            currentFloor(run).workResolved?.includes('pressure') ? (
+              <PipeReward run={run} onAction={onAction} onBuild={onBuild} />
+            ) : (
+              <PressureGame run={run} onAction={onAction} />
+            )
+          ) : (
+            <LegacyPipeRoom run={run} onAction={onAction} onBuild={onBuild} />
+          )
         ) : node === 'antechamber' || node === 'guardian' ? (
           <>
             {intel()}
+            {run.items.some(
+              (x) => x.uid === 'tutorial-rubber' && x.type === 'card',
+            ) &&
+              !run.defenseExplained && (
+                <DefenseGuide run={run} onAction={onAction} onBuild={onBuild} />
+              )}
             <button
+              disabled={
+                run.items.some(
+                  (x) => x.uid === 'tutorial-rubber' && x.type === 'card',
+                ) && !run.defenseExplained
+              }
               className="ed-primary"
               onClick={() =>
                 onAction({
@@ -572,8 +606,7 @@ export default function TutorialFloor({
           </>
         ) : (
           <div className="tutorial-first-fight">
-            <Check size={68} />
-            <p>信标亮了。带上你的收获回家。</p>
+            <ExpeditionSummary run={run} />
             <button
               className="ed-primary"
               onClick={() => onAction({ type: 'extract' })}
@@ -584,5 +617,37 @@ export default function TutorialFloor({
         )}
       </section>
     </div>
+  );
+}
+
+function DefenseGuide({
+  run,
+  onAction,
+  onBuild,
+}: Pick<Props, 'run' | 'onAction' | 'onBuild'>) {
+  const pad = run.items.find((x) => x.uid === 'tutorial-rubber')!;
+  const ready = pad.zone === 'board' && Math.floor(pad.at! / 3) === 1;
+  return (
+    <section className="defense-guide">
+      <ContextHint
+        mandatory
+        key={ready ? 'ready' : 'place'}
+        step={{
+          target: '.defense-guide',
+          title: ready ? '布防得不错' : '观察敌人的主攻路线',
+          body: ready
+            ? '你已经把缓冲垫放在中路，正好应对守卫的主要输出。现在可以挑战它了。'
+            : '守卫的主要武器在中路。把缓冲垫拖到中路，保护这条路线的屏障。',
+        }}
+      />
+      <button
+        className="ed-primary"
+        onClick={() =>
+          ready ? onAction({ type: 'defense-explained' }) : onBuild(pad.uid)
+        }
+      >
+        {ready ? '准备好了' : '把缓冲垫放到中路'}
+      </button>
+    </section>
   );
 }
