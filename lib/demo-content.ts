@@ -1,6 +1,8 @@
 import { hash, rng } from './design-model.ts';
 import { FIELD_NODES } from './field-items.ts';
-export function floorRoute(seed: number, floor: number) {
+export function floorRoute(seed: number, floor: number, introductory = false) {
+  if (floor === 1 && introductory)
+    return ['search', 'patrol', 'pressure', 'antechamber', 'guardian'];
   // Search before the first workshop gives a normal acquisition route.
   const first =
     floor === 1
@@ -143,6 +145,7 @@ const SCENES: Record<string, string[]> = {
   ],
 };
 export function sceneTitle(theme: string, node: string) {
+  if (node === 'antechamber') return '守卫前室';
   if (node === 'patrol') return `${theme} · 外围巡逻者`;
   if (node === 'elite') return `${theme} · 核心看守`;
   if (node === 'cache') return `${theme} · 遗留急救箱`;

@@ -73,7 +73,7 @@ export type Item = {
   at?: number;
 };
 export type Floor = {
-  routeVersion?: 2 | 3 | 4;
+  routeVersion?: 2 | 3 | 4 | 5;
   workResolved?: string[];
   battleRewards?: string[];
   soldOffers?: string[];
@@ -319,8 +319,8 @@ export function newRun(seed = Date.now() >>> 0): Run {
       name: theme[0],
       detail: theme[1],
       focus: theme[2],
-      nodes: floorRoute(seed, i + 1),
-      routeVersion: 4,
+      nodes: floorRoute(seed, i + 1, true),
+      routeVersion: i === 0 ? 5 : 4,
       workResolved: [],
       soldOffers: [],
       stock: [
@@ -348,6 +348,13 @@ export function newRun(seed = Date.now() >>> 0): Run {
       history: [],
     };
   });
+  // Keep the first haul small without changing RNG consumption for later floors.
+  const firstStock = floors[0].stock;
+  floors[0].stock = [
+    { ...firstStock.find((x) => x.id === 'material')!, amount: 4 },
+    { ...firstStock.find((x) => x.id === 'supply')!, amount: 2 },
+    firstStock.find((x) => x.id === 'rubber' && x.type === 'physical')!,
+  ];
   return {
     version: 1,
     catalogVersion: 2,
@@ -499,6 +506,7 @@ export const nodeName: Record<string, string> = {
   ...FIELD_TITLES,
   event: '异象事件',
   search: '搜刮区域',
+  antechamber: '守卫前室',
   puzzle: '密码机关',
   merchant: '游商交易',
   guardian: 'BOSS',
@@ -1100,7 +1108,10 @@ export function makeDuel(s: Run, kind: 'guardian' | 'survivor'): Duel {
     name:
       kind === 'survivor'
         ? `幸存者 #${String(s.encounter).padStart(3, '0')}`
-        : sceneTitle(currentFloor(s).name, currentNode(s)),
+        : sceneTitle(
+            currentFloor(s).name,
+            currentNode(s) === 'antechamber' ? 'guardian' : currentNode(s),
+          ),
     stage,
     kind,
     botId: kind === 'survivor' ? s.encounter : null,
@@ -1780,7 +1791,7 @@ function applyAction(old: Run, a: Action): Run {
     planBots(s);
     s.departureFloor = checkpoint(s);
     s.floor = a.floor!;
-    if (currentFloor(s).routeVersion !== 4) {
+    if (![4, 5].includes(currentFloor(s).routeVersion ?? 0)) {
       currentFloor(s).nodes = floorRoute(s.seed, s.floor);
       currentFloor(s).routeVersion = 4;
     }
@@ -1799,7 +1810,9 @@ function applyAction(old: Run, a: Action): Run {
     s.encounterDone = false;
     const peers = s.bots.filter((b) => b.alive && b.plan === s.floor);
     s.encounter =
-      peers.length && hash(`${s.seed}/${s.day}/${s.floor}/encounter`) % 100 < 28
+      currentFloor(s).routeVersion !== 5 &&
+      peers.length &&
+      hash(`${s.seed}/${s.day}/${s.floor}/encounter`) % 100 < 28
         ? peers[0].id
         : null;
     currentFloor(s).visitors = [...new Set([...currentFloor(s).visitors, 0])];
@@ -1909,6 +1922,12 @@ function applyAction(old: Run, a: Action): Run {
     return s;
   }
   const node = currentNode(s);
+  if (a.type === 'approach-guardian') {
+    need(node === 'antechamber', '尚未到达守卫前室');
+    s.node++;
+    say(s, '你推开内门。守卫转过身，归返信标就在它的身后。');
+    return s;
+  }
   if (a.type === 'field-work') {
     need(isFieldNode(node), '当前不是物品机关节点');
     const done = currentFloor(s).workResolved!;
@@ -2100,7 +2119,9 @@ function applyAction(old: Run, a: Action): Run {
     s.interaction = 'search';
     say(
       s,
-      `正在搜查，发现 ${currentFloor(s).stock.filter((x) => unlockedItem(s, x.id)).length} 件可用物资。拾取后立即进入右侧背包；整理完成后再前往下个目的地。`,
+      currentFloor(s).routeVersion === 5
+        ? '你掀开箱盖，拂去积灰。'
+        : `正在搜查，发现 ${currentFloor(s).stock.filter((x) => unlockedItem(s, x.id)).length} 件可用物资。拾取后立即进入右侧背包；整理完成后再前往下个目的地。`,
     );
     return s;
   }
@@ -2295,6 +2316,7 @@ export function validSave(value: unknown): value is Run {
             [
               'event',
               'search',
+              'antechamber',
               'puzzle',
               'merchant',
               'guardian',

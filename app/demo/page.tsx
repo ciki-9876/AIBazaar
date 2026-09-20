@@ -242,7 +242,9 @@ export default function Demo() {
       const params = new URLSearchParams(window.location.search);
       const qa =
         process.env.NODE_ENV === 'development' &&
-        ['phase1', 'items', 'arrival'].includes(params.get('qa') ?? '');
+        ['phase1', 'items', 'arrival', 'first-floor'].includes(
+          params.get('qa') ?? '',
+        );
       const work =
         qa && params.get('qa') === 'items' ? params.get('work') : null;
       storageKey.current = qa
@@ -305,7 +307,7 @@ export default function Demo() {
   const frame = battle?.frames[Math.min(cursor, battle.frames.length - 1)];
   const previewDuel =
     run.phase === 'floor' &&
-    ['patrol', 'elite', 'guardian'].includes(currentNode(run))
+    ['patrol', 'elite', 'guardian', 'antechamber'].includes(currentNode(run))
       ? makeDuel(
           run,
           currentNode(run) === 'guardian' &&
@@ -779,6 +781,32 @@ export default function Demo() {
   }
   function loot() {
     const items = f.stock.filter((x) => unlockedItem(run, x.id));
+    if (f.routeVersion === 5)
+      return (
+        <section className="ed-panel ed-first-loot">
+          <h3>{items.length ? '箱子里的东西' : '箱子已经空了'}</h3>
+          {items.map((x) => (
+            <article key={x.uid}>
+              <div>
+                <strong>
+                  {itemName(x)}
+                  {x.amount > 1 ? ` ×${x.amount}` : ''}
+                </strong>
+                <p>
+                  {x.id === 'rubber'
+                    ? '一块完整的隔热垫，边缘还很结实。'
+                    : x.id === 'supply'
+                      ? '密封完好的干粮，适合带回电梯。'
+                      : '散落在箱底的几枚金币。'}
+                </p>
+              </div>
+              <button onClick={() => dispatch({ type: 'pickup', id: x.uid })}>
+                拿走{itemName(x)}
+              </button>
+            </article>
+          ))}
+        </section>
+      );
     return (
       <section className="ed-panel">
         <h3>待拾取物品 · {items.length} 件</h3>
@@ -963,80 +991,114 @@ export default function Demo() {
     );
   }
   function map() {
+    const first =
+      run.day === 1 &&
+      !run.used &&
+      checkpoint(run) === 0 &&
+      run.floors[0].routeVersion === 5;
+    const destinations = (
+      <div className="ed-floor-map">
+        {first && (
+          <section className="ed-first-destination ed-panel">
+            <p className="ed-kicker">01 / 第一站</p>
+            <h2>{run.floors[0].name}</h2>
+            <p>{run.floors[0].detail}</p>
+            <p>
+              门外有几只无人看守的旧箱子。更深处，一盏归返信标被守卫挡住了。
+            </p>
+            <p className="ed-departure-cost">
+              出发消耗 1 补给、4 精力 · 归途需留 8 精力
+            </p>
+            <button
+              className="ed-primary"
+              onClick={() => dispatch({ type: 'enter', floor: 1 })}
+            >
+              前往第一层 <ArrowRight size={16} />
+            </button>
+          </section>
+        )}
+      </div>
+    );
     return (
       <>
         <div className="ed-section-title">
           <div>
             <p className="ed-kicker">THE ONLY DIRECTION IS UP</p>
-            <h2>电梯通往哪里？</h2>
+            <h2>{first ? '门外，第一站。' : '电梯通往哪里？'}</h2>
           </div>
         </div>
-        <div className="ed-floor-map">
-          {run.floors.map((fl) => {
-            const locked = fl.id < checkpoint(run);
-            return (
-              <button
-                key={fl.id}
-                disabled={locked || run.used}
-                className={
-                  'ed-floor-tile ' +
-                  (run.clears.includes(fl.id) ? 'cleared' : '')
-                }
-                onClick={() => dispatch({ type: 'enter', floor: fl.id })}
-              >
-                <span className="ed-floor-number">
-                  {String(fl.id).padStart(2, '0')}
-                  <small>FLOOR</small>
-                </span>
-                <div>
-                  <h3>{fl.name}</h3>
-                  <p>{fl.detail}</p>
-                  {(fl.routeVersion === 4
-                    ? fl.nodes
-                    : floorRoute(run.seed, fl.id)
-                  )
-                    .filter(isFieldNode)
-                    .map((node) => {
-                      const tools = Object.entries(OBJECTS).filter(
-                        ([, o]) => o.node === node,
-                      );
-                      const carried = run.items.filter(
-                        (x) =>
-                          x.type === 'physical' &&
-                          ['bag', 'safe'].includes(x.zone) &&
-                          tools.some(([id]) => id === x.id),
-                      ).length;
-                      return (
-                        <p className="ed-tool-forecast" key={node}>
-                          {FIELD_TITLES[node]} ·{' '}
-                          {fl.workResolved?.includes(node)
-                            ? '已处理，无重复奖励'
-                            : tools.map(([, o]) => o.name).join(' / ') +
-                              `（已带${carried}件实体）`}
-                        </p>
-                      );
-                    })}
-                  <div className="ed-tags">
-                    <span>物资 {fl.stock.length}</span>
-                    <span>挑战 {16 + fl.id * 5}</span>
-                    {fl.visitors.length > 0 && (
-                      <span>已有 {fl.visitors.length} 人触达</span>
-                    )}
-                  </div>
-                </div>
-                <span className="ed-floor-enter">
-                  {locked
-                    ? '无法下降'
-                    : run.clears.includes(fl.id)
-                      ? '已通关'
-                      : run.used
-                        ? '明日可出发'
-                        : '进入 →'}
-                </span>
-              </button>
-            );
-          })}
-        </div>
+        {first && destinations}
+        <details className="ed-destinations" open={first ? undefined : true}>
+          {first && <summary>查看其他楼层</summary>}
+          <div className="ed-floor-map">
+            {run.floors
+              .filter((fl) => !first || fl.id !== 1)
+              .map((fl) => {
+                const locked = fl.id < checkpoint(run);
+                return (
+                  <button
+                    key={fl.id}
+                    disabled={locked || run.used}
+                    className={
+                      'ed-floor-tile ' +
+                      (run.clears.includes(fl.id) ? 'cleared' : '')
+                    }
+                    onClick={() => dispatch({ type: 'enter', floor: fl.id })}
+                  >
+                    <span className="ed-floor-number">
+                      {String(fl.id).padStart(2, '0')}
+                      <small>FLOOR</small>
+                    </span>
+                    <div>
+                      <h3>{fl.name}</h3>
+                      <p>{fl.detail}</p>
+                      {([4, 5].includes(fl.routeVersion ?? 0)
+                        ? fl.nodes
+                        : floorRoute(run.seed, fl.id)
+                      )
+                        .filter(isFieldNode)
+                        .map((node) => {
+                          const tools = Object.entries(OBJECTS).filter(
+                            ([, o]) => o.node === node,
+                          );
+                          const carried = run.items.filter(
+                            (x) =>
+                              x.type === 'physical' &&
+                              ['bag', 'safe'].includes(x.zone) &&
+                              tools.some(([id]) => id === x.id),
+                          ).length;
+                          return (
+                            <p className="ed-tool-forecast" key={node}>
+                              {FIELD_TITLES[node]} ·{' '}
+                              {fl.workResolved?.includes(node)
+                                ? '已处理，无重复奖励'
+                                : tools.map(([, o]) => o.name).join(' / ') +
+                                  `（已带${carried}件实体）`}
+                            </p>
+                          );
+                        })}
+                      <div className="ed-tags">
+                        <span>物资 {fl.stock.length}</span>
+                        <span>挑战 {16 + fl.id * 5}</span>
+                        {fl.visitors.length > 0 && (
+                          <span>已有 {fl.visitors.length} 人触达</span>
+                        )}
+                      </div>
+                    </div>
+                    <span className="ed-floor-enter">
+                      {locked
+                        ? '无法下降'
+                        : run.clears.includes(fl.id)
+                          ? '已通关'
+                          : run.used
+                            ? '明日可出发'
+                            : '进入 →'}
+                    </span>
+                  </button>
+                );
+              })}
+          </div>
+        </details>
       </>
     );
   }
@@ -1081,7 +1143,8 @@ export default function Demo() {
           className={
             'ed-floor-scene scene-' +
             (run.floor % 4) +
-            (active ? ' engaged' : '')
+            (active ? ' engaged' : '') +
+            (f.routeVersion === 5 ? ' ed-first-route' : '')
           }
         >
           <div className="ed-orbit" aria-hidden="true">
@@ -1133,7 +1196,29 @@ export default function Demo() {
             </div>
             <div className="ed-interaction-grid">
               {run.interaction === 'search' ? loot() : trading()}
-              {fieldInventory()}
+              {f.routeVersion === 5 ? (
+                <section className="ed-panel">
+                  <h3>随身行囊</h3>
+                  <p>拾起的东西都收在这里，离开房间时会随你一起带走。</p>
+                  <p>
+                    缓冲垫 ×
+                    {
+                      run.items.filter(
+                        (x) =>
+                          x.id === 'rubber' &&
+                          x.type === 'physical' &&
+                          ['bag', 'safe'].includes(x.zone),
+                      ).length
+                    }
+                  </p>
+                  <details>
+                    <summary>查看行装</summary>
+                    {fieldInventory()}
+                  </details>
+                </section>
+              ) : (
+                fieldInventory()
+              )}
             </div>
             <div className="ed-actions">
               <button onClick={() => dispatch({ type: 'extract' })}>
@@ -1161,6 +1246,18 @@ export default function Demo() {
                   run={run}
                   onAction={dispatch}
                 />
+              ) : node === 'antechamber' ? (
+                <>
+                  <p>
+                    隔着半掩的内门，你看见守卫的弩臂正在缓慢收紧。归返信标在它身后闪烁。
+                  </p>
+                  <button
+                    className="ed-primary"
+                    onClick={() => dispatch({ type: 'approach-guardian' })}
+                  >
+                    推开内门 · {travelCost(run)} 精力
+                  </button>
+                </>
               ) : node === 'event' ? (
                 <>
                   <p>{ev.text}</p>
@@ -1309,11 +1406,7 @@ export default function Demo() {
                 </>
               ) : node === 'patrol' || node === 'elite' ? (
                 <>
-                  <h3>
-                    {node === 'patrol'
-                      ? '第一阶段 · 普通战'
-                      : '第二阶段 · 精英战'}
-                  </h3>
+                  <h3>{node === 'patrol' ? '外围巡逻者' : '精英看守'}</h3>
                   <details>
                     <summary>交战风险</summary>
                     <p>
@@ -1329,20 +1422,22 @@ export default function Demo() {
                 </>
               ) : node === 'guardian' ? (
                 <>
-                  <div className="ed-fight-queue">
-                    <b>
-                      本节点共 {fights} 场战斗 · 即将第 {round}/{fights} 场
-                    </b>
-                    {run.encounter && (
-                      <p className={run.encounterDone ? 'finished' : ''}>
-                        {run.encounterDone ? '✓ 已完成' : '① 待挑战'} 幸存者 #
-                        {run.encounter} · 封锁对决
+                  {f.routeVersion !== 5 && (
+                    <div className="ed-fight-queue">
+                      <b>
+                        本节点共 {fights} 场战斗 · 即将第 {round}/{fights} 场
+                      </b>
+                      {run.encounter && (
+                        <p className={run.encounterDone ? 'finished' : ''}>
+                          {run.encounterDone ? '✓ 已完成' : '① 待挑战'} 幸存者 #
+                          {run.encounter} · 封锁对决
+                        </p>
+                      )}
+                      <p>
+                        {fights === 2 ? '②' : '①'} {nodeTitle(run)} · 最终 BOSS
                       </p>
-                    )}
-                    <p>
-                      {fights === 2 ? '②' : '①'} {nodeTitle(run)} · 最终 BOSS
-                    </p>
-                  </div>
+                    </div>
+                  )}
                   <p>
                     {run.encounter && !run.encounterDone
                       ? '另一名幸存者挡住了通道。守卫的脚步声从他身后传来。'
@@ -1353,10 +1448,9 @@ export default function Demo() {
                       className="ed-primary"
                       onClick={() => dispatch({ type: 'fight' })}
                     >
-                      开始第 {round}/{fights} 场：
-                      {run.encounter && !run.encounterDone
-                        ? '幸存者对决'
-                        : 'BOSS 战'}
+                      {f.routeVersion === 5
+                        ? '挑战楼层守卫'
+                        : `开始第 ${round}/${fights} 场：${run.encounter && !run.encounterDone ? '幸存者对决' : 'BOSS 战'}`}
                     </button>
                     <button onClick={() => setTab('inventory')}>
                       调整构筑
@@ -1526,10 +1620,10 @@ export default function Demo() {
               {run.duel.kind === 'survivor'
                 ? '第 1/2 场 · 幸存者封锁战'
                 : run.duel.stage === 'normal'
-                  ? '第一阶段 · 普通战'
+                  ? '外围巡逻者'
                   : run.duel.stage === 'elite'
-                    ? '第二阶段 · 精英战'
-                    : '第三阶段 · 最终 BOSS'}
+                    ? '精英看守'
+                    : '楼层守卫'}
             </h2>
           </div>
           <span>{frame.time.toFixed(2)}s</span>
@@ -1744,13 +1838,15 @@ export default function Demo() {
   const inspected =
     inspection && inspection.scope === `${run.phase}:${tab}:${inventoryTab}`
       ? (inspection.source === 'enemy'
-          ? (run.duel ?? previewDuel)?.enemy.map((c) => ({
-              ...c,
-              type: 'card' as const,
-              zone: 'board' as const,
-              volume: cardDef(c.id).size,
-              amount: 1,
-            }))
+          ? (run.phase === 'combat' ? run.duel : previewDuel)?.enemy.map(
+              (c) => ({
+                ...c,
+                type: 'card' as const,
+                zone: 'board' as const,
+                volume: cardDef(c.id).size,
+                amount: 1,
+              }),
+            )
           : inspection.source === 'loot'
             ? f?.stock
             : inspection.source === 'shop'
@@ -1839,7 +1935,10 @@ export default function Demo() {
             )}
             <div
               className={
-                'ed-actions ' + (run.phase === 'combat' ? 'ed-hidden' : '')
+                'ed-actions ' +
+                (run.phase === 'combat' || inspection?.source === 'enemy'
+                  ? 'ed-hidden'
+                  : '')
               }
             >
               {inspection?.source === 'shop' ? (
@@ -2329,7 +2428,12 @@ export default function Demo() {
                   run.phase !== 'ended' &&
                   (tab === 'inventory' ? (
                     <Onboarding key="inventory" context="inventory" />
-                  ) : tab === 'map' ? (
+                  ) : tab === 'map' &&
+                    !(
+                      run.day === 1 &&
+                      !run.used &&
+                      run.floors[0].routeVersion === 5
+                    ) ? (
                     <Onboarding key="map" context="map" />
                   ) : tab === 'upgrades' || tab === 'prep' ? (
                     <Onboarding key="terminal" context="terminal" />
@@ -2337,7 +2441,9 @@ export default function Demo() {
                     run.phase === 'base' &&
                     !(run.day === 1 && !run.used && checkpoint(run) === 0) ? (
                     <Onboarding key="room" context="room" />
-                  ) : tab === 'floor' && !isFieldNode(currentNode(run)) ? (
+                  ) : tab === 'floor' &&
+                    f.routeVersion !== 5 &&
+                    !isFieldNode(currentNode(run)) ? (
                     <Onboarding key="explore" context="explore" />
                   ) : null)}
                 {run.phase === 'combat' ? (
