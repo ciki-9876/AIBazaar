@@ -6,6 +6,9 @@ import { refineIngredient } from '@/lib/demo-engine';
 /* oxlint-disable next/no-html-link-for-pages -- Static Sites hosting needs native anchors; RSC-prefetch navigation is unsupported. */
 import { useState, useEffect, useMemo, useRef, useCallback } from 'react';
 import BattleEffects from './battle-effects';
+import FocusGuide, { type GuideStep } from './focus-guide';
+import TutorialFloor, { CostIcons } from './tutorial-floor';
+import { tutorialFloor } from '@/lib/demo-engine';
 import CardFace from './card-face';
 import CardDetail from './card-detail';
 import CargoGrid, { CargoProvider, CarryButton } from './cargo-grid';
@@ -113,7 +116,7 @@ const phaseName: Record<string, string> = {
 };
 export default function Demo() {
   const battlefieldRef = useRef<HTMLDivElement>(null);
-  const [run, setRun] = useState<Run>(() => newRun(10909)),
+  const [run, setRun] = useState<Run>(() => newRun(10909, true)),
     ref = useRef(run);
   const [ready, setReady] = useState(false),
     [saved, setSaved] = useState('正在读取本机存档'),
@@ -242,9 +245,14 @@ export default function Demo() {
       const params = new URLSearchParams(window.location.search);
       const qa =
         process.env.NODE_ENV === 'development' &&
-        ['phase1', 'items', 'arrival', 'first-floor'].includes(
-          params.get('qa') ?? '',
-        );
+        [
+          'phase1',
+          'items',
+          'arrival',
+          'first-floor',
+          'onboarding6',
+          'onboarding6-narrow',
+        ].includes(params.get('qa') ?? '');
       const work =
         qa && params.get('qa') === 'items' ? params.get('work') : null;
       storageKey.current = qa
@@ -266,6 +274,7 @@ export default function Demo() {
       } else {
         let fresh = newRun(
           qa ? 10909 : crypto.getRandomValues(new Uint32Array(1))[0],
+          !work,
         );
         if (work && isFieldNode(work)) {
           fresh = act(act(fresh, { type: 'begin' }), {
@@ -299,11 +308,74 @@ export default function Demo() {
     () => (run.duel ? simulateDuel(run.duel) : null),
     [run.duel],
   );
+  const tutorialBattle =
+    tutorialFloor(run) &&
+    run.phase === 'combat' &&
+    currentNode(run) === 'patrol';
+  const lessonStep = run.tutorialBattleStep ?? 0;
+  const firstFire = Math.max(
+    0,
+    battle?.frames.findIndex((fr) => fr.fired.includes('starter-gapblade')) ??
+      0,
+  );
+  const firstImpact = Math.max(
+    firstFire,
+    battle?.frames.findIndex((fr) =>
+      fr.hits.some(
+        (h) => h.sourceUid === 'starter-gapblade' && h.kind === 'damage',
+      ),
+    ) ?? 0,
+  );
+  const lessonActive =
+    tutorialBattle &&
+    lessonStep < 6 &&
+    cursor >= [0, 0, 0, firstFire, firstImpact, firstImpact][lessonStep];
+  const lessons: GuideStep[] = [
+    {
+      target: '[data-entity="host-0"] .ed-actor-info b',
+      title: '你要保护的是宿主',
+      body: '这是你的战斗生命。降到0就会战败；击败对面的宿主即可获胜。它与探索界面的生存次数不同。',
+    },
+    {
+      target: '[data-entity="barrier-0-2"]',
+      title: '三条路线，三道屏障',
+      body: '上、中、下路分别有一道屏障，挡在宿主前方。攻击先命中对应路线的屏障；屏障破裂后，这条路的攻击会直接伤到宿主。卡牌本身不会被打掉。',
+    },
+    {
+      target: '[data-entity="starter-gapblade"]',
+      title: '刀会自己发动',
+      body: '卡面上的进度就是冷却。猎隙刃每6秒自动攻击一次，不需要点击。它放在下路，就攻击敌方下路。布阵在战斗外进行。',
+      next: '观察第一次出手',
+    },
+    {
+      target: '[data-entity="starter-gapblade"]',
+      title: '冷却完成，攻击出发',
+      body: '刀刚刚发动，进度重新开始。弹道需要飞到对面才结算伤害；现在暂停，方便看清这次攻击。',
+      next: '观察命中',
+    },
+    {
+      target: '[data-entity="barrier-1-2"]',
+      title: '下路屏障被击破',
+      body: '这次攻击击碎了敌方下路屏障，剩余伤害穿透到宿主。破掉的屏障不能再修复，后续下路攻击可以直击宿主。',
+    },
+    {
+      target: '[data-entity="host-1"] .ed-actor-info b',
+      title: '继续攻击，击败宿主',
+      body: '敌方宿主的生命已经减少。等下一次攻击命中，就能结束这场遭遇。接下来，去看看它身后的物资箱。',
+      next: '继续战斗',
+    },
+  ];
   useEffect(() => {
-    if (!battle || !playing || cursor >= battle.frames.length - 1) return;
+    if (
+      !battle ||
+      !playing ||
+      lessonActive ||
+      cursor >= battle.frames.length - 1
+    )
+      return;
     const timer = setTimeout(() => setCursor((c) => c + 1), 250 / speed);
     return () => clearTimeout(timer);
-  }, [battle, playing, cursor, speed]);
+  }, [battle, playing, cursor, speed, lessonActive]);
   const frame = battle?.frames[Math.min(cursor, battle.frames.length - 1)];
   const previewDuel =
     run.phase === 'floor' &&
@@ -335,7 +407,7 @@ export default function Demo() {
   };
   const f = currentFloor(run);
   const resetRun = () => {
-    commit(newRun(crypto.getRandomValues(new Uint32Array(1))[0]));
+    commit(newRun(crypto.getRandomValues(new Uint32Array(1))[0], true));
     try {
       localStorage.removeItem(storageKey.current);
     } catch {}
@@ -486,6 +558,7 @@ export default function Demo() {
                       playing={
                         !!fr &&
                         playing &&
+                        !lessonActive &&
                         cursor < (battle?.frames.length ?? 0) - 1
                       }
                       speed={speed}
@@ -995,7 +1068,7 @@ export default function Demo() {
       run.day === 1 &&
       !run.used &&
       checkpoint(run) === 0 &&
-      run.floors[0].routeVersion === 5;
+      [5, 6].includes(run.floors[0].routeVersion ?? 0);
     const destinations = (
       <div className="ed-floor-map">
         {first && (
@@ -1003,11 +1076,9 @@ export default function Demo() {
             <p className="ed-kicker">01 / 第一站</p>
             <h2>{run.floors[0].name}</h2>
             <p>{run.floors[0].detail}</p>
-            <p>
-              门外有几只无人看守的旧箱子。更深处，一盏归返信标被守卫挡住了。
-            </p>
+            <p>门外传来脚步声。握紧刀，找一条通往信标的路。</p>
             <p className="ed-departure-cost">
-              出发消耗 1 补给、4 精力 · 归途需留 8 精力
+              出发 <CostIcons supply={1} energy={4} />
             </p>
             <button
               className="ed-primary"
@@ -1052,7 +1123,7 @@ export default function Demo() {
                     <div>
                       <h3>{fl.name}</h3>
                       <p>{fl.detail}</p>
-                      {([4, 5].includes(fl.routeVersion ?? 0)
+                      {([4, 5, 6].includes(fl.routeVersion ?? 0)
                         ? fl.nodes
                         : floorRoute(run.seed, fl.id)
                       )
@@ -1131,6 +1202,8 @@ export default function Demo() {
     );
   }
   function floor() {
+    if (tutorialFloor(run))
+      return <TutorialFloor run={run} onAction={dispatch} intel={enemyIntel} />;
     const node = currentNode(run),
       active = !!run.interaction,
       ev = eventAt(run);
@@ -1601,7 +1674,7 @@ export default function Demo() {
     const evidence = battleEvidence(run.duel, battle.frames);
     return (
       <section className={'ed-combat' + (finished ? ' is-finished' : '')}>
-        <p className="ed-stage-warning">
+        <p className="ed-stage-warning" hidden={tutorialFloor(run)}>
           {run.duel.kind === 'survivor'
             ? '幸存者 AI 对战 · 战败触发强制回收，损失生命和普通背包。'
             : run.duel?.stage === 'boss' ||
@@ -1634,7 +1707,7 @@ export default function Demo() {
               surface={battlefieldRef}
               frames={battle.frames}
               cursor={cursor}
-              playing={playing && !finished}
+              playing={playing && !lessonActive && !finished}
               speed={speed}
             />
             {actor(1, frame)}
@@ -1660,7 +1733,10 @@ export default function Demo() {
           >
             {speed}× 速度
           </button>
-          <button onClick={() => setCursor(battle.frames.length - 1)}>
+          <button
+            disabled={tutorialBattle && lessonStep < 6}
+            onClick={() => setCursor(battle.frames.length - 1)}
+          >
             跳至结果
           </button>
         </div>
@@ -2224,9 +2300,21 @@ export default function Demo() {
       onDismiss={hideInspection}
     >
       <ScrollChrome />
+      {lessonActive && (
+        <FocusGuide
+          step={lessons[lessonStep]}
+          index={lessonStep}
+          total={6}
+          paused
+          onNext={() => dispatch({ type: 'tutorial-step', choice: lessonStep })}
+        />
+      )}
       <main
         className={
           'elevator-demo ed-immersive ' +
+          (tutorialFloor(run) && ['floor', 'combat'].includes(run.phase)
+            ? ' guided-expedition '
+            : '') +
           (run.phase === 'combat' ? 'in-combat ' : '') +
           (run.phase === 'base' ? 'at-base ' : '') +
           (run.phase === 'base' && tab === 'base' ? 'in-room' : '') +
@@ -2380,6 +2468,20 @@ export default function Demo() {
                 </nav>
               </aside>
               <div className={`ed-main view-${tab}`}>
+                {tutorialFloor(run) &&
+                  run.phase === 'floor' &&
+                  tab === 'inventory' && (
+                    <button
+                      className="tutorial-build-return"
+                      onClick={() => {
+                        setTab('floor');
+                        setInspection(null);
+                        setPinned(false);
+                      }}
+                    >
+                      返回房间 <ArrowRight size={18} />
+                    </button>
+                  )}
                 {run.phase === 'base' && tab !== 'base' && (
                   <div className="ed-terminal-nav">
                     <span>
@@ -2419,7 +2521,15 @@ export default function Demo() {
                 )}
 
                 {!(notice || run.notice).startsWith('协议生效：') && (
-                  <output className="ed-notice" aria-live="polite">
+                  <output
+                    className={
+                      'ed-notice' +
+                      (notice && notice !== run.notice
+                        ? ' ed-action-error'
+                        : '')
+                    }
+                    aria-live="polite"
+                  >
                     <Radio size={15} />
                     <span>{notice || run.notice}</span>
                   </output>
@@ -2432,7 +2542,7 @@ export default function Demo() {
                     !(
                       run.day === 1 &&
                       !run.used &&
-                      run.floors[0].routeVersion === 5
+                      [5, 6].includes(run.floors[0].routeVersion ?? 0)
                     ) ? (
                     <Onboarding key="map" context="map" />
                   ) : tab === 'upgrades' || tab === 'prep' ? (
@@ -2442,7 +2552,7 @@ export default function Demo() {
                     !(run.day === 1 && !run.used && checkpoint(run) === 0) ? (
                     <Onboarding key="room" context="room" />
                   ) : tab === 'floor' &&
-                    f.routeVersion !== 5 &&
+                    ![5, 6].includes(f.routeVersion ?? 0) &&
                     !isFieldNode(currentNode(run)) ? (
                     <Onboarding key="explore" context="explore" />
                   ) : null)}
