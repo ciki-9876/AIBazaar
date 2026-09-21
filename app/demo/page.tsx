@@ -133,7 +133,6 @@ export default function Demo() {
     [inventoryTab, setInventoryTab] = useState('build'),
     [catalogId, setCatalogId] = useState(ALL_CARDS[0].id),
     [catalogOwner, setCatalogOwner] = useState('all'),
-    [scanUid, setScanUid] = useState<string | undefined>(),
     [inspection, setInspection] = useState<{
       uid: string;
       source: string;
@@ -159,7 +158,7 @@ export default function Demo() {
     if (!sleeping) return;
     const t = setTimeout(() => {
       setSleeping(false);
-      setNews(true);
+      setNews(ref.current.level > 1 || ref.current.systemsUnlocked === true);
     }, 2200);
     return () => clearTimeout(t);
   }, [sleeping]);
@@ -260,6 +259,7 @@ export default function Demo() {
           'onboarding6-narrow',
           'onboarding8',
           'onboarding8-narrow',
+          'onboarding9',
         ].includes(params.get('qa') ?? '');
       const work =
         qa && params.get('qa') === 'items' ? params.get('work') : null;
@@ -440,7 +440,19 @@ export default function Demo() {
       (x) => x.uid === run.tutorialRewardUid && x.zone !== 'board',
     )?.uid;
     setTab('inventory');
-    setInventoryTab('build');
+    setInventoryTab(
+      run.homeGuide === 'scan'
+        ? 'bag'
+        : !uid &&
+            run.phase === 'floor' &&
+            currentNode(run) === 'pressure' &&
+            currentFloor(run).workResolved?.includes('pressure') &&
+            run.items.some(
+              (x) => x.uid === 'tutorial-rubber' && x.type === 'physical',
+            )
+          ? 'bag'
+          : 'build',
+    );
     setPlacing(uid ?? null);
     if (uid) setSelected(uid);
     setPinned(false);
@@ -469,6 +481,14 @@ export default function Demo() {
     setInspection(null);
     setPinned(false);
   };
+  const scanGuideUid =
+    run.homeGuide === 'scan' && run.phase === 'base'
+      ? 'tutorial-boss-weapon'
+      : run.phase === 'floor' &&
+          currentNode(run) === 'pressure' &&
+          currentFloor(run).workResolved?.includes('pressure')
+        ? 'tutorial-rubber'
+        : null;
   const f = currentFloor(run);
   const resetRun = () => {
     setBagOpen(false);
@@ -782,9 +802,9 @@ export default function Demo() {
                 run.items.find((x) => x.uid === run.tutorialRewardUid)?.zone ===
                 'board'
                   ? {
-                      target: '.ed-planning-board',
-                      title: '武器已经上阵',
-                      body: '武器从1件增加到2件，弹弓和猎隙刃会各自发动。这里也能移动、换位；关闭背包即可继续探索。',
+                      target: '.global-bag-view header button',
+                      title: '完成整理，继续探索',
+                      body: '新武器已经上阵。点击「完成整理」，回到节点界面继续探索。',
                     }
                   : {
                       target: '.ed-build-candidates',
@@ -792,6 +812,50 @@ export default function Demo() {
                       body: '把左侧的猎隙刃拖到右侧棋盘的亮色空位。松手即可上阵；也可以点卡牌后点空位。先装备这把武器，再继续探索。',
                     }
               }
+            />
+          )}
+        {bagOpen &&
+          inventoryTab === 'bag' &&
+          !run.identification &&
+          scanGuideUid &&
+          run.items.some(
+            (x) => x.uid === scanGuideUid && x.type === 'physical',
+          ) && (
+            <ContextHint
+              mandatory
+              key={
+                pinned && inspection?.uid === scanGuideUid ? 'scan' : 'select'
+              }
+              step={
+                pinned && inspection?.uid === scanGuideUid
+                  ? {
+                      target: '.ed-identify-status button',
+                      title: '使用鉴定仪',
+                      body: '点击鉴定，消耗一个鉴定仪，揭晓这件物品的卡牌变种。',
+                    }
+                  : {
+                      target: `[data-item-uid="${scanGuideUid}"]`,
+                      title: '选择要鉴定的物品',
+                      body: '点击背包里的未鉴定物品，打开物品详情。',
+                    }
+              }
+            />
+          )}
+        {bagOpen &&
+          !run.identification &&
+          (run.homeGuide === 'sleep' ||
+            (run.phase === 'floor' &&
+              currentNode(run) === 'pressure' &&
+              run.items.some(
+                (x) => x.uid === 'tutorial-rubber' && x.type === 'card',
+              ))) && (
+            <ContextHint
+              mandatory
+              step={{
+                target: '.global-bag-view header button',
+                title: '鉴定完成',
+                body: '点击完成整理，回到房间继续。',
+              }}
             />
           )}
         <nav className="ed-inventory-tabs" aria-label="行装与构筑子页">
@@ -906,11 +970,11 @@ export default function Demo() {
               </section>
               <aside className="ed-panel ed-fixed-details">
                 <h3>{definition.name}</h3>
-                <ObjectInfo id={definition.id} />
+                <ObjectInfo id={definition.id.split('~')[0]} />
                 <p>
                   {definition.id === 'slingshot'
                     ? '新开局初始武器 · 不进入实体掉落池'
-                    : CARDS.some((c) => c.id === definition.id)
+                    : CARDS.some((c) => c.id === definition.id.split('~')[0])
                       ? '当前冒险可获得 · 搜刮 / 游商 / 战利品'
                       : '仅英雄试验场展示 · 尚未接入冒险掉落'}
                 </p>
@@ -2117,7 +2181,7 @@ export default function Demo() {
                 }}
               />
             ) : inspected.type === 'physical' ? (
-              <ObjectInfo id={inspected.id} />
+              <ObjectInfo id={inspected.id.split('~')[0]} />
             ) : (
               <p>
                 {inspected.id === 'apple'
@@ -2182,17 +2246,11 @@ export default function Demo() {
                           !identificationState(run).allowed
                         }
                         onClick={() =>
-                          run.phase === 'base'
-                            ? (setBagOpen(false),
-                              setScanUid(inspected.uid),
-                              setInspection(null),
-                              setPinned(false),
-                              setTab('identify'))
-                            : itemAction({ type: 'scan', id: inspected.uid })
+                          itemAction({ type: 'scan', id: inspected.uid })
                         }
                       >
-                        {run.phase === 'base'
-                          ? '选择实体鉴定'
+                        {identificationState(run).table
+                          ? '鉴定 · 2 金币'
                           : '鉴定 · 消耗 1 仪器'}
                       </button>
                     </div>
@@ -2457,7 +2515,8 @@ export default function Demo() {
           onNext={() => dispatch({ type: 'tutorial-step', choice: lessonStep })}
         />
       )}
-      <main inert={!!run.identification}
+      <main
+        inert={!!run.identification}
         className={
           'elevator-demo ed-immersive ' +
           (tutorialFloor(run) && ['floor', 'combat'].includes(run.phase)
@@ -2650,9 +2709,11 @@ export default function Demo() {
                         ? '电梯系统'
                         : tab === 'inventory'
                           ? '桌面 / 行装与构筑'
-                          : tab === 'identify'
-                            ? '鉴定台 / 物品解析'
-                            : '门禁 / 选择楼层'}
+                          : tab === 'shop'
+                            ? '电梯商店'
+                            : tab === 'identify'
+                              ? '鉴定台 / 物品解析'
+                              : '门禁 / 选择楼层'}
                     </span>
                     {['upgrades', 'survivors', 'log', 'prep'].includes(tab) && (
                       <nav aria-label="电梯系统界面">
@@ -2710,6 +2771,7 @@ export default function Demo() {
                   ) : tab === 'upgrades' || tab === 'prep' ? (
                     <Onboarding key="terminal" context="terminal" />
                   ) : tab === 'base' &&
+                    (run.level > 1 || run.systemsUnlocked === true) &&
                     run.phase === 'base' &&
                     !(run.day === 1 && !run.used && checkpoint(run) === 0) ? (
                     <Onboarding key="room" context="room" />
@@ -2771,10 +2833,28 @@ export default function Demo() {
                 ) : tab === 'base' ? (
                   <>
                     {run.homeGuide && run.homeGuide !== 'done' && (
-                      <Homecoming
-                        run={run}
-                        onAction={dispatch}
-                        onSleep={() => setSleepPrompt(true)}
+                      <ContextHint
+                        mandatory
+                        key={run.homeGuide}
+                        step={
+                          run.homeGuide === 'sleep'
+                            ? {
+                                target: '.ed-room-bed',
+                                title: '睡到明天',
+                                body: '点击床休息，恢复精力，准备下一次探索。',
+                              }
+                            : run.homeGuide === 'scan'
+                              ? {
+                                  target: '.ed-global-bag',
+                                  title: '从背包鉴定武器',
+                                  body: '打开背包，选择未鉴定武器进行鉴定。',
+                                }
+                              : {
+                                  target: '.ed-room-identify',
+                                  title: '打开电梯商店',
+                                  body: '点击房间里的商店，售卖收获，也可以购买消耗品。',
+                                }
+                        }
                       />
                     )}
                     <ElevatorRoom
@@ -2786,23 +2866,19 @@ export default function Demo() {
                       used={run.used}
                       level={run.level}
                       onTable={() => setTab('inventory')}
-                      onIdentify={() =>
-                        run.level >= 4 ? setTab('identify') : setTab('upgrades')
-                      }
+                      onIdentify={() => setTab('shop')}
                       onDoor={() => setTab('map')}
                       onBed={() => setSleepPrompt(true)}
                       onTerminal={() => setTab('upgrades')}
+                      systemsUnlocked={
+                        run.level > 1 || run.systemsUnlocked === true
+                      }
                     />
                   </>
+                ) : tab === 'shop' ? (
+                  <Homecoming run={run} onAction={dispatch} />
                 ) : tab === 'upgrades' || tab === 'prep' ? (
-                  <>
-                    <Homecoming
-                      run={run}
-                      onAction={dispatch}
-                      onSleep={() => setSleepPrompt(true)}
-                    />
-                    {terminal()}
-                  </>
+                  terminal()
                 ) : tab === 'map' ? (
                   map()
                 ) : tab === 'floor' ? (
@@ -2810,7 +2886,6 @@ export default function Demo() {
                 ) : tab === 'identify' ? (
                   <IdentifyTable
                     items={run.items}
-                    initialUid={scanUid}
                     onBuild={goBuild}
                     onScan={(uid) => {
                       const next = dispatch({ type: 'scan', id: uid });

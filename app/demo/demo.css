@@ -7448,3 +7448,115 @@ body:has(.elevator-demo) {
   color: #17201a;
   border-color: #ffac49;
 }
+
+/* Atlas owns a scroll surface even inside the fixed global bag. */
+.elevator-demo .ed-inventory-page-body > .ed-atlas-panel {
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+.guide-overview.focus-guide-overlay {
+  background: transparent;
+  pointer-events: none;
+}
+.guide-overview .focus-guide-dialog {
+  pointer-events: auto;
+  position: fixed;
+  left: 24px !important;
+  top: auto !important;
+  bottom: 24px !important;
+  box-shadow: 0 8px 30px #0005;
+}
+@media (max-width: 700px) {
+  .guide-overview .focus-guide-dialog {
+    left: 12px !important;
+    bottom: 12px !important;
+    width: calc(100vw - 24px) !important;
+  }
+}
+
+.expedition-change {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+
+.permanent-shop {
+  max-width: 1050px;
+  margin: auto;
+  padding: 32px !important;
+}
+.shop-columns {
+  display: grid;
+  grid-template-columns: 1fr 2fr;
+  gap: 32px;
+  margin: 24px 0;
+}
+.shop-scanner {
+  border: 1px solid #ffac49;
+  padding: 24px;
+  display: grid;
+  gap: 16px;
+}
+.shop-sales {
+  display: grid;
+  gap: 8px;
+}
+.shop-sales article {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px;
+  border: 1px solid currentColor;
+  gap: 16px;
+}
+@media (max-width: 700px) {
+  .shop-columns {
+    grid-template-columns: 1fr;
+  }
+}
+
+.guide-overview-note {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 24px;
+  padding: 16px 20px;
+  margin-bottom: 20px;
+  background: #26352b;
+  border-left: 3px solid #d6b568;
+  text-align: left;
+  width: 100%;
+}
+.guide-overview-note h2 {
+  font-size: 20px !important;
+  margin: 0 0 8px !important;
+}
+.guide-overview-note p {
+  margin: 0 !important;
+  line-height: 1.6;
+}
+.guide-overview-note button {
+  flex-shrink: 0;
+}
+
+/* Bound the permanent backpack so its catalog and details can scroll. */
+.elevator-demo .global-bag-view {
+  height: calc(100dvh - 92px);
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+.elevator-demo .global-bag-view > header {
+  flex: none;
+}
+
+@media (max-width: 700px) {
+  .elevator-demo .ed-inventory-page-body > .ed-atlas-panel {
+    overflow: visible;
+    overscroll-behavior: auto;
+  }
+  .elevator-demo .ed-atlas-grid {
+    overflow: visible;
+  }
+}

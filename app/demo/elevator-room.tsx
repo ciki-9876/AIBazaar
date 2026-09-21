@@ -2,6 +2,7 @@
 import { useState } from 'react';
 type Props = {
   arrival?: boolean;
+  systemsUnlocked?: boolean;
   floor: number;
   day: number;
   used: boolean;
@@ -108,13 +109,7 @@ export default function ElevatorRoom(p: Props) {
         onClick={() =>
           inspect('金属台面冰凉，一盏小灯静静亮着。', p.onIdentify)
         }
-        aria-label={
-          p.arrival
-            ? '观察金属台'
-            : p.level >= 4
-              ? '鉴定台，2金币鉴定一次'
-              : '电梯商店'
-        }
+        aria-label={p.arrival ? '观察金属台' : '电梯商店'}
       >
         <i>⌑</i>
         <span className="ed-object-label">
@@ -122,8 +117,8 @@ export default function ElevatorRoom(p: Props) {
             '金属台'
           ) : (
             <>
-              {p.level >= 4 ? '鉴定台' : '电梯商店'}
-              <small>{p.level >= 4 ? '2 金币 / 次' : '消耗品与收购'}</small>
+              电梯商店
+              <small>消耗品与收购</small>
             </>
           )}
         </span>
@@ -163,37 +158,41 @@ export default function ElevatorRoom(p: Props) {
           )}
         </span>
       </button>
-      <button
-        className="ed-room-object ed-room-terminal"
-        onClick={() => inspect('屏幕上只有一颗缓慢闪动的光点。', p.onTerminal)}
-        aria-label={p.arrival ? '观察屏幕' : '点击墙上终端，打开电梯系统'}
-      >
-        <span className="ed-terminal-glass">
-          {!p.arrival && (
-            <>
-              <small>SURVIVOR PROTOCOL</small>
-              <b>100</b>
-              <span>你的信号仍在线</span>
-              <i>● SYSTEM READY</i>
-            </>
-          )}
-          {p.arrival && (
-            <i className="ed-arrival-signal" aria-hidden="true">
-              ●
-            </i>
-          )}
-        </span>
-        <span className="ed-room-slot" />
-        <span className="ed-object-label">
-          {p.arrival ? (
-            '屏幕'
-          ) : (
-            <>
-              电梯系统 <small>改造 / 幸存者 / 日志</small>
-            </>
-          )}
-        </span>
-      </button>
+      {(p.arrival || p.systemsUnlocked) && (
+        <button
+          className="ed-room-object ed-room-terminal"
+          onClick={() =>
+            inspect('屏幕上只有一颗缓慢闪动的光点。', p.onTerminal)
+          }
+          aria-label={p.arrival ? '观察屏幕' : '点击墙上终端，打开电梯系统'}
+        >
+          <span className="ed-terminal-glass">
+            {!p.arrival && (
+              <>
+                <small>SURVIVOR PROTOCOL</small>
+                <b>100</b>
+                <span>你的信号仍在线</span>
+                <i>● SYSTEM READY</i>
+              </>
+            )}
+            {p.arrival && (
+              <i className="ed-arrival-signal" aria-hidden="true">
+                ●
+              </i>
+            )}
+          </span>
+          <span className="ed-room-slot" />
+          <span className="ed-object-label">
+            {p.arrival ? (
+              '屏幕'
+            ) : (
+              <>
+                电梯系统 <small>改造 / 幸存者 / 日志</small>
+              </>
+            )}
+          </span>
+        </button>
+      )}
       <button
         className="ed-room-object ed-room-bed"
         onClick={() => inspect('床铺还留着余温。', p.onBed)}

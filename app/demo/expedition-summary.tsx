@@ -24,7 +24,7 @@ export default function ExpeditionSummary({ run }: { run: Run }) {
             className={`rarity-${x.id === 'scanner' || x.id === 'relic' ? 3 : (run.items.find((i) => i.uid === x.uid)?.rarity ?? x.rarity ?? 0)}`}
           >
             <span>
-              {itemName(x)}
+              {itemName(run.items.find((i) => i.uid === x.uid) ?? x)}
               <small>
                 {run.items.find((i) => i.uid === x.uid)?.zone === 'board'
                   ? '已上阵'
@@ -47,13 +47,24 @@ export default function ExpeditionSummary({ run }: { run: Run }) {
           .map(([key, label]) => (
             <p key={key}>
               <span>{label}</span>
-              <strong>+{ledger.gained[key] ?? 0}</strong>
-              <span>−{ledger.spent[key] ?? 0}</span>
+              <span className="expedition-change">
+                {(ledger.gained[key] ?? 0) > 0 && (
+                  <strong>获得 {ledger.gained[key]}</strong>
+                )}
+                {(ledger.spent[key] ?? 0) > 0 && (
+                  <span>
+                    {key === 'scanner' ? '使用' : '消耗'} {ledger.spent[key]}
+                  </span>
+                )}
+              </span>
             </p>
           ))}
       </div>
       {ledger.active && (
-        <small>返回还需 8 精力；首次提交另获 5 金币、2 补给。</small>
+        <small>
+          尚未结算：返回电梯将消耗 8 精力。首次通关提交后，另获得 5 金币、2
+          补给。
+        </small>
       )}
     </section>
   );

@@ -1,4 +1,4 @@
-import { cardDef } from './demo-cards.ts';
+import { cardDef, cardFamily } from './demo-cards.ts';
 import { cardMechanics, combatValue } from './demo-card-rules.ts';
 import { heroDef, heroOwner } from './heroes.ts';
 import type { HeroId } from './hero-cards.ts';
@@ -247,11 +247,12 @@ export function simulateDuel(d: Duel) {
                   ...boards[hit.side]
                     .filter(
                       (c) =>
-                        (c.id === 'rubber' || cardDef(c.id).mechanic?.buffer) &&
+                        (cardFamily(c.id) === 'rubber' ||
+                          cardDef(c.id).mechanic?.buffer) &&
                         laneOf(c) === lane,
                     )
                     .map((c) =>
-                      c.id === 'rubber'
+                      cardFamily(c.id) === 'rubber'
                         ? cardMechanics(c.id, c.level, c.quality).buffer
                         : cardDef(c.id).mechanic!.buffer! *
                           (1 + c.level * 0.12) *
@@ -276,7 +277,8 @@ export function simulateDuel(d: Duel) {
           if (!hit.periodic && hit.barrierAbsorbed > 0)
             for (const c of boards[hit.side].filter(
               (c) =>
-                (c.id === 'recoil' || cardDef(c.id).mechanic?.recoil) &&
+                (cardFamily(c.id) === 'recoil' ||
+                  cardDef(c.id).mechanic?.recoil) &&
                 laneOf(c) === lane,
             ))
               stored[c.uid] = Math.min(
@@ -415,15 +417,15 @@ export function simulateDuel(d: Duel) {
           amount += special.smallAllyBonus * heroGrowth;
         if (mechanism.openingCount && n <= mechanism.openingCount)
           amount += mechanism.openingBonus;
-        if (c.id === 'culture')
+        if (cardFamily(c.id) === 'culture')
           amount += (n - 1) * mechanism.growthBase * growth;
         if (
-          c.id === 'counterweight' &&
+          cardFamily(c.id) === 'counterweight' &&
           !barriers[side][lane].broken &&
           barriers[side][lane].hp > barriers[side][lane].maxHp * 0.5
         )
           amount += mechanism.intactBonus;
-        if (c.id === 'recoil' || special?.recoil) {
+        if (cardFamily(c.id) === 'recoil' || special?.recoil) {
           amount += stored[p.uid] ?? 0;
           stored[p.uid] = 0;
         }
@@ -537,7 +539,7 @@ export function simulateDuel(d: Duel) {
             visual: 'damage',
             targetLane,
             exposedBonus:
-              c.id === 'gapblade'
+              cardFamily(c.id) === 'gapblade'
                 ? mechanism.exposedBonus
                 : (special?.exposed ?? 0) * heroGrowth,
             barrierBonus: (special?.barrierBonus ?? 0) * heroGrowth,
@@ -573,7 +575,7 @@ export function simulateDuel(d: Duel) {
             value: amount,
             visual: 'poison',
           });
-          if (c.id === 'distiller')
+          if (cardFamily(c.id) === 'distiller')
             launch({
               ...base,
               side,
@@ -626,7 +628,7 @@ export function simulateDuel(d: Duel) {
         if (n === 1) advance += mechanism.firstCharge;
         if (special?.firstCharge && n === 1)
           advance += special.firstCharge * heroGrowth;
-        if (c.id === 'catalyst' && corrosion[1 - side][lane] > 0)
+        if (cardFamily(c.id) === 'catalyst' && corrosion[1 - side][lane] > 0)
           advance += mechanism.corrosionCharge;
         if (advance) {
           const others = boards[side].filter(

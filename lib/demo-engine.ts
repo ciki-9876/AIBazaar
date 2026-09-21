@@ -5,7 +5,7 @@ import {
   type MinigameState,
 } from './minigame.ts';
 import { pipeConnected } from './tutorial-pipes.ts';
-import { CARDS, cardDef } from './demo-cards.ts';
+import { CARDS, cardDef, identifyVariant } from './demo-cards.ts';
 import { layout } from './cargo-layout.ts';
 import { rarityOf, growthCost, growthRefund } from './demo-card-rules.ts';
 import { rng, hash } from './design-model.ts';
@@ -181,6 +181,7 @@ export const checkpoint = (s: Run) => s.stopFloor ?? s.best;
 export type Run = {
   openingVersion?: 2;
   experienceVersion?: 3;
+  systemsUnlocked?: boolean;
   scannerVersion?: 2;
   minigame?: MinigameState;
   lootQueue?: NonNullable<Run['loot']>[];
@@ -814,6 +815,8 @@ function validateItem(x: Item) {
         [0, 1, 2].includes(x.quality),
       '培养属性无效',
     );
+    if (x.type === 'card' && x.id.includes('~'))
+      need(x.rarity === rarityOf(x.id), '变种稀有度不匹配');
     if (x.type === 'physical')
       need(x.rarity === undefined, '实体不应拥有稀有度');
   } else {
@@ -1820,8 +1823,25 @@ function applyAction(old: Run, a: Action): Run {
     if (state.table) s.material -= 2;
     else spendItem(s, 'scanner');
     const roll = hash(`${s.seed}/identify/${x.uid}`) % 100;
-    x.rarity =
-      roll < 45 ? 0 : roll < 73 ? 1 : roll < 90 ? 2 : roll < 98 ? 3 : 4;
+    const rarity =
+      x.uid === 'tutorial-rubber'
+        ? 2
+        : roll < 45
+          ? 0
+          : roll < 73
+            ? 1
+            : roll < 90
+              ? 2
+              : roll < 98
+                ? 3
+                : 4;
+    const variant = identifyVariant(
+      x.id,
+      rarity,
+      x.uid === 'tutorial-rubber' ? 0 : hash(`${s.seed}/variant/${x.uid}`),
+    );
+    x.id = variant.id;
+    x.rarity = variant.rarity!;
     x.type = 'card';
     x.quality = x.rarity >= 4 ? 2 : x.rarity >= 2 ? 1 : 0;
     s.identification = { uid: x.uid };
@@ -1958,6 +1978,10 @@ function applyAction(old: Run, a: Action): Run {
     a.type === 'upgrade'
   ) {
     need(s.phase === 'base', '基地操作需要回到电梯');
+    need(
+      s.experienceVersion !== 3 || s.level > 1 || s.systemsUnlocked === true,
+      '电梯系统尚未随引导开启',
+    );
     const f = FACILITY.find((f) => f.id === a.id);
     if (a.type === 'expand') {
       need(s.moduleCap < 10 && s.material >= 6, '扩建需要 6 金币，上限 10 槽');
@@ -2129,6 +2153,30 @@ function applyAction(old: Run, a: Action): Run {
       s,
       `抵达 ${s.floor} 层 · ${currentFloor(s).name}。${s.encounter ? '检测到其他幸存者，封锁对决前可提前撤离。' : '电梯停靠点已标记。'}返回需要预留 8 精力。`,
     );
+    return s;
+  }
+  if (a.type === 'sell') {
+    need(
+      s.phase === 'base' ||
+        (s.interaction === 'trade' && currentNode(s) === 'merchant'),
+      '请先进入交易状态',
+    );
+    const x = s.items.find((x) => x.uid === a.id);
+    need(
+      x &&
+        (s.phase === 'base'
+          ? ['bag', 'safe', 'warehouse']
+          : ['bag', 'safe']
+        ).includes(x.zone) &&
+        x.id !== 'core',
+      '只能出售随身物品；上阵卡请先卸下',
+    );
+    const amount = sellPrice(x);
+    s.items = s.items.filter((i) => i.uid !== x.uid);
+    s.material += amount;
+    if (s.phase === 'base' && x.id === 'relic' && s.homeGuide === 'sell')
+      s.homeGuide = 'buy';
+    say(s, `售出${itemName(x)}，获得 ${amount} 金币，背包容量已释放。`);
     return s;
   }
   need(s.phase === 'floor', '请先进入楼层');
@@ -2406,19 +2454,6 @@ function applyAction(old: Run, a: Action): Run {
       s,
       '交易已开启，可购买、出售和整理随身物品；结束后主动前往下个目的地。',
     );
-    return s;
-  }
-  if (a.type === 'sell') {
-    need(s.interaction === 'trade' && node === 'merchant', '请先进入交易状态');
-    const x = s.items.find((x) => x.uid === a.id);
-    need(
-      x && ['bag', 'safe'].includes(x.zone) && x.id !== 'core',
-      '只能出售随身物品；上阵卡请先卸下',
-    );
-    const amount = sellPrice(x);
-    s.items = s.items.filter((i) => i.uid !== x.uid);
-    s.material += amount;
-    say(s, `售出${itemName(x)}，获得 ${amount} 金币，背包容量已释放。`);
     return s;
   }
   if (a.type === 'cache') {

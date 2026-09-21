@@ -214,7 +214,7 @@ function ToolCache({ run, onAction }: Pick<Props, 'run' | 'onAction'>) {
         step={{
           target: '.tutorial-loot',
           title: '带走现场工具',
-          body: '补漏胶可以给气室操作增加余地；缓冲垫是一件防御组件，先以实体形态收好。',
+          body: '先把这些物品收好，后面会用得上。',
         }}
       />
       <div className="tutorial-loot">
@@ -225,9 +225,7 @@ function ToolCache({ run, onAction }: Pick<Props, 'run' | 'onAction'>) {
           >
             <Shield />
             <strong>{itemName(x)}</strong>
-            <small>
-              {x.id === 'rubber' ? '隔热 · 使用后保留' : '补漏 · 使用后消耗'}
-            </small>
+            <small>{'未鉴定物品'}</small>
             <button onClick={() => onAction({ type: 'pickup', id: x.uid })}>
               拾取
             </button>
@@ -246,48 +244,36 @@ function ToolCache({ run, onAction }: Pick<Props, 'run' | 'onAction'>) {
     </section>
   );
 }
-function PipeReward({
-  run,
-  onAction,
-  onBuild,
-}: Pick<Props, 'run' | 'onAction' | 'onBuild'>) {
+function PipeReward({ run, onAction }: Pick<Props, 'run' | 'onAction'>) {
   const pad = run.items.find((x) => x.uid === 'tutorial-rubber')!;
   return (
     <section className="tutorial-new-card">
-      {!run.identification && <ContextHint
-        key={pad.type}
-        step={
-          pad.type === 'physical'
-            ? {
-                target: '.tutorial-scan',
-                title: '把留下的工具变成卡牌',
-                body: '鉴定仪使用一次后消失。用它鉴定缓冲垫，揭晓这张防御卡的品质。',
-              }
-            : {
-                target: '.tutorial-new-card h2',
-                title: '新的防御组件',
-                body: '缓冲垫现在是一张卡牌。可以打开背包查看当前能力、调整阵容，再继续探索。',
-              }
-        }
-      />}
+      {!run.identification && (
+        <ContextHint
+          key={pad.type}
+          step={
+            pad.type === 'physical'
+              ? {
+                  target: '.ed-global-bag',
+                  title: '从背包使用鉴定仪',
+                  body: '打开右上角背包，选择缓冲垫，再点击鉴定。以后也从这里使用鉴定仪。',
+                }
+              : {
+                  target: '.tutorial-new-card h2',
+                  title: '新的防御组件',
+                  body: '缓冲垫现在是一张卡牌。可以打开背包查看当前能力、调整阵容，再继续探索。',
+                }
+          }
+        />
+      )}
       {pad.type === 'physical' ? (
-        <div className="tutorial-scan">
-          <ScanLine size={32} />
-          <span className="rarity-3">鉴定仪 · 消耗 1 个</span>
-          <button
-            className="ed-primary"
-            onClick={() => onAction({ type: 'scan', id: pad.uid })}
-          >
-            鉴定缓冲垫 <ScanLine size={17} />1
-          </button>
-        </div>
+        <p>鉴定仪已收好。打开右上角背包，选择缓冲垫进行鉴定。</p>
       ) : (
         <>
           <h2>{itemName(pad)}</h2>
           <CardDetail
             card={{ ...pad, at: pad.at ?? 0, rarity: pad.rarity ?? 0 }}
           />
-          <button onClick={() => onBuild(pad.uid)}>打开背包</button>
           <button
             className="ed-primary"
             onClick={() => onAction({ type: 'tutorial-continue' })}
@@ -300,18 +286,14 @@ function PipeReward({
     </section>
   );
 }
-function LegacyPipeRoom({
-  run,
-  onAction,
-  onBuild,
-}: Pick<Props, 'run' | 'onAction' | 'onBuild'>) {
+function LegacyPipeRoom({ run, onAction }: Pick<Props, 'run' | 'onAction'>) {
   const [installed, setInstalled] = useState(false);
   const [turns, setTurns] = useState(() => initialPipes(run.seed));
   const wet = pipeFlow(turns),
     solved = pipeConnected(turns);
   const done = currentFloor(run).workResolved?.includes('pressure');
   if (done && run.openingVersion === 2)
-    return <PipeReward run={run} onAction={onAction} onBuild={onBuild} />;
+    return <PipeReward run={run} onAction={onAction} />;
   if (done)
     return (
       <button
@@ -452,12 +434,7 @@ function LegacyPipeRoom({
     </section>
   );
 }
-export default function TutorialFloor({
-  run,
-  onAction,
-  intel,
-  onBuild,
-}: Props) {
+export default function TutorialFloor({ run, onAction, intel }: Props) {
   const node = currentNode(run);
   const steps = [
     ['patrol', '遭遇'],
@@ -535,12 +512,6 @@ export default function TutorialFloor({
               />
               <Swords size={68} />
               <p>新武器已经到手。</p>
-              <button
-                className="ed-primary"
-                onClick={() => onBuild(run.tutorialRewardUid)}
-              >
-                打开背包布阵
-              </button>
             </div>
           ) : run.interaction === 'search' ? (
             run.openingVersion === 2 ? (
@@ -554,8 +525,9 @@ export default function TutorialFloor({
                 mandatory
                 step={{
                   target: '.tutorial-first-fight',
-                  title: '搜刮房间',
-                  body: '这里通常能找到物资与未鉴定物品。打开箱子消耗10精力；右上角显示你目前的精力。拿取箱内物品不再消耗精力。',
+                  overview: true,
+                  title: '安全的房间',
+                  body: '你现在来到了一个安全的房间，这里可以搜刮物资。',
                 }}
               />
               <Backpack size={68} />
@@ -571,12 +543,12 @@ export default function TutorialFloor({
         ) : node === 'pressure' ? (
           run.openingVersion === 2 ? (
             currentFloor(run).workResolved?.includes('pressure') ? (
-              <PipeReward run={run} onAction={onAction} onBuild={onBuild} />
+              <PipeReward run={run} onAction={onAction} />
             ) : (
               <PressureGame run={run} onAction={onAction} />
             )
           ) : (
-            <LegacyPipeRoom run={run} onAction={onAction} onBuild={onBuild} />
+            <LegacyPipeRoom run={run} onAction={onAction} />
           )
         ) : node === 'antechamber' || node === 'guardian' ? (
           <>
@@ -585,7 +557,7 @@ export default function TutorialFloor({
               (x) => x.uid === 'tutorial-rubber' && x.type === 'card',
             ) &&
               !run.defenseExplained && (
-                <DefenseGuide run={run} onAction={onAction} onBuild={onBuild} />
+                <DefenseGuide run={run} onAction={onAction} />
               )}
             <button
               disabled={
@@ -620,11 +592,7 @@ export default function TutorialFloor({
   );
 }
 
-function DefenseGuide({
-  run,
-  onAction,
-  onBuild,
-}: Pick<Props, 'run' | 'onAction' | 'onBuild'>) {
+function DefenseGuide({ run, onAction }: Pick<Props, 'run' | 'onAction'>) {
   const pad = run.items.find((x) => x.uid === 'tutorial-rubber')!;
   const ready = pad.zone === 'board' && Math.floor(pad.at! / 3) === 1;
   return (
@@ -633,21 +601,21 @@ function DefenseGuide({
         mandatory
         key={ready ? 'ready' : 'place'}
         step={{
-          target: '.defense-guide',
+          target: ready ? '.defense-guide' : '.ed-global-bag',
           title: ready ? '布防得不错' : '观察敌人的主攻路线',
           body: ready
             ? '你已经把缓冲垫放在中路，正好应对守卫的主要输出。现在可以挑战它了。'
-            : '守卫的主要武器在中路。把缓冲垫拖到中路，保护这条路线的屏障。',
+            : '守卫的主要武器在中路。打开右上角背包，在上阵构筑中把缓冲垫拖到中路。',
         }}
       />
-      <button
-        className="ed-primary"
-        onClick={() =>
-          ready ? onAction({ type: 'defense-explained' }) : onBuild(pad.uid)
-        }
-      >
-        {ready ? '准备好了' : '把缓冲垫放到中路'}
-      </button>
+      {ready && (
+        <button
+          className="ed-primary"
+          onClick={() => onAction({ type: 'defense-explained' })}
+        >
+          准备好了
+        </button>
+      )}
     </section>
   );
 }

@@ -2,6 +2,8 @@ import type { CardDef } from './card-types.ts';
 import type { HeroId, HeroMechanic } from './hero-cards.ts';
 export type School = 'rush' | 'erosion' | 'bastion';
 export type SystemCard = CardDef & {
+  family?: string;
+  bufferBonus?: number;
   school?: School;
   rarity?: number;
   role?: string;
@@ -197,7 +199,70 @@ export const STARTER_SLING = make(
   '初始 / 弹道输出',
   '每3秒发射弹丸，命中后造成10伤害。',
 );
-export const ALL_CARDS: SystemCard[] = [...CARDS, STARTER_SLING];
+// A physical family yields named variants. Every definition has one immutable rarity.
+const variantSpecs = [
+  { suffix: 'worn', prefix: '旧制', rarity: 0, power: 0.9, cd: 1 },
+  { suffix: 'reinforced', prefix: '加固', rarity: 1, power: 1, cd: 0 },
+  { suffix: 'precision', prefix: '精工', rarity: 2, power: 1.1, cd: 0 },
+  { suffix: 'swift', prefix: '轻型', rarity: 2, power: 0.95, cd: -1 },
+  { suffix: 'void', prefix: '深空', rarity: 3, power: 1.2, cd: 0 },
+  { suffix: 'relic', prefix: '遗世', rarity: 4, power: 1.25, cd: -1 },
+];
+export const CARD_VARIANTS: SystemCard[] = CARDS.flatMap((base) =>
+  variantSpecs.map((v) => ({
+    ...base,
+    id: `${base.id}~${v.suffix}`,
+    family: base.id,
+    name:
+      base.id === 'rubber'
+        ? (
+            {
+              worn: '破烂缓冲垫',
+              reinforced: '加固缓冲垫',
+              precision: '皮质缓冲垫',
+              swift: '蜂窝缓冲垫',
+              void: '深空缓冲垫',
+              relic: '时隙缓冲垫',
+            } as Record<string, string>
+          )[v.suffix]
+        : v.prefix + base.name,
+    rarity: v.rarity,
+    power:
+      Math.round(base.power * v.power * (base.kind === 'charge' ? 10 : 1)) /
+      (base.kind === 'charge' ? 10 : 1),
+    cd: Math.max(2, base.cd + v.cd),
+    bufferBonus:
+      base.id === 'rubber'
+        ? (
+            {
+              worn: -2,
+              reinforced: 0,
+              precision: 2,
+              swift: 1,
+              void: 4,
+              relic: 5,
+            } as Record<string, number>
+          )[v.suffix]
+        : 0,
+  })),
+);
+export const ALL_CARDS: SystemCard[] = [
+  ...CARDS,
+  STARTER_SLING,
+  ...CARD_VARIANTS,
+];
+export const cardFamily = (id: string) => id.split('~')[0];
+export function identifyVariant(
+  family: string,
+  rarity: number,
+  selector: number,
+) {
+  const pool = CARD_VARIANTS.filter(
+    (c) => c.family === cardFamily(family) && c.rarity === rarity,
+  );
+  if (!pool.length) throw Error('此实体没有可鉴定变种');
+  return pool[selector % pool.length];
+}
 export const cardDef = (id: string) => {
   const c = ALL_CARDS.find((c) => c.id === id);
   if (!c) throw Error('未知卡牌');

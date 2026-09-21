@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 export type GuideStep = {
   target: string;
+  overview?: boolean;
   title: string;
   body: string;
   next?: string;
@@ -33,13 +34,15 @@ export default function FocusGuide({
     height: 220,
   });
   useEffect(() => {
+    if (step.overview) return;
     const previous = document.activeElement as HTMLElement | null;
     const target = document.querySelector<HTMLElement>(step.target);
-    target?.scrollIntoView({
-      block: 'center',
-      inline: 'nearest',
-      behavior: 'instant',
-    });
+    if (!step.overview)
+      target?.scrollIntoView({
+        block: 'center',
+        inline: 'nearest',
+        behavior: 'instant',
+      });
     const measure = () => {
       const raw = target?.getBoundingClientRect();
       if (!raw) return;
@@ -94,12 +97,26 @@ export default function FocusGuide({
       window.removeEventListener('scroll', measure, true);
       previous?.focus({ preventScroll: true });
     };
-  }, [step.target]);
+  }, [step.target, step.overview]);
   if (typeof document === 'undefined') return null;
+  if (step.overview)
+    return (
+      <aside className="guide-overview-note" aria-label="房间介绍">
+        <div>
+          <h2>{step.title}</h2>
+          <p>{step.body}</p>
+        </div>
+        <button className="ed-primary" onClick={onNext}>
+          {step.next ?? '明白了'}
+        </button>
+      </aside>
+    );
   return createPortal(
     <div
       role="presentation"
-      className="focus-guide-overlay"
+      className={
+        'focus-guide-overlay' + (step.overview ? ' guide-overview' : '')
+      }
       onKeyDown={(e) => {
         if (e.key === 'Escape' && onClose) {
           e.preventDefault();
@@ -121,7 +138,7 @@ export default function FocusGuide({
         }
       }}
     >
-      {box && (
+      {box && !step.overview && (
         <div
           className="focus-guide-ring"
           style={{
@@ -132,7 +149,7 @@ export default function FocusGuide({
           }}
         />
       )}
-      {box && (
+      {box && !step.overview && (
         <svg className="focus-guide-connector" aria-hidden="true">
           <defs>
             <marker

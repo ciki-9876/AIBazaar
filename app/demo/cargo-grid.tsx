@@ -258,6 +258,7 @@ export default function CargoGrid({
               }}
               data-cargo-zone={zone}
               data-cargo-slot={item.slot}
+              data-item-uid={item.uid}
               onPointerDown={(e) => {
                 if (e.button !== 0 || ctx.drag?.keyboard) return;
                 ctx.start(item, zone, e.clientX, e.clientY);

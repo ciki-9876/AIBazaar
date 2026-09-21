@@ -63,27 +63,36 @@ export default function PressureGame({
   const hints = [
     {
       target: '.minigame-board',
+      overview: true,
       title: '特殊玩法房间',
-      body: '这里藏着一只检修宝箱。转动管道，把左上入口连到右下出口，就能泄压开箱。',
+      body: '这里有一套待修复的管道。完成现场挑战，就能打开检修宝箱。',
+    },
+    {
+      target: '.pipe-grid',
+      title: '接通管道',
+      body: '点击管道旋转，把左上入口连到右下出口。亮起的管道表示已经接通。',
     },
     {
       target: '.minigame-moves',
       title: '每次旋转用掉一步',
-      body: '基础有12步，没有倒计时。剩余0–1步得1星，2–3步得2星，4步以上得3星；星级越高，箱子里的奖励越多。',
+      body: '每次转动管道会用掉一步。剩余步数越多，星级越高，奖励越丰富。',
     },
     {
       target: '.minigame-tools',
       title: '工具让操作更从容',
       body: '不用道具也能接通。消耗一份补漏胶可多操作4步；缓冲垫先留在背包，稍后可以鉴定。',
     },
-    {
-      target: '.minigame-shell footer',
-      title: '由你决定怎么通过',
-      body: '接通后点完成领奖。卡住可以重置，或跳过并放弃奖励；问号可以重看说明。',
-    },
   ];
   return (
     <>
+      {guide < hints.length && (
+        <FocusGuide
+          step={hints[guide]}
+          index={guide}
+          total={hints.length}
+          onNext={() => setGuide(guide + 1)}
+        />
+      )}
       <MinigameShell
         tools={
           <>
@@ -179,14 +188,6 @@ export default function PressureGame({
           <span>→ {solved ? '已接通' : '出口'}</span>
         </div>
       </MinigameShell>
-      {guide < hints.length && (
-        <FocusGuide
-          step={hints[guide]}
-          index={guide}
-          total={hints.length}
-          onNext={() => setGuide(guide + 1)}
-        />
-      )}
     </>
   );
 }

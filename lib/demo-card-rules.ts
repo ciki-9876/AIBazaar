@@ -1,13 +1,16 @@
-import { cardDef } from './demo-cards.ts';
+import { cardDef, cardFamily } from './demo-cards.ts';
 export const rarityOf = (id: string) => cardDef(id).rarity ?? 0;
 // Raw values are shared by combat and card language. Round only for display.
 export function cardMechanics(id: string, level: number, quality = 0) {
+  const def = cardDef(id);
+  id = cardFamily(id);
   const scale = 1 + level * 0.12;
   return {
     openingCount: id === 'nailer' ? 2 : id === 'springbow' ? 3 : 0,
     openingBonus: (16 + quality * 4) * scale,
     exposedBonus: id === 'gapblade' ? (6 + quality * 2) * scale : 0,
-    buffer: id === 'rubber' ? (8 + quality) * scale : 0,
+    buffer:
+      id === 'rubber' ? (8 + quality + (def.bufferBonus ?? 0)) * scale : 0,
     recoilCap: (40 + quality * 10) * scale,
     growth: id === 'culture' ? (8 + quality * 2) * scale : 0,
     growthBase: id === 'culture' ? 8 + quality * 2 : 0,
@@ -24,7 +27,7 @@ export function combatValue(id: string, level: number, quality = 0) {
       (c.power +
         (c.kind === 'corrode'
           ? quality
-          : c.id === 'sealant'
+          : cardFamily(c.id) === 'sealant'
             ? quality * 4
             : 0)) *
         (1 + level * 0.12) *

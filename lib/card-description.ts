@@ -1,4 +1,4 @@
-import { cardDef } from './demo-cards.ts';
+import { cardDef, cardFamily } from './demo-cards.ts';
 import { combatValue, cardMechanics } from './demo-card-rules.ts';
 import type { FighterCard } from './demo-combat.ts';
 
@@ -49,7 +49,8 @@ export function describeCard(card: FighterCard, includeFuture = true) {
   const abilities: CardAbility[] = [];
   const add = (when: string, text: string, terms: CardTerm[]) =>
     abilities.push({ when, text, terms });
-  const target = c.id === 'culture' ? '侵蚀层数最多那一路的敌方' : '同路敌方';
+  const target =
+    cardFamily(c.id) === 'culture' ? '侵蚀层数最多那一路的敌方' : '同路敌方';
   const action =
     term === 'damage'
       ? `对${target}造成${value}点伤害。`
@@ -58,7 +59,11 @@ export function describeCard(card: FighterCard, includeFuture = true) {
         : term === 'charge'
           ? `为同路另一张卡充能${value}秒。`
           : `对同路敌方施加${value}层侵蚀（每路上限12层）。`;
-  add(`每${c.cd}秒`, action, c.id === 'culture' ? [term, 'corrode'] : [term]);
+  add(
+    `每${c.cd}秒`,
+    action,
+    cardFamily(c.id) === 'culture' ? [term, 'corrode'] : [term],
+  );
   const notes: string[] = [];
   if (m.openingCount)
     add(
@@ -66,15 +71,15 @@ export function describeCard(card: FighterCard, includeFuture = true) {
       `额外造成${number(m.openingBonus)}点伤害。`,
       ['damage'],
     );
-  if (c.id === 'fuse')
+  if (cardFamily(c.id) === 'fuse')
     add('首次发动', `额外充能${number(m.firstCharge)}秒。`, ['charge']);
-  if (c.id === 'gapblade')
+  if (cardFamily(c.id) === 'gapblade')
     add(
       '命中时',
       `若目标路线的屏障已损毁，额外造成${number(m.exposedBonus)}点伤害。`,
       ['damage'],
     );
-  if (c.id === 'recoil') {
+  if (cardFamily(c.id) === 'recoil') {
     add(
       '本路屏障承伤后',
       `将实际承受的直接伤害的50%储为反冲，最多${number(m.recoilCap)}点。`,
@@ -85,31 +90,31 @@ export function describeCard(card: FighterCard, includeFuture = true) {
       '只记录屏障实际吸收的直接伤害；被减免的伤害、溢出到宿主的伤害和侵蚀均不积存反冲。',
     );
   }
-  if (c.id === 'rubber') {
+  if (cardFamily(c.id) === 'rubber') {
     add('本路屏障未损毁时', `每次受到的直接伤害减少${number(m.buffer)}点。`, [
       'direct',
     ]);
     notes.push('同路有多张缓冲垫时只取最高减免，不叠加；不能减免侵蚀。');
   }
-  if (c.id === 'counterweight')
+  if (cardFamily(c.id) === 'counterweight')
     add(
       '发动时',
       `若同路我方屏障生命高于当前上限的50%，额外造成${number(m.intactBonus)}点伤害。`,
       ['damage'],
     );
-  if (c.id === 'culture') {
+  if (cardFamily(c.id) === 'culture') {
     add('再次发动', `比上次多造成${number(m.growth)}点伤害。`, ['damage']);
     notes.push(
       '没有侵蚀时攻击本路；侵蚀层数相同优先左路。目标在发动时选定，成长只在本场战斗中积累。',
     );
   }
-  if (c.id === 'catalyst')
+  if (cardFamily(c.id) === 'catalyst')
     add(
       '发动时',
       `若同路敌方有侵蚀，额外充能${number(m.corrosionCharge)}秒。`,
       ['corrode', 'charge'],
     );
-  if (c.id === 'distiller') {
+  if (cardFamily(c.id) === 'distiller') {
     abilities[0].text += `治疗宿主${number(m.heal)}点生命。`;
     abilities[0].terms.push('heal');
     effects.push({
@@ -122,7 +127,7 @@ export function describeCard(card: FighterCard, includeFuture = true) {
     notes.push(
       '充能目标在发动时选定；效果到达目标后推进冷却。加成不改变目标。',
     );
-  if (c.id === 'sealant' || c.id === 'rubber')
+  if (cardFamily(c.id) === 'sealant' || cardFamily(c.id) === 'rubber')
     notes.push('修复在效果到达时结算；期间屏障损毁会重新寻找可支援路线。');
   const short: Record<string, string> = {
     slingshot: '弹丸命中造成伤害',
@@ -175,7 +180,7 @@ export function describeCard(card: FighterCard, includeFuture = true) {
     innate,
     unlocked: [] as string[],
     future,
-    summary: short[c.id],
+    summary: short[cardFamily(c.id)],
     weather: [] as { name: string; text: string }[],
   };
 }
