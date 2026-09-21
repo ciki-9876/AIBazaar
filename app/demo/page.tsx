@@ -120,6 +120,10 @@ const phaseName: Record<string, string> = {
 };
 export default function Demo() {
   const battlefieldRef = useRef<HTMLDivElement>(null);
+  const [intelLesson, setIntelLesson] = useState<{
+    seed: number;
+    step: number;
+  } | null>(null);
   const [run, setRun] = useState<Run>(() => newRun(10909, true)),
     ref = useRef(run);
   const [ready, setReady] = useState(false),
@@ -1387,6 +1391,11 @@ export default function Demo() {
           run={run}
           onAction={dispatch}
           intel={enemyIntel}
+          intelObserved={
+            currentNode(run) !== 'antechamber' ||
+            !!run.defenseExplained ||
+            (intelLesson?.seed === run.seed && intelLesson.step === 2)
+          }
           onBuild={goBuild}
         />
       );
@@ -1776,6 +1785,11 @@ export default function Demo() {
       previewDuel.enemy.find((c) =>
         ['nailer', 'springbow', 'fuse', 'sealant', 'distiller'].includes(c.id),
       ) ?? previewDuel.enemy[0];
+    const teachIntel =
+      tutorialFloor(run) &&
+      currentNode(run) === 'antechamber' &&
+      !run.defenseExplained;
+    const lesson = intelLesson?.seed === run.seed ? intelLesson.step : 0;
     return (
       <section className="ed-enemy-intel">
         <h3>开战前 · 敌情</h3>
@@ -1790,13 +1804,45 @@ export default function Demo() {
               .effects.map((e) => e.text)
               .join(' · ')}
         </p>
-        <details>
-          <summary>查看敌阵</summary>
-          <div className="ed-board-scroll">
+        {teachIntel && lesson === 0 && (
+          <ContextHint
+            mandatory
+            step={{
+              target: '.ed-intel-toggle',
+              title: '先看看守卫的阵容',
+              body: '点击“查看敌阵”，观察守卫把武器放在哪一路，再决定怎样布防。',
+              next: '去查看',
+            }}
+          />
+        )}
+        <details
+          onToggle={(e) => {
+            if (teachIntel && e.currentTarget.open && lesson === 0)
+              setIntelLesson({ seed: run.seed, step: 1 });
+          }}
+        >
+          <summary className="ed-intel-toggle">查看敌阵</summary>
+          <div
+            className="ed-intel-layout"
+            aria-label="敌方布局：左路、中路、右路"
+          >
             {cardGrid(previewDuel.enemy, true)}
           </div>
         </details>
-        <button onClick={() => goBuild()}>根据敌情布阵</button>
+        {teachIntel && lesson === 1 && (
+          <FocusGuide
+            step={{
+              target: '.ed-intel-layout',
+              title: '守卫的火力集中在中路',
+              body: '从左到右是左、中、右三路。中路的卷簧弩是主要输出，右路的补漏胶提供屏障支援。留意武器的位置，再安排你的防御。',
+              next: '看清了，准备布防',
+            }}
+            onNext={() => setIntelLesson({ seed: run.seed, step: 2 })}
+          />
+        )}
+        {(!teachIntel || lesson === 2) && (
+          <button onClick={() => goBuild()}>根据敌情布阵</button>
+        )}
       </section>
     );
   }

@@ -30,6 +30,7 @@ type Props = {
   run: Run;
   onAction: (a: Action) => unknown;
   intel: () => ReactNode;
+  intelObserved: boolean;
   onBuild: (uid?: string) => void;
 };
 export function CostIcons({
@@ -434,7 +435,12 @@ function LegacyPipeRoom({ run, onAction }: Pick<Props, 'run' | 'onAction'>) {
     </section>
   );
 }
-export default function TutorialFloor({ run, onAction, intel }: Props) {
+export default function TutorialFloor({
+  run,
+  onAction,
+  intel,
+  intelObserved,
+}: Props) {
   const node = currentNode(run);
   const steps = [
     ['patrol', '遭遇'],
@@ -556,14 +562,15 @@ export default function TutorialFloor({ run, onAction, intel }: Props) {
             {run.items.some(
               (x) => x.uid === 'tutorial-rubber' && x.type === 'card',
             ) &&
-              !run.defenseExplained && (
-                <DefenseGuide run={run} onAction={onAction} />
-              )}
+              !run.defenseExplained &&
+              intelObserved && <DefenseGuide run={run} onAction={onAction} />}
             <button
               disabled={
-                run.items.some(
+                (node === 'antechamber' && !intelObserved) ||
+                (run.items.some(
                   (x) => x.uid === 'tutorial-rubber' && x.type === 'card',
-                ) && !run.defenseExplained
+                ) &&
+                  !run.defenseExplained)
               }
               className="ed-primary"
               onClick={() =>

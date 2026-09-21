@@ -7560,3 +7560,94 @@ body:has(.elevator-demo) {
     overflow: visible;
   }
 }
+
+/* Enemy reconnaissance uses the same left-to-right lane orientation as combat. */
+.elevator-demo .ed-intel-layout .ed-board {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-rows: auto;
+  width: 100%;
+  min-width: 0;
+  max-width: none;
+  gap: 12px;
+}
+.ed-intel-layout {
+  margin-top: 12px;
+}
+.elevator-demo .ed-intel-layout .ed-lane {
+  display: block;
+  min-width: 0;
+}
+.ed-intel-layout .ed-lane-label {
+  background: none;
+  padding: 8px 0;
+  border-bottom: 1px solid #b9a35b;
+  margin-bottom: 8px;
+}
+.ed-intel-layout .ed-lane-label b {
+  font-size: 14px;
+  color: #e7dfbc;
+}
+.elevator-demo .ed-intel-layout .ed-lane-cells {
+  width: 100%;
+  min-width: 0;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 4px;
+  direction: ltr;
+}
+.elevator-demo .ed-intel-layout .ed-card.ed-card-v2,
+.elevator-demo .ed-intel-layout .ed-slot {
+  width: auto;
+  min-width: 0;
+  height: 190px;
+  min-height: 190px;
+  padding-left: 4px;
+  padding-right: 4px;
+}
+.ed-intel-layout .ed-card-name {
+  font-size: 14px;
+  overflow-wrap: anywhere;
+}
+.elevator-demo .ed-intel-layout .ed-special-copy {
+  display: none;
+}
+.ed-intel-layout .ed-effect-values {
+  justify-content: center;
+  gap: 2px;
+}
+.ed-intel-layout .ed-effect-values span {
+  font-size: 14px;
+}
+.ed-intel-layout .ed-effect-values svg {
+  width: 12px;
+}
+.ed-intel-toggle {
+  width: fit-content;
+  padding: 8px 4px;
+  cursor: pointer;
+  color: #f0d080;
+}
+.ed-intel-toggle:focus-visible {
+  outline: 2px solid #f0d080;
+  outline-offset: 3px;
+}
+@media (max-width: 700px) {
+  .elevator-demo .ed-intel-layout .ed-board {
+    gap: 6px;
+  }
+  .elevator-demo .ed-intel-layout .ed-card.ed-card-v2,
+  .elevator-demo .ed-intel-layout .ed-slot {
+    height: 210px;
+    min-height: 210px;
+  }
+}
+.elevator-demo .ed-intel-layout .ed-lane-cells {
+  grid-template-rows: 190px;
+  height: 190px;
+}
+@media (max-width: 700px) {
+  .elevator-demo .ed-intel-layout .ed-lane-cells {
+    grid-template-rows: 210px;
+    height: 210px;
+  }
+}
