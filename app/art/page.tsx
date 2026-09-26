@@ -143,6 +143,9 @@ export default function ArtLab() {
         <a className="art-doc-link" href={sitePath('/art/base/refined/')}>
           3D 电梯基地
         </a>
+        <a className="art-doc-link" href={sitePath('/arena/')}>
+          对战博弈模拟 <ArrowUpRight />
+        </a>
         <a className="art-doc-link" href={sitePath('/art/direction')}>
           完整方案 <ArrowUpRight />
         </a>

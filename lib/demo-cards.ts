@@ -1,5 +1,6 @@
 import type { CardDef } from './card-types.ts';
 import type { HeroId, HeroMechanic } from './hero-cards.ts';
+import { ARENA_CARDS } from './arena-catalog.ts';
 export type School = 'rush' | 'erosion' | 'bastion';
 export type SystemCard = CardDef & {
   family?: string;
@@ -250,6 +251,22 @@ export const ALL_CARDS: SystemCard[] = [
   ...CARDS,
   STARTER_SLING,
   ...CARD_VARIANTS,
+  ...ARENA_CARDS.map((card) => ({
+    id: card.id,
+    name: card.name,
+    size: card.size,
+    cd: card.cd,
+    power: 0,
+    kind: card.kind,
+    rarity: card.rarity,
+    role: '对战博弈实验牌',
+    rule: card.text,
+    effect: card.text,
+    master: card.text,
+    energyCost: 0,
+    energyGain: 0,
+    hitType: [4, 10, 25].includes(card.number) ? 'instant' as const : 'projectile' as const,
+  })),
 ];
 export const cardFamily = (id: string) => id.split('~')[0];
 export function identifyVariant(

@@ -2,6 +2,7 @@ import { cardDef, cardFamily } from './demo-cards.ts';
 import { cardMechanics, combatValue } from './demo-card-rules.ts';
 import { heroDef, heroOwner } from './heroes.ts';
 import type { HeroId } from './hero-cards.ts';
+import { simulateArenaDuel, type ArenaOptions } from './arena-engine.ts';
 export type FighterCard = {
   uid: string;
   id: string;
@@ -18,7 +19,7 @@ export const flightTimeOf = (card: FighterCard) =>
     : Math.max(0.5, Math.min(3, Math.round((card.flightTime ?? 1.25) * 4) / 4));
 export type Hit = {
   side: number;
-  kind: 'damage' | 'heal' | 'shield' | 'energy' | 'charge' | 'corrode';
+  kind: 'damage' | 'heal' | 'shield' | 'energy' | 'charge' | 'corrode' | 'burn' | 'slow' | 'freeze' | 'haste' | 'amp' | 'ammo' | 'regen' | 'tempo';
   value: number;
   source: string;
   sourceUid?: string;
@@ -80,10 +81,12 @@ export type Duel = {
   name: string;
   kind: 'guardian' | 'survivor';
   botId: number | null;
+  arena?: ArenaOptions;
 };
 const laneOf = (c: FighterCard) => Math.floor(c.at / 3);
 const laneName = (lane: number) => ['左路', '中路', '右路'][lane];
 export function simulateDuel(d: Duel) {
+  if (d.arena) return simulateArenaDuel(d);
   for (const [side, board] of [d.player, d.enemy].entries())
     for (const card of board) {
       const owner = d.heroes ? heroOwner(card.id) : cardDef(card.id).hero;
@@ -217,10 +220,18 @@ export function simulateDuel(d: Duel) {
     const impactOrder = {
       damage: 0,
       corrode: 1,
+      burn: 1,
       shield: 2,
       heal: 3,
-      energy: 4,
-      charge: 5,
+      regen: 3,
+      slow: 4,
+      freeze: 4,
+      haste: 4,
+      amp: 4,
+      ammo: 4,
+      tempo: 4,
+      energy: 5,
+      charge: 6,
     };
     const resolveImpacts = (arrivals: Projectile[]) => {
       damage.fill(0);
