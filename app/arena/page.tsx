@@ -96,7 +96,7 @@ export default function ArenaPage() {
   const [catalogOpen, setCatalogOpen] = useState(false),
     [historyOpen, setHistoryOpen] = useState(false),
     [reviewOpen, setReviewOpen] = useState(false),
-    [detailed, setDetailed] = useState(true),
+    [detailed, setDetailed] = useState(false),
     [reduced, setReduced] = useState(false);
   const clock = useRef(0),
     file = useRef<HTMLInputElement>(null),
@@ -425,7 +425,6 @@ export default function ArenaPage() {
           {rounded(frame.hp[side])}
           <small> / {duel.maxHp[side]}</small>
         </strong>
-        <span className="tac-host-note">三路共用生命</span>
         {(side ? duel.enemy : duel.player).some((c) => c.id === 'arena-38') && (
           <span>节拍 {frame.tempo[side]}/6</span>
         )}
@@ -621,7 +620,6 @@ export default function ArenaPage() {
             selected={selected}
             reduced={reduced}
             detailed={detailed}
-            events={review.events}
             inspected={inspection}
             onInspect={inspect}
             onPlace={place}
@@ -743,18 +741,20 @@ export default function ArenaPage() {
               </button>
             </div>
           </div>
-          <div className="tac-live-strip" aria-live="off">
-            {phase === 'build' ? (
-              <span>查看敌方装备与增幅器，决定每一路的投入。</span>
-            ) : (
-              recentEvents.map((e) => (
-                <button key={e.id} onClick={() => seek(e.time)}>
-                  <time>{e.time.toFixed(2)}s</time>
-                  {e.text}
-                </button>
-              ))
-            )}
-          </div>
+          {(phase === 'build' || detailed) && (
+            <div className="tac-live-strip" aria-live="off">
+              {phase === 'build' ? (
+                <span>查看敌方装备与增幅器，决定每一路的投入。</span>
+              ) : (
+                recentEvents.map((e) => (
+                  <button key={e.id} onClick={() => seek(e.time)}>
+                    <time>{e.time.toFixed(2)}s</time>
+                    {e.text}
+                  </button>
+                ))
+              )}
+            </div>
+          )}
         </section>
       </div>
       {counterNote && <p className="tac-counter-note">{counterNote}</p>}

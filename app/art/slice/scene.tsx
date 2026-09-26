@@ -32,6 +32,7 @@ export type BoardAnchors = {
   barriers: Anchor[];
   cores: Anchor[];
   lanes: Anchor[];
+  surfaces?: Array<{ barrier: Anchor; core: Anchor }>;
 };
 type Props = {
   duel: Duel;
@@ -449,6 +450,12 @@ export default function BattleScene(props: Props) {
         return { x: ((v.x + 1) * w) / 2, y: ((1 - v.y) * h) / 2, w: 0, h: 0 };
       };
       latest.current.onBoardAnchors?.({
+        surfaces: latest.current.chamber?.arena ? [0, 1].flatMap(side =>
+          [0, 1, 2].flatMap(lane => [0, 0.5, 1, 1.5, 2].map(column => {
+            const x = (lane - 1) * 3.46 + (column - 1) * 0.96;
+            return { barrier: project(x, SHOT_HEIGHT, barrierZ(side)),
+              core: project(x, side === 0 ? 0.1 : 0.48, coreZ(side)) };
+          }))) : undefined,
         barriers: [0, 1].flatMap((side) =>
           [0, 1, 2].map((lane) =>
             project((lane - 1) * 3.46, 0.05 + BARRIER_HEIGHT, barrierZ(side)),

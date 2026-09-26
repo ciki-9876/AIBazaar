@@ -329,10 +329,6 @@
 .enemy .tac-host-track i {
   background: #d7a16c;
 }
-.tac-host-note {
-  color: #aaa78f;
-  font-size: 9px;
-}
 .tac-table {
   position: relative;
   height: calc(100dvh - 287px);
@@ -399,110 +395,64 @@
 .tac-lane-hud {
   position: absolute;
   transform: translateX(-50%);
-  font-size: 10px;
-  pointer-events: auto;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
   z-index: 3;
-  filter: drop-shadow(0 3px 5px #0007);
+  color: #b6dcca;
+  white-space: nowrap;
+  text-shadow:
+    0 1px 3px #000,
+    0 0 5px #000;
+}
+.tac-lane-hud.enemy {
+  color: #eac89e;
 }
 .tac-shield-line {
   display: flex;
+  gap: 3px;
   align-items: center;
-  gap: 5px;
-  background: #162820ef;
-  padding: 5px 6px 4px;
-  color: #b6dcca;
-  border: 1px solid #83bea34a;
-  border-bottom: 0;
-}
-.enemy .tac-shield-line {
-  background: #30281bea;
-  color: #eac89e;
-  border-color: #c79d6559;
 }
 .tac-shield-line strong {
-  margin-left: auto;
-  font-size: 11px;
-  font-weight: 500;
-  white-space: nowrap;
-  font-variant-numeric: tabular-nums;
-}
-.tac-shield-meter {
-  height: 3px;
-  background: #0009;
-}
-.tac-shield-meter i {
-  display: block;
-  height: 100%;
-  background: #9ccab5;
-}
-.enemy .tac-shield-meter i {
-  background: #dab17b;
+  font: 600 12px monospace;
 }
 .tac-lane-hud.broken .tac-shield-line {
-  border-style: dashed;
-  color: #f0b398;
-  border-color: #e89a775e;
+  opacity: 0.4;
 }
 .tactical-page .tac-amp {
-  display: flex;
-  width: 100%;
-  justify-content: flex-start;
-  border: 1px solid #9eb09236;
-  border-top: 0;
-  border-radius: 0;
-  padding: 4px 6px;
-  background: #182117ef;
-  font-size: 10px;
-  gap: 5px;
-  min-height: 24px;
-  color: #d9c89e;
-}
-.tac-amp i {
-  width: 5px;
-  height: 5px;
-  border-radius: 50%;
-  background: #d9c789;
-  box-shadow: 0 0 5px #e0c982;
-}
-.tac-amp small {
-  margin-left: auto;
-  font-size: 8px;
-  color: #a4b399;
-  white-space: nowrap;
-}
-.tac-amp.inactive {
-  color: #a3a28d;
-  background: #161b17;
-}
-.tac-amp.inactive i {
-  background: #6e7566;
-  box-shadow: none;
-}
-.tac-amp.inactive small {
-  color: #c79c85;
-}
-.tac-lane-status {
-  display: flex;
-  justify-content: center;
-  gap: 9px;
-  padding: 4px 2px;
-  background: #111810e8;
-  border-bottom: 1px solid #d4ae7640;
-  min-height: 22px;
-}
-.tac-lane-status span {
-  display: flex;
+  display: inline-flex;
   align-items: center;
-  gap: 3px;
+  justify-content: center;
+  gap: 4px;
+  min-width: 26px;
+  min-height: 26px;
+  padding: 3px 5px;
+  border: 1px solid #d9c78930;
+  border-radius: 20px;
+  background: #14221b66;
+  color: #e8ce93;
+  font-size: 9px;
+}
+.tactical-page .tac-amp:hover {
+  background: #233c2cc9;
+  border-color: #d9c78988;
+}
+.tactical-page .tac-amp.inactive {
+  color: #92968a;
+  border-style: dashed;
+}
+.tac-status-token {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  font: 600 11px monospace;
 }
 .burn {
-  color: #ffb48b;
+  color: #ffab72;
 }
 .corrode {
-  color: #c1d887;
-}
-.burning .tac-shield-line {
-  box-shadow: inset 0 0 12px #f17b351b;
+  color: #c6e786;
 }
 .tactical-page .tac-slot {
   position: absolute;
@@ -562,75 +512,172 @@
   border-color: #b9e8f0aa;
   box-shadow: inset 0 0 25px #9addf34a;
 }
-.tac-freeze-icon {
+.tac-equipment-caption {
   position: absolute;
-  right: 4px;
-  top: 3px;
-  color: #cceef8;
+  bottom: calc(100% + 2px);
+  left: 50%;
+  transform: translateX(-50%);
+  width: max-content;
+  max-width: 150px;
+  pointer-events: none;
+  opacity: 0;
+  color: #e6dec8;
+  text-shadow:
+    0 1px 3px #000,
+    0 0 5px #000,
+    0 0 8px #142017;
 }
-.tac-equipment-label {
-  position: absolute;
-  left: 0;
-  right: 0;
-  top: calc(100% - 6px);
-  display: grid;
-  grid-template-columns: 1fr auto;
-  gap: 3px 4px;
-  text-align: left;
-  background: #131e17ef;
-  border: 1px solid #9eb09245;
-  padding: 5px 6px;
-  color: #e3dcc4;
+.tac-equipment-caption strong {
   font-size: 11px;
-  line-height: 1.3;
-  min-height: 33px;
-  box-shadow: 0 2px 5px #0005;
+  font-weight: 500;
+}
+.enemy .tac-equipment-caption {
+  bottom: auto;
+  top: calc(100% + 3px);
+}
+.editing .tac-equipment-caption,
+.detailed .tac-equipment-caption,
+.tac-equipment:hover .tac-equipment-caption,
+.tac-equipment:focus-visible .tac-equipment-caption,
+.tac-equipment.chosen .tac-equipment-caption {
+  opacity: 1;
+}
+.tac-equipment-signals {
+  position: absolute;
+  left: 50%;
+  bottom: -14px;
+  transform: translateX(-50%);
+  display: flex;
+  align-items: center;
+  gap: 2px;
   pointer-events: none;
 }
-.enemy .tac-equipment-label {
-  background: #29251ced;
-  border-color: #c2a67f45;
+.enemy .tac-equipment-signals {
+  bottom: auto;
+  top: -14px;
 }
-.tac-equipment-label strong {
-  font-weight: 500;
-  font-size: clamp(9px, 0.84vw, 12px);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
+.tac-cooldown-ring {
+  width: 26px;
+  height: 26px;
+  position: relative;
+  color: #e1c38a;
+  filter: drop-shadow(0 1px 2px #000);
 }
-.tac-equipment-label > span {
-  font: 9px monospace;
-  color: #dfc896;
-}
-.tac-equipment-label > small {
-  grid-column: 1/-1;
-  font-size: 8px;
-  color: #bed1bc;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-.tac-cooldown {
-  height: 3px;
-  background: #060b07;
-  grid-column: 1/-1;
-  overflow: hidden;
-}
-.tac-cooldown i {
-  display: block;
+.tac-cooldown-ring > svg:first-child {
+  position: absolute;
+  inset: 0;
+  width: 100%;
   height: 100%;
-  background: #ceb277;
-  transition: width 0.15s linear;
 }
-.tac-cooldown.haste i {
-  background: #f2d28c;
+.tac-cooldown-ring circle {
+  fill: none;
+  stroke-width: 2.5;
 }
-.tac-cooldown.slow i {
-  background: #b09ecf;
+.tac-cooldown-ring .ring-track {
+  stroke: #131c18b0;
 }
-.frozen .tac-cooldown i {
-  background: #bfeef5;
-  transition: none;
+.tac-cooldown-ring .ring-progress {
+  stroke: currentColor;
+  transform: rotate(-90deg);
+  transform-origin: 50% 50%;
+  stroke-linecap: round;
+}
+.tac-cooldown-ring > svg:not(:first-child),
+.tac-cooldown-ring > i {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+}
+.tac-cooldown-ring > i {
+  width: 3px;
+  height: 3px;
+  border-radius: 50%;
+  background: currentColor;
+}
+.tac-cooldown-ring.haste {
+  color: #ffe5a0;
+}
+.tac-cooldown-ring.slow {
+  color: #c1a8e1;
+}
+.tac-cooldown-ring.frozen {
+  color: #c6f2ff;
+}
+.tac-ammo {
+  display: flex;
+  gap: 2px;
+  align-items: center;
+  color: #eee2c5;
+  font: 10px monospace;
+  text-shadow: 0 1px 3px #000;
+}
+.tac-equipment-state {
+  position: absolute;
+  left: 50%;
+  top: calc(100% + 21px);
+  transform: translateX(-50%);
+  width: max-content;
+  max-width: 180px;
+  padding: 2px 5px;
+  border-radius: 3px;
+  background: #142017bc;
+  color: #d4e6c6;
+  font-size: 9px;
+  line-height: 1.6;
+  pointer-events: none;
+  z-index: 5;
+}
+.tac-numbers {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 8;
+  overflow: hidden;
+}
+.tac-number {
+  position: absolute;
+  display: flex;
+  gap: 3px;
+  align-items: center;
+  white-space: nowrap;
+  color: #ffe2a1;
+  font:
+    900 clamp(22px, 2.2vw, 34px)/1 'Trebuchet MS',
+    sans-serif;
+  letter-spacing: -0.045em;
+  text-shadow:
+    0 2px 2px #161913,
+    0 0 4px #000;
+  will-change: transform, opacity;
+}
+.tac-number b {
+  -webkit-text-stroke: 1.5px #28251b;
+  paint-order: stroke fill;
+}
+.tac-number svg {
+  filter: drop-shadow(0 1px 1px #000);
+  stroke-width: 2.5;
+}
+.tac-number.core {
+  color: #ff917a;
+}
+.tac-number.heavy {
+  font-size: clamp(28px, 2.7vw, 42px);
+}
+.tac-number.burn {
+  color: #ffae61;
+  font-size: clamp(20px, 1.8vw, 27px);
+}
+.tac-number.corrode {
+  color: #c8e986;
+  font-size: clamp(20px, 1.8vw, 27px);
+}
+.tac-number.repair {
+  color: #93f0e6;
+}
+.tac-number.heal {
+  color: #b0f29b;
 }
 .tac-placement {
   position: absolute;
@@ -677,25 +724,6 @@
   fill: context-stroke;
   stroke: none;
   filter: none;
-}
-.tac-feedback {
-  position: absolute;
-  transform: translateX(-50%);
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-  z-index: 6;
-  pointer-events: none;
-}
-.tac-feedback span {
-  display: block;
-  background: #131d17e8;
-  border-left: 2px solid;
-  padding: 5px 7px;
-  font-size: 10px;
-  color: #eee0c0;
-  line-height: 1.5;
-  box-shadow: 0 2px 6px #0005;
 }
 .tac-relation-note {
   position: absolute;
@@ -1170,30 +1198,6 @@
   min-height: 610px;
   min-height: calc(100dvh - 144px);
 }
-.tac-equipment-label {
-  grid-template-columns: 1fr;
-  padding: 4px 3px;
-}
-.tac-equipment-label > span {
-  position: absolute;
-  right: 2px;
-  top: -13px;
-  background: #142017e8;
-  padding: 1px 3px;
-}
-.tac-equipment-label strong {
-  font-size: 10px;
-  white-space: normal;
-  overflow: visible;
-  line-height: 1.3;
-}
-.own.tac-equipment .tac-equipment-label {
-  top: auto;
-  bottom: calc(100% - 5px);
-}
-.tac-equipment-label {
-  pointer-events: auto;
-}
 .tactical-expanded .tac-header {
   height: 40px;
 }
@@ -1225,9 +1229,6 @@
   .tac-table {
     min-height: 580px;
   }
-  .tac-equipment-label strong {
-    font-size: 13px;
-  }
 }
 @media (max-width: 1100px) {
   .tac-command p,
@@ -1251,9 +1252,6 @@
     gap: 12px;
     padding: 0 16px;
   }
-  .tac-host-note {
-    display: none;
-  }
   .tac-build-hint {
     flex-wrap: wrap;
   }
@@ -1265,12 +1263,6 @@
   }
   .tac-table {
     min-height: 520px;
-  }
-  .tac-equipment-label {
-    padding: 4px;
-  }
-  .tac-equipment-label > span {
-    font-size: 8px;
   }
 }
 @media (max-width: 850px) {
@@ -1321,9 +1313,6 @@
   }
   .tac-live-strip button:first-child:not(:last-child) {
     display: none;
-  }
-  .tac-equipment-label strong {
-    font-size: 10px;
   }
   .tac-host {
     padding-inline: 14px;
@@ -1386,42 +1375,7 @@
   .tac-lane-hud {
     font-size: 8px;
   }
-  .tac-shield-line {
-    gap: 3px;
-    padding: 4px;
-  }
-  .tac-shield-line strong {
-    font-size: 9px;
-  }
-  .tac-shield-line > span {
-    display: none;
-  }
-  .tac-amp {
-    font-size: 8px !important;
-    padding: 4px !important;
-  }
-  .tac-amp small {
-    font-size: 7px;
-  }
-  .tac-equipment-label {
-    padding: 3px;
-    gap: 2px;
-    grid-template-columns: 1fr;
-    top: 100%;
-  }
-  .tac-equipment-label strong {
-    font-size: 8px;
-  }
-  .tac-equipment-label > span {
-    position: absolute;
-    top: -12px;
-    right: 0;
-    background: #172119de;
-    padding: 2px;
-  }
-  .tac-equipment-label > small {
-    font-size: 7px;
-  }
+
   .tac-lane-name {
     font-size: 10px;
     gap: 4px;
@@ -1432,17 +1386,6 @@
   }
   .tac-lane-name b {
     font-size: 8px;
-  }
-  .tac-lane-status {
-    gap: 4px;
-    font-size: 8px;
-  }
-  .tac-feedback span {
-    font-size: 8px;
-    padding: 3px 4px;
-  }
-  .tac-feedback {
-    max-width: 108px;
   }
   .tac-controls {
     padding: 9px;
@@ -1528,5 +1471,24 @@
   .tac-event-list time {
     font-size: 10px;
     min-width: 48px;
+  }
+}
+
+@media (max-width: 540px) {
+  .tac-lane-hud {
+    gap: 3px;
+  }
+  .tac-shield-line strong {
+    font-size: 10px;
+  }
+  .tac-equipment-caption strong {
+    font-size: 9px;
+  }
+  .tac-cooldown-ring {
+    width: 23px;
+    height: 23px;
+  }
+  .tac-equipment-caption {
+    max-width: 95px;
   }
 }

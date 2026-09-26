@@ -8,7 +8,21 @@ import {
   useState,
   type DragEvent,
 } from 'react';
-import { Flame, Snowflake, Shield, ShieldOff, Zap } from 'lucide-react';
+import {
+  Flame,
+  Snowflake,
+  Shield,
+  ShieldOff,
+  Zap,
+  Gem,
+  Plus,
+  Droplets,
+  ChevronsUp,
+  ChevronsDown,
+  CircleSlash,
+  CircleDot,
+} from 'lucide-react';
+import { ArenaNumbers } from './arena-numbers';
 import { arenaCard, amplifier } from '@/lib/arena-catalog';
 import { cardDef } from '@/lib/demo-cards';
 import {
@@ -20,7 +34,6 @@ import {
   LANE_NAMES,
   placementPreview,
   rounded,
-  type ReviewEvent,
 } from '@/lib/arena-presentation';
 import type { ArenaFrame } from '@/lib/arena-engine';
 import type { Duel, FighterCard } from '@/lib/demo-combat';
@@ -44,7 +57,6 @@ type Props = {
   selected: Selection | null;
   reduced: boolean;
   detailed: boolean;
-  events: ReviewEvent[];
   inspected: Inspection | null;
   onInspect: (value: Inspection) => void;
   onPlace: (at: number, selection?: Selection) => void;
@@ -90,11 +102,6 @@ export function ArenaTable(p: Props) {
       : focused
         ? Math.floor(focused.at / 3)
         : undefined;
-  const recent = p.editing
-    ? []
-    : p.events.filter(
-        (e) => e.time <= p.frame.time && p.frame.time - e.time < 1,
-      );
   const recentFrames = useMemo(
     () =>
       p.frames.filter(
@@ -189,17 +196,10 @@ export function ArenaTable(p: Props) {
       )
     );
   }
-  const laneWidth =
-    board.lanes.length > 1
-      ? Math.min(
-          210,
-          Math.max(115, (board.lanes[1].x - board.lanes[0].x) * 0.86),
-        )
-      : 160;
   return (
     <div
       ref={tableRef}
-      className={`tac-table ${p.reduced ? 'reduce-motion' : ''}`}
+      className={`tac-table ${p.editing ? 'editing' : 'watching'} ${p.detailed ? 'detailed' : ''} ${p.reduced ? 'reduce-motion' : ''}`}
     >
       <Suspense fallback={<div className="tac-loading">正在点亮战术桌…</div>}>
         <Scene
@@ -234,12 +234,6 @@ export function ArenaTable(p: Props) {
             >
               <small>0{l + 1}</small>
               {LANE_NAMES[l]}
-              {[1, 0].map(
-                (s) =>
-                  p.frame.barriers[s][l].broken && (
-                    <b key={s}>{s ? '敌方' : '我方'}暴露</b>
-                  ),
-              )}
             </div>
           ))}
           {[1, 0].flatMap((side) =>
@@ -259,55 +253,49 @@ export function ArenaTable(p: Props) {
                     left: a.x,
                     top: Math.max(
                       8,
-                      Math.min(
-                        tableHeight - (burn > 0 || corrode > 0 ? 82 : 60),
-                        a.y + (side ? -62 : 12),
-                      ),
+                      Math.min(tableHeight - 38, a.y + (side ? -22 : 8)),
                     ),
-                    width: laneWidth,
                   }}
                 >
-                  <div className="tac-shield-line">
-                    {b.broken ? <ShieldOff size={13} /> : <Shield size={13} />}
-                    <span>{LANE_NAMES[lane]}</span>
-                    <strong>
-                      {b.broken
-                        ? '已破 · 暴露'
-                        : `${rounded(b.hp)} / ${rounded(b.maxHp)}`}
-                    </strong>
-                  </div>
-                  <div className="tac-shield-meter">
-                    <i style={{ width: `${(100 * b.hp) / b.maxHp}%` }} />
-                  </div>
-                  <button
-                    className={`tac-amp ${active ? 'active' : 'inactive'}`}
-                    disabled={!amp && !(p.editing && side === 0)}
-                    onClick={() => p.onAmp(side, lane)}
-                    aria-label={`${side ? '敌方' : '我方'}${LANE_NAMES[lane]}增幅器${amp ? ` ${amp.name}` : ' 未装备'}`}
+                  <div
+                    className="tac-shield-line"
+                    title={`${LANE_NAMES[lane]}屏障 ${rounded(b.hp)} / ${rounded(b.maxHp)}`}
                   >
-                    <i />
-                    {amp?.name ??
-                      (p.editing && side === 0
-                        ? '＋ 安装增幅器'
-                        : '未装备增幅器')}
-                    {amp && (
-                      <small>
-                        {amplifierStatus(p.duel, p.frame, side, lane)}
-                      </small>
-                    )}
-                  </button>
-                  {(burn > 0 || corrode > 0) && (
-                    <div className="tac-lane-status">
-                      {burn > 0 && (
-                        <span className="burn">
-                          <Flame size={11} />
-                          灼烧 {burn}
-                        </span>
-                      )}
-                      {corrode > 0 && (
-                        <span className="corrode">◈ 侵蚀 {corrode}</span>
-                      )}
-                    </div>
+                    {b.broken ? <ShieldOff size={13} /> : <Shield size={13} />}
+                    {!b.broken && <strong>{rounded(b.hp)}</strong>}
+                  </div>
+                  {(amp || (p.editing && side === 0)) && (
+                    <button
+                      className={`tac-amp ${active ? 'active' : 'inactive'}`}
+                      onClick={() => p.onAmp(side, lane)}
+                      title={
+                        amp
+                          ? `${amp.name} · ${amplifierStatus(p.duel, p.frame, side, lane)}`
+                          : '安装增幅器'
+                      }
+                      aria-label={`${side ? '敌方' : '我方'}${LANE_NAMES[lane]}增幅器${amp ? ` ${amp.name}` : ' 未装备'}`}
+                    >
+                      {amp ? <Gem size={13} /> : <Plus size={13} />}
+                      {p.editing && <span>{amp?.name ?? '增幅器'}</span>}
+                    </button>
+                  )}
+                  {burn > 0 && (
+                    <span
+                      className="tac-status-token burn"
+                      title={`灼烧 ${burn}层`}
+                    >
+                      <Flame size={13} />
+                      {burn}
+                    </span>
+                  )}
+                  {corrode > 0 && (
+                    <span
+                      className="tac-status-token corrode"
+                      title={`侵蚀 ${corrode}层`}
+                    >
+                      <Droplets size={13} />
+                      {corrode}
+                    </span>
                   )}
                 </div>
               );
@@ -404,32 +392,65 @@ export function ArenaTable(p: Props) {
                   }
                   aria-label={`查看${side ? '敌方' : '我方'}${LANE_NAMES[Math.floor(c.at / 3)]}${def.name}的效果`}
                 >
-                  {freeze && (
-                    <Snowflake className="tac-freeze-icon" size={20} />
-                  )}
-                  <div className="tac-equipment-label">
+                  <div className="tac-equipment-caption">
                     <strong>{def.name}</strong>
-                    <span>
-                      {freeze
-                        ? '冻结'
-                        : [1, 2].includes(arenaCard(c.id)?.number ?? 0) &&
-                            p.frame.ammo[c.uid] === 0
-                          ? '待装填'
-                          : cd
-                            ? `${rounded(Math.max(0, cd - p.frame.timers[side][c.at]))}s`
-                            : '被动'}
-                    </span>
-                    <div
-                      className={`tac-cooldown ${p.frame.haste[c.uid] > 0 ? 'haste' : ''} ${p.frame.slow[c.uid] > 0 ? 'slow' : ''}`}
-                    >
-                      <i style={{ width: `${progress * 100}%` }} />
-                    </div>
-                    {states.length > 0 && (
-                      <small>
-                        {states.slice(0, p.detailed ? 3 : 1).join(' · ')}
-                      </small>
+                  </div>
+                  <div className="tac-equipment-signals">
+                    {cd > 0 && (
+                      <span
+                        className={`tac-cooldown-ring ${freeze ? 'frozen' : ''} ${p.frame.haste[c.uid] > 0 ? 'haste' : ''} ${p.frame.slow[c.uid] > 0 ? 'slow' : ''}`}
+                        title={
+                          freeze
+                            ? '冻结'
+                            : `冷却剩余 ${rounded(Math.max(0, cd - p.frame.timers[side][c.at]))}秒`
+                        }
+                      >
+                        <svg viewBox="0 0 28 28" aria-hidden="true">
+                          <circle
+                            className="ring-track"
+                            cx="14"
+                            cy="14"
+                            r="11"
+                          />
+                          <circle
+                            className="ring-progress"
+                            cx="14"
+                            cy="14"
+                            r="11"
+                            pathLength="100"
+                            strokeDasharray="100"
+                            strokeDashoffset={100 - progress * 100}
+                          />
+                        </svg>
+                        {freeze ? (
+                          <Snowflake size={11} />
+                        ) : p.frame.ammo[c.uid] === 0 &&
+                          [1, 2].includes(arenaCard(c.id)?.number ?? 0) ? (
+                          <CircleSlash size={11} />
+                        ) : p.frame.haste[c.uid] > 0 ? (
+                          <ChevronsUp size={11} />
+                        ) : p.frame.slow[c.uid] > 0 ? (
+                          <ChevronsDown size={11} />
+                        ) : (
+                          <i />
+                        )}
+                      </span>
+                    )}
+                    {[1, 2].includes(arenaCard(c.id)?.number ?? 0) && (
+                      <span
+                        className="tac-ammo"
+                        title={`弹药 ${p.frame.ammo[c.uid] ?? 6}/6`}
+                      >
+                        <CircleDot size={9} />
+                        {p.frame.ammo[c.uid] ?? 6}
+                      </span>
                     )}
                   </div>
+                  {states.length > 0 && (chosen || focused?.uid === c.uid) && (
+                    <small className="tac-equipment-state">
+                      {states.join(' · ')}
+                    </small>
+                  )}
                 </button>
               );
             }),
@@ -489,36 +510,16 @@ export function ArenaTable(p: Props) {
               );
             })}
           </svg>
-          {!p.editing &&
-            board.lanes.map((a, l) => {
-              const events = recent
-                .filter(
-                  (e) =>
-                    e.lane === l &&
-                    (p.detailed || e.important || e.kind === 'link'),
-                )
-                .slice(-2);
-              return events.length ? (
-                <div
-                  className="tac-feedback"
-                  key={l}
-                  style={{ left: a.x, top: a.y + 8, width: laneWidth }}
-                >
-                  {events.map((e) => (
-                    <span
-                      key={e.id}
-                      style={{
-                        borderColor: EFFECT_COLORS[e.kind] ?? '#deb97c',
-                      }}
-                    >
-                      {e.important
-                        ? e.text
-                        : `${e.side ? '敌' : '我'} · ${e.text.split('：').at(-1)}`}
-                    </span>
-                  ))}
-                </div>
-              ) : null;
-            })}
+          {!p.editing && (
+            <ArenaNumbers
+              duel={p.duel}
+              frames={p.frames}
+              time={p.frame.time}
+              clock={p.clock}
+              board={board}
+              reduced={p.reduced}
+            />
+          )}
         </div>
       )}
       {focused && relations?.note && (
