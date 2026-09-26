@@ -16,6 +16,7 @@ const LANES = ['左路', '中路', '右路'];
 const RARITIES = ['普通', '精良', '稀有', '史诗', '奇迹'];
 const kinds: Record<string, string> = { damage: '直击', burn: '灼烧', corrode: '侵蚀', shield: '修屏', heal: '治疗', tempo: '节奏', control: '控制', passive: '布阵' };
 type Phase = 'build' | 'fight' | 'result';
+type EnemyInspection = { kind: 'card'; id: string; at: number } | { kind: 'amplifier'; id: string; lane: number };
 const emptyAmps = () => [null, null, null] as Array<string | null>;
 const uid = () => typeof crypto !== 'undefined' && crypto.randomUUID ? crypto.randomUUID() : `match-${Date.now()}`;
 
@@ -39,9 +40,11 @@ export default function ArenaPage() {
   const [anchors, setAnchors] = useState<Anchor[]>([]);
   const [board, setBoard] = useState<BoardAnchors>({ barriers: [], cores: [], lanes: [] });
   const [detail, setDetail] = useState<string | null>(null);
+  const [enemyInspection, setEnemyInspection] = useState<EnemyInspection | null>(null);
   const [counterNote, setCounterNote] = useState('');
   const clock = useRef(0);
   const file = useRef<HTMLInputElement>(null);
+  const inspectionDialog = useRef<HTMLDialogElement>(null);
   const serial = useRef(0);
   const liveDuel = useMemo(() => makeArenaDuel(player, lineup, playerAmps), [player, lineup, playerAmps]);
   const duel = snapshot ?? liveDuel;
@@ -74,6 +77,9 @@ export default function ArenaPage() {
     return () => cancelAnimationFrame(handle);
   }, [playing, result, speed]);
   useEffect(() => { if (!notice) return; const id = setTimeout(() => setNotice(''), 5000); return () => clearTimeout(id); }, [notice]);
+  useEffect(() => { if (enemyInspection && inspectionDialog.current && !inspectionDialog.current.open) inspectionDialog.current.showModal(); }, [enemyInspection]);
+
+  const inspectEnemy = (inspection: EnemyInspection) => { setPlaying(false); setEnemyInspection(inspection); };
 
   const chooseSlot = (at: number) => {
     if (phase !== 'build') return;
@@ -114,6 +120,7 @@ export default function ArenaPage() {
       setParentMatchId(currentMatch.id);
       setCurrentMatch(null); setSnapshot(null); setPhase('build'); setPlaying(false); setCursor(0); clock.current = 0;
       setCounterNote(`${answer.tested} 套候选阵容完成确定性对照；${answer.counterFound ? '找到了能取胜的应对' : '尚未找到能取胜的应对，已选表现最好的阵容'}。这是规则搜索，不代表语言模型已经看过并学习该局。`);
+      setEnemyInspection(null);
     } catch (error) { setNotice(error instanceof Error ? error.message : '调整失败'); }
   };
   const exportArchive = () => {
@@ -138,9 +145,12 @@ export default function ArenaPage() {
     setPlayer(structuredClone(old.player)); setPlayerAmps([...old.arena!.amplifiers[0]]);
     setLineup({ id: match.challengeId, title: old.name, thesis: '历史对局阵容', cards: structuredClone(old.enemy), amps: [...old.arena!.amplifiers[1]] });
     setCurrentMatch(match); setSnapshot(structuredClone(old)); setParentMatchId(match.parentMatchId);
+    setEnemyInspection(null);
     setPhase('result'); setPlaying(false); const res = simulateDuel(old); setCursor(res.frames.length - 1); clock.current = res.duration;
   };
   const viewed = arenaCard(detail ?? selected ?? '');
+  const inspectedCard = enemyInspection?.kind === 'card' ? arenaCard(enemyInspection.id) : undefined;
+  const inspectedAmp = enemyInspection?.kind === 'amplifier' ? amplifier(enemyInspection.id) : undefined;
   return <main className="arena-page">
     <header className="arena-header">
       <div className="arena-brand"><a href={sitePath('/art/chamber')} aria-label="返回美术原型"><ArrowLeft size={17} /></a><span className="arena-mark">F9 <i>/</i> TACTICAL LAB</span><span className="arena-version">对战博弈模拟 · 实验规则 v0</span></div>
@@ -163,13 +173,14 @@ export default function ArenaPage() {
           {ready && <div className="arena-scene-labels">{[0, 1].flatMap((side) => (side ? duel.enemy : duel.player).map((card) => {
             const a = anchors[side * 9 + card.at], b = anchors[side * 9 + card.at + cardDef(card.id).size - 1];
             if (!a || !b) return null;
-            return <div key={card.uid} className={`arena-scene-card ${side ? 'enemy' : 'own'}`} style={{ left: (a.x + b.x) / 2, top: Math.min(a.y, b.y) - 22 }}><span>{cardDef(card.id).name}</span><small>{frame.cd[side][card.at] ? `${Math.max(0, frame.cd[side][card.at] - frame.timers[side][card.at]).toFixed(1)}s` : '被动'}</small></div>;
+            const label = <><span>{cardDef(card.id).name}</span><small>{frame.cd[side][card.at] ? `${Math.max(0, frame.cd[side][card.at] - frame.timers[side][card.at]).toFixed(1)}s` : '被动'}</small></>;
+            return side ? <button key={card.uid} type="button" className="arena-scene-card enemy" style={{ left: (a.x + b.x) / 2, top: Math.min(a.y, b.y) - 22 }} onClick={() => inspectEnemy({ kind: 'card', id: card.id, at: card.at })} aria-label={`查看敌方${LANES[Math.floor(card.at / 3)]}${cardDef(card.id).name}的效果`}>{label}</button> : <div key={card.uid} className="arena-scene-card own" style={{ left: (a.x + b.x) / 2, top: Math.min(a.y, b.y) - 22 }}>{label}</div>;
           }))}{board.barriers.map((a, index) => { const side = Math.floor(index / 3), lane = index % 3, b = frame.barriers[side][lane]; return <div key={index} className={`arena-scene-shield ${side ? 'enemy' : 'own'} ${b.broken ? 'broken' : ''}`} style={{ left: a.x, top: a.y }}><Shield size={12} />{b.broken ? '破屏' : `${Math.round(b.hp)}/${Math.round(b.maxHp)}`}</div>; })}</div>}
           <div className="arena-stage-bottom"><span>己方宿主 <b>{Math.round(frame.hp[0])} / {duel.maxHp[0]}</b></span><span>{LANES.map((lane, i) => `${lane} ${frame.barriers[0][i].broken ? '破屏' : Math.round(frame.barriers[0][i].hp)}`).join('  /  ')}</span></div>
         </div>
         <div className="arena-workbench">
           <div className="arena-workbench-heading"><div><small>02 / 布阵台</small><h1>{phase === 'build' ? '选择牌，再点击己方空格' : '战斗记录'}</h1></div><span>9 格全开放 · 同名至多 2 张 · 每路独立增幅器</span></div>
-          <div className="arena-enemy-brief">{LANES.map((lane, l) => <div key={lane}><small>敌方{lane} · {amplifier(lineup.amps[l])?.name ?? '无增幅器'}</small><span>{lineup.cards.filter((card) => Math.floor(card.at / 3) === l).map((card) => cardDef(card.id).name).join(' + ') || '空路'}</span></div>)}</div>
+          <div className="arena-enemy-brief">{LANES.map((lane, l) => <div key={lane} className="arena-enemy-lane"><small>敌方{lane}</small>{lineup.amps[l] ? <button type="button" className="arena-enemy-amp" onClick={() => inspectEnemy({ kind: 'amplifier', id: lineup.amps[l]!, lane: l })}>◇ {amplifier(lineup.amps[l])?.name}</button> : <span className="arena-enemy-empty">无增幅器</span>}<div className="arena-enemy-cards">{lineup.cards.filter((card) => Math.floor(card.at / 3) === l).map((card) => <button key={card.uid} type="button" onClick={() => inspectEnemy({ kind: 'card', id: card.id, at: card.at })}>{cardDef(card.id).name}</button>)}{!lineup.cards.some((card) => Math.floor(card.at / 3) === l) && <span className="arena-enemy-empty">空路</span>}</div></div>)}</div>
           {viewed && <div className="arena-selected-brief"><strong>{viewed.name}</strong><span>{viewed.text}</span><small>{RARITIES[viewed.rarity]} · {viewed.size} 格 · {viewed.cd ? `${viewed.cd} 秒周期` : '被动'}</small></div>}
           <div className="arena-lane-rows">{LANES.map((lane, l) => <div key={lane} className="arena-lane-row"><div className="arena-lane-id"><small>0{l + 1}</small><strong>{lane}</strong></div><div className="arena-lane-slots">{[0, 1, 2].map((col) => { const at = l * 3 + col, card = player.find((x) => x.at <= at && at < x.at + cardDef(x.id).size); return <button key={at} className={`arena-slot ${card ? 'occupied' : ''} ${card?.at === at ? 'start' : ''}`} onClick={() => chooseSlot(at)} disabled={phase !== 'build'} title={card ? `${cardDef(card.id).name} · 点击移除` : `放在${lane}第${col + 1}格`}>{card ? card.at === at ? <><strong>{cardDef(card.id).name}</strong><small>{cardDef(card.id).size}格 · 点击移除</small></> : <span className="arena-slot-cont">╴延伸╶</span> : <><span>+</span><small>{col + 1}</small></>}</button>; })}</div><label className="arena-amp-select"><small>屏障增幅器</small><select value={playerAmps[l] ?? ''} onChange={(e) => changeAmp(l, e.target.value || null)} disabled={phase !== 'build'}><option value="">不装备</option>{AMPLIFIERS.map((a) => <option key={a.id} value={a.id}>{a.name}</option>)}</select></label></div>)}</div>
           {playerAmps.some(Boolean) && <div className="arena-amp-summary">{playerAmps.map((id, lane) => id && <p key={lane}><b>{LANES[lane]} · {amplifier(id)?.name}</b>{amplifier(id)?.text}</p>)}</div>}
@@ -185,11 +196,17 @@ export default function ArenaPage() {
       </section>
       <aside className="arena-intel">
         <section className="arena-intel-block"><div className="arena-panel-title"><span>03 / 战术情报</span></div><h2>{viewed ? viewed.name : lineup.title}</h2><p>{viewed ? viewed.text : lineup.thesis}</p>{viewed ? <div className="arena-detail-meta"><span>{RARITIES[viewed.rarity]}</span><span>{viewed.size} 格</span><span>{viewed.cd ? `${viewed.cd}s 周期` : '被动'}</span></div> : null}</section>
-        <section className="arena-intel-block"><div className="arena-panel-title"><span>对手阵容</span><strong>{lineup.cards.length} 件</strong></div>{LANES.map((lane, l) => <div key={lane} className="arena-opponent-lane"><small>{lane} · {amplifier(lineup.amps[l])?.name ?? '无增幅器'}</small><div>{lineup.cards.filter((c) => Math.floor(c.at / 3) === l).map((c) => <span key={c.uid}>{cardDef(c.id).name} <i>{cardDef(c.id).size}格</i></span>)}</div></div>)}</section>
+        <section className="arena-intel-block"><div className="arena-panel-title"><span>对手阵容 · 点击查看效果</span><strong>{lineup.cards.length} 件</strong></div>{LANES.map((lane, l) => <div key={lane} className="arena-opponent-lane"><small>{lane}</small>{lineup.amps[l] && <button type="button" className="arena-opponent-amp" onClick={() => inspectEnemy({ kind: 'amplifier', id: lineup.amps[l]!, lane: l })}>◇ {amplifier(lineup.amps[l])?.name}</button>}<div>{lineup.cards.filter((c) => Math.floor(c.at / 3) === l).map((c) => <button key={c.uid} type="button" onClick={() => inspectEnemy({ kind: 'card', id: c.id, at: c.at })}>{cardDef(c.id).name} <i>{cardDef(c.id).size}格</i></button>)}</div></div>)}</section>
         <section className="arena-intel-block arena-history"><div className="arena-panel-title"><span>04 / 对局档案</span><strong>{archive.matches.length} 场</strong></div><p>每场保存完整布阵、增幅器、规则版本、胜负、伤害及破屏时间。点击可复现回放。</p><div className="arena-history-list">{[...archive.matches].reverse().slice(0, 20).map((match) => <button key={match.id} onClick={() => loadMatch(match)}><span>{match.duel.name}<small>{new Date(match.createdAt).toLocaleString('zh-CN')}</small></span><b>{match.summary.winner === 0 ? '胜' : match.summary.winner === 1 ? '负' : '平'}</b></button>)}</div><div className="arena-archive-actions"><button onClick={exportArchive}><Download size={15} /> 导出 JSON</button><button onClick={() => file.current?.click()}><BookOpen size={15} /> 导入 JSON</button><input ref={file} type="file" accept="application/json,.json" hidden onChange={(e) => void importArchive(e.target.files?.[0])} /></div></section>
         <div className="arena-note">实验牌的数值与规则仍在校准。美术物件为已完成原型资产的暂用映射；结算只依赖规则数据。</div>
       </aside>
     </div>
+    {enemyInspection && <dialog ref={inspectionDialog} className="arena-inspection" onClose={() => setEnemyInspection(null)} aria-label="敌方效果详情">
+      <div className="arena-inspection-top"><span>敌方情报 / {LANES[enemyInspection.kind === 'card' ? Math.floor(enemyInspection.at / 3) : enemyInspection.lane]}</span><button type="button" onClick={() => inspectionDialog.current?.close()} aria-label="关闭敌方效果详情"><X size={18} /></button></div>
+      {inspectedCard && <><small className="arena-inspection-index">卡牌  /  {String(inspectedCard.number).padStart(2, '0')}</small><h2>{inspectedCard.name}</h2><p>{inspectedCard.text}</p><div className="arena-inspection-meta"><span>{RARITIES[inspectedCard.rarity]}</span><span>{inspectedCard.size} 格</span><span>{inspectedCard.cd ? `${inspectedCard.cd} 秒周期` : '被动'}</span><span>第 {enemyInspection.kind === 'card' ? enemyInspection.at % 3 + 1 : 1} 格起</span></div></>}
+      {inspectedAmp && <><small className="arena-inspection-index">屏障增幅器</small><h2>{inspectedAmp.name}</h2><p>{inspectedAmp.text}</p><div className="arena-inspection-meta"><span>{RARITIES[inspectedAmp.rarity]}</span><span>仅作用于本路</span>{enemyInspection.kind === 'amplifier' && frame.barriers[1][enemyInspection.lane].broken && <span>本路已破屏</span>}</div></>}
+      <div className="arena-inspection-foot">对手效果公开 · 查看详情不会改变布阵或结算</div>
+    </dialog>}
     {notice && <output className="arena-toast">{notice}<button onClick={() => setNotice('')} aria-label="关闭提示"><X size={15} /></button></output>}
   </main>;
 }
