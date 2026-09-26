@@ -7,6 +7,10 @@ export type ArenaOptions = {
   amplifiers: [Array<string | null>, Array<string | null>];
 };
 export type ArenaFrame = CombatFrame & {
+  // Read-only presentation evidence, reconstructed when replaying v1 archives.
+  cardState?: Record<string, { activations: number; growth: number; upgrade: number; questHits: number; questAbsorbed: number; rage: number; overdrive: number; regen: number }>;
+  links?: Array<{ from: string; to: string; label: string }>;
+  amplifierState?: Array<Array<{ stored: number; used: boolean }>>;
   burn: number[][];
   ammo: Record<string, number>;
   amplifierActive: boolean[][];
@@ -24,6 +28,7 @@ export type ArenaResult = {
 type Side = 0 | 1;
 type EventKind = 'damage' | 'corrode' | 'burn' | 'shield' | 'heal' | 'charge' | 'slow' | 'freeze' | 'haste' | 'amp' | 'ammo';
 type Event = {
+  causeUid?: string;
   kind: EventKind;
   tick: number;
   launchedTick: number;
@@ -190,8 +195,10 @@ export function simulateArenaDuel(d: Duel): ArenaResult {
   let serial = 0;
   const pending: Event[] = [];
   let now = 0;
+  let links: NonNullable<ArenaFrame['links']> = [];
   const put = (input: Omit<Event, 'serial' | 'tick' | 'launchedTick' | 'source'> & { delay?: number; source?: string }) => {
     const { delay = 0, ...rest } = input;
+    if (input.causeUid) links.push({ from: input.causeUid, to: input.sourceUid, label: input.causeUid.startsWith('barrier-') ? '灼烧触发' : '触发' });
     pending.push({ ...rest, source: input.source ?? source(input.sourceUid), tick: now + Math.round(delay * 4), launchedTick: now, serial: serial++ });
   };
   const frames: ArenaFrame[] = [];
@@ -208,6 +215,7 @@ export function simulateArenaDuel(d: Duel): ArenaResult {
   };
 
   for (now = 0; now <= 360; now++) {
+    links = [];
     const time = now / 4;
     const hits: Hit[] = [], log: string[] = [], fired: string[] = [], waiting: string[] = [];
     const hostDamage = [0, 0];
@@ -279,7 +287,7 @@ export function simulateArenaDuel(d: Duel): ArenaResult {
         if (activeAmp(defender, lane, 'amp-10') && !amps[defender][lane].used) {
           amps[defender][lane].used = true;
           const weapon = sameLane(defender, lane).find((c) => baseDirect(c) > 0 && (arenaCard(c.id) ? !['passive', 'shield', 'heal', 'tempo'].includes(arenaCard(c.id)!.kind) : ['damage', 'corrode'].includes(cardDef(c.id).kind)));
-          if (weapon) put({ kind: 'damage', sourceUid: weapon.uid, source: '跃迁栓', origin: defender as Side, targetSide: other(defender), lane,
+          if (weapon) put({ kind: 'damage', sourceUid: weapon.uid, causeUid: `amp-${defender}-${lane}`, source: '跃迁栓', origin: defender as Side, targetSide: other(defender), lane,
             value: Math.min(32, baseDirect(weapon) * 0.6), delay: 1.25, projectile: true, free: true });
         }
       }
@@ -289,7 +297,7 @@ export function simulateArenaDuel(d: Duel): ArenaResult {
       }
       if (ev.procEligible && attackerCard && !ev.periodic && amount > 0) {
         for (const card of neighbors(ev.origin, attackerCard)) if (nOf(card) === 12 && canProc(`ignite:${card.uid}`, 2))
-          put({ kind: 'burn', sourceUid: card.uid, origin: ev.origin, targetSide: defender, lane, value: stacks(card, 2) });
+          put({ kind: 'burn', sourceUid: card.uid, causeUid: attackerCard.uid, origin: ev.origin, targetSide: defender, lane, value: stacks(card, 2) });
       }
     };
     const process = () => {
@@ -317,7 +325,7 @@ export function simulateArenaDuel(d: Duel): ArenaResult {
             if (ev.periodic) { applyDamage({ ...ev, kind: 'burn' });
               for (const c of sameLane(ev.origin, lane)) if (nOf(c) === 15 && canProc(`heat:${c.uid}`, 1)) {
                 const target = sameLane(ev.origin, lane).find((x) => x.uid !== c.uid);
-                if (target) put({ kind: 'charge', sourceUid: c.uid, origin: ev.origin, targetSide: ev.origin, lane, value: duration(c, 0.5, 1.5), targetUid: target.uid });
+                if (target) put({ kind: 'charge', sourceUid: c.uid, causeUid: `barrier-${side}-${lane}`, origin: ev.origin, targetSide: ev.origin, lane, value: duration(c, 0.5, 1.5), targetUid: target.uid });
               }
             } else {
               const heatedCell = card ? card.at : -1;
@@ -361,7 +369,7 @@ export function simulateArenaDuel(d: Duel): ArenaResult {
             localHit(ev, ev.kind, actual, { targetUid: target?.uid, targetName: target ? cardDef(target.id).name : '无目标' });
             if (ev.kind === 'slow' && actual > 0) for (const watcher of sameLane(ev.origin, lane)) if (nOf(watcher) === 39 && canProc(`dual:${watcher.uid}`, 4)) {
               const ally = sameLane(ev.origin, lane).find((x) => x.uid !== watcher.uid);
-              if (ally) put({ kind: 'haste', sourceUid: watcher.uid, origin: ev.origin, targetSide: ev.origin, lane, value: duration(watcher, 1.5, 4), targetUid: ally.uid });
+              if (ally) put({ kind: 'haste', sourceUid: watcher.uid, causeUid: ev.sourceUid, origin: ev.origin, targetSide: ev.origin, lane, value: duration(watcher, 1.5, 4), targetUid: ally.uid });
             }
           } else if (ev.kind === 'amp') {
             const amp = amps[side][lane];
@@ -485,14 +493,14 @@ export function simulateArenaDuel(d: Duel): ArenaResult {
         for (const watcher of boards[side]) if (watcher.uid !== card.uid) {
           const wn = nOf(watcher), ws = state.get(watcher.uid)!;
           if (wn === 7 && adjacent(watcher, card) && ['damage', 'control', 'corrode', 'burn'].includes(cardDef(card.id).kind) && canProc(`echo:${watcher.uid}`, 2))
-            put({ kind: 'damage', sourceUid: watcher.uid, origin: s, targetSide: enemy, lane: shotLanes[0] ?? lane, value: value(watcher, 6), delay: 1.25, projectile: true, free: true });
+            put({ kind: 'damage', sourceUid: watcher.uid, causeUid: card.uid, origin: s, targetSide: enemy, lane: shotLanes[0] ?? lane, value: value(watcher, 6), delay: 1.25, projectile: true, free: true });
           if (wn === 42 && adjacent(watcher, card) && canProc(`resonate:${watcher.uid}:${card.uid}`, 3))
-            put({ kind: 'charge', sourceUid: watcher.uid, origin: s, targetSide: s, lane, value: duration(watcher, 0.5, 1.5), targetUid: card.uid });
+            put({ kind: 'charge', sourceUid: watcher.uid, causeUid: card.uid, origin: s, targetSide: s, lane, value: duration(watcher, 0.5, 1.5), targetUid: card.uid });
           if (wn === 49 && adjacent(watcher, card) && ws.upgrade === 0) {
             const key = `upgrade-count:${watcher.uid}:${card.uid}`;
             const used = (procTimes.get(key) ?? 0) + 1;
             procTimes.set(key, used);
-            if (used >= 3) { state.get(card.uid)!.upgrade = Math.min(0.36, 0.2 + 0.02 * watcher.level + 0.03 * watcher.quality); ws.upgrade = 1; }
+            if (used >= 3) { state.get(card.uid)!.upgrade = Math.min(0.36, 0.2 + 0.02 * watcher.level + 0.03 * watcher.quality); ws.upgrade = 1; links.push({ from: watcher.uid, to: card.uid, label: '升阶' }); }
           }
           if (wn === 45 && laneOf(watcher) !== lane && colOf(watcher) === colOf(card)) {
             for (const mate of boards[side]) if (mate.uid !== card.uid && laneOf(mate) !== laneOf(watcher) && colOf(mate) === colOf(watcher))
@@ -524,6 +532,8 @@ export function simulateArenaDuel(d: Duel): ArenaResult {
     const cd = [Array<number>(9).fill(0), Array<number>(9).fill(0)];
     boards.forEach((board, side) => board.forEach((card) => { timers[side][card.at] = state.get(card.uid)!.timer; cd[side][card.at] = nOf(card) === 50 && state.get(card.uid)!.overdrive > 0 ? 4 : cardDef(card.id).cd; }));
     frames.push({ time, hp: hp.map(round), barriers: structuredClone(barrier), corrosion: corrosion.map((x) => [...x]), burn: burn.map((x) => [...x]),
+      links: [...links], cardState: Object.fromEntries([...state].map(([uid, s]) => [uid, { activations: s.count, growth: round(s.growth), upgrade: s.upgrade, questHits: s.questHits, questAbsorbed: round(s.questAbsorbed), rage: round(s.rage), overdrive: s.overdrive, regen: round(s.regen) }])),
+      amplifierState: amps.map(row=>row.map(a=>({stored:round(a.stored),used:a.used}))),
       stored: Object.fromEntries([...state].map(([uid, s]) => [uid, round(s.stored)])), heroMeters: [[0, 0, 0], [0, 0, 0]], energy: [0, 0], timers, cd, fired, waiting, hits,
       projectiles: pending.filter((ev) => ev.tick > now).map((ev): Projectile => ({
         id: `arena-${ev.serial}`, side: ev.targetSide, kind: ev.kind, value: ev.value, source: ev.source,

@@ -10,6 +10,7 @@ export type ChamberState = {
   taken: boolean;
   cleared: boolean;
   neutral?: boolean;
+  arena?: boolean;
   study?: 'springbow' | 'rubber';
 };
 export type RoomPoint = { id: string; x: number; y: number };
@@ -437,7 +438,7 @@ export function createChamber(scene: T.Scene, tactile = true, anisotropy = 4) {
         pose = state.study
           ? { position: [2.8, 2.7, 5.4], target: [0, 0.5, 2], fov: 42 }
           : state.view === 'table'
-            ? boardCamera(camera.aspect)
+            ? boardCamera(camera.aspect, state.arena)
             : poses[state.view];
       // The seated tactical camera rises above the hanging fixture. Cut away only
       // the ceiling/fixture geometry; keep the same room and its actual lighting.

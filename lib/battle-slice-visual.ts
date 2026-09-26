@@ -9,7 +9,7 @@ export const SHOT_HEIGHT = 0.72;
 export const BARRIER_HEIGHT = 0.96;
 export const BARRIER_WIDTH = 3.4;
 
-export function boardCamera(aspect: number) {
+export function boardCamera(aspect: number, arena = false) {
   const pitch = (58 * Math.PI) / 180,
     fov = 40;
   const tan = Math.tan((fov * Math.PI) / 360);
@@ -17,7 +17,7 @@ export function boardCamera(aspect: number) {
   // Fit the complete board, cores and their anchored labels without wide-angle distortion.
   for (const x of [-5.55, 5.55])
     for (const y of [0, 1.15])
-      for (const z of [-4.2, 4.2]) {
+      for (const z of arena ? [-3.25, 3.25] : [-4.2, 4.2]) {
         const depth = y * Math.sin(pitch) + z * Math.cos(pitch);
         const up = y * Math.cos(pitch) - z * Math.sin(pitch);
         distance = Math.max(

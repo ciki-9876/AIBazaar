@@ -1,0 +1,1532 @@
+.tactical-page {
+  --paper: #ede3c9;
+  --dim: #a5b2a5;
+  --rule: #a8b69b30;
+  --accent: #e2bd79;
+  background: #101713;
+  color: var(--paper);
+  font-family: 'Microsoft YaHei', 'PingFang SC', sans-serif;
+  font-size: 13px;
+  min-height: 100dvh;
+}
+.tactical-page button {
+  color: inherit;
+  background: transparent;
+  border: 1px solid var(--rule);
+  border-radius: 4px;
+  padding: 8px 12px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  transition:
+    background 0.16s,
+    border-color 0.16s;
+}
+.tactical-page button:hover {
+  background: #ffffff0c;
+  border-color: #ddc79b88;
+}
+.tactical-page button[aria-pressed='true'] {
+  color: #f3d79f;
+  border-color: #d7b071;
+  background: #d7b07115;
+}
+.tactical-page button:focus-visible {
+  outline: 2px solid #e7c383;
+  outline-offset: 3px;
+}
+.tac-header {
+  height: 56px;
+  display: flex;
+  align-items: center;
+  padding: 0 22px;
+  gap: 18px;
+  border-bottom: 1px solid var(--rule);
+  background: #101a16;
+}
+.tac-header > a {
+  color: var(--dim);
+  display: grid;
+  place-items: center;
+}
+.tac-brand {
+  font-family: Georgia, 'Songti SC', serif;
+  letter-spacing: 0.13em;
+  font-size: 18px;
+  white-space: nowrap;
+}
+.tac-brand i {
+  font-style: normal;
+  color: var(--accent);
+  padding: 0 8px;
+}
+.tac-header nav {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  font-size: 11px;
+  margin-left: 28px;
+  color: #879588;
+}
+.tac-header nav .active {
+  color: #ead4aa;
+}
+.tac-header-actions {
+  margin-left: auto;
+  display: flex;
+  gap: 8px;
+}
+.tac-header-actions b {
+  font-weight: 400;
+  color: #aabbb0;
+}
+.tac-command {
+  padding: 16px 24px;
+  display: flex;
+  justify-content: space-between;
+  gap: 20px;
+  align-items: center;
+  border-bottom: 1px solid var(--rule);
+  background: linear-gradient(100deg, #1b2720, #121b17);
+}
+.tac-command small,
+.tac-eyebrow {
+  font-size: 9px;
+  letter-spacing: 0.16em;
+  color: #9baf9e;
+}
+.tac-command h1 {
+  display: inline;
+  margin: 0 16px 0 0;
+  font-size: 23px;
+  font-weight: 500;
+  font-family: Georgia, 'Songti SC', serif;
+}
+.tac-command p {
+  display: inline;
+  color: #adbaaa;
+  font-size: 12px;
+}
+.tac-command small {
+  display: block;
+  margin-bottom: 7px;
+}
+.tac-command-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-shrink: 0;
+}
+.tac-command-actions > span {
+  font-size: 11px;
+  color: var(--dim);
+}
+.tactical-page .tac-primary {
+  background: #ddc18c;
+  color: #1c281e;
+  border-color: #ddc18c;
+  font-weight: 600;
+  padding: 11px 19px;
+}
+.tactical-page .tac-primary:hover {
+  background: #f0d9a8;
+}
+.tac-outcome {
+  font-size: 18px;
+  color: #e8c887;
+}
+.tac-layout {
+  display: flex;
+  min-width: 0;
+}
+.tac-catalog {
+  width: 244px;
+  flex: 0 0 244px;
+  background: #17221b;
+  border-right: 1px solid var(--rule);
+  height: calc(100dvh - 144px);
+  min-height: 610px;
+  display: flex;
+  flex-direction: column;
+}
+.tac-section-title {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 10px;
+  padding: 15px 16px;
+  border-bottom: 1px solid var(--rule);
+  font-size: 13px;
+  letter-spacing: 0.06em;
+}
+.tac-section-title small {
+  margin-left: 8px;
+  color: #a0b19e;
+  font-size: 10px;
+}
+.tac-section-title button {
+  padding: 4px;
+  border: 0;
+}
+.tac-search {
+  display: flex;
+  gap: 8px;
+  margin: 12px 12px 10px;
+  border: 1px solid var(--rule);
+  padding: 9px;
+  color: #9db09e;
+  background: #0e1812;
+}
+.tac-search input {
+  width: 100%;
+  background: transparent;
+  border: 0;
+  outline: none;
+  color: var(--paper);
+  font-size: 12px;
+}
+.tac-kind-filters {
+  display: flex;
+  gap: 5px;
+  flex-wrap: wrap;
+  padding: 0 12px 12px;
+}
+.tac-kind-filters button {
+  padding: 4px 7px;
+  font-size: 10px;
+  border-color: transparent;
+}
+.tac-catalog-list {
+  overflow: auto;
+  flex: 1;
+  padding: 0 9px 10px;
+  scrollbar-color: #69705b #17221b;
+  scrollbar-width: thin;
+}
+.tac-catalog-list .tac-catalog-card {
+  width: 100%;
+  display: flex;
+  text-align: left;
+  justify-content: flex-start;
+  padding: 10px 8px;
+  gap: 10px;
+  border: 1px solid transparent;
+  border-bottom: 1px solid #cbd3b415;
+  border-radius: 0;
+  min-height: 67px;
+}
+.tac-catalog-card.selected {
+  border-color: #d7b071 !important;
+  background: #dcc99510;
+}
+.tac-catalog-emblem {
+  width: 33px;
+  height: 36px;
+  display: grid;
+  place-items: center;
+  font:
+    italic 19px Georgia,
+    serif;
+  color: #e4c68d;
+  border: 1px solid #aa966349;
+  flex-shrink: 0;
+  background: linear-gradient(130deg, #b6aa691c, transparent);
+  clip-path: polygon(0 0, 80% 0, 100% 20%, 100% 100%, 0 100%);
+}
+.tac-catalog-emblem.kind-burn {
+  color: #eca17c;
+}
+.tac-catalog-emblem.kind-corrode {
+  color: #bdd37c;
+}
+.tac-catalog-emblem.kind-shield {
+  color: #99cbbb;
+}
+.tac-catalog-emblem.kind-control {
+  color: #b7cde2;
+}
+.tac-catalog-card > span:nth-child(2) {
+  min-width: 0;
+  flex: 1;
+}
+.tac-catalog-card strong {
+  display: block;
+  font-size: 13px;
+  font-weight: 500;
+}
+.tac-catalog-card small {
+  display: block;
+  font-size: 9px;
+  color: #acb5a2;
+  margin-top: 5px;
+}
+.tac-catalog-card > b {
+  font:
+    21px Georgia,
+    serif;
+  font-weight: 400;
+  color: #d1c5a7;
+  text-align: center;
+}
+.tac-catalog-card > b small {
+  font: 9px sans-serif;
+}
+.tac-catalog footer {
+  font-size: 10px;
+  line-height: 1.8;
+  color: #92a08f;
+  padding: 10px 15px;
+  border-top: 1px solid var(--rule);
+}
+.tac-mobile-close,
+.tac-catalog-toggle {
+  display: none !important;
+}
+.tac-battle-column {
+  flex: 1;
+  min-width: 0;
+  background: #0b120e;
+}
+.tac-host {
+  height: 36px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 0 24px;
+  background: #152019;
+  color: #b9d5c6;
+  font-size: 11px;
+  border-bottom: 1px solid #b7c5a51b;
+}
+.tac-host.enemy {
+  color: #e6ba91;
+  background: #211f17;
+}
+.tac-host strong {
+  font-variant-numeric: tabular-nums;
+  font-size: 15px;
+  min-width: 90px;
+  text-align: right;
+}
+.tac-host strong small {
+  font-size: 10px;
+  color: #aaa88e;
+}
+.tac-host-track {
+  height: 5px;
+  flex: 1;
+  overflow: hidden;
+  background: #0006;
+}
+.tac-host-track i {
+  display: block;
+  height: 100%;
+  background: #88bcab;
+  transition: width 0.14s linear;
+  box-shadow: 0 0 12px #88bcab55;
+}
+.enemy .tac-host-track i {
+  background: #d7a16c;
+}
+.tac-host-note {
+  color: #aaa78f;
+  font-size: 9px;
+}
+.tac-table {
+  position: relative;
+  height: calc(100dvh - 287px);
+  min-height: 500px;
+  isolation: isolate;
+  overflow: hidden;
+  background: #151f19;
+}
+.tac-table .slice-canvas,
+.tac-table .slice-canvas canvas {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+.tac-loading {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  color: #d4c49f;
+  letter-spacing: 0.14em;
+  pointer-events: none;
+}
+.tac-overlay {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+.tac-overlay button {
+  pointer-events: auto;
+}
+.tac-lane-name {
+  position: absolute;
+  transform: translate(-50%, -50%);
+  color: #bac0a17d;
+  letter-spacing: 0.18em;
+  font-size: 13px;
+  text-align: center;
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  white-space: nowrap;
+  text-shadow: 0 1px 4px #000;
+}
+.tac-lane-name small {
+  font:
+    italic 26px Georgia,
+    serif;
+  color: #b1ad8950;
+}
+.tac-lane-name b {
+  font-size: 9px;
+  font-weight: 400;
+  color: #d2a178;
+}
+.tac-lane-name.focused {
+  color: #e9ce99;
+}
+.tac-lane-name.focused small {
+  color: #d4b67b;
+}
+.tac-lane-hud {
+  position: absolute;
+  transform: translateX(-50%);
+  font-size: 10px;
+  pointer-events: auto;
+  z-index: 3;
+  filter: drop-shadow(0 3px 5px #0007);
+}
+.tac-shield-line {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  background: #162820ef;
+  padding: 5px 6px 4px;
+  color: #b6dcca;
+  border: 1px solid #83bea34a;
+  border-bottom: 0;
+}
+.enemy .tac-shield-line {
+  background: #30281bea;
+  color: #eac89e;
+  border-color: #c79d6559;
+}
+.tac-shield-line strong {
+  margin-left: auto;
+  font-size: 11px;
+  font-weight: 500;
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+.tac-shield-meter {
+  height: 3px;
+  background: #0009;
+}
+.tac-shield-meter i {
+  display: block;
+  height: 100%;
+  background: #9ccab5;
+}
+.enemy .tac-shield-meter i {
+  background: #dab17b;
+}
+.tac-lane-hud.broken .tac-shield-line {
+  border-style: dashed;
+  color: #f0b398;
+  border-color: #e89a775e;
+}
+.tactical-page .tac-amp {
+  display: flex;
+  width: 100%;
+  justify-content: flex-start;
+  border: 1px solid #9eb09236;
+  border-top: 0;
+  border-radius: 0;
+  padding: 4px 6px;
+  background: #182117ef;
+  font-size: 10px;
+  gap: 5px;
+  min-height: 24px;
+  color: #d9c89e;
+}
+.tac-amp i {
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: #d9c789;
+  box-shadow: 0 0 5px #e0c982;
+}
+.tac-amp small {
+  margin-left: auto;
+  font-size: 8px;
+  color: #a4b399;
+  white-space: nowrap;
+}
+.tac-amp.inactive {
+  color: #a3a28d;
+  background: #161b17;
+}
+.tac-amp.inactive i {
+  background: #6e7566;
+  box-shadow: none;
+}
+.tac-amp.inactive small {
+  color: #c79c85;
+}
+.tac-lane-status {
+  display: flex;
+  justify-content: center;
+  gap: 9px;
+  padding: 4px 2px;
+  background: #111810e8;
+  border-bottom: 1px solid #d4ae7640;
+  min-height: 22px;
+}
+.tac-lane-status span {
+  display: flex;
+  align-items: center;
+  gap: 3px;
+}
+.burn {
+  color: #ffb48b;
+}
+.corrode {
+  color: #c1d887;
+}
+.burning .tac-shield-line {
+  box-shadow: inset 0 0 12px #f17b351b;
+}
+.tactical-page .tac-slot {
+  position: absolute;
+  padding: 0;
+  border: 1px dashed #d9c58c35;
+  background: #d7dba005;
+  border-radius: 3px;
+  flex-direction: column;
+  color: #d3ceac63;
+  z-index: 1;
+}
+.tac-slot > span {
+  font-size: 22px;
+}
+.tac-slot small {
+  font-size: 9px;
+}
+.tactical-page .tac-slot.allowed {
+  border-color: #c6d6a977;
+  color: #d4d8af;
+  background: #bdddbb08;
+}
+.tactical-page .tac-slot.unavailable {
+  color: #787d6866;
+  border-color: #936a5635;
+}
+.tactical-page .tac-slot:hover {
+  background: #dae4ba1a;
+}
+.tactical-page .tac-equipment {
+  position: absolute;
+  display: block;
+  padding: 0;
+  overflow: visible;
+  border: 1px solid transparent;
+  background: transparent;
+  border-radius: 4px;
+  z-index: 2;
+  transition: border-color 0.1s;
+  touch-action: manipulation;
+}
+.tactical-page .tac-equipment:hover,
+.tactical-page .tac-equipment.chosen {
+  border-color: #dac58ba8;
+  background: #dbc48b09;
+}
+.tac-equipment.related {
+  box-shadow:
+    0 0 0 2px #d5bc76aa,
+    inset 0 0 20px #d5bc7620;
+}
+.tac-equipment.fired {
+  border-color: #f7da9c;
+  box-shadow: 0 0 20px #f0bb5e50;
+}
+.tac-equipment.frozen {
+  border-color: #b9e8f0aa;
+  box-shadow: inset 0 0 25px #9addf34a;
+}
+.tac-freeze-icon {
+  position: absolute;
+  right: 4px;
+  top: 3px;
+  color: #cceef8;
+}
+.tac-equipment-label {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: calc(100% - 6px);
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 3px 4px;
+  text-align: left;
+  background: #131e17ef;
+  border: 1px solid #9eb09245;
+  padding: 5px 6px;
+  color: #e3dcc4;
+  font-size: 11px;
+  line-height: 1.3;
+  min-height: 33px;
+  box-shadow: 0 2px 5px #0005;
+  pointer-events: none;
+}
+.enemy .tac-equipment-label {
+  background: #29251ced;
+  border-color: #c2a67f45;
+}
+.tac-equipment-label strong {
+  font-weight: 500;
+  font-size: clamp(9px, 0.84vw, 12px);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.tac-equipment-label > span {
+  font: 9px monospace;
+  color: #dfc896;
+}
+.tac-equipment-label > small {
+  grid-column: 1/-1;
+  font-size: 8px;
+  color: #bed1bc;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.tac-cooldown {
+  height: 3px;
+  background: #060b07;
+  grid-column: 1/-1;
+  overflow: hidden;
+}
+.tac-cooldown i {
+  display: block;
+  height: 100%;
+  background: #ceb277;
+  transition: width 0.15s linear;
+}
+.tac-cooldown.haste i {
+  background: #f2d28c;
+}
+.tac-cooldown.slow i {
+  background: #b09ecf;
+}
+.frozen .tac-cooldown i {
+  background: #bfeef5;
+  transition: none;
+}
+.tac-placement {
+  position: absolute;
+  pointer-events: none;
+  z-index: 5;
+  border: 2px solid #cee9ad;
+  background: #a7c79d28;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #f3e5b7;
+  text-align: center;
+  font-size: 11px;
+  line-height: 1.6;
+}
+.tac-placement span {
+  background: #11251bec;
+  padding: 6px;
+}
+.tac-placement.invalid {
+  border-color: #ef9c7d;
+  background: #cc795b33;
+}
+.tac-placement.invalid span {
+  background: #48241fed;
+}
+.tac-connections {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+  pointer-events: none;
+  z-index: 4;
+}
+.tac-connections path {
+  fill: none;
+  stroke-width: 2;
+  stroke-dasharray: 5 5;
+  opacity: 0.85;
+  filter: drop-shadow(0 0 4px #ebc77c88);
+}
+.tac-connections marker path {
+  fill: context-stroke;
+  stroke: none;
+  filter: none;
+}
+.tac-feedback {
+  position: absolute;
+  transform: translateX(-50%);
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  z-index: 6;
+  pointer-events: none;
+}
+.tac-feedback span {
+  display: block;
+  background: #131d17e8;
+  border-left: 2px solid;
+  padding: 5px 7px;
+  font-size: 10px;
+  color: #eee0c0;
+  line-height: 1.5;
+  box-shadow: 0 2px 6px #0005;
+}
+.tac-relation-note {
+  position: absolute;
+  left: 50%;
+  bottom: 8px;
+  transform: translateX(-50%);
+  padding: 5px 9px;
+  background: #162017e8;
+  color: #e2ce9e;
+  font-size: 10px;
+  max-width: 85%;
+  white-space: nowrap;
+  display: flex;
+  gap: 6px;
+  align-items: center;
+  pointer-events: none;
+  z-index: 6;
+}
+.tac-controls {
+  padding: 11px 16px;
+  display: flex;
+  gap: 9px;
+  align-items: center;
+  background: #1a261d;
+  border-bottom: 1px solid var(--rule);
+  min-height: 57px;
+}
+.tac-controls button {
+  padding: 6px 8px;
+  font-size: 11px;
+  white-space: nowrap;
+}
+.tac-controls time {
+  font: 11px monospace;
+  color: #cfceb2;
+  white-space: nowrap;
+}
+.tac-view-options {
+  margin-left: auto;
+  display: flex;
+  gap: 6px;
+}
+.tac-view-options button {
+  font-size: 10px;
+  color: #b4bfab;
+}
+.tac-build-hint {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  min-width: 0;
+  font-size: 11px;
+  line-height: 1.6;
+}
+.tac-build-hint b {
+  white-space: nowrap;
+  color: #ebce91;
+  font-weight: 500;
+}
+.tac-build-hint span {
+  color: #b9c3ae;
+}
+.tac-build-hint button {
+  flex-shrink: 0;
+}
+.tac-timeline {
+  position: relative;
+  flex: 1;
+  min-width: 80px;
+  display: flex;
+  align-items: center;
+  height: 26px;
+}
+.tac-timeline input {
+  width: 100%;
+  accent-color: #d8bc80;
+  margin: 0;
+  height: 5px;
+  cursor: pointer;
+  z-index: 2;
+}
+.tac-timeline-marks {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 1px;
+  height: 5px;
+}
+.tac-timeline-marks button {
+  position: absolute;
+  transform: translateX(-50%);
+  border: 0 !important;
+  padding: 0 !important;
+  width: 5px;
+  height: 5px;
+  background: #e1a179 !important;
+}
+.tac-live-strip {
+  min-height: 45px;
+  padding: 7px 15px;
+  display: flex;
+  gap: 7px;
+  align-items: center;
+  background: #111c14;
+  color: #909f8b;
+  font-size: 10px;
+  overflow: hidden;
+}
+.tac-live-strip button {
+  padding: 3px 7px;
+  font-size: 10px;
+  line-height: 1.5;
+  text-align: left;
+  border: 0;
+  border-left: 1px solid #c6b4804f;
+  justify-content: flex-start;
+  max-width: 33.33%;
+  color: #c7cbb4;
+}
+.tac-live-strip time {
+  color: #d3b880;
+  flex-shrink: 0;
+  font-family: monospace;
+}
+.tac-inspector {
+  position: fixed;
+  right: 18px;
+  top: 150px;
+  width: 320px;
+  max-height: calc(100dvh - 172px);
+  overflow: auto;
+  background: #17241cee;
+  border: 1px solid #d2b57980;
+  backdrop-filter: blur(18px);
+  box-shadow: 0 18px 70px #0009;
+  z-index: 12;
+  padding: 0 18px 18px;
+  scrollbar-width: thin;
+}
+.tac-inspector .tac-section-title {
+  margin: 0 -18px 20px;
+}
+.tac-inspector h2 {
+  font-family: Georgia, 'Songti SC', serif;
+  font-weight: 500;
+  font-size: 29px;
+  margin: 8px 0 12px;
+}
+.tac-detail-meta {
+  display: flex;
+  gap: 7px;
+  flex-wrap: wrap;
+}
+.tac-detail-meta span {
+  border: 1px solid #b9c19e40;
+  padding: 4px 7px;
+  font-size: 10px;
+  color: #c4c9b4;
+}
+.tac-effect-text {
+  font-size: 15px;
+  line-height: 1.9;
+  color: #e8dfc5;
+  padding: 10px 0;
+}
+.tac-state-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.tac-state-list span {
+  padding: 5px 8px;
+  background: #accc9812;
+  font-size: 11px;
+  color: #c7dabb;
+  border: 1px solid #a3c38e30;
+}
+.tac-detail-relation {
+  background: #dac1850a;
+  border-left: 2px solid #d3b47b;
+  padding: 10px;
+  font-size: 12px;
+  line-height: 1.7;
+  color: #d8ceac;
+}
+.tac-detail-actions {
+  display: flex;
+  gap: 8px;
+  margin: 12px 0;
+}
+.tac-inspector .arena-effect-help {
+  margin-top: 20px;
+}
+.tac-inspector h3 {
+  font-size: 12px;
+  margin-top: 25px;
+}
+.tac-inspector-events {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+.tac-inspector-events button {
+  font-size: 11px;
+  text-align: left;
+  justify-content: flex-start;
+  line-height: 1.6;
+}
+.tac-inspector footer {
+  font-size: 10px;
+  color: #a6b399;
+  margin-top: 20px;
+}
+.tac-counter-note {
+  margin: 0;
+  padding: 15px 24px;
+  font-size: 11px;
+  color: #adb9a2;
+}
+.tac-review-container {
+  border-top: 1px solid var(--rule);
+}
+.tactical-page .tac-review-toggle {
+  width: 100%;
+  display: flex;
+  justify-content: space-between;
+  padding: 18px 25px;
+  border: 0;
+  border-radius: 0;
+  background: #1c291e;
+  text-align: left;
+  font-size: 14px;
+  letter-spacing: 0.04em;
+}
+.tac-review-toggle span {
+  font-size: 10px;
+  color: #adbba4;
+  letter-spacing: 0;
+}
+.tac-review {
+  padding: 26px max(24px, calc((100% - 1280px) /2));
+  background:
+    radial-gradient(ellipse at top left, #27352655, transparent 65%), #111c14;
+}
+.tac-review-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+}
+.tac-review-head small {
+  font-size: 10px;
+  color: #c4b580;
+  letter-spacing: 0.13em;
+}
+.tac-review-head h2 {
+  font:
+    23px Georgia,
+    'Songti SC',
+    serif;
+  margin: 9px 0 23px;
+}
+.tac-review-head > span {
+  font-size: 10px;
+  color: #aeb99f;
+}
+.tac-tabs {
+  display: flex;
+  gap: 10px;
+  border-bottom: 1px solid var(--rule);
+  padding-bottom: 15px;
+  flex-wrap: wrap;
+}
+.tac-tabs button {
+  font-size: 12px;
+}
+.tac-review-filters {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+  padding: 14px 0;
+}
+.tac-review-filters button {
+  font-size: 10px;
+  padding: 5px 12px;
+}
+.tac-review-filters small {
+  margin-left: auto;
+  font-size: 10px;
+  color: #9eae97;
+}
+.tac-event-list {
+  max-height: 330px;
+  overflow: auto;
+  scrollbar-width: thin;
+}
+.tac-event-list button {
+  width: 100%;
+  display: flex;
+  justify-content: flex-start;
+  gap: 20px;
+  text-align: left;
+  border: 0;
+  border-radius: 0;
+  border-bottom: 1px solid #bdc8a31a;
+  padding: 12px;
+  font-size: 12px;
+}
+.tac-event-list button.current {
+  background: #b49e5423;
+  color: #ecd298;
+}
+.tac-event-list time {
+  font: 12px monospace;
+  color: #bda674;
+  min-width: 58px;
+}
+.tac-event-list b {
+  margin-left: auto;
+  color: #b9ba97;
+  font-weight: 400;
+}
+.tac-lane-reports {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 16px;
+  padding: 0 0 20px;
+}
+.tac-lane-reports article {
+  border: 1px solid var(--rule);
+  padding: 20px;
+  background: #c4cca506;
+}
+.tac-lane-reports article > small {
+  letter-spacing: 0.15em;
+  color: #aab99e;
+  font-size: 10px;
+}
+.tac-lane-reports h3 {
+  font:
+    22px Georgia,
+    'Songti SC',
+    serif;
+  color: #e1cb9b;
+}
+.tac-lane-reports dl > div {
+  display: flex;
+  justify-content: space-between;
+  margin: 14px 0;
+  color: #bac5ad;
+}
+.tac-lane-reports dd {
+  font: 18px monospace;
+  color: #e3d7b6;
+}
+.tac-lane-reports article > button {
+  width: 100%;
+  margin-top: 10px;
+}
+.tac-muted {
+  font-size: 11px;
+  color: #a4b29a;
+  line-height: 1.8;
+}
+.tac-report-scroll {
+  overflow: auto;
+}
+.tac-report-scroll table {
+  width: 100%;
+  border-collapse: collapse;
+  white-space: nowrap;
+  text-align: right;
+  font-size: 12px;
+}
+.tac-report-scroll th,
+.tac-report-scroll td {
+  padding: 13px 12px;
+  border-bottom: 1px solid var(--rule);
+  font-weight: 400;
+  font-variant-numeric: tabular-nums;
+}
+.tac-report-scroll th:first-child {
+  text-align: left;
+}
+.tac-report-scroll thead {
+  color: #a9b69d;
+  font-size: 10px;
+}
+.tac-report-scroll th small {
+  display: block;
+  color: #8f9e86;
+  font-size: 9px;
+  margin-top: 5px;
+}
+.tac-comparison {
+  padding: 12px 0;
+  font-size: 12px;
+  line-height: 1.8;
+}
+.tac-compare-results {
+  display: flex;
+  gap: 15px;
+  margin: 20px 0;
+}
+.tac-compare-results span {
+  flex: 1;
+  border: 1px solid var(--rule);
+  padding: 15px;
+  color: #a5b99a;
+  font-size: 11px;
+}
+.tac-compare-results b {
+  display: block;
+  font:
+    22px Georgia,
+    serif;
+  color: #e6d5a5;
+  margin-top: 10px;
+}
+.tac-history-list {
+  max-height: 50dvh;
+  overflow: auto;
+}
+.tac-history-list > button {
+  width: 100%;
+  display: flex;
+  text-align: left;
+  justify-content: flex-start;
+  padding: 12px;
+  gap: 14px;
+  border: 0;
+  border-bottom: 1px solid var(--rule);
+}
+.tac-history-list span {
+  flex: 1;
+}
+.tac-history-list span small {
+  display: block;
+  font-size: 10px;
+  color: #a4b196;
+  margin-top: 5px;
+}
+.tac-history-list b {
+  color: #dfc78c;
+}
+.tac-history-list time {
+  font-size: 11px;
+  color: #b4b69b;
+}
+.tactical-expanded {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  overflow: auto;
+  max-height: 100dvh;
+}
+.tactical-page.reduce-motion * {
+  transition: none !important;
+  animation: none !important;
+}
+.tactical-page .arena-inspection {
+  font-family: inherit;
+}
+.tactical-page .arena-toast {
+  z-index: 150;
+}
+.tac-table {
+  height: calc(100dvh - 317px);
+  min-height: 380px;
+}
+.tac-catalog {
+  min-height: 610px;
+  min-height: calc(100dvh - 144px);
+}
+.tac-equipment-label {
+  grid-template-columns: 1fr;
+  padding: 4px 3px;
+}
+.tac-equipment-label > span {
+  position: absolute;
+  right: 2px;
+  top: -13px;
+  background: #142017e8;
+  padding: 1px 3px;
+}
+.tac-equipment-label strong {
+  font-size: 10px;
+  white-space: normal;
+  overflow: visible;
+  line-height: 1.3;
+}
+.own.tac-equipment .tac-equipment-label {
+  top: auto;
+  bottom: calc(100% - 5px);
+}
+.tac-equipment-label {
+  pointer-events: auto;
+}
+.tactical-expanded .tac-header {
+  height: 40px;
+}
+.tactical-expanded .tac-command {
+  padding-block: 8px;
+}
+.tactical-expanded .tac-command small,
+.tactical-expanded .tac-command p {
+  display: none;
+}
+.tactical-expanded .tac-host {
+  height: 28px;
+}
+.tactical-expanded .tac-live-strip {
+  min-height: 28px;
+  padding-block: 3px;
+}
+.tactical-expanded .tac-table {
+  height: calc(100dvh - 237px);
+}
+@media (min-width: 1700px) {
+  .tac-catalog {
+    width: 278px;
+    flex-basis: 278px;
+  }
+  .tac-command {
+    padding-block: 19px;
+  }
+  .tac-table {
+    min-height: 580px;
+  }
+  .tac-equipment-label strong {
+    font-size: 13px;
+  }
+}
+@media (max-width: 1100px) {
+  .tac-command p,
+  .tac-command-actions > span {
+    display: none;
+  }
+  .tac-catalog {
+    flex-basis: 210px;
+    width: 210px;
+  }
+  .tac-catalog-card strong {
+    font-size: 12px;
+  }
+  .tac-catalog-card small {
+    font-size: 8px;
+  }
+  .tac-header nav {
+    margin-left: 0;
+  }
+  .tac-header {
+    gap: 12px;
+    padding: 0 16px;
+  }
+  .tac-host-note {
+    display: none;
+  }
+  .tac-build-hint {
+    flex-wrap: wrap;
+  }
+  .tac-controls {
+    flex-wrap: wrap;
+  }
+  .tac-view-options {
+    margin-left: auto;
+  }
+  .tac-table {
+    min-height: 520px;
+  }
+  .tac-equipment-label {
+    padding: 4px;
+  }
+  .tac-equipment-label > span {
+    font-size: 8px;
+  }
+}
+@media (max-width: 850px) {
+  .tac-catalog {
+    display: none;
+    position: fixed;
+    left: 0;
+    top: 0;
+    bottom: 0;
+    z-index: 30;
+    width: 290px;
+    height: 100dvh;
+    min-height: 0;
+    box-shadow: 20px 0 80px #0009;
+  }
+  .tac-catalog.open {
+    display: flex;
+  }
+  .tac-catalog-toggle,
+  .tac-mobile-close {
+    display: inline-flex !important;
+  }
+  .tac-header nav {
+    display: none;
+  }
+  .tac-command {
+    padding: 12px 15px;
+  }
+  .tac-command h1 {
+    font-size: 20px;
+  }
+  .tac-command-actions {
+    gap: 7px;
+  }
+  .tactical-page .tac-primary {
+    padding: 9px 12px;
+  }
+  .tac-inspector {
+    right: 12px;
+    top: 135px;
+    max-height: calc(100dvh - 155px);
+  }
+  .tac-review-head > span {
+    display: none;
+  }
+  .tac-live-strip button {
+    max-width: 50%;
+  }
+  .tac-live-strip button:first-child:not(:last-child) {
+    display: none;
+  }
+  .tac-equipment-label strong {
+    font-size: 10px;
+  }
+  .tac-host {
+    padding-inline: 14px;
+  }
+}
+@media (max-width: 540px) {
+  .tac-header {
+    padding: 0 10px;
+    gap: 10px;
+    height: 50px;
+  }
+  .tac-brand {
+    font-size: 15px;
+    letter-spacing: 0.05em;
+  }
+  .tac-header-actions button {
+    padding: 6px;
+    font-size: 10px;
+  }
+  .tac-header-actions button > span {
+    display: none;
+  }
+  .tac-header-actions {
+    gap: 4px;
+  }
+  .tac-command {
+    align-items: flex-start;
+    gap: 7px;
+  }
+  .tac-command h1 {
+    font-size: 18px;
+  }
+  .tac-command small {
+    font-size: 8px;
+  }
+  .tac-command-actions {
+    flex-wrap: wrap;
+    justify-content: flex-end;
+  }
+  .tac-command-actions button {
+    font-size: 10px;
+    padding: 7px;
+  }
+  .tac-outcome {
+    font-size: 15px;
+  }
+  .tac-table {
+    height: 520px;
+    min-height: 520px;
+  }
+  .tac-host {
+    gap: 8px;
+    height: 32px;
+    font-size: 10px;
+  }
+  .tac-host strong {
+    min-width: 70px;
+    font-size: 13px;
+  }
+  .tac-lane-hud {
+    font-size: 8px;
+  }
+  .tac-shield-line {
+    gap: 3px;
+    padding: 4px;
+  }
+  .tac-shield-line strong {
+    font-size: 9px;
+  }
+  .tac-shield-line > span {
+    display: none;
+  }
+  .tac-amp {
+    font-size: 8px !important;
+    padding: 4px !important;
+  }
+  .tac-amp small {
+    font-size: 7px;
+  }
+  .tac-equipment-label {
+    padding: 3px;
+    gap: 2px;
+    grid-template-columns: 1fr;
+    top: 100%;
+  }
+  .tac-equipment-label strong {
+    font-size: 8px;
+  }
+  .tac-equipment-label > span {
+    position: absolute;
+    top: -12px;
+    right: 0;
+    background: #172119de;
+    padding: 2px;
+  }
+  .tac-equipment-label > small {
+    font-size: 7px;
+  }
+  .tac-lane-name {
+    font-size: 10px;
+    gap: 4px;
+    flex-direction: column;
+  }
+  .tac-lane-name small {
+    font-size: 18px;
+  }
+  .tac-lane-name b {
+    font-size: 8px;
+  }
+  .tac-lane-status {
+    gap: 4px;
+    font-size: 8px;
+  }
+  .tac-feedback span {
+    font-size: 8px;
+    padding: 3px 4px;
+  }
+  .tac-feedback {
+    max-width: 108px;
+  }
+  .tac-controls {
+    padding: 9px;
+    gap: 6px;
+  }
+  .tac-controls time {
+    font-size: 9px;
+  }
+  .tac-controls button {
+    font-size: 9px;
+    padding: 5px;
+  }
+  .tac-build-hint {
+    font-size: 10px;
+  }
+  .tac-build-hint span {
+    flex-basis: 100%;
+    order: 1;
+  }
+  .tac-view-options {
+    gap: 4px;
+  }
+  .tac-relation-note {
+    white-space: normal;
+    font-size: 9px;
+    width: 90%;
+    text-align: center;
+  }
+  .tac-review {
+    padding: 20px 12px;
+  }
+  .tac-review-head h2 {
+    font-size: 18px;
+  }
+  .tac-review-toggle span {
+    display: none;
+  }
+  .tac-tabs {
+    gap: 5px;
+  }
+  .tac-tabs button {
+    font-size: 10px;
+    padding: 6px;
+  }
+  .tac-lane-reports {
+    gap: 6px;
+  }
+  .tac-lane-reports article {
+    padding: 10px;
+  }
+  .tac-lane-reports h3 {
+    font-size: 15px;
+  }
+  .tac-lane-reports dl {
+    font-size: 9px;
+  }
+  .tac-lane-reports dd {
+    font-size: 13px;
+    margin: 0;
+  }
+  .tac-lane-reports article > button {
+    font-size: 9px;
+    padding: 5px;
+  }
+  .tac-compare-results {
+    gap: 6px;
+  }
+  .tac-compare-results span {
+    padding: 9px;
+  }
+  .tac-compare-results b {
+    font-size: 15px;
+  }
+  .tac-inspector {
+    left: 12px;
+    right: 12px;
+    width: auto;
+  }
+  .tac-event-list button {
+    gap: 10px;
+    font-size: 10px;
+  }
+  .tac-event-list time {
+    font-size: 10px;
+    min-width: 48px;
+  }
+}

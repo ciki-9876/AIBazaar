@@ -21,6 +21,8 @@ import { createChamber, type ChamberState, type RoomPoint } from './chamber';
 import { sitePath } from '@/lib/site-path';
 import { cardDef, cardFamily } from '@/lib/demo-cards';
 import { arenaCard } from '@/lib/arena-catalog';
+import { arenaEquipment, arenaAmplifier, disposeArenaModel } from './arena-models';
+import type { ArenaFrame } from '@/lib/arena-engine';
 import type { CombatFrame, Duel, FighterCard } from '@/lib/demo-combat';
 import { StylePostProcess } from '../styles/post-process';
 import type { RenderStyleSettings } from '../styles/presets';
@@ -184,6 +186,7 @@ export default function BattleScene(props: Props) {
       equipment = new THREE.Group(),
       effects = new THREE.Group();
     scene.add(table, equipment, effects);
+    const ampModules: Array<ReturnType<typeof arenaAmplifier> & {side:number;lane:number}> = [];
     const laneSurfaces: THREE.Mesh<
       THREE.PlaneGeometry,
       THREE.MeshBasicMaterial
@@ -635,10 +638,13 @@ export default function BattleScene(props: Props) {
       id = requestAnimationFrame(animate);
       const p = latest.current,
         t = p.clock.current;
-      const signature = JSON.stringify([p.duel.player, p.duel.enemy]);
+      const signature = JSON.stringify([p.duel.player, p.duel.enemy, p.duel.arena?.amplifiers]);
       if (loaded && signature !== lastSignature) {
         lastSignature = signature;
+        ampModules.splice(0).forEach(a=>{scene.remove(a.group);disposeArenaModel(a.group);});
+        p.duel.arena?.amplifiers.forEach((row,side)=>row.forEach((id,lane)=>{if(id){const a=arenaAmplifier(id);a.group.position.set((lane-1)*3.46+1.35,0,barrierZ(side));if(side)a.group.rotation.y=Math.PI;scene.add(a.group);ampModules.push({...a,side,lane});}}));
         for (const x of meshes.values()) {
+          if (arenaCard(x.card.id)) disposeArenaModel(x.model);
           x.plate.geometry.dispose();
           (x.plate.material as THREE.Material).dispose();
           x.fill.geometry.dispose();
@@ -698,7 +704,8 @@ export default function BattleScene(props: Props) {
                           : arenaKind === 'passive'
                             ? 'culture'
                             : 'springbow';
-            const model = (
+            const spec = arenaCard(card.id);
+            const model = spec ? arenaEquipment(spec) : (
               templates.get(cardFamily(card.id)) ??
               templates.get(proxyFamily) ??
               new THREE.Group()
@@ -817,8 +824,10 @@ export default function BattleScene(props: Props) {
         if (frame.time > t) break;
         if (frame.time <= previousTime) continue;
         for (const uid of frame.fired) fireTimes.set(uid, frame.time);
+        if (p.duel.arena) for (const link of (frame as ArenaFrame).links ?? []) fireTimes.set(link.to, frame.time);
       }
       previousTime = t;
+      ampModules.forEach(a=>{const active=(p.frame as ArenaFrame).amplifierActive?.[a.side]?.[a.lane];a.lamp.emissiveIntensity=active?.8:0;a.lamp.color.set(active?'#e3c98e':'#4b574d');});
       hosts.forEach((host, side) => {
         host.visible = !p.reward;
         const ratio = Math.max(0, p.frame.hp[side] / p.frames[0].hp[side]);
@@ -1016,12 +1025,14 @@ export default function BattleScene(props: Props) {
               : 0,
         );
         const cd = p.frame.cd[m.side][m.card.at] || cardDef(m.card.id).cd;
-        const progress = Math.min(
+        const af = p.duel.arena ? p.frame as ArenaFrame : undefined;
+        const rate = af?.freeze[uid] ? 0 : (af?.haste[uid] ? 2 : 1) * (af?.slow[uid] ? 0.5 : 1);
+        const progress = cd ? Math.min(
           1,
           ((p.frame.timers[m.side][m.card.at] ?? 0) +
-            Math.min(0.25, Math.max(0, t - p.frame.time))) /
+            Math.min(0.25, Math.max(0, t - p.frame.time)) * rate) /
             cd,
-        );
+        ) : 0;
         for (const part of m.parts) {
           const o = part.object;
           o.position.copy(part.position);
@@ -1030,6 +1041,11 @@ export default function BattleScene(props: Props) {
           const name = o.name;
           // Parts retain their Blender local transforms; mirror via the model root.
           const motion = p.reduced ? 0 : progress;
+          if (name === 'arena-rotor') o.rotation.z += motion * Math.PI * 2;
+          if (name === 'arena-valve') o.rotation.y += motion * .7;
+          if (name === 'arena-piston') o.position.y += motion * .035 - kick * .06;
+          if (name === 'arena-resonator') o.rotation.x += kick * .25;
+          if (name === 'arena-barrel') o.position.z += kick * .09;
           if (o instanceof THREE.Mesh && o.userData.flexVertices) {
             const vertices = o.userData.flexVertices as Float32Array;
             const positions = o.geometry.attributes
@@ -1182,7 +1198,8 @@ export default function BattleScene(props: Props) {
         (fx.line.geometry.attributes.position as THREE.BufferAttribute)
           .setXYZ(0, tail.x, tail.y, tail.z)
           .setXYZ(1, pos.x, pos.y, pos.z).needsUpdate = true;
-        const color = enemy ? '#f6c678' : '#c7dfaa';
+        const color = q.kind === 'burn' ? '#ff9b54' : q.kind === 'corrode' ? '#b6d65b' : q.kind === 'freeze' ? '#a9e4f8' : enemy ? '#f6c678' : '#c7dfaa';
+        fx.ball.material.color.set(color);
         (fx.line.material as THREE.LineBasicMaterial).color.set(color);
         (fx.line.material as THREE.LineBasicMaterial).opacity = isArrow
           ? 0.55
