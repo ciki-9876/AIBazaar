@@ -4,6 +4,7 @@ import {
   Suspense,
   useCallback,
   useMemo,
+  useRef,
   useState,
   type DragEvent,
 } from 'react';
@@ -52,6 +53,8 @@ type Props = {
 };
 
 export function ArenaTable(p: Props) {
+  const tableRef = useRef<HTMLDivElement>(null);
+  const [tableHeight, setTableHeight] = useState(1000);
   const [anchors, setAnchors] = useState<Anchor[]>([]),
     [board, setBoard] = useState<BoardAnchors>({
       barriers: [],
@@ -61,7 +64,10 @@ export function ArenaTable(p: Props) {
   const [ready, setReady] = useState(false),
     [over, setOver] = useState<number>(),
     [hover, setHover] = useState<FighterCard | null>(null);
-  const onAnchors = useCallback((a: Anchor[]) => setAnchors(a), []),
+  const onAnchors = useCallback((a: Anchor[]) => {
+      setAnchors(a);
+      setTableHeight(tableRef.current?.clientHeight ?? 1000);
+    }, []),
     onBoard = useCallback((b: BoardAnchors) => setBoard(b), []),
     onReady = useCallback(() => setReady(true), []);
   const all = [...p.duel.player, ...p.duel.enemy];
@@ -191,7 +197,10 @@ export function ArenaTable(p: Props) {
         )
       : 160;
   return (
-    <div className={`tac-table ${p.reduced ? 'reduce-motion' : ''}`}>
+    <div
+      ref={tableRef}
+      className={`tac-table ${p.reduced ? 'reduce-motion' : ''}`}
+    >
       <Suspense fallback={<div className="tac-loading">正在点亮战术桌…</div>}>
         <Scene
           duel={p.duel}
@@ -248,7 +257,13 @@ export function ArenaTable(p: Props) {
                   className={`tac-lane-hud ${side ? 'enemy' : 'own'} ${b.broken ? 'broken' : ''} ${burn ? 'burning' : ''}`}
                   style={{
                     left: a.x,
-                    top: a.y + (side ? -62 : 12),
+                    top: Math.max(
+                      8,
+                      Math.min(
+                        tableHeight - (burn > 0 || corrode > 0 ? 82 : 60),
+                        a.y + (side ? -62 : 12),
+                      ),
+                    ),
                     width: laneWidth,
                   }}
                 >
