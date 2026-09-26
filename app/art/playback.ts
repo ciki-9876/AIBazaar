@@ -20,3 +20,8 @@ export function flightProgress(
     Math.min(1, (time - launchedAt) / Math.max(0.001, impactAt - launchedAt)),
   );
 }
+
+export function replayFrameIndex(time: number, frameCount: number) {
+  const safeTime = Number.isFinite(time) ? Math.max(0, time) : 0;
+  return Math.max(0, Math.min(frameCount - 1, Math.floor(safeTime * 4 + 1e-8)));
+}
