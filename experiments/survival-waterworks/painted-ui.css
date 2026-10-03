@@ -1,0 +1,1132 @@
+.survival-page {
+  --f9-ink: #080f12;
+  --f9-panel: #17262a;
+  --f9-raised: #243638;
+  --f9-moss: #52635b;
+  --f9-brass: #a38a59;
+  --f9-paper: #e0d3ad;
+  --f9-muted: #9fa798;
+  --f9-phosphor: #9fc4ab;
+  --f9-danger: #b96251;
+  --f9-shadow: #03080b;
+  --paper: var(--f9-paper);
+  --muted: var(--f9-muted);
+  --gold: var(--f9-brass);
+  --mint: var(--f9-phosphor);
+  --line: #a38a5940;
+  color: var(--f9-paper);
+  font-family: 'F9 Pixel', monospace;
+}
+.survival-page :is(h1, h2, h3) {
+  font-family: 'F9 Pixel', monospace;
+  letter-spacing: 1px;
+  font-weight: 700;
+  color: var(--f9-paper);
+}
+.survival-page button {
+  border-radius: 2px;
+  color: var(--f9-paper);
+  border-color: #a38a596b;
+  background-color: var(--f9-panel);
+  transition:
+    background-color 0.15s,
+    border-color 0.15s,
+    box-shadow 0.15s;
+}
+.survival-page button:hover:not(:disabled) {
+  border-color: var(--f9-brass);
+  background-color: #35443e;
+  box-shadow: inset 0 0 0 1px #a38a5930;
+}
+.survival-page button:focus-visible {
+  outline: 2px solid var(--f9-paper);
+  outline-offset: 4px;
+}
+.survival-page kbd {
+  background: var(--f9-ink);
+  border: 1px solid var(--f9-brass);
+  border-bottom-width: 3px;
+  border-radius: 1px;
+  color: var(--f9-paper);
+  font-size: 11px;
+  padding: 2px 6px;
+}
+.survival-page
+  :is(
+    .equipment-panel,
+    .cargo-management,
+    .survival-intro,
+    .survival-pause,
+    .survival-inventory,
+    .survival-result,
+    .opening-pause,
+    .opening-found,
+    .lift-terminal,
+    .base-upgrade,
+    .f9-design-system
+  ) {
+  color: var(--f9-paper);
+  border: 1px solid var(--f9-brass);
+  border-radius: 2px;
+  background:
+    linear-gradient(120deg, #8f9a7710, transparent 40%),
+    repeating-linear-gradient(
+      174deg,
+      #c9c29804 0px,
+      #c9c29804 1px,
+      transparent 1px,
+      transparent 8px
+    ),
+    var(--f9-panel);
+  box-shadow:
+    0 0 0 3px var(--f9-ink),
+    0 0 0 4px #a38a5940,
+    inset 0 0 0 5px #03080b40,
+    0 20px 70px #0009;
+}
+.survival-page :is(.equipment-card, .cargo-piece, .cargo-safe-piece) {
+  border-radius: 1px;
+  border: 1px solid #728175;
+  background:
+    linear-gradient(145deg, #66786b35, transparent 55%), var(--f9-raised);
+  box-shadow:
+    inset 0 0 0 3px #080f1259,
+    0 3px 0 #03080b;
+  color: var(--f9-paper);
+}
+.survival-page :is(.equipment-card, .cargo-piece, .cargo-safe-piece) > svg {
+  color: var(--f9-paper);
+  filter: drop-shadow(1px 2px 0 #080f12);
+  stroke-width: 1.7;
+}
+.survival-page :is(.equipment-card.flashlight, .cargo-piece.energy-core) {
+  background: linear-gradient(135deg, #77694088, #292f28);
+  border-color: var(--f9-brass);
+}
+.survival-page
+  :is(
+    .equipment-card.selected,
+    .cargo-piece.selected,
+    .cargo-safe-piece.selected
+  ) {
+  border-color: var(--f9-paper);
+  box-shadow:
+    inset 0 0 0 3px #a38a5999,
+    0 0 0 1px var(--f9-brass);
+}
+.survival-page :is(.equipment-slot, .equipment-anchor, .cargo-cell) {
+  border-radius: 0;
+  background: #071115a8;
+  border-color: #52635b70;
+  color: var(--f9-muted);
+}
+.survival-page
+  :is(
+    .equipment-inspector,
+    .cargo-inspector,
+    .safe-pocket,
+    .survival-intro-rules
+  ) {
+  background: #0711156b;
+  border-color: #a38a593d;
+  border-radius: 0;
+}
+.survival-page
+  :is(
+    .equipment-heading,
+    .cargo-grid-header,
+    .equipment-inspector strong,
+    .cargo-inspector strong
+  ) {
+  color: var(--f9-paper);
+}
+.survival-page
+  :is(
+    .cargo-hint,
+    .cargo-inspector p,
+    .equipment-inspector p,
+    .cargo-piece small,
+    .equipment-card small
+  ) {
+  color: var(--f9-muted);
+}
+.survival-page
+  :is(.survival-primary, .f9-primary, .opening-found button, .opening-return) {
+  background: linear-gradient(165deg, #625d42, #343b30);
+  border: 1px solid var(--f9-brass);
+  box-shadow: inset 0 0 0 2px #080f1299;
+  color: var(--f9-paper);
+}
+.survival-page .opening-thought > span,
+.f9-ds-thought {
+  color: var(--f9-ink);
+  background: linear-gradient(120deg, #f0e5c7, #c8bc97);
+  border: 2px solid #060e12;
+  border-radius: 1px;
+  box-shadow: 3px 4px 0 #0006;
+  clip-path: polygon(2% 0, 98% 2%, 100% 94%, 97% 100%, 1% 97%, 0 5%);
+  font-family: 'F9 Pixel', monospace;
+  font-size: 20px;
+  font-weight: 600;
+  letter-spacing: 0.5px;
+}
+.survival-page .opening-thought i {
+  background: var(--f9-paper);
+  border: 1px solid var(--f9-ink);
+}
+.survival-page.opening-stage-home .opening-thought {
+  max-width: min(480px, 80vw);
+}
+.survival-page .opening-entry {
+  background: radial-gradient(
+    ellipse at 50% 40%,
+    #1b2c2c,
+    #080f12 55%,
+    #03080b
+  );
+}
+.survival-page .opening-entry > span {
+  font-family: 'F9 Pixel', monospace;
+  font-size: 48px;
+  letter-spacing: 18px;
+  color: var(--f9-brass);
+  text-shadow: 2px 4px var(--f9-shadow);
+}
+.survival-page .opening-entry button {
+  padding: 16px 52px;
+  border: 1px solid var(--f9-brass);
+  box-shadow: inset 0 0 0 4px #080f1270;
+}
+.survival-page
+  :is(.survival-marker, .opening-vitals, .survival-minimap, .survival-notice) {
+  background: #101f24e6;
+  border-color: #a38a5959;
+  border-radius: 0;
+  color: var(--f9-paper);
+}
+.survival-page .survival-minimap {
+  box-shadow:
+    0 0 0 3px #080f12,
+    0 0 0 4px #a38a5960;
+}
+.survival-page
+  :is(.opening-objective, .opening-near-hint, .opening-bag-toggle) {
+  color: var(--f9-paper);
+  text-shadow: 1px 2px var(--f9-ink);
+}
+.survival-page .opening-search > i {
+  background: var(--f9-brass);
+}
+.survival-page .opening-pause[open] {
+  position: fixed;
+  inset: 50% auto auto 50%;
+  margin: 0;
+  transform: translate(-50%, -50%);
+  width: 330px;
+  padding: 30px;
+  max-height: 90vh;
+  overflow: auto;
+}
+.survival-page .opening-pause h2 {
+  font-size: 30px;
+  margin-bottom: 18px;
+}
+.survival-page .opening-pause button {
+  padding: 12px 16px;
+  width: 100%;
+  margin-top: 9px;
+  border: 1px solid #a38a5950;
+}
+.survival-page :is(.base-upgrade, .f9-design-system, .lift-terminal)[open] {
+  position: fixed;
+  inset: 0;
+  margin: auto;
+  transform: none;
+  width: min(1120px, 94vw);
+  max-height: 92dvh;
+  padding: 0;
+  overflow: auto;
+}
+.survival-page :is(.base-upgrade, .f9-design-system, .lift-terminal)::backdrop {
+  background: #03080bd9;
+  backdrop-filter: none;
+}
+.survival-page :is(.base-upgrade, .f9-design-system, .lift-terminal) > header {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  padding: 22px 30px;
+  border-bottom: 1px solid #a38a594a;
+  background: #080f1266;
+}
+.survival-page
+  :is(.base-upgrade, .f9-design-system, .lift-terminal)
+  > header
+  > div {
+  flex: 1;
+}
+.survival-page
+  :is(.base-upgrade, .f9-design-system, .lift-terminal)
+  > header
+  small {
+  display: block;
+  letter-spacing: 3px;
+  font-size: 10px;
+  color: var(--f9-brass);
+  margin-bottom: 6px;
+}
+.survival-page :is(.base-upgrade, .f9-design-system, .lift-terminal) h2 {
+  font-size: 30px;
+  margin: 0;
+}
+.survival-page
+  :is(.base-upgrade, .f9-design-system, .lift-terminal)
+  > header
+  > span {
+  color: var(--f9-muted);
+  font-size: 12px;
+}
+.survival-page
+  :is(.base-upgrade, .f9-design-system, .lift-terminal)
+  > header
+  > button {
+  display: grid;
+  place-items: center;
+  border: 1px solid #a38a5950;
+  padding: 9px;
+}
+.survival-page :is(.base-upgrade, .f9-design-system, .lift-terminal) > footer {
+  display: flex;
+  justify-content: space-between;
+  padding: 14px 30px;
+  font-size: 11px;
+  color: var(--f9-muted);
+  border-top: 1px solid #a38a594a;
+}
+.base-upgrade-layout {
+  display: grid;
+  grid-template-columns: minmax(250px, 0.85fr) minmax(400px, 1.35fr);
+  gap: 32px;
+  padding: 25px 30px;
+  align-items: center;
+}
+.base-terminal {
+  position: relative;
+  max-height: none;
+  aspect-ratio: 600/860;
+  justify-self: center;
+  width: 100%;
+  max-width: min(335px, 41.86dvh);
+  border: 5px solid #080f12;
+  outline: 1px solid #a38a5980;
+  box-shadow: 8px 10px 0 #03080b88;
+}
+.base-terminal canvas {
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+.survival-page .base-mouth {
+  position: absolute;
+  left: 16%;
+  top: 73%;
+  width: 68%;
+  height: 16%;
+  border: 1px dashed #a38a5940;
+  border-radius: 50%;
+  background: transparent;
+  color: var(--f9-paper);
+  opacity: 1;
+  box-shadow: none;
+}
+.survival-page .base-mouth span {
+  font-size: 11px;
+  letter-spacing: 2px;
+  text-shadow: 0 2px 4px #000;
+}
+.survival-page .base-mouth.hover {
+  outline: 2px solid var(--f9-brass);
+  background: #a38a5926;
+  box-shadow: 0 0 35px #a38a5933;
+}
+.base-task {
+  display: flex;
+  gap: 16px;
+  align-items: center;
+  margin-bottom: 25px;
+}
+.base-task small {
+  color: var(--f9-brass);
+  font-size: 11px;
+  letter-spacing: 2px;
+}
+.base-task h3 {
+  font-size: 25px;
+  margin: 5px 0 10px;
+}
+.base-task p {
+  font-size: 13px;
+  line-height: 1.8;
+  color: var(--f9-muted);
+}
+.f9-seal {
+  display: grid;
+  place-items: center;
+  min-width: 44px;
+  height: 54px;
+  background: var(--f9-ink);
+  border: 1px solid var(--f9-brass);
+  color: var(--f9-brass);
+  clip-path: polygon(50% 0, 100% 20%, 100% 80%, 50% 100%, 0 80%, 0 20%);
+}
+.survival-page .base-cargo .cargo-management {
+  background: none;
+  border: 0;
+  box-shadow: none;
+  padding: 0;
+}
+.base-cargo .cargo-grid-body {
+  display: block;
+}
+.base-cargo .cargo-grid {
+  width: 100%;
+  min-height: 200px;
+}
+.base-cargo .cargo-piece {
+  min-height: 94px;
+  touch-action: none;
+}
+.base-cargo .cargo-inspector {
+  min-height: 75px;
+  margin-top: 13px;
+}
+.base-cargo .cargo-hint {
+  margin-bottom: 15px;
+  line-height: 1.7;
+}
+.base-keyboard {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  color: var(--f9-brass);
+  font-size: 12px;
+  margin-top: 20px !important;
+  line-height: 1.6;
+}
+.base-feedback {
+  display: block;
+  color: var(--f9-muted);
+  font-size: 12px;
+  min-height: 32px;
+  padding-top: 13px;
+}
+.base-upgrade-progress {
+  position: relative;
+  height: 33px;
+  border: 1px solid var(--f9-brass);
+  background: var(--f9-ink);
+  margin-top: 18px;
+  overflow: hidden;
+}
+.base-upgrade-progress > i {
+  position: absolute;
+  inset: 3px auto 3px 3px;
+  background: #a38a5960;
+  max-width: calc(100% - 6px);
+}
+.base-upgrade-progress > span {
+  position: relative;
+  display: block;
+  text-align: center;
+  line-height: 31px;
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+}
+.base-drag {
+  position: absolute;
+  transform: translate(-50%, -70%);
+  pointer-events: none;
+  z-index: 10;
+  background: var(--f9-panel);
+  border: 1px solid var(--f9-brass);
+  padding: 14px 18px;
+  color: var(--f9-paper);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  box-shadow: 0 12px 35px #000c;
+  white-space: nowrap;
+}
+.f9-design-body {
+  padding: 30px;
+}
+.f9-design-body > section {
+  padding: 26px 0;
+  border-top: 1px solid #a38a5939;
+}
+.f9-design-body h3 {
+  font-size: 23px;
+  margin: 0 0 20px;
+}
+.f9-design-body h3 > span {
+  font:
+    12px 'Bahnschrift',
+    sans-serif;
+  margin-right: 16px;
+  color: var(--f9-brass);
+}
+.f9-design-intro {
+  max-width: 670px;
+  font-size: 15px;
+  line-height: 2.1;
+  margin: 0 0 30px !important;
+  color: var(--f9-muted);
+}
+.f9-swatches {
+  display: grid;
+  grid-template-columns: repeat(10, 1fr);
+  gap: 12px;
+}
+.f9-swatches > div {
+  display: grid;
+  gap: 8px;
+}
+.f9-swatches i {
+  height: 54px;
+  border: 1px solid #e0d3ad20;
+}
+.f9-swatches strong {
+  font-size: 12px;
+  font-weight: 400;
+}
+.f9-swatches small {
+  font-size: 10px;
+  color: var(--f9-muted);
+}
+.f9-design-body p {
+  line-height: 1.9;
+  font-size: 13px;
+  color: var(--f9-muted);
+  margin-top: 15px;
+}
+.f9-design-body .f9-ds-thought {
+  display: table;
+  padding: 14px 22px;
+  color: var(--f9-ink);
+  font-size: 20px;
+}
+.f9-control-samples {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 14px;
+  align-items: center;
+}
+.f9-control-samples button {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  border: 1px solid var(--f9-brass);
+  padding: 12px 20px;
+}
+.f9-receipt {
+  display: flex;
+  gap: 9px;
+  align-items: center;
+  color: var(--f9-paper);
+}
+.f9-design-body .equipment-panel {
+  margin-bottom: 24px;
+}
+.f9-design-body .base-upgrade-progress {
+  max-width: 440px;
+}
+.opening-loot-reminder {
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
+  bottom: 160px;
+  color: var(--f9-paper);
+  background: #080f12c9;
+  border: 1px solid #a38a5960;
+  padding: 10px 18px;
+  z-index: 8;
+  font-size: 12px;
+}
+@media (max-width: 780px) {
+  .base-upgrade-layout {
+    grid-template-columns: 1fr;
+    padding: 20px;
+    gap: 25px;
+  }
+  .base-terminal {
+    max-width: 260px;
+  }
+  .base-cargo {
+    width: 100%;
+  }
+  .survival-page
+    :is(.base-upgrade, .f9-design-system, .lift-terminal)
+    > header {
+    padding: 18px;
+  }
+  .survival-page
+    :is(.base-upgrade, .f9-design-system, .lift-terminal)
+    > header
+    > span {
+    display: none;
+  }
+  .f9-swatches {
+    grid-template-columns: repeat(5, 1fr);
+  }
+  .f9-design-body {
+    padding: 20px;
+  }
+  .survival-page
+    :is(.base-upgrade, .f9-design-system, .lift-terminal)
+    > footer {
+    gap: 15px;
+    padding: 14px 18px;
+  }
+  .base-cargo .cargo-piece strong {
+    font-size: 11px;
+  }
+}
+.opening-reduced * {
+  scroll-behavior: auto !important;
+}
+.opening-reduced .base-mouth {
+  transition: none;
+}
+
+.survival-page .base-cargo .cargo-inspector {
+  min-height: 54px;
+  padding: 12px;
+}
+.survival-page .base-cargo .cargo-grid {
+  min-height: 180px;
+}
+.survival-page .base-cargo .cargo-piece {
+  min-height: 82px;
+}
+.survival-page .base-task {
+  margin-bottom: 16px;
+}
+.survival-page .base-drag {
+  will-change: left, top;
+}
+.survival-page
+  :is(
+    .survival-vitals,
+    .survival-cargo,
+    .survival-wave,
+    .survival-clock,
+    .survival-header-right button
+  ) {
+  background: #101f24eb;
+  border-color: #a38a5950;
+  border-radius: 1px;
+  color: var(--f9-paper);
+  box-shadow: inset 0 0 0 2px #080f1240;
+}
+.survival-page .survival-health > i,
+.survival-page .survival-needs i {
+  border-radius: 0;
+}
+
+/* Native 16-pixel Chinese glyphs, fine stepped frames and restrained material ramps. */
+.survival-page,
+.survival-page
+  :is(button, input, kbd, small, strong, b, h1, h2, h3, output, p, span) {
+  font-family: 'F9 Pixel', monospace;
+  font-synthesis: none;
+  font-weight: 400;
+  -webkit-font-smoothing: none;
+  letter-spacing: 0;
+}
+.survival-page {
+  font-size: 16px;
+}
+.survival-page
+  :is(
+    p,
+    small,
+    kbd,
+    button,
+    output,
+    .equipment-heading,
+    .cargo-grid-header,
+    .cargo-piece strong,
+    .equipment-card b,
+    .equipment-card small
+  ) {
+  font-size: 16px;
+}
+.survival-page :is(h1, h2, h3) {
+  font-size: 32px;
+  line-height: 1.4;
+}
+.survival-page button {
+  border-radius: 0;
+  transition: none;
+}
+.survival-page
+  :is(
+    .opening-pause,
+    .lift-terminal,
+    .base-upgrade,
+    .f9-design-system,
+    .equipment-panel,
+    .cargo-management,
+    .opening-found
+  ) {
+  background:
+    repeating-linear-gradient(0deg, #b3b99504 0 1px, transparent 1px 4px),
+    #15232a;
+  border: 2px solid #687b72;
+  box-shadow:
+    0 0 0 2px #070d14,
+    0 0 0 3px #99805a,
+    4px 5px 0 2px #02080d,
+    inset 0 0 0 2px #283b42,
+    inset 0 4px 0 #819087;
+  border-radius: 0;
+}
+.survival-page :is(.cargo-piece, .equipment-card, .cargo-safe-piece) {
+  background: linear-gradient(
+    0deg,
+    #17272d 0 12%,
+    #263a3e 12% 84%,
+    #384c4b 84% 100%
+  );
+  border: 1px solid #657b6c;
+  box-shadow:
+    inset 2px 2px #819183,
+    inset -2px -2px #071319;
+  border-radius: 0;
+}
+.survival-page :is(.cargo-piece.energy-core, .equipment-card.capacitor) {
+  background: linear-gradient(
+    0deg,
+    #3f3327 0 12%,
+    #534e39 12% 84%,
+    #7e7753 84%
+  );
+  border-color: #b1a076;
+}
+.survival-page :is(.cargo-piece.selected, .equipment-card.selected) {
+  outline: 2px solid #e1cd91;
+  outline-offset: -4px;
+}
+.survival-page .opening-thought,
+.survival-page.opening-stage-home .opening-thought {
+  left: 50%;
+  top: auto;
+  bottom: max(11vh, 64px);
+  transform: translateX(-50%);
+  max-width: min(600px, 86vw);
+  width: max-content;
+}
+.survival-page.opening-stage-expedition .opening-thought {
+  bottom: 175px;
+}
+.survival-page .opening-thought > span,
+.f9-ds-thought {
+  font-size: 16px;
+  font-weight: 400;
+  line-height: 1.7;
+  padding: 16px 24px;
+  background: #d9d2ac;
+  border: 2px solid #070e16;
+  clip-path: polygon(
+    0 6px,
+    6px 6px,
+    6px 0,
+    calc(100% - 6px) 0,
+    calc(100% - 6px) 6px,
+    100% 6px,
+    100% calc(100% - 6px),
+    calc(100% - 6px) calc(100% - 6px),
+    calc(100% - 6px) 100%,
+    6px 100%,
+    6px calc(100% - 6px),
+    0 calc(100% - 6px)
+  );
+  box-shadow:
+    inset 0 2px #f5e9c7,
+    inset 0 -3px #b49f78;
+}
+.survival-page .opening-thought i {
+  border-radius: 0;
+}
+.survival-page .opening-entry > span {
+  font-size: 64px;
+}
+.survival-page .opening-pause {
+  width: min(440px, 90vw);
+}
+.survival-page .opening-pause h2 {
+  font-size: 32px;
+}
+.survival-page .base-upgrade[open] {
+  width: min(900px, 94vw);
+}
+.survival-page .base-upgrade > header {
+  padding: 16px 24px;
+  gap: 16px;
+}
+.survival-page .base-upgrade > header > span {
+  display: block;
+  font-size: 16px;
+  color: var(--f9-paper);
+}
+.survival-page .base-upgrade > header > button {
+  margin-left: auto;
+}
+.base-upgrade header progress {
+  width: 104px;
+  height: 10px;
+  appearance: none;
+  border: 1px solid #7f8c70;
+}
+.base-upgrade progress::-webkit-progress-bar {
+  background: #070f16;
+}
+.base-upgrade progress::-webkit-progress-value {
+  background: #b9cc94;
+}
+.base-upgrade-layout {
+  grid-template-columns: 256px minmax(0, 1fr);
+  gap: 32px;
+  padding: 24px;
+}
+.base-terminal {
+  width: 256px;
+  max-width: 100%;
+  border: 4px solid #0a131c;
+  outline: 1px solid #8b9173;
+}
+.base-terminal canvas {
+  image-rendering: pixelated;
+}
+.survival-page .base-mouth {
+  left: 16%;
+  top: 73%;
+  width: 68%;
+  height: 17%;
+  border: 0;
+  border-radius: 0;
+}
+.survival-page .base-mouth span {
+  font-size: 16px;
+  letter-spacing: 0;
+  text-shadow: 2px 2px #000;
+}
+.survival-page .base-mouth.hover {
+  outline: 2px dashed #c6c693;
+  background: #a5b78622;
+  box-shadow: none;
+}
+.survival-page .base-feedback {
+  min-height: 24px;
+  font-size: 16px;
+  color: #e0997b;
+}
+.survival-page .base-cargo .cargo-grid {
+  min-height: 200px;
+}
+.survival-page .base-cargo .cargo-piece {
+  min-height: 96px;
+  gap: 8px;
+}
+.survival-page .delivery .cargo-grid-header button {
+  display: none;
+}
+.survival-page .delivery .cargo-grid-header {
+  margin-bottom: 16px;
+}
+.survival-page .base-drag {
+  font-size: 16px;
+  box-shadow: 3px 3px #000;
+}
+.survival-page .equipment-strip {
+  min-width: 600px;
+}
+.survival-page .equipment-panel {
+  overflow-x: auto;
+}
+.survival-page .equipment-card {
+  min-height: 88px;
+  padding: 8px 4px;
+}
+.survival-page .equipment-card small {
+  font-size: 16px !important;
+}
+.survival-page .equipment-card.linked::after {
+  content: '';
+  position: absolute;
+  left: -4px;
+  right: -4px;
+  top: 8px;
+  height: 2px;
+  background: #b5c38f;
+  pointer-events: none;
+}
+.survival-page .opening-equipment .equipment-strip {
+  min-width: 480px;
+}
+.survival-page .opening-equipment .equipment-card {
+  min-height: 64px;
+}
+.survival-page .opening-equipment .equipment-card :is(b, small) {
+  display: none;
+}
+.survival-page .opening-equipment .equipment-heading small {
+  display: none;
+}
+.survival-page .f9-swatches {
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+}
+.survival-page .f9-design-system h2 {
+  font-size: 32px;
+}
+.f9-demon-sample {
+  width: 192px;
+  height: 192px;
+  image-rendering: pixelated;
+  background: #22232b;
+}
+.lift-system-body {
+  display: grid;
+  grid-template-columns: 256px minmax(0, 1fr);
+  gap: 32px;
+  padding: 24px;
+}
+.lift-system-screen {
+  width: 256px;
+  align-self: start;
+  image-rendering: pixelated;
+  border: 3px solid #657766;
+}
+.lift-system-content {
+  min-width: 0;
+}
+.lift-system-content > p {
+  margin: 0 0 20px;
+  line-height: 1.8;
+}
+.lift-system-content > button,
+.lesson-actions button {
+  padding: 10px 16px;
+  border: 1px solid #8a9877;
+  margin: 4px 8px 4px 0;
+}
+.lift-system-content .cargo-inspector {
+  flex-wrap: wrap;
+}
+.lift-system-content .cargo-grid-body {
+  grid-template-columns: minmax(0, 1fr) 100px;
+}
+.lift-system-content .cargo-piece strong {
+  font-size: 16px;
+}
+.floor-schematic {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  margin: 24px 0;
+}
+.floor-schematic i {
+  width: 48px;
+  height: 48px;
+  display: grid;
+  place-items: center;
+  font-style: normal;
+  border: 2px solid #576e67;
+}
+.floor-schematic i:first-child {
+  border-color: #c0b486;
+  color: #c0b486;
+}
+.system-choices {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  margin: 24px 0;
+}
+.system-choices button {
+  padding: 20px 12px;
+  display: grid;
+  gap: 16px;
+  border: 1px solid #677e73;
+}
+.system-choices span {
+  color: var(--f9-muted);
+}
+.system-receipt {
+  display: grid;
+  gap: 12px;
+  margin: 20px 0;
+}
+.system-receipt > div {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  padding-bottom: 12px;
+  border-bottom: 1px solid #43544d;
+}
+.system-receipt small {
+  margin-left: auto;
+  color: var(--f9-muted);
+}
+.lesson-actions {
+  position: absolute;
+  bottom: 140px;
+  right: 24px;
+  z-index: 10;
+}
+.opening-vitals {
+  animation: pixel-appear 0.4s steps(4);
+}
+@keyframes pixel-appear {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+@media (max-width: 780px) {
+  .base-upgrade-layout,
+  .lift-system-body {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 20px;
+    padding: 16px;
+  }
+  .base-terminal {
+    width: 192px;
+  }
+  .lift-system-screen {
+    width: 160px;
+    justify-self: center;
+  }
+  .survival-page .base-upgrade > header {
+    padding: 12px 16px;
+  }
+  .survival-page .base-cargo .cargo-piece strong {
+    font-size: 16px;
+  }
+  .survival-page .base-cargo .cargo-grid {
+    min-height: 160px;
+  }
+  .survival-page .base-cargo .cargo-piece {
+    min-height: 76px;
+  }
+  .survival-page .opening-thought {
+    bottom: 100px;
+  }
+  .survival-page.opening-stage-expedition .opening-thought {
+    bottom: 210px;
+  }
+  .lift-system-content .cargo-grid-body {
+    display: block;
+  }
+  .lesson-actions {
+    bottom: 140px;
+    right: 12px;
+  }
+}
+
+.survival-page
+  :is(
+    .cargo-grid-header b,
+    .safe-pocket > span,
+    .cargo-safe-piece small,
+    .equipment-anchor,
+    .equipment-heading b,
+    .equipment-inspector small,
+    .cargo-inspector small,
+    .cargo-piece small,
+    .opening-vitals small
+  ) {
+  font-size: 16px !important;
+}
+.survival-page .pixel-gear {
+  width: 32px;
+  height: 32px;
+  min-width: 32px;
+  filter: none;
+  image-rendering: pixelated;
+}
+.survival-page .delivery .pixel-gear {
+  width: 48px;
+  height: 48px;
+  min-width: 48px;
+}
+.survival-page .lift-system-content .cargo-grid-body {
+  grid-template-columns: minmax(0, 1fr) 136px;
+}
+.survival-page .safe-pocket > span {
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.survival-page .base-cargo .cargo-piece {
+  justify-content: center;
+}
+.survival-page .equipment-card.linked > em {
+  width: 4px;
+  height: 4px;
+  border-radius: 0;
+}
+.survival-page
+  :is(
+    .f9-design-body p,
+    .f9-design-intro,
+    .cargo-inspector p,
+    .equipment-inspector p
+  ) {
+  font-size: 16px;
+}
+.survival-page :is(.opening-bag-toggle, .opening-return) {
+  font-size: 16px;
+}
+@media (max-width: 780px) {
+  .survival-page .lift-system-content .cargo-grid-body {
+    display: block;
+  }
+}
+
+.survival-page.opening-stage-expedition .opening-return {
+  left: auto;
+  right: 24px;
+  bottom: 82px;
+  transform: none;
+}
+.survival-page .survival-minimap :is(span, b) {
+  font-size: 16px;
+}
+.survival-page .survival-minimap footer {
+  display: none;
+}
+
+.survival-page .base-mouth:disabled {
+  opacity: 1;
+  color: var(--f9-paper);
+  filter: none;
+  background: transparent;
+}
+.survival-page .base-mouth:disabled span {
+  opacity: 1;
+  color: var(--f9-paper);
+}
+
+.survival-page .equipment-card.link-preview.linked::after {
+  background: repeating-linear-gradient(
+    90deg,
+    #b5c38f 0 4px,
+    transparent 4px 8px
+  );
+}
+.survival-page .lift-system > footer button {
+  border: 1px solid #657b71;
+  padding: 8px 16px;
+}

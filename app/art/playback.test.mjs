@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { advanceReplay, flightProgress } from './playback.ts';
+import { advanceReplay, flightProgress } from '../../lib/cards/playback.ts';
 test('projectiles move within a combat snapshot and reach impact exactly', () => {
   let clock = 1;
   const samples = [];

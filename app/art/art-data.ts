@@ -1,5 +1,5 @@
-import { cardDef } from '@/lib/demo-cards';
-import type { FighterCard } from '@/lib/demo-combat';
+import { cardDef } from '@/lib/cards/catalog';
+import type { FighterCard } from '@/lib/cards/combat';
 export const ATLAS: Record<string, number> = {
   nailer: 0,
   fuse: 1,

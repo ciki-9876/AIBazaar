@@ -4,8 +4,8 @@ import Replay from './battle-replay';
 /* oxlint-disable next/no-html-link-for-pages -- Native navigation for static Sites routes. */
 import { useMemo, useState } from 'react';
 import { ARCHETYPES, archetypeDuel, PERMUTATIONS } from '@/lib/demo-archetypes';
-import { CARDS, cardDef, SCHOOLS, type School } from '@/lib/demo-cards';
-import { rarityOf } from '@/lib/demo-card-rules';
+import { CARDS, cardDef, SCHOOLS, type School } from '@/lib/cards/catalog';
+import { rarityOf } from '@/lib/cards/card-rules';
 import report from '@/lib/archetype-report.json';
 import CardDetail from '../demo/card-detail';
 import ScrollChrome from '../demo/scroll-chrome';

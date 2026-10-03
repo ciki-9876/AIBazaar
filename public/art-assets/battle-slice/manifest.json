@@ -1,0 +1,14 @@
+{
+  "source": "Original procedural Blender geometry; no external textures or paid generation",
+  "families": [
+    "slingshot",
+    "gapblade",
+    "rubber",
+    "springbow",
+    "sealant"
+  ],
+  "environment": "Asymmetric hosts: recumbent unknown creature and stretched player shadow",
+  "version": 4,
+  "blender": "5.2.2 LTS",
+  "fileBytes": 1128612
+}

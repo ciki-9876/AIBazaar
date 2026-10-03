@@ -5,10 +5,10 @@ import {
   CSS3DObject,
   CSS3DRenderer,
 } from 'three/examples/jsm/renderers/CSS3DRenderer.js';
-import { combatValue } from '@/lib/demo-card-rules';
-import { flightProgress } from './playback';
-import type { CombatFrame, Duel, FighterCard } from '@/lib/demo-combat';
-import { cardDef } from '@/lib/demo-cards';
+import { combatValue } from '@/lib/cards/card-rules';
+import { flightProgress } from '../../lib/cards/playback';
+import type { CombatFrame, Duel, FighterCard } from '@/lib/cards/combat';
+import { cardDef } from '@/lib/cards/catalog';
 import { ATLAS, KIND, cardPosition } from './art-data';
 
 type Props = {

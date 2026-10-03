@@ -5,9 +5,9 @@ import {
   type MinigameState,
 } from './minigame.ts';
 import { pipeConnected } from './tutorial-pipes.ts';
-import { CARDS, cardDef, identifyVariant } from './demo-cards.ts';
+import { CARDS, cardDef, identifyVariant } from './cards/catalog.ts';
 import { layout } from './cargo-layout.ts';
-import { rarityOf, growthCost, growthRefund } from './demo-card-rules.ts';
+import { rarityOf, growthCost, growthRefund } from './cards/card-rules.ts';
 import { rng, hash } from './design-model.ts';
 import { FOUR, FACILITIES, RARITY as OLD_RARITY } from './demo-config.ts';
 import {
@@ -17,8 +17,8 @@ import {
   puzzleSpec,
 } from './demo-content.ts';
 import { WEATHER as OLD_WEATHER } from './demo-config.ts';
-import { simulateDuel } from './demo-combat.ts';
-import type { Duel, FighterCard } from './demo-combat.ts';
+import { simulateDuel } from './cards/combat.ts';
+import type { Duel, FighterCard } from './cards/combat.ts';
 import {
   OBJECTS,
   FIELD_NODES,

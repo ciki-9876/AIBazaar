@@ -1,6 +1,6 @@
 'use client';
 import { sitePath } from '@/lib/site-path';
-import { rarityOf, growthCost } from '@/lib/demo-card-rules';
+import { rarityOf, growthCost } from '@/lib/cards/card-rules';
 import { refineIngredient } from '@/lib/demo-engine';
 /* oxlint-disable react/react-compiler -- Event handlers read the authoritative run ref; mount effects restore explicitly local browser state. */
 /* oxlint-disable next/no-html-link-for-pages -- Static Sites hosting needs native anchors; RSC-prefetch navigation is unsupported. */
@@ -101,9 +101,9 @@ import {
   upgradeCost,
 } from '@/lib/demo-engine';
 import type { Run, Action, Zone, Item } from '@/lib/demo-engine';
-import { simulateDuel } from '@/lib/demo-combat';
-import type { FighterCard, CombatFrame } from '@/lib/demo-combat';
-import { cardDef, ALL_CARDS, CARDS, SCHOOLS } from '@/lib/demo-cards';
+import { simulateDuel } from '@/lib/cards/combat';
+import type { FighterCard, CombatFrame } from '@/lib/cards/combat';
+import { cardDef, ALL_CARDS, CARDS, SCHOOLS } from '@/lib/cards/catalog';
 import './demo.css';
 const zoneName: Record<Zone, string> = {
   bag: '随身背包',

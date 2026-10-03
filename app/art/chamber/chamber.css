@@ -1,0 +1,1283 @@
+.chamber {
+  position: relative;
+  height: 100dvh;
+  min-height: 600px;
+  overflow: hidden;
+  background: #090b09;
+  color: #e4d2ae;
+  font-family: Georgia, 'Songti SC', 'SimSun', serif;
+  font-size: 15px;
+  isolation: isolate;
+}
+.chamber button,
+.chamber a {
+  color: inherit;
+  font: inherit;
+}
+.chamber button {
+  cursor: pointer;
+}
+.chamber button:disabled {
+  opacity: 0.35;
+  cursor: default;
+}
+.chamber button:focus-visible,
+.chamber a:focus-visible {
+  outline: 2px solid #ecc88a;
+  outline-offset: 5px;
+}
+.chamber button {
+  border: 0;
+  background: transparent;
+}
+.chamber svg {
+  width: 17px;
+  height: 17px;
+  flex: none;
+  stroke-width: 1.4;
+}
+.ch-scene,
+.ch-scene > .slice-canvas {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+.ch-scene canvas {
+  display: block;
+  width: 100%;
+  height: 100%;
+  image-rendering: auto;
+}
+.ch-loading {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  color: #d4bd90;
+  background: #090d0b;
+  z-index: 6;
+  letter-spacing: 0.22em;
+}
+.ch-vignette {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: radial-gradient(
+    ellipse at 50% 48%,
+    transparent 24%,
+    #100c0415 70%,
+    #05080680 100%
+  );
+  z-index: 1;
+  box-shadow: inset 0 0 80px #0003;
+}
+.ch-grain {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 2;
+  opacity: 0;
+  background: repeating-linear-gradient(
+    0deg,
+    #ead6a100 0px,
+    #ead6a100 2px,
+    #e2cfa950 3px,
+    #08090250 4px
+  );
+  mix-blend-mode: soft-light;
+}
+.ch-header {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 85px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 38px;
+  z-index: 10;
+  background: linear-gradient(#080b0ac7, transparent);
+}
+.ch-header > a {
+  text-decoration: none;
+  font-size: 24px;
+  letter-spacing: 0.02em;
+}
+.ch-header > a span {
+  font-size: 10px;
+  letter-spacing: 0.45em;
+  margin-left: 20px;
+  color: #b4a78b;
+}
+.ch-header > div {
+  display: flex;
+  gap: 28px;
+  align-items: center;
+}
+.ch-header label {
+  display: flex;
+  gap: 9px;
+  align-items: center;
+  font-size: 10px;
+  color: #b6ae98;
+}
+.ch-header input {
+  accent-color: #b7a072;
+}
+.ch-quality {
+  position: relative;
+  font-size: 13px;
+}
+.ch-quality summary {
+  cursor: pointer;
+  padding: 10px 0;
+  color: #d6c49e;
+}
+.ch-quality-panel {
+  position: absolute;
+  top: 42px;
+  right: 0;
+  width: 290px;
+  padding: 18px;
+  background: #17211cf5;
+  border: 1px solid #8b7951;
+  box-shadow: 0 16px 55px #0008;
+}
+.ch-quality-panel p {
+  margin: 0 0 12px;
+  color: #c3b697;
+  font-size: 12px;
+}
+.ch-quality-options {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-bottom: 16px;
+}
+.ch-quality-options button {
+  border: 1px solid #596354;
+  font-size: 12px;
+  padding: 8px 10px;
+}
+.ch-quality-options button[aria-pressed='true'] {
+  background: #c7ae70;
+  color: #141c17;
+  border-color: #c7ae70;
+}
+.ch-quality-panel small {
+  font: 10px/1.5 monospace;
+  color: #aaa995;
+}
+.ch-study-caption {
+  position: absolute;
+  bottom: 80px;
+  left: 6vw;
+  z-index: 4;
+  text-shadow: 0 2px 15px #000;
+}
+.ch-study-caption small {
+  font-size: 11px;
+  letter-spacing: 0.2em;
+}
+.ch-study-caption h2 {
+  font-size: 32px;
+  font-weight: 400;
+  margin: 12px 0;
+}
+.ch-study-caption button {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  border-bottom: 1px solid #8b7951;
+  padding: 10px 0;
+}
+.ch-header button {
+  padding: 10px;
+}
+.ch-location {
+  position: absolute;
+  left: 5vw;
+  top: 19vh;
+  z-index: 3;
+  width: 280px;
+  text-shadow: 0 2px 15px #000;
+  background: linear-gradient(90deg, #050a0770, transparent);
+  padding: 20px 0;
+}
+.ch-location small,
+.chamber .ch-table-panel > small,
+.ch-found > small,
+.ch-end > small {
+  font-size: 10px;
+  letter-spacing: 0.28em;
+  color: #b7a78a;
+}
+.ch-location h1 {
+  font-weight: 400;
+  font-size: 35px;
+  letter-spacing: 0.16em;
+  margin: 22px 0;
+}
+.ch-location p {
+  font-size: 13px;
+  line-height: 1.9;
+  color: #c5bda5;
+  max-width: 230px;
+}
+.ch-hotspot {
+  position: absolute;
+  transform: translate(-50%, -50%);
+  z-index: 4;
+  display: flex;
+  align-items: center;
+  flex-direction: column;
+  gap: 10px;
+  white-space: nowrap;
+  padding: 12px !important;
+  text-shadow: 0 2px 9px #000;
+}
+.ch-hotspot > span {
+  width: 38px;
+  height: 38px;
+  border: 1px solid #c6ad7599;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  background: #1420199c;
+  box-shadow: 0 0 23px #ddae4022;
+  transition: 0.25s;
+}
+.ch-hotspot b {
+  font-size: 12px;
+  font-weight: 400;
+  background: #0c110bd9;
+  padding: 5px 10px;
+  letter-spacing: 0.12em;
+  border-bottom: 1px solid #9c855a66;
+}
+.ch-hotspot:hover > span {
+  background: #cfaf74;
+  color: #171a12;
+  transform: scale(1.12);
+}
+.ch-explore-nav {
+  position: absolute;
+  bottom: 90px;
+  left: 5vw;
+  display: flex;
+  gap: 25px;
+  z-index: 5;
+}
+.ch-explore-nav button,
+.ch-panel-actions button {
+  display: flex;
+  gap: 15px;
+  align-items: center;
+  font-size: 13px;
+  padding: 12px 0;
+}
+.ch-primary {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 25px;
+  background: #b89a64 !important;
+  color: #151a13 !important;
+  padding: 15px 23px !important;
+  min-height: 48px;
+  font-size: 13px !important;
+  box-shadow: 0 4px 24px #0004;
+  transition: background 0.2s;
+}
+.ch-primary:hover {
+  background: #d7b97f !important;
+}
+.ch-found {
+  position: absolute;
+  right: 6vw;
+  bottom: 18vh;
+  z-index: 5;
+  width: 285px;
+  padding: 28px;
+  background: #141b14ed;
+  border-top: 1px solid #967f53;
+  box-shadow: 0 15px 60px #0008;
+}
+.ch-found h2 {
+  font-size: 23px;
+  font-weight: 400;
+  margin: 18px 0;
+}
+.ch-found p {
+  font-size: 13px;
+  line-height: 1.9;
+  color: #b9b298;
+  margin-bottom: 24px;
+}
+.ch-found .ch-primary {
+  width: 100%;
+}
+.ch-footer {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 55px;
+  padding: 0 38px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 9px;
+  letter-spacing: 0.22em;
+  color: #958b75;
+  z-index: 5;
+  background: linear-gradient(transparent, #080b09cc);
+}
+.ch-footer button {
+  padding: 12px;
+}
+.ch-notice {
+  position: absolute;
+  bottom: 64px;
+  right: 35px;
+  z-index: 8;
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  font-size: 12px;
+  color: #cabc94;
+  background: #101710e8;
+  padding: 12px 19px;
+  border-left: 1px solid #c6ad79;
+}
+.ch-board-overlays {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 3;
+}
+.ch-board-overlays button {
+  pointer-events: auto;
+}
+.ch-card {
+  position: absolute;
+  border: 1px solid transparent !important;
+  transition: background 0.15s;
+}
+.ch-card:hover,
+.ch-card.selected {
+  border-color: #c1a673 !important;
+  background: #c0a36114;
+}
+.ch-card > span {
+  position: absolute;
+  left: 50%;
+  bottom: 0;
+  transform: translate(-50%, 55%);
+  color: #ded5b9;
+  font-size: 11px;
+  white-space: nowrap;
+  text-shadow: 0 1px 5px #000;
+  background: #10150fe6;
+  padding: 4px 7px;
+  opacity: 0;
+  transition: opacity 0.2s;
+}
+.ch-card:hover > span,
+.ch-card:focus-visible > span,
+.ch-card.selected > span {
+  opacity: 1;
+}
+.ch-slot {
+  position: absolute;
+  border: 1px dashed #c7b99028 !important;
+  color: #aeac8890 !important;
+}
+.ch-slot:disabled {
+  border-color: transparent !important;
+  background: repeating-linear-gradient(
+    45deg,
+    transparent,
+    transparent 7px,
+    #161b1228 8px
+  );
+}
+.ch-slot.valid {
+  border-color: #cbb781ac !important;
+  background: #ccc69d13;
+}
+.ch-slot.valid:hover {
+  background: #d5ca9250;
+}
+.ch-cooldown {
+  position: absolute;
+  bottom: -5px;
+  left: 10%;
+  width: 80%;
+  height: 2px;
+  background: #121a1499;
+  overflow: hidden;
+  display: block;
+}
+.ch-cooldown b {
+  display: block;
+  height: 100%;
+  background: #ceb984;
+}
+.ch-host {
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  align-items: center;
+  gap: 28px;
+  font-size: 11px;
+  text-shadow: 0 2px 6px #000;
+  background: #0d140dac;
+  padding: 8px 22px;
+  border-bottom: 1px solid #a98a5060;
+}
+.ch-host.enemy {
+  top: 92px;
+}
+.ch-host.own {
+  bottom: 207px;
+}
+.ch-host b {
+  font-size: 22px;
+  font-weight: 400;
+}
+.ch-host small {
+  font-size: 11px;
+  color: #a69b7e;
+}
+.ch-barrier {
+  position: absolute;
+  transform: translateX(-50%);
+  font-size: 10px;
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  padding: 3px 8px;
+  background: #111910e0;
+  white-space: nowrap;
+  color: #cfc7a6;
+}
+.ch-barrier b {
+  font-weight: 400;
+  color: #d0b875;
+}
+.ch-barrier.broken {
+  color: #b7775b;
+  background: #28190fe0;
+}
+.ch-table-panel {
+  position: absolute;
+  bottom: 55px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 5;
+  width: min(800px, calc(100% - 64px));
+  padding: 18px 26px;
+  background: linear-gradient(110deg, #141b14f5, #171d16ef);
+  border-top: 1px solid #9b855a7a;
+  box-shadow: 0 -12px 65px #080b0940;
+}
+.ch-panel-title {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 10px;
+}
+.ch-panel-title small {
+  font-size: 10px;
+  letter-spacing: 0.18em;
+  color: #afa587;
+}
+.ch-panel-title button {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+}
+.ch-build-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 25px;
+}
+.ch-threat {
+  font-size: 12px;
+  color: #c99b74;
+  margin: 0 0 12px;
+}
+.ch-reserves {
+  display: flex;
+  gap: 12px;
+  min-height: 40px;
+  align-items: center;
+}
+.ch-reserves > small {
+  font-size: 12px;
+  color: #b3aa8d;
+}
+.ch-reserves button {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  border: 1px solid #8c835966;
+  padding: 11px 14px;
+  font-size: 13px;
+}
+.ch-reserves button.selected {
+  border-color: #d3b87c;
+  background: #b1985933;
+}
+.ch-reserves small {
+  color: #a99f83;
+  font-size: 10px;
+}
+.ch-selection {
+  display: flex;
+  gap: 22px;
+  margin-top: 12px;
+}
+.ch-selection button {
+  font-size: 11px;
+  color: #c6bfa4;
+  text-decoration: underline;
+  text-underline-offset: 4px;
+}
+.ch-fight-controls {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 30px;
+}
+.ch-fight-controls > span {
+  font-size: 23px;
+  font-variant-numeric: tabular-nums;
+}
+.ch-fight-controls small {
+  font-size: 11px;
+  color: #b4ad91;
+}
+.ch-fight-controls button {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 13px;
+}
+.ch-table-panel h2 {
+  font-size: 28px;
+  font-weight: 400;
+  margin: 12px 0;
+}
+.ch-table-panel > p {
+  font-size: 13px;
+  color: #c0b799;
+  margin: 10px 0 20px;
+}
+.ch-panel-actions {
+  display: flex;
+  gap: 25px;
+  align-items: center;
+}
+.ch-detail {
+  position: absolute;
+  right: 30px;
+  top: 115px;
+  z-index: 9;
+  width: 285px;
+  max-height: calc(100dvh - 240px);
+  overflow: auto;
+  background: #121a14f5;
+  border: 1px solid #8c7c53;
+  padding: 22px;
+  box-shadow: 0 15px 60px #0009;
+}
+.ch-detail > div {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.ch-detail small {
+  font-size: 10px;
+  color: #baae90;
+}
+.ch-detail h2 {
+  font-size: 23px;
+  font-weight: 400;
+  margin: 22px 0;
+}
+.ch-detail p {
+  font-size: 13px;
+  line-height: 1.8;
+  color: #d4ccb1;
+}
+.ch-detail p b {
+  font-weight: 400;
+  color: #cfab70;
+  font-size: 11px;
+}
+.ch-end {
+  position: absolute;
+  inset: 0;
+  background: #080c09ee;
+  z-index: 20;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  padding: 30px;
+  text-align: center;
+  animation: ch-end-in 1.8s both;
+}
+.ch-end h1 {
+  font-size: 40px;
+  font-weight: 400;
+  margin: 35px 0 20px;
+  letter-spacing: 0.15em;
+}
+.ch-end p {
+  font-size: 14px;
+  color: #c3b595;
+  line-height: 1.9;
+  margin-bottom: 45px;
+}
+.ch-end a {
+  font-size: 12px;
+  margin: 30px 0;
+  text-underline-offset: 6px;
+}
+.ch-end > small:last-child {
+  font-size: 10px;
+  color: #8d8873;
+}
+@keyframes ch-end-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+.chamber.reduced * {
+  animation: none !important;
+  transition: none !important;
+}
+@media (max-width: 1000px) {
+  .ch-location {
+    left: 28px;
+    top: 15vh;
+    width: 215px;
+  }
+  .ch-location h1 {
+    font-size: 27px;
+  }
+  .ch-location p {
+    font-size: 12px;
+    max-width: 190px;
+  }
+  .ch-found {
+    right: 25px;
+    width: 240px;
+    padding: 22px;
+  }
+  .ch-table-panel {
+    width: calc(100% - 40px);
+    padding: 16px 20px;
+  }
+  .ch-reserves small {
+    display: none;
+  }
+  .ch-header {
+    padding: 0 22px;
+  }
+  .ch-header > a span {
+    display: none;
+  }
+  .ch-detail {
+    right: 18px;
+    width: 245px;
+  }
+  .ch-host.own {
+    bottom: 200px;
+  }
+}
+@media (max-width: 600px) {
+  .chamber {
+    min-height: 640px;
+  }
+  .ch-location {
+    top: 85px;
+    padding: 0;
+    width: 190px;
+  }
+  .ch-location h1 {
+    font-size: 24px;
+    margin: 12px 0;
+  }
+  .ch-location p {
+    font-size: 11px;
+  }
+  .ch-found {
+    bottom: 155px;
+    width: 215px;
+  }
+  .ch-table-panel {
+    bottom: 50px;
+    padding: 15px;
+    width: calc(100% - 24px);
+  }
+  .ch-build-row {
+    gap: 12px;
+  }
+  .ch-reserves button {
+    font-size: 11px;
+    padding: 10px;
+  }
+  .ch-primary {
+    gap: 12px;
+    padding: 12px 16px !important;
+  }
+  .ch-threat {
+    font-size: 11px;
+  }
+  .ch-fight-controls {
+    gap: 17px;
+  }
+  .ch-host.enemy {
+    top: 83px;
+  }
+  .ch-host.own {
+    bottom: 220px;
+  }
+  .ch-barrier {
+    font-size: 9px;
+    gap: 4px;
+  }
+  .ch-detail {
+    top: 125px;
+    width: 230px;
+  }
+  .ch-explore-nav {
+    bottom: 90px;
+    left: 22px;
+  }
+  .ch-end h1 {
+    font-size: 29px;
+  }
+  .ch-footer {
+    padding: 0 20px;
+  }
+  .ch-notice {
+    bottom: 57px;
+    right: 20px;
+    max-width: 280px;
+  }
+}
+
+.ch-card,
+.ch-reserves button {
+  touch-action: none;
+  user-select: none;
+}
+
+/* Tactical view: the board has a reserved viewport; inspection occupies the
+   bottom dock, never a lane. Projection and pointer targets share this inset. */
+.view-table:not(.is-study) .ch-scene,
+.view-table:not(.is-study) .ch-board-overlays {
+  inset: 48px 0 148px;
+  width: auto;
+  height: auto;
+}
+.view-table:not(.is-study) .ch-header {
+  height: 48px;
+  padding: 0 24px;
+}
+.view-table:not(.is-study) .ch-header > a {
+  font-size: 18px;
+}
+.view-table .ch-footer {
+  height: 30px;
+  font-size: 9px;
+}
+.view-table .ch-footer button {
+  padding: 5px 10px;
+}
+.view-table .ch-table-panel {
+  bottom: 30px;
+  width: calc(100% - 48px);
+  max-width: 1120px;
+  height: 108px;
+  padding: 13px 20px;
+  border: 1px solid #88784955;
+  box-shadow: 0 -4px 25px #080b0930;
+}
+.view-table .ch-panel-title {
+  margin-bottom: 8px;
+}
+.ch-panel-title small span {
+  letter-spacing: 0.05em;
+  color: #c9a17b;
+}
+.view-table .ch-build-row {
+  gap: 12px;
+}
+.view-table .ch-reserves {
+  min-height: 38px;
+}
+.view-table .ch-reserves button {
+  padding: 8px 12px;
+  cursor: grab;
+}
+.view-table .ch-primary {
+  min-height: 40px;
+  padding: 10px 20px !important;
+}
+.view-table .ch-selection {
+  position: absolute;
+  right: 185px;
+  top: 16px;
+  margin: 0;
+  gap: 16px;
+}
+.view-table .ch-selection button {
+  font-size: 12px;
+}
+.view-table.phase-fight .ch-table-panel {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.view-table.phase-won .ch-table-panel,
+.view-table.phase-reward .ch-table-panel,
+.view-table.phase-claimed .ch-table-panel {
+  height: 130px;
+}
+.view-table .ch-table-panel h2 {
+  margin: 5px 0;
+  font-size: 24px;
+}
+.view-table .ch-table-panel > p {
+  margin: 6px 0;
+}
+.view-table .ch-panel-actions {
+  position: absolute;
+  right: 20px;
+  bottom: 22px;
+}
+.view-table.phase-reward .ch-table-panel > button,
+.view-table.phase-claimed .ch-table-panel > button {
+  position: absolute;
+  right: 20px;
+  bottom: 20px;
+}
+.view-table.has-inspect .ch-table-panel {
+  visibility: hidden;
+  pointer-events: none;
+}
+.view-table .ch-detail {
+  top: auto;
+  bottom: 30px;
+  left: 24px;
+  right: 24px;
+  width: auto;
+  height: 108px;
+  max-height: none;
+  padding: 14px 20px;
+  display: flex;
+  align-items: center;
+  gap: 28px;
+  overflow: auto;
+  border-color: #a38b56aa;
+  box-shadow: 0 -5px 35px #0004;
+}
+.ch-detail .ch-detail-head {
+  display: block;
+  flex: none;
+  min-width: 160px;
+  position: relative;
+}
+.ch-detail-head button {
+  position: fixed;
+  bottom: 108px;
+  right: 35px;
+  padding: 3px 8px;
+}
+.ch-detail .ch-detail-head h2 {
+  font-size: 22px;
+  margin: 8px 0 0;
+}
+.ch-detail .ch-detail-abilities {
+  display: flex;
+  justify-content: flex-start;
+  align-items: stretch;
+  gap: 28px;
+  flex: 1;
+}
+.ch-detail-abilities p {
+  margin: 0;
+  padding-left: 20px;
+  border-left: 1px solid #9c885a44;
+  line-height: 1.65;
+  font-size: 14px;
+}
+.ch-detail-abilities p b {
+  font-size: 12px;
+}
+.ch-detail > small {
+  max-width: 90px;
+  font-size: 12px;
+  line-height: 1.6;
+  color: #dfca92;
+  margin-right: 20px;
+}
+.ch-host {
+  bottom: auto !important;
+  width: 220px;
+  padding: 5px 10px 9px;
+  gap: 12px;
+  justify-content: space-between;
+  background: #111814ee;
+  border: 1px solid #82908355;
+  border-radius: 2px;
+  font-size: 13px;
+}
+.ch-host > span {
+  display: flex;
+  gap: 7px;
+  align-items: center;
+}
+.ch-host.enemy {
+  border-color: #ad876355;
+}
+.ch-host b {
+  font-size: 21px;
+  font-variant-numeric: tabular-nums;
+}
+.ch-host .ch-health-track {
+  position: absolute;
+  left: 0;
+  bottom: 0;
+  width: 100%;
+  height: 4px;
+  background: #322d27;
+}
+.ch-health-track > i {
+  display: block;
+  height: 100%;
+  background: #91b5a5;
+  transition: width 0.15s;
+}
+.ch-host.enemy .ch-health-track > i {
+  background: #d09972;
+}
+.ch-host.critical {
+  border-color: #c77e65;
+}
+.ch-host.critical .ch-health-track > i {
+  background: #d48265;
+}
+.ch-barrier {
+  font-size: 12px;
+  gap: 6px;
+  padding: 5px 9px 7px;
+  min-width: 82px;
+  justify-content: center;
+  border: 1px solid #7c98875a;
+}
+.ch-barrier.enemy {
+  border-color: #b891675a;
+}
+.ch-barrier b {
+  font-size: 14px;
+  font-variant-numeric: tabular-nums;
+  color: #e4d7b4;
+}
+.ch-barrier small {
+  opacity: 0.6;
+  font-size: 10px;
+  margin-left: -4px;
+}
+.ch-barrier > i {
+  position: absolute;
+  left: 0;
+  bottom: 0;
+  height: 2px;
+  background: #8bb9a6;
+  transition: width 0.15s;
+}
+.ch-barrier.enemy > i {
+  background: #d49e70;
+}
+.ch-barrier.damaged {
+  border-style: dashed;
+}
+.ch-barrier.broken {
+  border-color: #a56c4b;
+  border-style: dashed;
+}
+.ch-barrier.broken b {
+  color: #e3a87a;
+  font-size: 12px;
+}
+.ch-barrier.active {
+  outline: 1px solid #d3c490;
+  outline-offset: 3px;
+}
+.ch-lane-name {
+  position: absolute;
+  transform: translate(-50%, -50%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+  font-size: 14px;
+  letter-spacing: 0.2em;
+  color: #c2b18c;
+  text-shadow: 0 2px 5px #000;
+}
+.ch-lane-name > small {
+  font: 10px monospace;
+  opacity: 0.6;
+}
+.ch-lane-name > b {
+  font-size: 11px;
+  font-weight: 400;
+  letter-spacing: 0.06em;
+  color: #e5b688;
+}
+.ch-lane-name > b.danger {
+  color: #e49685;
+}
+.ch-lane-name.active {
+  color: #fff0c5;
+}
+.ch-card {
+  border-radius: 3px;
+  cursor: help;
+}
+.phase-build .ch-card.own {
+  cursor: grab;
+}
+.ch-card > .ch-card-name {
+  opacity: 1;
+  bottom: -3px;
+  transform: translate(-50%, 100%);
+  font-size: 12px;
+  line-height: 1.3;
+  padding: 3px 6px;
+  border-radius: 2px;
+}
+.ch-card.selected {
+  outline: 1px solid #e0c180;
+}
+.ch-card.soon {
+  border-color: #e7c77677 !important;
+  box-shadow: inset 0 0 20px #d9b56112;
+}
+.ch-card.fired {
+  border-color: #f5da98 !important;
+}
+.ch-cooldown {
+  left: 4%;
+  bottom: 1px;
+  width: 92%;
+  height: 5px;
+  border: 1px solid #141b14;
+  background: #080e0deb;
+  border-radius: 2px;
+}
+.ch-cooldown b {
+  background: #9bbeab;
+  transition: width 0.12s linear;
+}
+.ch-card.enemy .ch-cooldown b {
+  background: #d0a077;
+}
+.ch-cycle {
+  position: absolute;
+  right: 3px;
+  top: 3px;
+  color: #e9dbb8;
+  background: #0b1616db;
+  padding: 2px 4px;
+  font: 11px/1.25 monospace;
+}
+.ch-slot:disabled {
+  opacity: 0.5;
+}
+.ch-slot:disabled svg {
+  width: 11px;
+  opacity: 0.65;
+}
+.ch-placement {
+  position: absolute;
+  pointer-events: none;
+  z-index: 7;
+  border: 2px solid #bdd2a6;
+  background: #afd29b25;
+  border-radius: 3px;
+}
+.ch-placement.invalid {
+  border-color: #d18166;
+  background: repeating-linear-gradient(
+    135deg,
+    #bc6a5025,
+    #bc6a5025 8px,
+    #15170f55 8px,
+    #15170f55 16px
+  );
+}
+.ch-placement > span {
+  position: absolute;
+  left: 50%;
+  top: -12px;
+  transform: translate(-50%, -100%);
+  padding: 5px 8px;
+  background: #162217f5;
+  color: #e4e2ba;
+  white-space: nowrap;
+  font-size: 12px;
+}
+.ch-placement.invalid > span {
+  color: #f0b9a6;
+  background: #34221cf5;
+}
+.ch-drag-ghost {
+  position: fixed;
+  pointer-events: none;
+  z-index: 30;
+  padding: 10px 13px;
+  background: #1a251cec;
+  border: 1px solid #c8b277;
+  box-shadow: 0 8px 25px #0008;
+  border-radius: 3px;
+}
+.ch-drag-ghost b {
+  font-size: 14px;
+  font-weight: 400;
+}
+.ch-drag-ghost span {
+  display: flex;
+  gap: 3px;
+  margin-top: 6px;
+}
+.ch-drag-ghost i {
+  display: block;
+  width: 15px;
+  height: 8px;
+  border: 1px solid #c8b277;
+  background: #aab78c44;
+}
+.is-dragging,
+.is-dragging button {
+  cursor: grabbing !important;
+}
+.ch-card.just-placed {
+  animation: ch-place 0.65s ease-out;
+}
+@keyframes ch-place {
+  0% {
+    box-shadow: 0 0 0 5px #b3d7bbaa;
+    transform: translateY(-3px);
+  }
+  100% {
+    box-shadow: 0 0 0 12px #b3d7bb00;
+    transform: translateY(0);
+  }
+}
+.ch-impact-label {
+  position: absolute;
+  transform: translate(-50%, -50%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  z-index: 6;
+  padding: 5px 9px;
+  background: #101914e8;
+  border-left: 2px solid #9bbdb1;
+  font-size: 13px;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+  box-shadow: 0 4px 14px #0005;
+}
+.ch-impact-label.enemy {
+  border-color: #cf9d79;
+}
+.ch-impact-label.core {
+  background: #291c20ef;
+}
+.ch-impact-label strong {
+  font-size: 14px;
+  color: #f1bc8e;
+}
+.ch-impact-label small {
+  font-size: 12px;
+  color: #b9dbc0;
+}
+.view-table .ch-notice {
+  bottom: 152px;
+  right: 22px;
+}
+@media (max-width: 900px) {
+  .view-table:not(.is-study) .ch-scene,
+  .view-table:not(.is-study) .ch-board-overlays {
+    bottom: 184px;
+  }
+  .view-table .ch-table-panel,
+  .view-table .ch-detail {
+    height: 146px;
+  }
+  .view-table .ch-detail {
+    gap: 16px;
+    padding: 12px 15px;
+  }
+  .ch-detail .ch-detail-head {
+    min-width: 115px;
+  }
+  .ch-detail .ch-detail-head h2 {
+    font-size: 18px;
+  }
+  .ch-detail .ch-detail-abilities {
+    gap: 12px;
+    flex-wrap: wrap;
+  }
+  .ch-detail-abilities p {
+    font-size: 13px;
+    padding-left: 12px;
+  }
+  .ch-detail-head button {
+    bottom: 145px;
+    right: 30px;
+  }
+  .ch-host {
+    width: 185px;
+    font-size: 12px;
+  }
+  .ch-barrier {
+    min-width: 66px;
+  }
+  .ch-card > .ch-card-name {
+    font-size: 11px;
+    padding: 3px;
+  }
+  .view-table .ch-selection {
+    top: auto;
+    bottom: 9px;
+    left: 20px;
+    right: auto;
+  }
+  .view-table .ch-notice {
+    bottom: 189px;
+  }
+  .ch-fight-controls {
+    flex-wrap: wrap;
+    gap: 18px;
+  }
+}

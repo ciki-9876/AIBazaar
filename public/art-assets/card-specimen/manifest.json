@@ -1,0 +1,7 @@
+{
+  "source": "Existing original rubber geometry from battle-slice-v5.blend",
+  "surfaces": "Poly Haven CC0 brown_leather; see material-study/sources.json",
+  "render": "Blender Cycles, 1024px transparent PNG, orthographic three-quarter",
+  "model": "cushion.glb",
+  "icon": "cushion-icon.png"
+}

@@ -1,7 +1,7 @@
 import { sitePath } from '@/lib/site-path';
 import CardDetail from '../demo/card-detail';
 /* oxlint-disable next/no-html-link-for-pages -- Native navigation is used by the existing portable Sites build. */
-import { CARDS, SCHOOLS } from '@/lib/demo-cards';
+import { CARDS, SCHOOLS } from '@/lib/cards/catalog';
 import { OBJECTS, FIELD_NODES, FIELD_TITLES } from '@/lib/field-items';
 import { ARCHETYPES } from '@/lib/demo-archetypes';
 export default function DesignHome() {

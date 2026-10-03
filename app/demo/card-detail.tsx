@@ -4,9 +4,9 @@ import {
   CARD_TERMS,
   type CardAbility,
 } from '@/lib/card-description';
-import type { FighterCard } from '@/lib/demo-combat';
+import type { FighterCard } from '@/lib/cards/combat';
 import { RARITY, QUALITY } from '@/lib/demo-engine';
-import { cardDef, SCHOOLS } from '@/lib/demo-cards';
+import { cardDef, SCHOOLS } from '@/lib/cards/catalog';
 import { heroDef, heroOwner } from '@/lib/heroes';
 
 function Rule({ ability }: { ability: CardAbility }) {
