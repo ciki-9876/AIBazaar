@@ -1,0 +1,22 @@
+{
+  "version": 5,
+  "source": "v4 geometry refined in Blender; CC0 Poly Haven maps (see material-study/sources.json)",
+  "bytes": 8659228,
+  "texturedMaterials": [
+    "Machined steel",
+    "Worn brass",
+    "Blue-black enamel",
+    "Leather cushion",
+    "Warm walnut"
+  ],
+  "roots": [
+    "environment",
+    "gapblade",
+    "hostcreature",
+    "hostshadow",
+    "rubber",
+    "sealant",
+    "slingshot",
+    "springbow"
+  ]
+}

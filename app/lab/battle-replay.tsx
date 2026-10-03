@@ -1,7 +1,7 @@
 'use client';
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { simulateDuel, type Duel, type FighterCard } from '@/lib/demo-combat';
-import { cardDef } from '@/lib/demo-cards';
+import { simulateDuel, type Duel, type FighterCard } from '@/lib/cards/combat';
+import { cardDef } from '@/lib/cards/catalog';
 import { heroDef } from '@/lib/heroes';
 import CardFace from '../demo/card-face';
 import CardDetail from '../demo/card-detail';

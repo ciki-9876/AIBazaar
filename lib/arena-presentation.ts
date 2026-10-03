@@ -1,11 +1,11 @@
 import { arenaCard, amplifier } from './arena-catalog.ts';
-import { cardDef } from './demo-cards.ts';
+import { cardDef } from './cards/catalog.ts';
 import {
   placeArenaCard,
   validateArenaBoard,
   type ArenaFrame,
 } from './arena-engine.ts';
-import type { Duel, FighterCard, Hit } from './demo-combat.ts';
+import type { Duel, FighterCard, Hit } from './cards/combat.ts';
 
 export const LANE_NAMES = ['左路', '中路', '右路'];
 export const EFFECT_NAMES: Record<string, string> = {
@@ -34,7 +34,7 @@ export const EFFECT_COLORS: Record<string, string> = {
   ammo: '#d4c8a4',
   amp: '#eed28e',
 };
-export const rounded = (value: number) => Math.round(value * 10) / 10;
+export const rounded = (value: number) => Math.round(value * 100) / 100;
 
 export function amplifierStatus(
   duel: Duel,
@@ -70,7 +70,7 @@ export function placeOnArena(
   if (!current) throw Error('未找到要移动的装备');
   const next = board.map((c) => (c.uid === uid ? { ...c, at } : c));
   validateArenaBoard(next);
-  return next.sort((a, b) => a.at - b.at || a.uid.localeCompare(b.uid));
+  return next.sort((a, b) => a.at - b.at || a.uid.localeCompare(b.uid, 'en'));
 }
 
 export function placementPreview(
@@ -109,7 +109,7 @@ export function formationRelations(card: FighterCard, allies: FighterCard[]) {
   );
   let targets: FighterCard[] = [],
     note = '';
-  if ([7, 12, 35, 42, 49].includes(n ?? 0)) {
+  if ([7, 12, 35, 42, 49, 101, 105].includes(n ?? 0)) {
     targets = adjacent;
     note = targets.length
       ? `紧邻：${targets.map((c) => cardDef(c.id).name).join('、')}`
@@ -158,6 +158,17 @@ export function formationRelations(card: FighterCard, allies: FighterCard[]) {
     );
     note = '联动其他路线中起始列相同的装备';
   }
+  if (n === 103) {
+    targets = allies.filter((c) => Math.abs(Math.floor(c.at / 3) - lane) === 1);
+    note = '在相邻两路输出牌释放时读取其目标护幕比例；修复与治疗不增加';
+  }
+  if (n === 104) {
+    targets = allies.filter(
+      (c) => Math.floor(c.at / 3) === 0 && cardDef(c.id).cd > 0,
+    );
+    note =
+      '本路护幕实际承伤时，为左路所有有冷却的物品充能；灼烧、侵蚀跳伤也触发';
+  }
   return { targets: targets.map((c) => c.uid), note };
 }
 
@@ -190,6 +201,13 @@ export function cardStatus(card: FighterCard, frame: ArenaFrame) {
       s.overdrive > 0 ? `过载 ${s.overdrive}秒` : `承压 ${s.rage}/30`,
     );
   if (s?.regen) values.push(`再生 ${s.regen}/秒`);
+  const t = frame.trainingState?.[id];
+  if (n === 101) values.push(`攒光 ${t?.energy ?? 0}`);
+  if (t?.bonus) values.push(`添火 +${t.bonus} · ${rounded(t.bonusSeconds)}秒`);
+  if (n === 105)
+    values.push(
+      t?.echoRemaining ? `待火 ${rounded(t.echoRemaining)}秒` : '邻接就绪',
+    );
   return values;
 }
 

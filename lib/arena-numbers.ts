@@ -1,5 +1,5 @@
-import type { CombatFrame, Duel } from './demo-combat.ts';
-import { cardDef } from './demo-cards.ts';
+import type { CombatFrame, Duel } from './cards/combat.ts';
+import { cardDef } from './cards/catalog.ts';
 
 export const NUMBER_LIFETIME = 1.35;
 export type CombatNumber = {

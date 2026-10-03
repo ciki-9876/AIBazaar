@@ -1,5 +1,5 @@
-import { cardDef } from './demo-cards.ts';
-import type { FighterCard } from './demo-combat.ts';
+import { cardDef } from './cards/catalog.ts';
+import type { FighterCard } from './cards/combat.ts';
 
 // Presentation coordinates only. Simulation time, lanes and damage stay unchanged.
 export const equipmentZ = (side: number) => (side === 0 ? 1.68 : -1.68);

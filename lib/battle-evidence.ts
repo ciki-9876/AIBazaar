@@ -1,5 +1,5 @@
-import { cardDef } from './demo-cards.ts';
-import type { Duel, Hit, CombatFrame } from './demo-combat.ts';
+import { cardDef } from './cards/catalog.ts';
+import type { Duel, Hit, CombatFrame } from './cards/combat.ts';
 const sideName = (side: number) => (side ? '敌方' : '我方');
 const n = (value: number) => +value.toFixed(2);
 export function formatHit(duel: Duel, hit: Hit, time: number) {

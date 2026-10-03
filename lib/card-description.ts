@@ -1,6 +1,6 @@
-import { cardDef, cardFamily } from './demo-cards.ts';
-import { combatValue, cardMechanics } from './demo-card-rules.ts';
-import type { FighterCard } from './demo-combat.ts';
+import { cardDef, cardFamily } from './cards/catalog.ts';
+import { combatValue, cardMechanics } from './cards/card-rules.ts';
+import type { FighterCard } from './cards/combat.ts';
 
 export const CARD_ROLES: Record<string, string> = {};
 export const CARD_TERMS = {

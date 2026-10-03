@@ -37,3 +37,10 @@ next-env.d.ts
 /outputs/
 /work/
 *.tsbuildinfo
+
+# Independent app build and generated asset directories
+/apps/*/dist/
+/apps/*/.public/
+/apps/*/.vinext/
+/apps/*/.vite/
+/apps/*/.next/

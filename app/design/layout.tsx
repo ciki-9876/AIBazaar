@@ -1,3 +1,4 @@
+import '../legacy-surface.css';
 import type { Metadata } from 'next';
 import '../demo/demo.css';
 import './current.css';
@@ -10,5 +11,5 @@ export default function DesignLayout({
 }: {
   children: React.ReactNode;
 }) {
-  return children;
+  return <div className="legacy-surface">{children}</div>;
 }

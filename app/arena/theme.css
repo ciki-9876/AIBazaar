@@ -1,0 +1,4715 @@
+:where(.arena-page) button, :where(.arena-page) a{-webkit-tap-highlight-color:transparent}
+:where(.arena-page) button{font:inherit;cursor:pointer;transition:background .18s,transform .18s,border-color .18s}
+:where(.arena-page) button:disabled{cursor:not-allowed;opacity:.4}
+:where(.arena-page) button:focus-visible, :where(.arena-page) a:focus-visible{outline:2px solid #efb86b;outline-offset:4px}
+:where(.arena-page) button:not(:disabled):active{transform:translateY(1px)}
+:where(.arena-page) h1, :where(.arena-page) h2, :where(.arena-page) h3, :where(.arena-page) p{margin:0}
+:where(.arena-page) h1, :where(.arena-page) h2, :where(.arena-page) h3{font-family:Georgia,'Noto Serif SC','Songti SC','SimSun',serif;font-weight:500}
+:where(.arena-page) svg{flex-shrink:0;width:18px;height:18px}
+/* arena */
+.arena-page {
+  --ink: #e8d8b8;
+  --muted: #9d9f90;
+  --line: #8e8b6b52;
+  --gold: #d8b06a;
+  min-height: 100dvh;
+  background: #0a1110;
+  color: var(--ink);
+  font-family: Georgia, 'Songti SC', 'SimSun', serif;
+  font-size: 14px;
+}
+.arena-page * {
+  box-sizing: border-box;
+}
+.arena-page button, .arena-page input, .arena-page select {
+  font: inherit;
+}
+.arena-page button {
+  cursor: pointer;
+}
+.arena-page button:disabled {
+  cursor: default;
+  opacity: 0.5;
+}
+.arena-page :focus-visible {
+  outline: 2px solid #ebc684;
+  outline-offset: 3px;
+}
+:where(.arena-page) .arena-header {
+  height: 67px;
+  padding: 0 26px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-bottom: 1px solid var(--line);
+  background: #111b18;
+  position: relative;
+  z-index: 4;
+}
+:where(.arena-page) .arena-brand, :where(.arena-page) .arena-header-right {
+  display: flex;
+  align-items: center;
+  gap: 19px;
+}
+:where(.arena-page) .arena-brand a {
+  color: var(--ink);
+  display: grid;
+  place-items: center;
+}
+:where(.arena-page) .arena-mark {
+  font-family: Arial, sans-serif;
+  font-size: 15px;
+  font-weight: 700;
+  letter-spacing: 0.15em;
+}
+:where(.arena-page) .arena-mark i {
+  font-style: normal;
+  color: var(--gold);
+  padding: 0 6px;
+}
+:where(.arena-page) .arena-version {
+  font-size: 11px;
+  letter-spacing: 0.18em;
+  color: #b0ae99;
+  border-left: 1px solid var(--line);
+  padding-left: 19px;
+}
+:where(.arena-page) .arena-live {
+  font:
+    10px Arial,
+    sans-serif;
+  letter-spacing: 0.16em;
+  color: #a6c9ae;
+}
+:where(.arena-page) .arena-live i {
+  display: inline-block;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #7acb91;
+  margin-right: 7px;
+  box-shadow: 0 0 9px #7acb91;
+}
+:where(.arena-page) .arena-header button {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  color: var(--ink);
+  background: transparent;
+  border: 1px solid var(--line);
+  padding: 8px 12px;
+  font-size: 11px;
+}
+:where(.arena-page) .arena-layout {
+  display: grid;
+  grid-template-columns: 268px minmax(600px, 1fr) 274px;
+  height: calc(100dvh - 67px);
+  min-height: 690px;
+}
+:where(.arena-page) .arena-catalog, :where(.arena-page) .arena-intel {
+  background: #111c19;
+  border-right: 1px solid var(--line);
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+:where(.arena-page) .arena-intel {
+  border-right: 0;
+  border-left: 1px solid var(--line);
+  overflow: auto;
+}
+:where(.arena-page) .arena-panel-title {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  text-transform: uppercase;
+  font:
+    10px Arial,
+    sans-serif;
+  letter-spacing: 0.18em;
+  color: var(--gold);
+  margin-bottom: 18px;
+}
+:where(.arena-page) .arena-panel-title strong {
+  font-weight: 400;
+  color: var(--muted);
+  letter-spacing: 0;
+}
+:where(.arena-page) .arena-catalog {
+  padding: 22px 14px 0;
+}
+:where(.arena-page) .arena-search {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  background: #1a2924;
+  border: 1px solid #76857051;
+  padding: 9px 11px;
+  color: #aab5a1;
+}
+:where(.arena-page) .arena-search input {
+  color: var(--ink);
+  border: 0;
+  outline: 0;
+  background: none;
+  width: 100%;
+  font-size: 12px;
+}
+:where(.arena-page) .arena-search input::placeholder {
+  color: #899487;
+}
+:where(.arena-page) .arena-filters {
+  display: flex;
+  gap: 5px;
+  flex-wrap: wrap;
+  margin: 14px 0;
+}
+:where(.arena-page) .arena-filters button {
+  background: transparent;
+  color: #a4aa9b;
+  border: 1px solid #7b8c7954;
+  padding: 5px 8px;
+  font-size: 10px;
+}
+:where(.arena-page) .arena-filters button.active {
+  color: #211e13;
+  background: var(--gold);
+  border-color: var(--gold);
+}
+:where(.arena-page) .arena-card-list {
+  overflow: auto;
+  min-height: 0;
+  padding-right: 4px;
+  padding-bottom: 20px;
+  scrollbar-color: #566859 #111c19;
+}
+:where(.arena-page) .arena-card {
+  width: 100%;
+  display: flex;
+  gap: 11px;
+  align-items: center;
+  text-align: left;
+  background: #192722;
+  border: 1px solid #40524982;
+  color: var(--ink);
+  padding: 10px 9px;
+  margin-bottom: 5px;
+  min-height: 57px;
+}
+:where(.arena-page) .arena-card:hover, :where(.arena-page) .arena-card.selected {
+  border-color: var(--gold);
+  background: #253229;
+}
+:where(.arena-page) .arena-card-glyph {
+  display: grid;
+  place-items: center;
+  flex: none;
+  width: 32px;
+  height: 32px;
+  border: 1px solid #c4a46b88;
+  color: var(--gold);
+  font:
+    11px Arial,
+    sans-serif;
+}
+:where(.arena-page) .arena-card-copy {
+  flex: 1;
+  min-width: 0;
+  display: grid;
+  gap: 4px;
+}
+:where(.arena-page) .arena-card-copy strong {
+  font-size: 13px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+:where(.arena-page) .arena-card-copy small, :where(.arena-page) .arena-card-tail small {
+  color: #abb1a1;
+  font-size: 10px;
+}
+:where(.arena-page) .arena-card-tail {
+  display: grid;
+  gap: 3px;
+  text-align: right;
+}
+:where(.arena-page) .arena-card-tail b {
+  font-size: 11px;
+  font-weight: 400;
+  color: #e0c38e;
+}
+:where(.arena-page) .arena-card.rarity-4 .arena-card-glyph {
+  border-color: #d8b6c7;
+  color: #efc1d8;
+}
+:where(.arena-page) .arena-card.rarity-3 .arena-card-glyph {
+  border-color: #b3a4e1;
+  color: #c9b9f1;
+}
+:where(.arena-page) .arena-main {
+  min-width: 0;
+  min-height: 0;
+  display: grid;
+  grid-template-rows: minmax(340px, 1fr) auto;
+  background: #0c1513;
+}
+:where(.arena-page) .arena-stage {
+  position: relative;
+  min-height: 340px;
+  overflow: hidden;
+  background: #070b09;
+}
+:where(.arena-page) .arena-stage .slice-canvas {
+  position: absolute;
+  inset: 0;
+}
+:where(.arena-page) .arena-stage .slice-canvas canvas {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+:where(.arena-page) .arena-stage-loading {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  letter-spacing: 0.2em;
+  color: #c7bd9d;
+}
+:where(.arena-page) .arena-stage-shade {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: linear-gradient(
+    #070e0dda 0%,
+    transparent 26%,
+    transparent 75%,
+    #07100de8 100%
+  );
+}
+:where(.arena-page) .arena-stage-top, :where(.arena-page) .arena-stage-bottom {
+  position: absolute;
+  z-index: 2;
+  left: 22px;
+  right: 22px;
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 20px;
+  text-shadow: 0 1px 4px #000;
+}
+:where(.arena-page) .arena-stage-top {
+  top: 20px;
+}
+:where(.arena-page) .arena-stage-top small {
+  display: block;
+  color: #dfbd84;
+  font:
+    10px Arial,
+    sans-serif;
+  letter-spacing: 0.2em;
+  margin-bottom: 5px;
+}
+:where(.arena-page) .arena-stage-top strong {
+  font-size: 22px;
+  font-weight: 400;
+}
+:where(.arena-page) .arena-stage-top p {
+  font-size: 11px;
+  color: #c1c9ae;
+  margin: 5px 0 0;
+  max-width: 380px;
+}
+:where(.arena-page) .arena-stage-top > span, :where(.arena-page) .arena-stage-bottom {
+  font:
+    11px Arial,
+    sans-serif;
+  letter-spacing: 0.06em;
+  color: #ded2b1;
+}
+:where(.arena-page) .arena-stage-bottom {
+  bottom: 20px;
+  align-items: flex-end;
+}
+:where(.arena-page) .arena-stage-bottom b {
+  color: #a8e7bd;
+  margin-left: 7px;
+}
+:where(.arena-page) .arena-scene-labels {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 2;
+}
+:where(.arena-page) .arena-scene-card {
+  position: absolute;
+  transform: translate(-50%, -100%);
+  display: grid;
+  gap: 2px;
+  text-align: center;
+  background: #14211ed9;
+  padding: 4px 7px;
+  border: 1px solid #a7d7b179;
+  white-space: nowrap;
+  box-shadow: 0 2px 12px #0009;
+}
+:where(.arena-page) .arena-scene-card.enemy {
+  border-color: #d8ad7f8a;
+  background: #291f18dc;
+}
+:where(.arena-page) .arena-scene-card span {
+  font-size: 11px;
+}
+:where(.arena-page) .arena-scene-card small {
+  font:
+    9px Arial,
+    sans-serif;
+  color: #b3c5af;
+}
+:where(.arena-page) .arena-scene-shield {
+  position: absolute;
+  transform: translate(-50%, -50%);
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font:
+    10px Arial,
+    sans-serif;
+  background: #0c1715c9;
+  border: 1px solid #9ac8b376;
+  padding: 3px 5px;
+  color: #c9eee0;
+}
+:where(.arena-page) .arena-scene-shield.enemy {
+  border-color: #e2aa7488;
+  color: #e8c39a;
+}
+:where(.arena-page) .arena-scene-shield.broken {
+  color: #ee8d76;
+  border-color: #d47870;
+}
+:where(.arena-page) .arena-workbench {
+  padding: 18px 25px 22px;
+  background: #101d19;
+  border-top: 1px solid var(--line);
+  box-shadow: 0 -12px 35px #02040366;
+}
+:where(.arena-page) .arena-workbench-heading {
+  display: flex;
+  justify-content: space-between;
+  align-items: end;
+  gap: 12px;
+  margin-bottom: 15px;
+}
+:where(.arena-page) .arena-workbench-heading small {
+  font:
+    10px Arial,
+    sans-serif;
+  letter-spacing: 0.2em;
+  color: var(--gold);
+}
+:where(.arena-page) .arena-workbench-heading h1 {
+  font-size: 18px;
+  font-weight: 400;
+  margin: 4px 0 0;
+}
+:where(.arena-page) .arena-workbench-heading > span {
+  font-size: 10px;
+  color: var(--muted);
+}
+:where(.arena-page) .arena-lane-rows {
+  display: grid;
+  gap: 6px;
+}
+:where(.arena-page) .arena-lane-row {
+  display: grid;
+  grid-template-columns: 65px minmax(0, 1fr) 132px;
+  gap: 9px;
+  align-items: center;
+}
+:where(.arena-page) .arena-lane-id {
+  display: flex;
+  gap: 7px;
+  align-items: center;
+}
+:where(.arena-page) .arena-lane-id small {
+  font:
+    10px Arial,
+    sans-serif;
+  color: var(--gold);
+}
+:where(.arena-page) .arena-lane-id strong {
+  font-size: 12px;
+  font-weight: 400;
+}
+:where(.arena-page) .arena-lane-slots {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 5px;
+}
+:where(.arena-page) .arena-slot {
+  min-height: 49px;
+  background: #1a2b24;
+  border: 1px dashed #8da58a75;
+  color: #d6d9bf;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  min-width: 0;
+}
+:where(.arena-page) .arena-slot:hover:not(:disabled) {
+  background: #273b30;
+  border-color: var(--gold);
+}
+:where(.arena-page) .arena-slot > span:first-child {
+  color: #c8af7d;
+}
+:where(.arena-page) .arena-slot small {
+  font-size: 9px;
+  color: #a7b3a4;
+}
+:where(.arena-page) .arena-slot.occupied {
+  background: #2c372b;
+  border-style: solid;
+  border-color: #b1a474a1;
+}
+:where(.arena-page) .arena-slot.start {
+  flex-direction: column;
+  gap: 2px;
+}
+:where(.arena-page) .arena-slot strong {
+  font-size: 11px;
+  font-weight: 400;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 95%;
+}
+:where(.arena-page) .arena-slot-cont {
+  font-size: 10px;
+  opacity: 0.5;
+}
+:where(.arena-page) .arena-amp-select {
+  display: grid;
+  gap: 4px;
+}
+:where(.arena-page) .arena-amp-select small {
+  font:
+    9px Arial,
+    sans-serif;
+  color: #a8ad9b;
+  letter-spacing: 0.1em;
+}
+:where(.arena-page) .arena-amp-select select {
+  width: 100%;
+  background: #203129;
+  color: #ead8b8;
+  border: 1px solid #8e97706b;
+  padding: 5px 4px;
+  font-size: 11px;
+}
+:where(.arena-page) .arena-actions {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  margin-top: 15px;
+  flex-wrap: wrap;
+}
+:where(.arena-page) .arena-actions button, :where(.arena-page) .arena-result button {
+  min-height: 34px;
+  border: 1px solid #a2a28182;
+  background: #203128;
+  color: var(--ink);
+  padding: 6px 12px;
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 11px;
+}
+:where(.arena-page) .arena-actions .arena-primary, :where(.arena-page) .arena-result button {
+  background: #d8b06a;
+  color: #1d241c;
+  border-color: #d8b06a;
+  font-weight: 700;
+}
+:where(.arena-page) .arena-actions .arena-secondary {
+  margin-left: auto;
+}
+:where(.arena-page) .arena-timeline {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  min-width: 160px;
+  flex: 1;
+  font:
+    10px Arial,
+    sans-serif;
+  color: #b8c6b4;
+}
+:where(.arena-page) .arena-timeline input {
+  width: 100%;
+  accent-color: #d8b06a;
+}
+:where(.arena-page) .arena-timeline span {
+  white-space: nowrap;
+}
+:where(.arena-page) .arena-result {
+  margin-top: 13px;
+  padding: 12px 15px;
+  background: #273b2e;
+  border-left: 3px solid #d8b06a;
+  display: flex;
+  align-items: center;
+  gap: 15px;
+}
+:where(.arena-page) .arena-result strong {
+  font-size: 18px;
+}
+:where(.arena-page) .arena-result span {
+  font-size: 11px;
+  color: #becab9;
+}
+:where(.arena-page) .arena-result button {
+  margin-left: auto;
+}
+:where(.arena-page) .arena-counter-note {
+  color: #c7c8ab;
+  font-size: 11px;
+  line-height: 1.5;
+  margin: 11px 0 0;
+}
+:where(.arena-page) .arena-intel-block {
+  padding: 22px 17px;
+  border-bottom: 1px solid var(--line);
+}
+:where(.arena-page) .arena-intel-block h2 {
+  font-size: 20px;
+  font-weight: 400;
+  margin: 0 0 9px;
+}
+:where(.arena-page) .arena-intel-block p {
+  color: #abb6a6;
+  line-height: 1.7;
+  font-size: 12px;
+  margin: 0 0 11px;
+}
+:where(.arena-page) .arena-detail-meta {
+  display: flex;
+  gap: 5px;
+  flex-wrap: wrap;
+}
+:where(.arena-page) .arena-detail-meta span {
+  border: 1px solid #a19b704f;
+  padding: 4px 6px;
+  font-size: 10px;
+  color: #c9ba94;
+}
+:where(.arena-page) .arena-opponent-lane {
+  border-top: 1px solid #a6ab7945;
+  padding: 9px 0;
+}
+:where(.arena-page) .arena-opponent-lane > small {
+  font:
+    10px Arial,
+    sans-serif;
+  color: var(--gold);
+}
+:where(.arena-page) .arena-opponent-lane > div {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin-top: 7px;
+}
+:where(.arena-page) .arena-opponent-lane span {
+  font-size: 11px;
+  border: 1px solid #9e9b7759;
+  background: #243129;
+  padding: 5px 6px;
+}
+:where(.arena-page) .arena-history {
+  min-height: 190px;
+}
+:where(.arena-page) .arena-history-list {
+  max-height: 220px;
+  overflow: auto;
+}
+:where(.arena-page) .arena-history-list button {
+  width: 100%;
+  background: none;
+  border: 0;
+  border-top: 1px solid #7e8b754f;
+  color: var(--ink);
+  text-align: left;
+  padding: 8px 2px;
+  display: flex;
+  justify-content: space-between;
+}
+:where(.arena-page) .arena-history-list button:hover {
+  color: #f1cd86;
+}
+:where(.arena-page) .arena-history-list span {
+  font-size: 11px;
+}
+:where(.arena-page) .arena-history-list small {
+  display: block;
+  margin-top: 3px;
+  font:
+    9px Arial,
+    sans-serif;
+  color: #9ca99b;
+}
+:where(.arena-page) .arena-history-list b {
+  color: var(--gold);
+  font-size: 12px;
+}
+:where(.arena-page) .arena-archive-actions {
+  display: flex;
+  gap: 7px;
+  margin-top: 12px;
+}
+:where(.arena-page) .arena-archive-actions button {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  background: #25362c;
+  color: var(--ink);
+  border: 1px solid var(--line);
+  padding: 6px;
+  font-size: 10px;
+}
+:where(.arena-page) .arena-note {
+  padding: 18px;
+  color: #8c9b8e;
+  font-size: 10px;
+  line-height: 1.6;
+}
+:where(.arena-page) .arena-toast {
+  position: fixed;
+  bottom: 20px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 10;
+  background: #e6ce99;
+  color: #18231b;
+  padding: 12px 16px;
+  box-shadow: 0 6px 30px #000b;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 12px;
+  max-width: min(90vw, 570px);
+}
+:where(.arena-page) .arena-toast button {
+  background: none;
+  border: 0;
+  color: inherit;
+}
+@media (max-width: 1180px) {
+  :where(.arena-page) .arena-layout {
+    grid-template-columns: 220px minmax(420px, 1fr);
+  }
+  :where(.arena-page) .arena-intel {
+    display: none;
+  }
+}
+@media (max-width: 760px) {
+  :where(.arena-page) .arena-header {
+    padding: 0 12px;
+  }
+  :where(.arena-page) .arena-version, :where(.arena-page) .arena-live {
+    display: none;
+  }
+  :where(.arena-page) .arena-layout {
+    height: auto;
+    flex-direction: column;
+  }
+  :where(.arena-page) .arena-catalog {
+    order: 2;
+    height: 290px;
+    padding: 12px;
+  }
+  :where(.arena-page) .arena-main {
+    display: flex;
+    flex-direction: column;
+  }
+  :where(.arena-page) .arena-stage {
+    height: 420px;
+    min-height: 420px;
+  }
+  :where(.arena-page) .arena-workbench {
+    padding: 15px;
+  }
+  :where(.arena-page) .arena-workbench-heading > span {
+    display: none;
+  }
+  :where(.arena-page) .arena-lane-row {
+    grid-template-columns: 45px minmax(0, 1fr) 100px;
+    gap: 4px;
+  }
+  :where(.arena-page) .arena-lane-id {
+    display: grid;
+    gap: 1px;
+  }
+  :where(.arena-page) .arena-slot {
+    min-height: 46px;
+  }
+  :where(.arena-page) .arena-amp-select select {
+    font-size: 10px;
+  }
+  :where(.arena-page) .arena-result {
+    flex-wrap: wrap;
+  }
+  :where(.arena-page) .arena-result button {
+    margin-left: 0;
+  }
+  :where(.arena-page) .arena-stage-top p, :where(.arena-page) .arena-stage-bottom span:last-child {
+    display: none;
+  }
+}
+:where(.arena-page) .arena-scene-card {
+  max-width: 76px;
+  overflow: hidden;
+  padding: 4px 6px;
+}
+:where(.arena-page) .arena-scene-card span {
+  font-size: 10px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+:where(.arena-page) .arena-postmortem {
+  display: flex;
+  gap: 18px;
+  flex-wrap: wrap;
+  padding: 10px 3px 0;
+}
+:where(.arena-page) .arena-postmortem div {
+  display: grid;
+  gap: 3px;
+}
+:where(.arena-page) .arena-postmortem small {
+  font:
+    9px Arial,
+    sans-serif;
+  letter-spacing: 0.1em;
+  color: var(--gold);
+}
+:where(.arena-page) .arena-postmortem strong {
+  font-size: 11px;
+  font-weight: 400;
+  color: #c7d2bd;
+}
+:where(.arena-page) .arena-enemy-brief {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 6px;
+  margin: 0 0 13px;
+}
+:where(.arena-page) .arena-enemy-brief > .arena-enemy-lane {
+  display: grid;
+  align-content: start;
+  gap: 5px;
+  border: 1px solid #6c6a4d69;
+  background: #222a22;
+  padding: 7px 8px;
+  min-width: 0;
+}
+:where(.arena-page) .arena-enemy-brief small {
+  font:
+    9px Arial,
+    sans-serif;
+  color: #d4ad77;
+}
+:where(.arena-page) .arena-enemy-brief button, :where(.arena-page) .arena-opponent-lane button {
+  border: 1px solid #9e9b7759;
+  background: #243129;
+  color: var(--ink);
+  text-align: left;
+  padding: 5px 7px;
+  font-size: 11px;
+  min-width: 0;
+}
+:where(.arena-page) .arena-enemy-brief button:hover, :where(.arena-page) .arena-opponent-lane button:hover {
+  border-color: var(--gold);
+  background: #344134;
+}
+:where(.arena-page) .arena-enemy-amp, :where(.arena-page) .arena-opponent-amp {
+  color: #e6c792 !important;
+  border-color: #b298665e !important;
+}
+:where(.arena-page) .arena-enemy-cards {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+:where(.arena-page) .arena-enemy-cards button {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+:where(.arena-page) .arena-enemy-empty {
+  font-size: 10px;
+  color: #9daa9b;
+}
+:where(.arena-page) .arena-opponent-lane > .arena-opponent-amp {
+  display: block;
+  margin-top: 7px;
+}
+:where(.arena-page) .arena-opponent-lane i {
+  font:
+    9px Arial,
+    sans-serif;
+  color: #aebcaa;
+  font-style: normal;
+}
+:where(.arena-page) .arena-selected-brief {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: -4px 0 12px;
+  padding: 7px 9px;
+  background: #283128;
+  border-left: 2px solid var(--gold);
+  font-size: 11px;
+}
+:where(.arena-page) .arena-selected-brief strong {
+  white-space: nowrap;
+  color: #e7c887;
+}
+:where(.arena-page) .arena-selected-brief span {
+  color: #d2d7c2;
+  flex: 1;
+}
+:where(.arena-page) .arena-selected-brief small {
+  font-size: 10px;
+  color: #a5b39d;
+  white-space: nowrap;
+}
+:where(.arena-page) .arena-amp-summary {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-top: 9px;
+}
+:where(.arena-page) .arena-amp-summary p {
+  margin: 0;
+  color: #aeb9a7;
+  font-size: 10px;
+  line-height: 1.5;
+  flex: 1;
+  min-width: 170px;
+}
+:where(.arena-page) .arena-amp-summary b {
+  display: block;
+  color: #d6b477;
+  font-weight: 400;
+  margin-bottom: 2px;
+}
+@media (max-width: 760px) {
+  :where(.arena-page) .arena-selected-brief {
+    display: grid;
+  }
+  :where(.arena-page) .arena-enemy-brief {
+    gap: 3px;
+  }
+  :where(.arena-page) .arena-enemy-brief > .arena-enemy-lane {
+    padding: 5px;
+  }
+  :where(.arena-page) .arena-enemy-brief span {
+    font-size: 9px;
+  }
+}
+:where(.arena-page) .arena-scene-card.enemy {
+  pointer-events: auto;
+  cursor: pointer;
+  color: var(--ink);
+  font: inherit;
+}
+:where(.arena-page) .arena-scene-card.enemy:hover, :where(.arena-page) .arena-scene-card.enemy:focus-visible {
+  border-color: #f1cf8e;
+  background: #493326;
+}
+:where(.arena-page) .arena-opponent-lane button {
+  margin-right: 4px;
+  margin-bottom: 4px;
+}
+:where(.arena-page) .arena-inspection {
+  width: min(430px, calc(100vw - 28px));
+  max-height: min(80dvh, 600px);
+  margin: auto;
+  padding: 0;
+  border: 1px solid #c0a777;
+  background: linear-gradient(150deg, #25322b, #111c19 65%);
+  color: var(--ink);
+  box-shadow: 0 24px 80px #000d;
+}
+:where(.arena-page) .arena-inspection::backdrop {
+  background: #050a09b8;
+  backdrop-filter: blur(3px);
+}
+:where(.arena-page) .arena-inspection-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 15px 20px;
+  border-bottom: 1px solid #b49c6a5c;
+  color: var(--gold);
+  font:
+    10px Arial,
+    sans-serif;
+  letter-spacing: 0.16em;
+}
+:where(.arena-page) .arena-inspection-top button {
+  display: grid;
+  place-items: center;
+  background: none;
+  border: 1px solid #b49c6a5c;
+  color: var(--ink);
+  width: 30px;
+  height: 30px;
+}
+:where(.arena-page) .arena-inspection-index {
+  display: block;
+  margin: 22px 22px 5px;
+  color: #c2b58c;
+  font:
+    10px Arial,
+    sans-serif;
+  letter-spacing: 0.16em;
+}
+:where(.arena-page) .arena-inspection h2 {
+  font-size: 29px;
+  font-weight: 400;
+  letter-spacing: 0.06em;
+  margin: 0 22px 17px;
+}
+:where(.arena-page) .arena-inspection p {
+  font-size: 15px;
+  line-height: 1.75;
+  color: #ebdfc8;
+  margin: 0 22px 20px;
+}
+:where(.arena-page) .arena-inspection-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin: 0 22px 22px;
+}
+:where(.arena-page) .arena-inspection-meta span {
+  border: 1px solid #b49c6a66;
+  color: #e2c99a;
+  padding: 6px 8px;
+  font:
+    11px Arial,
+    sans-serif;
+}
+:where(.arena-page) .arena-inspection-foot {
+  border-top: 1px solid #b49c6a4d;
+  padding: 13px 22px;
+  color: #a6b4a4;
+  font:
+    10px Arial,
+    sans-serif;
+  letter-spacing: 0.04em;
+}
+@media (max-width: 760px) {
+  :where(.arena-page) .arena-enemy-brief > .arena-enemy-lane {
+    padding: 6px;
+  }
+  :where(.arena-page) .arena-enemy-brief small {
+    font-size: 8px;
+  }
+  :where(.arena-page) .arena-enemy-brief button {
+    font-size: 9px;
+    padding: 4px 5px;
+  }
+  :where(.arena-page) .arena-inspection {
+    width: calc(100vw - 24px);
+  }
+}
+
+/* The formation mirrors the table: three lanes across, opponent far, player near. */
+:where(.arena-page) .arena-layout {
+  height: auto;
+  min-height: calc(100dvh - 62px);
+  align-items: start;
+  grid-template-columns: 230px minmax(540px, 1fr) 260px;
+}
+:where(.arena-page) .arena-catalog, :where(.arena-page) .arena-intel {
+  position: sticky;
+  top: 0;
+  height: calc(100dvh - 62px);
+  max-height: 1100px;
+  overflow: auto;
+}
+:where(.arena-page) .arena-main {
+  display: flex;
+  flex-direction: column;
+}
+:where(.arena-page) .arena-stage {
+  height: clamp(500px, 62dvh, 780px);
+  min-height: 500px;
+  flex: none;
+}
+:where(.arena-page) .arena-stage-top {
+  right: 155px;
+  top: 22px;
+}
+:where(.arena-page) .arena-stage-top p {
+  max-width: 320px;
+}
+:where(.arena-page) .arena-stage-bottom {
+  bottom: 87px;
+}
+:where(.arena-page) .arena-fullscreen {
+  position: absolute;
+  right: 18px;
+  top: 18px;
+  z-index: 4;
+  display: flex;
+  gap: 7px;
+  align-items: center;
+  background: #16251eec;
+  color: var(--ink);
+  border: 1px solid #b49c6a99;
+  padding: 9px 12px;
+  font-size: 12px !important;
+}
+:where(.arena-page) .arena-fullscreen:hover {
+  background: #344638;
+}
+:where(.arena-page) .arena-stage-controls {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  z-index: 4;
+  margin: 0;
+  padding: 14px 20px;
+  background: #0a1511ed;
+  border-top: 1px solid var(--line);
+  min-height: 66px;
+}
+:where(.arena-page) .arena-stage-outcome {
+  position: absolute;
+  left: 50%;
+  top: 18px;
+  transform: translateX(-50%);
+  z-index: 3;
+  background: #19271fef;
+  border: 1px solid var(--gold);
+  color: #f2d295;
+  padding: 10px 18px;
+  white-space: nowrap;
+}
+:where(.arena-page) .arena-stage-controls .arena-secondary {
+  margin-left: 0;
+}
+:where(.arena-page) .arena-expanded .arena-stage {
+  position: fixed;
+  inset: 0;
+  width: 100vw;
+  height: 100dvh;
+  min-height: 0;
+  z-index: 50;
+}
+.arena-page:fullscreen {
+  width: 100%;
+  height: 100%;
+  overflow: auto;
+}
+:where(.arena-page) .arena-expanded .arena-stage-top {
+  top: 24px;
+}
+:where(.arena-page) .arena-expanded .arena-stage-controls {
+  padding: 18px 30px;
+}
+:where(.arena-page) .arena-expanded .arena-scene-card {
+  max-width: 130px;
+  padding: 6px 9px;
+}
+:where(.arena-page) .arena-expanded .arena-scene-card span {
+  font-size: 13px;
+}
+:where(.arena-page) .arena-expanded .arena-scene-card small {
+  font-size: 11px;
+}
+:where(.arena-page) .arena-expanded .arena-scene-shield {
+  font-size: 13px;
+  padding: 5px 8px;
+}
+:where(.arena-page) .arena-toast {
+  z-index: 80;
+}
+:where(.arena-page) .arena-workbench {
+  padding: 21px 20px 25px;
+}
+:where(.arena-page) .arena-selected-brief {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  align-items: start;
+  line-height: 1.7;
+  padding: 12px;
+}
+:where(.arena-page) .arena-selected-brief > small {
+  grid-column: 1 / -1;
+}
+:where(.arena-page) .arena-selected-brief > .arena-effect-help {
+  grid-column: 1 / -1;
+  margin: 0;
+  width: 100%;
+}
+:where(.arena-page) .arena-formation-scroll {
+  overflow-x: auto;
+  padding-bottom: 4px;
+  scrollbar-color: #566859 #111c19;
+}
+:where(.arena-page) .arena-formation {
+  min-width: 490px;
+  border: 1px solid var(--line);
+  background: #0d1714;
+  padding: 10px;
+}
+:where(.arena-page) .arena-formation-core {
+  text-align: center;
+  letter-spacing: 0.12em;
+  font-size: 10px;
+  padding: 7px;
+  color: #abbeac;
+}
+:where(.arena-page) .arena-formation-core.enemy {
+  color: #c6a784;
+  margin-bottom: 5px;
+}
+:where(.arena-page) .arena-formation-core.own {
+  margin-top: 5px;
+}
+:where(.arena-page) .arena-formation-lanes {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+}
+:where(.arena-page) .arena-formation-lane {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-width: 0;
+}
+:where(.arena-page) .arena-formation-slots {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 3px;
+}
+:where(.arena-page) .arena-formation-slots .arena-slot {
+  height: 64px;
+  min-height: 64px;
+  flex-direction: column;
+  padding: 4px 2px;
+  gap: 5px;
+}
+:where(.arena-page) .arena-formation-slots .arena-slot strong {
+  font-size: 11px;
+  white-space: normal;
+  line-height: 1.4;
+  overflow: visible;
+  text-overflow: clip;
+  word-break: break-all;
+}
+:where(.arena-page) .arena-formation-slots .arena-slot small {
+  font-size: 9px;
+}
+:where(.arena-page) .arena-formation-slots.enemy .arena-slot {
+  background: #352c22;
+  border-color: #b590657a;
+  color: #e4c396;
+}
+:where(.arena-page) .arena-formation-empty {
+  display: grid;
+  place-items: center;
+  height: 64px;
+  border: 1px dashed #7869504d;
+  color: #6f7363;
+  font-size: 10px;
+}
+:where(.arena-page) .arena-formation-lane-name {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  color: #d7bd84;
+  padding: 4px;
+  border-top: 1px solid #72846c30;
+  border-bottom: 1px solid #72846c30;
+}
+:where(.arena-page) .arena-formation-lane-name strong {
+  font-weight: 400;
+  font-size: 12px;
+  letter-spacing: 0.16em;
+}
+:where(.arena-page) .arena-formation-lane-name span {
+  opacity: 0.4;
+}
+:where(.arena-page) .arena-formation-barrier {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  align-items: center;
+  gap: 5px;
+  min-height: 48px;
+  padding: 6px 3px;
+  border: 1px solid #87b99c55;
+  background: #1a2f25;
+  color: #c5e3cb;
+  box-shadow: inset 0 2px #89b79a44;
+  font-size: 11px !important;
+}
+:where(.arena-page) .arena-formation-barrier small {
+  flex-basis: 100%;
+  font-size: 9px;
+  opacity: 0.7;
+}
+:where(.arena-page) .arena-formation-barrier.enemy {
+  background: #2c2920;
+  border-color: #ae936655;
+  color: #d8bb8d;
+  box-shadow: inset 0 -2px #ae936644;
+}
+:where(.arena-page) .arena-formation-barrier:hover:not(:disabled) {
+  border-color: var(--gold);
+  background: #334234;
+}
+:where(.arena-page) .arena-formation-barrier:disabled {
+  opacity: 1;
+}
+:where(.arena-page) .arena-effect-help {
+  margin: 12px 0;
+  color: #b8c7b6;
+  font-size: 11px;
+  line-height: 1.7;
+}
+:where(.arena-page) .arena-effect-help summary {
+  cursor: pointer;
+  color: #d8bd85;
+  letter-spacing: 0.06em;
+}
+:where(.arena-page) .arena-effect-help p {
+  font-size: 11px !important;
+  line-height: 1.7 !important;
+  margin: 8px 0 !important;
+  color: #b8c7b6 !important;
+}
+:where(.arena-page) .arena-effect-help dl {
+  margin: 8px 0 0;
+}
+:where(.arena-page) .arena-effect-help dl > div {
+  margin-bottom: 8px;
+}
+:where(.arena-page) .arena-effect-help dt {
+  color: #d6c4a0;
+}
+:where(.arena-page) .arena-effect-help dd {
+  margin: 1px 0 0;
+}
+:where(.arena-page) .arena-inspection > .arena-effect-help {
+  margin: 0 22px 22px;
+}
+:where(.arena-page) .arena-inspection-wide {
+  width: min(740px, calc(100vw - 24px));
+  max-height: 90dvh;
+}
+:where(.arena-page) .arena-inspection .arena-picker-rule {
+  font-size: 12px;
+  margin: 16px 22px;
+  color: #becab7;
+}
+:where(.arena-page) .arena-amp-options {
+  margin: 0;
+  border: 0;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  padding: 0 22px 16px;
+}
+:where(.arena-page) .arena-amp-options > button {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  text-align: left;
+  line-height: 1.7;
+  font-size: 12px;
+  background: #1b2a23;
+  border: 1px solid #87977161;
+  color: #c6d0ba;
+  padding: 13px;
+  min-height: 100px;
+}
+:where(.arena-page) .arena-amp-options > button:hover, :where(.arena-page) .arena-amp-options > button.selected {
+  border-color: var(--gold);
+  background: #33402c;
+}
+:where(.arena-page) .arena-amp-options > button.selected {
+  box-shadow: inset 3px 0 var(--gold);
+}
+:where(.arena-page) .arena-amp-options strong {
+  color: #efdab3;
+  font-size: 15px;
+  font-weight: 400;
+}
+:where(.arena-page) .arena-amp-option-title {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  width: 100%;
+  gap: 6px;
+}
+:where(.arena-page) .arena-amp-option-title small {
+  font-size: 10px;
+  color: #b8b99d;
+}
+:where(.arena-page) .arena-picker-help {
+  padding: 0 22px;
+}
+:where(.arena-page) .arena-picker-actions {
+  position: sticky;
+  bottom: 0;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  background: #16241ff5;
+  border-top: 1px solid var(--line);
+  padding: 15px 22px;
+}
+:where(.arena-page) .arena-picker-actions button {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  background: var(--gold);
+  color: #172318;
+  border: 0;
+  padding: 10px 16px;
+  font-size: 12px;
+}
+@media (max-width: 1360px) {
+  :where(.arena-page) .arena-layout {
+    grid-template-columns: 210px minmax(490px, 1fr);
+  }
+  :where(.arena-page) .arena-intel {
+    display: none;
+  }
+}
+@media (max-width: 760px) {
+  :where(.arena-page) .arena-layout {
+    display: flex;
+    min-height: 0;
+  }
+  :where(.arena-page) .arena-catalog {
+    position: static;
+    height: 240px;
+    width: 100%;
+    max-height: none;
+    order: 0;
+  }
+  :where(.arena-page) .arena-main {
+    width: 100%;
+    order: 1;
+  }
+  :where(.arena-page) .arena-stage {
+    height: 510px;
+    min-height: 510px;
+  }
+  :where(.arena-page) .arena-stage-top {
+    left: 15px;
+    right: 130px;
+  }
+  :where(.arena-page) .arena-stage-top strong {
+    font-size: 18px;
+  }
+  :where(.arena-page) .arena-stage-top > span {
+    display: none;
+  }
+  :where(.arena-page) .arena-fullscreen {
+    right: 10px;
+    padding: 8px;
+    font-size: 11px !important;
+  }
+  :where(.arena-page) .arena-workbench {
+    padding: 18px 10px;
+  }
+  :where(.arena-page) .arena-stage-controls {
+    padding: 10px;
+    gap: 5px;
+  }
+  :where(.arena-page) .arena-stage-controls button {
+    padding: 6px 8px;
+  }
+  :where(.arena-page) .arena-timeline {
+    min-width: 110px;
+  }
+  :where(.arena-page) .arena-stage-bottom {
+    left: 15px;
+    bottom: 105px;
+  }
+  :where(.arena-page) .arena-amp-options {
+    grid-template-columns: 1fr;
+    padding: 0 15px 15px;
+  }
+  :where(.arena-page) .arena-amp-options > button {
+    min-height: 0;
+  }
+  :where(.arena-page) .arena-expanded .arena-stage {
+    min-height: 0;
+    height: 100dvh;
+  }
+  :where(.arena-page) .arena-expanded .arena-stage-controls {
+    padding: 12px;
+  }
+  :where(.arena-page) .arena-selected-brief {
+    grid-template-columns: 1fr;
+  }
+  :where(.arena-page) .arena-inspection h2 {
+    font-size: 24px;
+  }
+}
+
+/* tactical */
+:where(.arena-page) .tactical-page {
+  --paper: #ede3c9;
+  --dim: #a5b2a5;
+  --rule: #a8b69b30;
+  --accent: #e2bd79;
+  background: #101713;
+  color: var(--paper);
+  font-family: 'Microsoft YaHei', 'PingFang SC', sans-serif;
+  font-size: 13px;
+  min-height: 100dvh;
+}
+:where(.arena-page) .tactical-page button {
+  color: inherit;
+  background: transparent;
+  border: 1px solid var(--rule);
+  border-radius: 4px;
+  padding: 8px 12px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  transition:
+    background 0.16s,
+    border-color 0.16s;
+}
+:where(.arena-page) .tactical-page button:hover {
+  background: #ffffff0c;
+  border-color: #ddc79b88;
+}
+:where(.arena-page) .tactical-page button[aria-pressed='true'] {
+  color: #f3d79f;
+  border-color: #d7b071;
+  background: #d7b07115;
+}
+:where(.arena-page) .tactical-page button:focus-visible {
+  outline: 2px solid #e7c383;
+  outline-offset: 3px;
+}
+:where(.arena-page) .tac-header {
+  height: 56px;
+  display: flex;
+  align-items: center;
+  padding: 0 22px;
+  gap: 18px;
+  border-bottom: 1px solid var(--rule);
+  background: #101a16;
+}
+:where(.arena-page) .tac-header > a {
+  color: var(--dim);
+  display: grid;
+  place-items: center;
+}
+:where(.arena-page) .tac-brand {
+  font-family: Georgia, 'Songti SC', serif;
+  letter-spacing: 0.13em;
+  font-size: 18px;
+  white-space: nowrap;
+}
+:where(.arena-page) .tac-brand i {
+  font-style: normal;
+  color: var(--accent);
+  padding: 0 8px;
+}
+:where(.arena-page) .tac-header nav {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  font-size: 11px;
+  margin-left: 28px;
+  color: #879588;
+}
+:where(.arena-page) .tac-header nav .active {
+  color: #ead4aa;
+}
+:where(.arena-page) .tac-header-actions {
+  margin-left: auto;
+  display: flex;
+  gap: 8px;
+}
+:where(.arena-page) .tac-header-actions b {
+  font-weight: 400;
+  color: #aabbb0;
+}
+:where(.arena-page) .tac-command {
+  padding: 16px 24px;
+  display: flex;
+  justify-content: space-between;
+  gap: 20px;
+  align-items: center;
+  border-bottom: 1px solid var(--rule);
+  background: linear-gradient(100deg, #1b2720, #121b17);
+}
+:where(.arena-page) .tac-command small, :where(.arena-page) .tac-eyebrow {
+  font-size: 9px;
+  letter-spacing: 0.16em;
+  color: #9baf9e;
+}
+:where(.arena-page) .tac-command h1 {
+  display: inline;
+  margin: 0 16px 0 0;
+  font-size: 23px;
+  font-weight: 500;
+  font-family: Georgia, 'Songti SC', serif;
+}
+:where(.arena-page) .tac-command p {
+  display: inline;
+  color: #adbaaa;
+  font-size: 12px;
+}
+:where(.arena-page) .tac-command small {
+  display: block;
+  margin-bottom: 7px;
+}
+:where(.arena-page) .tac-command-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-shrink: 0;
+}
+:where(.arena-page) .tac-command-actions > span {
+  font-size: 11px;
+  color: var(--dim);
+}
+:where(.arena-page) .tactical-page .tac-primary {
+  background: #ddc18c;
+  color: #1c281e;
+  border-color: #ddc18c;
+  font-weight: 600;
+  padding: 11px 19px;
+}
+:where(.arena-page) .tactical-page .tac-primary:hover {
+  background: #f0d9a8;
+}
+:where(.arena-page) .tac-outcome {
+  font-size: 18px;
+  color: #e8c887;
+}
+:where(.arena-page) .tac-layout {
+  display: flex;
+  min-width: 0;
+}
+:where(.arena-page) .tac-catalog {
+  width: 244px;
+  flex: 0 0 244px;
+  background: #17221b;
+  border-right: 1px solid var(--rule);
+  height: calc(100dvh - 144px);
+  display: flex;
+  flex-direction: column;
+}
+:where(.arena-page) .tac-section-title {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 10px;
+  padding: 15px 16px;
+  border-bottom: 1px solid var(--rule);
+  font-size: 13px;
+  letter-spacing: 0.06em;
+}
+:where(.arena-page) .tac-section-title small {
+  margin-left: 8px;
+  color: #a0b19e;
+  font-size: 10px;
+}
+:where(.arena-page) .tac-section-title button {
+  padding: 4px;
+  border: 0;
+}
+:where(.arena-page) .tac-search {
+  display: flex;
+  gap: 8px;
+  margin: 12px 12px 10px;
+  border: 1px solid var(--rule);
+  padding: 9px;
+  color: #9db09e;
+  background: #0e1812;
+}
+:where(.arena-page) .tac-search input {
+  width: 100%;
+  background: transparent;
+  border: 0;
+  outline: none;
+  color: var(--paper);
+  font-size: 12px;
+}
+:where(.arena-page) .tac-kind-filters {
+  display: flex;
+  gap: 5px;
+  flex-wrap: wrap;
+  padding: 0 12px 12px;
+}
+:where(.arena-page) .tac-kind-filters button {
+  padding: 4px 7px;
+  font-size: 10px;
+  border-color: transparent;
+}
+:where(.arena-page) .tac-catalog-list {
+  overflow: auto;
+  flex: 1;
+  padding: 0 9px 10px;
+  scrollbar-color: #69705b #17221b;
+  scrollbar-width: thin;
+}
+:where(.arena-page) .tac-catalog-list .tac-catalog-card {
+  width: 100%;
+  display: flex;
+  text-align: left;
+  justify-content: flex-start;
+  padding: 10px 8px;
+  gap: 10px;
+  border: 1px solid transparent;
+  border-bottom: 1px solid #cbd3b415;
+  border-radius: 0;
+  min-height: 67px;
+}
+:where(.arena-page) .tac-catalog-card.selected {
+  border-color: #d7b071 !important;
+  background: #dcc99510;
+}
+:where(.arena-page) .tac-catalog-emblem {
+  width: 33px;
+  height: 36px;
+  display: grid;
+  place-items: center;
+  font:
+    italic 19px Georgia,
+    serif;
+  color: #e4c68d;
+  border: 1px solid #aa966349;
+  flex-shrink: 0;
+  background: linear-gradient(130deg, #b6aa691c, transparent);
+  clip-path: polygon(0 0, 80% 0, 100% 20%, 100% 100%, 0 100%);
+}
+:where(.arena-page) .tac-catalog-emblem.kind-burn {
+  color: #eca17c;
+}
+:where(.arena-page) .tac-catalog-emblem.kind-corrode {
+  color: #bdd37c;
+}
+:where(.arena-page) .tac-catalog-emblem.kind-shield {
+  color: #99cbbb;
+}
+:where(.arena-page) .tac-catalog-emblem.kind-control {
+  color: #b7cde2;
+}
+:where(.arena-page) .tac-catalog-card > span:nth-child(2) {
+  min-width: 0;
+  flex: 1;
+}
+:where(.arena-page) .tac-catalog-card strong {
+  display: block;
+  font-size: 13px;
+  font-weight: 500;
+}
+:where(.arena-page) .tac-catalog-card small {
+  display: block;
+  font-size: 9px;
+  color: #acb5a2;
+  margin-top: 5px;
+}
+:where(.arena-page) .tac-catalog-card > b {
+  font:
+    21px Georgia,
+    serif;
+  font-weight: 400;
+  color: #d1c5a7;
+  text-align: center;
+}
+:where(.arena-page) .tac-catalog-card > b small {
+  font: 9px sans-serif;
+}
+:where(.arena-page) .tac-catalog footer {
+  font-size: 10px;
+  line-height: 1.8;
+  color: #92a08f;
+  padding: 10px 15px;
+  border-top: 1px solid var(--rule);
+}
+:where(.arena-page) .tac-mobile-close, :where(.arena-page) .tac-catalog-toggle {
+  display: none !important;
+}
+:where(.arena-page) .tac-battle-column {
+  flex: 1;
+  min-width: 0;
+  background: #0b120e;
+}
+:where(.arena-page) .tac-host {
+  height: 36px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 0 24px;
+  background: #152019;
+  color: #b9d5c6;
+  font-size: 11px;
+  border-bottom: 1px solid #b7c5a51b;
+}
+:where(.arena-page) .tac-host.enemy {
+  color: #e6ba91;
+  background: #211f17;
+}
+:where(.arena-page) .tac-host strong {
+  font-variant-numeric: tabular-nums;
+  font-size: 15px;
+  min-width: 90px;
+  text-align: right;
+}
+:where(.arena-page) .tac-host strong small {
+  font-size: 10px;
+  color: #aaa88e;
+}
+:where(.arena-page) .tac-host-track {
+  height: 5px;
+  flex: 1;
+  overflow: hidden;
+  background: #0006;
+}
+:where(.arena-page) .tac-host-track i {
+  display: block;
+  height: 100%;
+  background: #88bcab;
+  transition: width 0.14s linear;
+  box-shadow: 0 0 12px #88bcab55;
+}
+:where(.arena-page) .enemy .tac-host-track i {
+  background: #d7a16c;
+}
+:where(.arena-page) .tac-table {
+  position: relative;
+  height: calc(100dvh - 287px);
+  min-height: 500px;
+  isolation: isolate;
+  overflow: hidden;
+  background: #151f19;
+}
+:where(.arena-page) .tac-table .slice-canvas, :where(.arena-page) .tac-table .slice-canvas canvas {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+:where(.arena-page) .tac-loading {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  color: #d4c49f;
+  letter-spacing: 0.14em;
+  pointer-events: none;
+}
+:where(.arena-page) .tac-overlay {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+:where(.arena-page) .tac-overlay button {
+  pointer-events: auto;
+}
+:where(.arena-page) .tac-lane-name {
+  position: absolute;
+  transform: translate(-50%, -50%);
+  color: #bac0a17d;
+  letter-spacing: 0.18em;
+  font-size: 13px;
+  text-align: center;
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  white-space: nowrap;
+  text-shadow: 0 1px 4px #000;
+}
+:where(.arena-page) .tac-lane-name small {
+  font:
+    italic 26px Georgia,
+    serif;
+  color: #b1ad8950;
+}
+:where(.arena-page) .tac-lane-name b {
+  font-size: 9px;
+  font-weight: 400;
+  color: #d2a178;
+}
+:where(.arena-page) .tac-lane-name.focused {
+  color: #e9ce99;
+}
+:where(.arena-page) .tac-lane-name.focused small {
+  color: #d4b67b;
+}
+:where(.arena-page) .tac-lane-hud {
+  position: absolute;
+  transform: translateX(-50%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  z-index: 3;
+  color: #b6dcca;
+  white-space: nowrap;
+  text-shadow:
+    0 1px 3px #000,
+    0 0 5px #000;
+}
+:where(.arena-page) .tac-lane-hud.enemy {
+  color: #eac89e;
+}
+:where(.arena-page) .tac-shield-line {
+  display: flex;
+  gap: 3px;
+  align-items: center;
+}
+:where(.arena-page) .tac-shield-line strong {
+  font: 600 12px monospace;
+}
+:where(.arena-page) .tac-lane-hud.broken .tac-shield-line {
+  opacity: 0.4;
+}
+:where(.arena-page) .tactical-page .tac-amp {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  min-width: 26px;
+  min-height: 26px;
+  padding: 3px 5px;
+  border: 1px solid #d9c78930;
+  border-radius: 20px;
+  background: #14221b66;
+  color: #e8ce93;
+  font-size: 9px;
+}
+:where(.arena-page) .tactical-page .tac-amp:hover {
+  background: #233c2cc9;
+  border-color: #d9c78988;
+}
+:where(.arena-page) .tactical-page .tac-amp.inactive {
+  color: #92968a;
+  border-style: dashed;
+}
+:where(.arena-page) .tac-status-token {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  font: 600 11px monospace;
+}
+:where(.arena-page) .burn {
+  color: #ffab72;
+}
+:where(.arena-page) .corrode {
+  color: #c6e786;
+}
+:where(.arena-page) .tactical-page .tac-slot {
+  position: absolute;
+  padding: 0;
+  border: 1px dashed #d9c58c35;
+  background: #d7dba005;
+  border-radius: 3px;
+  flex-direction: column;
+  color: #d3ceac63;
+  z-index: 1;
+}
+:where(.arena-page) .tac-slot > span {
+  font-size: 22px;
+}
+:where(.arena-page) .tac-slot small {
+  font-size: 9px;
+}
+:where(.arena-page) .tactical-page .tac-slot.allowed {
+  border-color: #c6d6a977;
+  color: #d4d8af;
+  background: #bdddbb08;
+}
+:where(.arena-page) .tactical-page .tac-slot.unavailable {
+  color: #787d6866;
+  border-color: #936a5635;
+}
+:where(.arena-page) .tactical-page .tac-slot:hover {
+  background: #dae4ba1a;
+}
+:where(.arena-page) .tactical-page .tac-equipment {
+  position: absolute;
+  display: block;
+  padding: 0;
+  overflow: visible;
+  border: 1px solid transparent;
+  background: transparent;
+  border-radius: 4px;
+  z-index: 2;
+  transition: border-color 0.1s;
+  touch-action: manipulation;
+}
+:where(.arena-page) .tactical-page .tac-equipment:hover, :where(.arena-page) .tactical-page .tac-equipment.chosen {
+  border-color: #dac58ba8;
+  background: #dbc48b09;
+}
+:where(.arena-page) .tac-equipment.related {
+  box-shadow:
+    0 0 0 2px #d5bc76aa,
+    inset 0 0 20px #d5bc7620;
+}
+:where(.arena-page) .tac-equipment.fired {
+  border-color: #f7da9c;
+  box-shadow: 0 0 20px #f0bb5e50;
+}
+:where(.arena-page) .tac-equipment.frozen {
+  border-color: #b9e8f0aa;
+  box-shadow: inset 0 0 25px #9addf34a;
+}
+:where(.arena-page) .tac-equipment-caption {
+  position: absolute;
+  bottom: calc(100% + 2px);
+  left: 50%;
+  transform: translateX(-50%);
+  width: max-content;
+  max-width: 150px;
+  pointer-events: none;
+  opacity: 0;
+  color: #e6dec8;
+  text-shadow:
+    0 1px 3px #000,
+    0 0 5px #000,
+    0 0 8px #142017;
+}
+:where(.arena-page) .tac-equipment-caption strong {
+  font-size: 11px;
+  font-weight: 500;
+}
+:where(.arena-page) .enemy .tac-equipment-caption {
+  bottom: auto;
+  top: calc(100% + 3px);
+}
+:where(.arena-page) .editing .tac-equipment-caption, :where(.arena-page) .detailed .tac-equipment-caption, :where(.arena-page) .tac-equipment:hover .tac-equipment-caption, :where(.arena-page) .tac-equipment:focus-visible .tac-equipment-caption, :where(.arena-page) .tac-equipment.chosen .tac-equipment-caption {
+  opacity: 1;
+}
+:where(.arena-page) .tac-equipment-signals {
+  position: absolute;
+  left: 50%;
+  bottom: -14px;
+  transform: translateX(-50%);
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  pointer-events: none;
+}
+:where(.arena-page) .enemy .tac-equipment-signals {
+  bottom: auto;
+  top: -14px;
+}
+:where(.arena-page) .tac-cooldown-ring {
+  width: 26px;
+  height: 26px;
+  position: relative;
+  color: #e1c38a;
+  filter: drop-shadow(0 1px 2px #000);
+}
+:where(.arena-page) .tac-cooldown-ring > svg:first-child {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+:where(.arena-page) .tac-cooldown-ring circle {
+  fill: none;
+  stroke-width: 2.5;
+}
+:where(.arena-page) .tac-cooldown-ring .ring-track {
+  stroke: #131c18b0;
+}
+:where(.arena-page) .tac-cooldown-ring .ring-progress {
+  stroke: currentColor;
+  transform: rotate(-90deg);
+  transform-origin: 50% 50%;
+  stroke-linecap: round;
+}
+:where(.arena-page) .tac-cooldown-ring > svg:not(:first-child), :where(.arena-page) .tac-cooldown-ring > i {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+}
+:where(.arena-page) .tac-cooldown-ring > i {
+  width: 3px;
+  height: 3px;
+  border-radius: 50%;
+  background: currentColor;
+}
+:where(.arena-page) .tac-cooldown-ring.haste {
+  color: #ffe5a0;
+}
+:where(.arena-page) .tac-cooldown-ring.slow {
+  color: #c1a8e1;
+}
+:where(.arena-page) .tac-cooldown-ring.frozen {
+  color: #c6f2ff;
+}
+:where(.arena-page) .tac-ammo {
+  display: flex;
+  gap: 2px;
+  align-items: center;
+  color: #eee2c5;
+  font: 10px monospace;
+  text-shadow: 0 1px 3px #000;
+}
+:where(.arena-page) .tac-equipment-state {
+  position: absolute;
+  left: 50%;
+  top: calc(100% + 21px);
+  transform: translateX(-50%);
+  width: max-content;
+  max-width: 180px;
+  padding: 2px 5px;
+  border-radius: 3px;
+  background: #142017bc;
+  color: #d4e6c6;
+  font-size: 9px;
+  line-height: 1.6;
+  pointer-events: none;
+  z-index: 5;
+}
+:where(.arena-page) .tac-numbers {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 8;
+  overflow: hidden;
+}
+:where(.arena-page) .tac-number {
+  position: absolute;
+  display: flex;
+  gap: 3px;
+  align-items: center;
+  white-space: nowrap;
+  color: #ffe2a1;
+  font:
+    900 clamp(22px, 2.2vw, 34px)/1 'Trebuchet MS',
+    sans-serif;
+  letter-spacing: -0.045em;
+  text-shadow:
+    0 2px 2px #161913,
+    0 0 4px #000;
+  will-change: transform, opacity;
+}
+:where(.arena-page) .tac-number b {
+  -webkit-text-stroke: 1.5px #28251b;
+  paint-order: stroke fill;
+}
+:where(.arena-page) .tac-number svg {
+  filter: drop-shadow(0 1px 1px #000);
+  stroke-width: 2.5;
+}
+:where(.arena-page) .tac-number.core {
+  color: #ff917a;
+}
+:where(.arena-page) .tac-number.heavy {
+  font-size: clamp(28px, 2.7vw, 42px);
+}
+:where(.arena-page) .tac-number.burn {
+  color: #ffae61;
+  font-size: clamp(20px, 1.8vw, 27px);
+}
+:where(.arena-page) .tac-number.corrode {
+  color: #c8e986;
+  font-size: clamp(20px, 1.8vw, 27px);
+}
+:where(.arena-page) .tac-number.repair {
+  color: #93f0e6;
+}
+:where(.arena-page) .tac-number.heal {
+  color: #b0f29b;
+}
+:where(.arena-page) .tac-placement {
+  position: absolute;
+  pointer-events: none;
+  z-index: 5;
+  border: 2px solid #cee9ad;
+  background: #a7c79d28;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #f3e5b7;
+  text-align: center;
+  font-size: 11px;
+  line-height: 1.6;
+}
+:where(.arena-page) .tac-placement span {
+  background: #11251bec;
+  padding: 6px;
+}
+:where(.arena-page) .tac-placement.invalid {
+  border-color: #ef9c7d;
+  background: #cc795b33;
+}
+:where(.arena-page) .tac-placement.invalid span {
+  background: #48241fed;
+}
+:where(.arena-page) .tac-connections {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+  pointer-events: none;
+  z-index: 4;
+}
+:where(.arena-page) .tac-connections path {
+  fill: none;
+  stroke-width: 2;
+  stroke-dasharray: 5 5;
+  opacity: 0.85;
+  filter: drop-shadow(0 0 4px #ebc77c88);
+}
+:where(.arena-page) .tac-connections marker path {
+  fill: context-stroke;
+  stroke: none;
+  filter: none;
+}
+:where(.arena-page) .tac-relation-note {
+  position: absolute;
+  left: 50%;
+  bottom: 8px;
+  transform: translateX(-50%);
+  padding: 5px 9px;
+  background: #162017e8;
+  color: #e2ce9e;
+  font-size: 10px;
+  max-width: 85%;
+  white-space: nowrap;
+  display: flex;
+  gap: 6px;
+  align-items: center;
+  pointer-events: none;
+  z-index: 6;
+}
+:where(.arena-page) .tac-controls {
+  padding: 11px 16px;
+  display: flex;
+  gap: 9px;
+  align-items: center;
+  background: #1a261d;
+  border-bottom: 1px solid var(--rule);
+  min-height: 57px;
+}
+:where(.arena-page) .tac-controls button {
+  padding: 6px 8px;
+  font-size: 11px;
+  white-space: nowrap;
+}
+:where(.arena-page) .tac-controls time {
+  font: 11px monospace;
+  color: #cfceb2;
+  white-space: nowrap;
+}
+:where(.arena-page) .tac-view-options {
+  margin-left: auto;
+  display: flex;
+  gap: 6px;
+}
+:where(.arena-page) .tac-view-options button {
+  font-size: 10px;
+  color: #b4bfab;
+}
+:where(.arena-page) .tac-build-hint {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  min-width: 0;
+  font-size: 11px;
+  line-height: 1.6;
+}
+:where(.arena-page) .tac-build-hint b {
+  white-space: nowrap;
+  color: #ebce91;
+  font-weight: 500;
+}
+:where(.arena-page) .tac-build-hint span {
+  color: #b9c3ae;
+}
+:where(.arena-page) .tac-build-hint button {
+  flex-shrink: 0;
+}
+:where(.arena-page) .tac-timeline {
+  position: relative;
+  flex: 1;
+  min-width: 80px;
+  display: flex;
+  align-items: center;
+  height: 26px;
+}
+:where(.arena-page) .tac-timeline input {
+  width: 100%;
+  accent-color: #d8bc80;
+  margin: 0;
+  height: 5px;
+  cursor: pointer;
+  z-index: 2;
+}
+:where(.arena-page) .tac-timeline-marks {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 1px;
+  height: 5px;
+}
+:where(.arena-page) .tac-timeline-marks button {
+  position: absolute;
+  transform: translateX(-50%);
+  border: 0 !important;
+  padding: 0 !important;
+  width: 5px;
+  height: 5px;
+  background: #e1a179 !important;
+}
+:where(.arena-page) .tac-live-strip {
+  min-height: 45px;
+  padding: 7px 15px;
+  display: flex;
+  gap: 7px;
+  align-items: center;
+  background: #111c14;
+  color: #909f8b;
+  font-size: 10px;
+  overflow: hidden;
+}
+:where(.arena-page) .tac-live-strip button {
+  padding: 3px 7px;
+  font-size: 10px;
+  line-height: 1.5;
+  text-align: left;
+  border: 0;
+  border-left: 1px solid #c6b4804f;
+  justify-content: flex-start;
+  max-width: 33.33%;
+  color: #c7cbb4;
+}
+:where(.arena-page) .tac-live-strip time {
+  color: #d3b880;
+  flex-shrink: 0;
+  font-family: monospace;
+}
+:where(.arena-page) .tac-inspector {
+  position: fixed;
+  right: 18px;
+  top: 150px;
+  width: 320px;
+  max-height: calc(100dvh - 172px);
+  overflow: auto;
+  background: #17241cee;
+  border: 1px solid #d2b57980;
+  backdrop-filter: blur(18px);
+  box-shadow: 0 18px 70px #0009;
+  z-index: 12;
+  padding: 0 18px 18px;
+  scrollbar-width: thin;
+}
+:where(.arena-page) .tac-inspector .tac-section-title {
+  margin: 0 -18px 20px;
+}
+:where(.arena-page) .tac-inspector h2 {
+  font-family: Georgia, 'Songti SC', serif;
+  font-weight: 500;
+  font-size: 29px;
+  margin: 8px 0 12px;
+}
+:where(.arena-page) .tac-detail-meta {
+  display: flex;
+  gap: 7px;
+  flex-wrap: wrap;
+}
+:where(.arena-page) .tac-detail-meta span {
+  border: 1px solid #b9c19e40;
+  padding: 4px 7px;
+  font-size: 10px;
+  color: #c4c9b4;
+}
+:where(.arena-page) .tac-effect-text {
+  font-size: 15px;
+  line-height: 1.9;
+  color: #e8dfc5;
+  padding: 10px 0;
+}
+:where(.arena-page) .tac-state-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+:where(.arena-page) .tac-state-list span {
+  padding: 5px 8px;
+  background: #accc9812;
+  font-size: 11px;
+  color: #c7dabb;
+  border: 1px solid #a3c38e30;
+}
+:where(.arena-page) .tac-detail-relation {
+  background: #dac1850a;
+  border-left: 2px solid #d3b47b;
+  padding: 10px;
+  font-size: 12px;
+  line-height: 1.7;
+  color: #d8ceac;
+}
+:where(.arena-page) .tac-detail-actions {
+  display: flex;
+  gap: 8px;
+  margin: 12px 0;
+}
+:where(.arena-page) .tac-inspector .arena-effect-help {
+  margin-top: 20px;
+}
+:where(.arena-page) .tac-inspector h3 {
+  font-size: 12px;
+  margin-top: 25px;
+}
+:where(.arena-page) .tac-inspector-events {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+:where(.arena-page) .tac-inspector-events button {
+  font-size: 11px;
+  text-align: left;
+  justify-content: flex-start;
+  line-height: 1.6;
+}
+:where(.arena-page) .tac-inspector footer {
+  font-size: 10px;
+  color: #a6b399;
+  margin-top: 20px;
+}
+:where(.arena-page) .tac-counter-note {
+  margin: 0;
+  padding: 15px 24px;
+  font-size: 11px;
+  color: #adb9a2;
+}
+:where(.arena-page) .tac-review-container {
+  border-top: 1px solid var(--rule);
+}
+:where(.arena-page) .tactical-page .tac-review-toggle {
+  width: 100%;
+  display: flex;
+  justify-content: space-between;
+  padding: 18px 25px;
+  border: 0;
+  border-radius: 0;
+  background: #1c291e;
+  text-align: left;
+  font-size: 14px;
+  letter-spacing: 0.04em;
+}
+:where(.arena-page) .tac-review-toggle span {
+  font-size: 10px;
+  color: #adbba4;
+  letter-spacing: 0;
+}
+:where(.arena-page) .tac-review {
+  padding: 26px max(24px, calc((100% - 1280px) /2));
+  background:
+    radial-gradient(ellipse at top left, #27352655, transparent 65%), #111c14;
+}
+:where(.arena-page) .tac-review-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+}
+:where(.arena-page) .tac-review-head small {
+  font-size: 10px;
+  color: #c4b580;
+  letter-spacing: 0.13em;
+}
+:where(.arena-page) .tac-review-head h2 {
+  font:
+    23px Georgia,
+    'Songti SC',
+    serif;
+  margin: 9px 0 23px;
+}
+:where(.arena-page) .tac-review-head > span {
+  font-size: 10px;
+  color: #aeb99f;
+}
+:where(.arena-page) .tac-tabs {
+  display: flex;
+  gap: 10px;
+  border-bottom: 1px solid var(--rule);
+  padding-bottom: 15px;
+  flex-wrap: wrap;
+}
+:where(.arena-page) .tac-tabs button {
+  font-size: 12px;
+}
+:where(.arena-page) .tac-review-filters {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+  padding: 14px 0;
+}
+:where(.arena-page) .tac-review-filters button {
+  font-size: 10px;
+  padding: 5px 12px;
+}
+:where(.arena-page) .tac-review-filters small {
+  margin-left: auto;
+  font-size: 10px;
+  color: #9eae97;
+}
+:where(.arena-page) .tac-event-list {
+  max-height: 330px;
+  overflow: auto;
+  scrollbar-width: thin;
+}
+:where(.arena-page) .tac-event-list button {
+  width: 100%;
+  display: flex;
+  justify-content: flex-start;
+  gap: 20px;
+  text-align: left;
+  border: 0;
+  border-radius: 0;
+  border-bottom: 1px solid #bdc8a31a;
+  padding: 12px;
+  font-size: 12px;
+}
+:where(.arena-page) .tac-event-list button.current {
+  background: #b49e5423;
+  color: #ecd298;
+}
+:where(.arena-page) .tac-event-list time {
+  font: 12px monospace;
+  color: #bda674;
+  min-width: 58px;
+}
+:where(.arena-page) .tac-event-list b {
+  margin-left: auto;
+  color: #b9ba97;
+  font-weight: 400;
+}
+:where(.arena-page) .tac-lane-reports {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 16px;
+  padding: 0 0 20px;
+}
+:where(.arena-page) .tac-lane-reports article {
+  border: 1px solid var(--rule);
+  padding: 20px;
+  background: #c4cca506;
+}
+:where(.arena-page) .tac-lane-reports article > small {
+  letter-spacing: 0.15em;
+  color: #aab99e;
+  font-size: 10px;
+}
+:where(.arena-page) .tac-lane-reports h3 {
+  font:
+    22px Georgia,
+    'Songti SC',
+    serif;
+  color: #e1cb9b;
+}
+:where(.arena-page) .tac-lane-reports dl > div {
+  display: flex;
+  justify-content: space-between;
+  margin: 14px 0;
+  color: #bac5ad;
+}
+:where(.arena-page) .tac-lane-reports dd {
+  font: 18px monospace;
+  color: #e3d7b6;
+}
+:where(.arena-page) .tac-lane-reports article > button {
+  width: 100%;
+  margin-top: 10px;
+}
+:where(.arena-page) .tac-muted {
+  font-size: 11px;
+  color: #a4b29a;
+  line-height: 1.8;
+}
+:where(.arena-page) .tac-report-scroll {
+  overflow: auto;
+}
+:where(.arena-page) .tac-report-scroll table {
+  width: 100%;
+  border-collapse: collapse;
+  white-space: nowrap;
+  text-align: right;
+  font-size: 12px;
+}
+:where(.arena-page) .tac-report-scroll th, :where(.arena-page) .tac-report-scroll td {
+  padding: 13px 12px;
+  border-bottom: 1px solid var(--rule);
+  font-weight: 400;
+  font-variant-numeric: tabular-nums;
+}
+:where(.arena-page) .tac-report-scroll th:first-child {
+  text-align: left;
+}
+:where(.arena-page) .tac-report-scroll thead {
+  color: #a9b69d;
+  font-size: 10px;
+}
+:where(.arena-page) .tac-report-scroll th small {
+  display: block;
+  color: #8f9e86;
+  font-size: 9px;
+  margin-top: 5px;
+}
+:where(.arena-page) .tac-comparison {
+  padding: 12px 0;
+  font-size: 12px;
+  line-height: 1.8;
+}
+:where(.arena-page) .tac-compare-results {
+  display: flex;
+  gap: 15px;
+  margin: 20px 0;
+}
+:where(.arena-page) .tac-compare-results span {
+  flex: 1;
+  border: 1px solid var(--rule);
+  padding: 15px;
+  color: #a5b99a;
+  font-size: 11px;
+}
+:where(.arena-page) .tac-compare-results b {
+  display: block;
+  font:
+    22px Georgia,
+    serif;
+  color: #e6d5a5;
+  margin-top: 10px;
+}
+:where(.arena-page) .tac-history-list {
+  max-height: 50dvh;
+  overflow: auto;
+}
+:where(.arena-page) .tac-history-list > button {
+  width: 100%;
+  display: flex;
+  text-align: left;
+  justify-content: flex-start;
+  padding: 12px;
+  gap: 14px;
+  border: 0;
+  border-bottom: 1px solid var(--rule);
+}
+:where(.arena-page) .tac-history-list span {
+  flex: 1;
+}
+:where(.arena-page) .tac-history-list span small {
+  display: block;
+  font-size: 10px;
+  color: #a4b196;
+  margin-top: 5px;
+}
+:where(.arena-page) .tac-history-list b {
+  color: #dfc78c;
+}
+:where(.arena-page) .tac-history-list time {
+  font-size: 11px;
+  color: #b4b69b;
+}
+:where(.arena-page) .tactical-expanded {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  overflow: auto;
+  max-height: 100dvh;
+}
+:where(.arena-page) .tactical-page.reduce-motion * {
+  transition: none !important;
+  animation: none !important;
+}
+:where(.arena-page) .tactical-page .arena-inspection {
+  font-family: inherit;
+}
+:where(.arena-page) .tactical-page .arena-toast {
+  z-index: 150;
+}
+:where(.arena-page) .tac-table {
+  height: calc(100dvh - 317px);
+  min-height: 380px;
+}
+:where(.arena-page) .tac-catalog {
+  min-height: 610px;
+  min-height: calc(100dvh - 144px);
+}
+:where(.arena-page) .tactical-expanded .tac-header {
+  height: 40px;
+}
+:where(.arena-page) .tactical-expanded .tac-command {
+  padding-block: 8px;
+}
+:where(.arena-page) .tactical-expanded .tac-command small, :where(.arena-page) .tactical-expanded .tac-command p {
+  display: none;
+}
+:where(.arena-page) .tactical-expanded .tac-host {
+  height: 28px;
+}
+:where(.arena-page) .tactical-expanded .tac-live-strip {
+  min-height: 28px;
+  padding-block: 3px;
+}
+:where(.arena-page) .tactical-expanded .tac-table {
+  height: calc(100dvh - 237px);
+}
+@media (min-width: 1700px) {
+  :where(.arena-page) .tac-catalog {
+    width: 278px;
+    flex-basis: 278px;
+  }
+  :where(.arena-page) .tac-command {
+    padding-block: 19px;
+  }
+  :where(.arena-page) .tac-table {
+    min-height: 580px;
+  }
+}
+@media (max-width: 1100px) {
+  :where(.arena-page) .tac-command p, :where(.arena-page) .tac-command-actions > span {
+    display: none;
+  }
+  :where(.arena-page) .tac-catalog {
+    flex-basis: 210px;
+    width: 210px;
+  }
+  :where(.arena-page) .tac-catalog-card strong {
+    font-size: 12px;
+  }
+  :where(.arena-page) .tac-catalog-card small {
+    font-size: 8px;
+  }
+  :where(.arena-page) .tac-header nav {
+    margin-left: 0;
+  }
+  :where(.arena-page) .tac-header {
+    gap: 12px;
+    padding: 0 16px;
+  }
+  :where(.arena-page) .tac-build-hint {
+    flex-wrap: wrap;
+  }
+  :where(.arena-page) .tac-controls {
+    flex-wrap: wrap;
+  }
+  :where(.arena-page) .tac-view-options {
+    margin-left: auto;
+  }
+  :where(.arena-page) .tac-table {
+    min-height: 520px;
+  }
+}
+@media (max-width: 850px) {
+  :where(.arena-page) .tac-catalog {
+    display: none;
+    position: fixed;
+    left: 0;
+    top: 0;
+    bottom: 0;
+    z-index: 30;
+    width: 290px;
+    height: 100dvh;
+    min-height: 0;
+    box-shadow: 20px 0 80px #0009;
+  }
+  :where(.arena-page) .tac-catalog.open {
+    display: flex;
+  }
+  :where(.arena-page) .tac-catalog-toggle, :where(.arena-page) .tac-mobile-close {
+    display: inline-flex !important;
+  }
+  :where(.arena-page) .tac-header nav {
+    display: none;
+  }
+  :where(.arena-page) .tac-command {
+    padding: 12px 15px;
+  }
+  :where(.arena-page) .tac-command h1 {
+    font-size: 20px;
+  }
+  :where(.arena-page) .tac-command-actions {
+    gap: 7px;
+  }
+  :where(.arena-page) .tactical-page .tac-primary {
+    padding: 9px 12px;
+  }
+  :where(.arena-page) .tac-inspector {
+    right: 12px;
+    top: 135px;
+    max-height: calc(100dvh - 155px);
+  }
+  :where(.arena-page) .tac-review-head > span {
+    display: none;
+  }
+  :where(.arena-page) .tac-live-strip button {
+    max-width: 50%;
+  }
+  :where(.arena-page) .tac-live-strip button:first-child:not(:last-child) {
+    display: none;
+  }
+  :where(.arena-page) .tac-host {
+    padding-inline: 14px;
+  }
+}
+@media (max-width: 540px) {
+  :where(.arena-page) .tac-header {
+    padding: 0 10px;
+    gap: 10px;
+    height: 50px;
+  }
+  :where(.arena-page) .tac-brand {
+    font-size: 15px;
+    letter-spacing: 0.05em;
+  }
+  :where(.arena-page) .tac-header-actions button {
+    padding: 6px;
+    font-size: 10px;
+  }
+  :where(.arena-page) .tac-header-actions button > span {
+    display: none;
+  }
+  :where(.arena-page) .tac-header-actions {
+    gap: 4px;
+  }
+  :where(.arena-page) .tac-command {
+    align-items: flex-start;
+    gap: 7px;
+  }
+  :where(.arena-page) .tac-command h1 {
+    font-size: 18px;
+  }
+  :where(.arena-page) .tac-command small {
+    font-size: 8px;
+  }
+  :where(.arena-page) .tac-command-actions {
+    flex-wrap: wrap;
+    justify-content: flex-end;
+  }
+  :where(.arena-page) .tac-command-actions button {
+    font-size: 10px;
+    padding: 7px;
+  }
+  :where(.arena-page) .tac-outcome {
+    font-size: 15px;
+  }
+  :where(.arena-page) .tac-table {
+    height: 520px;
+    min-height: 520px;
+  }
+  :where(.arena-page) .tac-host {
+    gap: 8px;
+    height: 32px;
+    font-size: 10px;
+  }
+  :where(.arena-page) .tac-host strong {
+    min-width: 70px;
+    font-size: 13px;
+  }
+  :where(.arena-page) .tac-lane-hud {
+    font-size: 8px;
+  }
+
+  :where(.arena-page) .tac-lane-name {
+    font-size: 10px;
+    gap: 4px;
+    flex-direction: column;
+  }
+  :where(.arena-page) .tac-lane-name small {
+    font-size: 18px;
+  }
+  :where(.arena-page) .tac-lane-name b {
+    font-size: 8px;
+  }
+  :where(.arena-page) .tac-controls {
+    padding: 9px;
+    gap: 6px;
+  }
+  :where(.arena-page) .tac-controls time {
+    font-size: 9px;
+  }
+  :where(.arena-page) .tac-controls button {
+    font-size: 9px;
+    padding: 5px;
+  }
+  :where(.arena-page) .tac-build-hint {
+    font-size: 10px;
+  }
+  :where(.arena-page) .tac-build-hint span {
+    flex-basis: 100%;
+    order: 1;
+  }
+  :where(.arena-page) .tac-view-options {
+    gap: 4px;
+  }
+  :where(.arena-page) .tac-relation-note {
+    white-space: normal;
+    font-size: 9px;
+    width: 90%;
+    text-align: center;
+  }
+  :where(.arena-page) .tac-review {
+    padding: 20px 12px;
+  }
+  :where(.arena-page) .tac-review-head h2 {
+    font-size: 18px;
+  }
+  :where(.arena-page) .tac-review-toggle span {
+    display: none;
+  }
+  :where(.arena-page) .tac-tabs {
+    gap: 5px;
+  }
+  :where(.arena-page) .tac-tabs button {
+    font-size: 10px;
+    padding: 6px;
+  }
+  :where(.arena-page) .tac-lane-reports {
+    gap: 6px;
+  }
+  :where(.arena-page) .tac-lane-reports article {
+    padding: 10px;
+  }
+  :where(.arena-page) .tac-lane-reports h3 {
+    font-size: 15px;
+  }
+  :where(.arena-page) .tac-lane-reports dl {
+    font-size: 9px;
+  }
+  :where(.arena-page) .tac-lane-reports dd {
+    font-size: 13px;
+    margin: 0;
+  }
+  :where(.arena-page) .tac-lane-reports article > button {
+    font-size: 9px;
+    padding: 5px;
+  }
+  :where(.arena-page) .tac-compare-results {
+    gap: 6px;
+  }
+  :where(.arena-page) .tac-compare-results span {
+    padding: 9px;
+  }
+  :where(.arena-page) .tac-compare-results b {
+    font-size: 15px;
+  }
+  :where(.arena-page) .tac-inspector {
+    left: 12px;
+    right: 12px;
+    width: auto;
+  }
+  :where(.arena-page) .tac-event-list button {
+    gap: 10px;
+    font-size: 10px;
+  }
+  :where(.arena-page) .tac-event-list time {
+    font-size: 10px;
+    min-width: 48px;
+  }
+}
+
+@media (max-width: 540px) {
+  :where(.arena-page) .tac-lane-hud {
+    gap: 3px;
+  }
+  :where(.arena-page) .tac-shield-line strong {
+    font-size: 10px;
+  }
+  :where(.arena-page) .tac-equipment-caption strong {
+    font-size: 9px;
+  }
+  :where(.arena-page) .tac-cooldown-ring {
+    width: 23px;
+    height: 23px;
+  }
+  :where(.arena-page) .tac-equipment-caption {
+    max-width: 95px;
+  }
+}
+
+/* arena-2d */
+/* Flat presentation; simulation and archive remain shared with the arena. */
+:where(.arena-page) .tac-mode-link {
+  color: inherit;
+  align-self: center;
+  font-size: 11px;
+  padding: 6px;
+  text-decoration: none;
+}
+:where(.arena-page) .flat-arena {
+  --paper: #eef0ff;
+  --dim: #a2accf;
+  --rule: #acbbff28;
+  --accent: #edc685;
+  background:
+    radial-gradient(ellipse at 55% 20%, #293b6940, transparent 65%), #101327;
+  color: var(--paper);
+  padding: 0 16px 24px;
+  font-family: 'Microsoft YaHei', 'PingFang SC', sans-serif;
+}
+:where(.arena-page) .flat-arena .tac-header {
+  background: transparent;
+  height: 64px;
+  padding: 0 12px;
+}
+:where(.arena-page) .flat-arena .tac-brand {
+  font-family: inherit;
+  font-weight: 800;
+  font-size: 19px;
+  letter-spacing: 0.05em;
+}
+:where(.arena-page) .flat-arena .tac-brand i {
+  color: #e9c58e;
+}
+:where(.arena-page) .flat-arena .tac-header nav {
+  color: #8893b7;
+}
+:where(.arena-page) .flat-arena .tac-header nav .active {
+  color: #f5dfb3;
+}
+:where(.arena-page) .flat-arena .tac-header-actions b {
+  color: #e1d9ff;
+}
+:where(.arena-page) .flat-arena .tac-command {
+  background: transparent;
+  padding: 18px 12px 22px;
+  border: 0;
+}
+:where(.arena-page) .flat-arena .tac-command h1 {
+  font-family: inherit;
+  font-weight: 700;
+  font-size: 25px;
+  color: #f0ebd9;
+}
+:where(.arena-page) .flat-arena .tac-command p {
+  color: #9ba9cf;
+}
+:where(.arena-page) .flat-arena .tac-command small {
+  color: #8499cc;
+  letter-spacing: 0.13em;
+}
+:where(.arena-page) .flat-arena .tac-command-actions {
+  gap: 8px;
+}
+:where(.arena-page) .flat-arena .tac-command-actions > span {
+  max-width: 120px;
+  line-height: 1.6;
+}
+:where(.arena-page) .flat-arena button {
+  border-radius: 6px;
+}
+:where(.arena-page) .flat-arena button:hover {
+  border-color: #bbc8ff;
+  background-color: #7d94e31a;
+}
+:where(.arena-page) .flat-arena button:focus-visible {
+  outline: 2px solid #c7d7ff;
+  outline-offset: 3px;
+}
+:where(.arena-page) .flat-arena button[aria-pressed='true'] {
+  color: #e5eaff;
+  border-color: #9baff5;
+  background: #657cda26;
+}
+:where(.arena-page) .flat-arena .tac-primary {
+  color: #292138;
+  background: #f2d294;
+  border-color: #ffdfa0;
+  box-shadow:
+    0 3px 0 #98764c,
+    0 0 25px #eac27216;
+}
+:where(.arena-page) .flat-arena .tac-primary:hover {
+  background: #ffe5b3;
+}
+:where(.arena-page) .flat-arena .tac-layout {
+  gap: 16px;
+  align-items: flex-start;
+}
+:where(.arena-page) .flat-arena .tac-catalog {
+  width: 252px;
+  flex-basis: 252px;
+  min-height: 620px;
+  height: calc(100dvh - 177px);
+  max-height: 940px;
+  border: 1px solid #98a2db28;
+  border-radius: 10px;
+  background: #181c34;
+  overflow: hidden;
+}
+:where(.arena-page) .flat-arena .tac-section-title {
+  color: #eee8de;
+  font-weight: 600;
+}
+:where(.arena-page) .flat-arena .tac-section-title small {
+  color: #a5acd2;
+}
+:where(.arena-page) .flat-arena .tac-search {
+  border-radius: 6px;
+  background: #101426;
+  color: #9da7d1;
+}
+:where(.arena-page) .flat-arena .tac-catalog-list {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+  align-content: start;
+  padding: 4px 12px 16px;
+  scrollbar-color: #515b8c #181c34;
+}
+:where(.arena-page) .flat-arena .tac-catalog-list .tac-catalog-card {
+  position: relative;
+  display: block;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  height: 160px;
+  min-width: 0;
+  background: none;
+  overflow: visible;
+}
+:where(.arena-page) .flat-arena .tac-catalog-card.selected {
+  outline: 2px solid #ffe9ac;
+  outline-offset: 3px;
+  border-radius: 10px;
+}
+:where(.arena-page) .flat-arena .tac-catalog footer {
+  padding: 12px;
+  color: #9da7c8;
+  background: #12172c;
+  font-size: 10px;
+  line-height: 1.9;
+}
+:where(.arena-page) .flat-catalog-size {
+  position: absolute;
+  right: 8px;
+  top: 44px;
+  color: #fff4db;
+  background: #111728c9;
+  padding: 1px 5px;
+  font-size: 9px;
+  border-radius: 3px;
+}
+:where(.arena-page) .flat-arena .tac-battle-column {
+  padding: 0;
+  min-width: 0;
+  flex: 1;
+  background: transparent;
+}
+:where(.arena-page) .flat-arena .tac-host {
+  background: #151e39;
+  border: 1px solid #d2b18a25;
+  margin: 0;
+  padding: 10px 18px;
+  height: 44px;
+}
+:where(.arena-page) .flat-arena .tac-host.enemy {
+  border-radius: 12px 12px 0 0;
+}
+:where(.arena-page) .flat-arena .tac-host.own {
+  border-radius: 0 0 12px 12px;
+}
+:where(.arena-page) .flat-arena .tac-host > span {
+  color: #bcc9ed;
+  font-size: 11px;
+}
+:where(.arena-page) .flat-arena .tac-host-track {
+  max-width: 420px;
+  height: 5px;
+  background: #070d23;
+  border-radius: 2px;
+}
+:where(.arena-page) .flat-arena .tac-host-track i {
+  background: linear-gradient(90deg, #5076cc, #b6cfff);
+}
+:where(.arena-page) .flat-arena .tac-host.enemy .tac-host-track i {
+  background: linear-gradient(90deg, #9c4a85, #edb2cb);
+}
+:where(.arena-page) .flat-arena .tac-host strong {
+  color: #eff3ff;
+  font-variant-numeric: tabular-nums;
+}
+:where(.arena-page) .flat-arena .tac-host small {
+  color: #919ec1;
+}
+:where(.arena-page) .flat-table-scroll {
+  overflow-x: auto;
+  scrollbar-width: thin;
+  scrollbar-color: #4b5582 #101a34;
+  border-right: 1px solid #b3c4ef24;
+  border-left: 1px solid #b3c4ef24;
+  background: #182244;
+}
+:where(.arena-page) .flat-table {
+  position: relative;
+  isolation: isolate;
+  min-width: 780px;
+  padding: 8px 20px;
+  overflow: hidden;
+  background:
+    radial-gradient(ellipse at 50% 48%, #354b91c9, #19264fc4 65%, #111a35eb),
+    #1f3269;
+  box-shadow: inset 0 0 55px #080b2099;
+}
+:where(.arena-page) .flat-table::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  opacity: 0.12;
+  background: repeating-linear-gradient(
+    0deg,
+    transparent,
+    transparent 3px,
+    #040a23 3px,
+    #040a23 4px
+  );
+}
+:where(.arena-page) .flat-table::after {
+  content: 'F9';
+  position: absolute;
+  inset: 20% 0 auto;
+  text-align: center;
+  font:
+    900 240px/1 Arial,
+    sans-serif;
+  letter-spacing: -0.12em;
+  color: #728bc408;
+  z-index: -1;
+  pointer-events: none;
+}
+:where(.arena-page) .flat-board, :where(.arena-page) .flat-barriers, :where(.arena-page) .flat-midline, :where(.arena-page) .flat-host-anchors {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 18px;
+}
+:where(.arena-page) .flat-lane {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 5px;
+  min-width: 0;
+  position: relative;
+}
+:where(.arena-page) .flat-arena .flat-slot {
+  height: 205px;
+  min-width: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  background: #070e2a30;
+  border: 1px dashed #b5c5ff2c;
+  border-radius: 8px;
+  color: #8ea1d171;
+}
+:where(.arena-page) .flat-slot > span {
+  font:
+    300 25px/1 Arial,
+    sans-serif;
+}
+:where(.arena-page) .flat-slot small {
+  position: absolute;
+  bottom: 12px;
+  font: 10px/1 monospace;
+  opacity: 0.6;
+}
+:where(.arena-page) .flat-arena .flat-slot.occupied {
+  visibility: hidden;
+}
+:where(.arena-page) .flat-arena .flat-slot.allowed {
+  border-color: #c5ffc8;
+  background: #67beae35;
+  color: #c5ffde;
+}
+:where(.arena-page) .flat-arena .flat-slot.blocked {
+  border-color: #f28eaa;
+  background: #c8496c28;
+}
+:where(.arena-page) .flat-arena .flat-card-button {
+  display: block;
+  position: relative;
+  min-width: 0;
+  padding: 0;
+  height: 205px;
+  border: 0;
+  background: transparent;
+  text-align: left;
+  transition: transform 0.16s;
+}
+:where(.arena-page) .flat-arena .flat-card-button:hover {
+  background: none;
+  transform: translateY(-3px);
+  z-index: 3;
+}
+:where(.arena-page) .flat-arena .flat-card-button.selected, :where(.arena-page) .flat-arena .flat-card-button.inspected {
+  outline: 2px solid #ffe8b4;
+  outline-offset: 3px;
+  border-radius: 8px;
+  z-index: 4;
+}
+:where(.arena-page) .flat-arena .flat-card-button.related {
+  outline: 2px solid #c5aaff;
+  outline-offset: 2px;
+  box-shadow: 0 0 20px #ae91fc50;
+  border-radius: 8px;
+}
+:where(.arena-page) .flat-card-state {
+  position: absolute;
+  right: 4px;
+  left: 4px;
+  top: 48px;
+  background: #080b25db;
+  border-radius: 3px;
+  color: #d8e7ff;
+  padding: 3px 4px;
+  font-size: 9px;
+  line-height: 1.5;
+  pointer-events: none;
+}
+:where(.arena-page) .flat-barriers {
+  padding: 8px 0;
+}
+:where(.arena-page) .flat-barrier {
+  padding: 0 3px;
+  min-width: 0;
+}
+:where(.arena-page) .flat-barrier-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  color: #9dbdff;
+  font-size: 13px;
+  font-variant-numeric: tabular-nums;
+}
+:where(.arena-page) .flat-barrier-top > span {
+  display: flex;
+  gap: 5px;
+  align-items: center;
+}
+:where(.arena-page) .flat-barrier-top small {
+  font-size: 10px;
+  color: #9aaacf;
+}
+:where(.arena-page) .flat-status > span {
+  display: flex;
+  gap: 2px;
+  align-items: center;
+  color: #ffa766;
+  font-size: 10px;
+}
+:where(.arena-page) .flat-status > span[title='侵蚀层数'] {
+  color: #71c791;
+}
+:where(.arena-page) .flat-barrier-track {
+  height: 3px;
+  background: #070d22;
+  margin: 5px 0;
+  overflow: hidden;
+  border-radius: 2px;
+}
+:where(.arena-page) .flat-barrier-track i {
+  display: block;
+  height: 100%;
+  background: #88aeff;
+  box-shadow: 0 0 9px #85b5ff;
+}
+:where(.arena-page) .flat-barrier.broken .flat-barrier-top {
+  color: #8790a7;
+}
+:where(.arena-page) .flat-arena .flat-amp {
+  display: flex;
+  width: 100%;
+  min-width: 0;
+  border: 0;
+  padding: 3px 0;
+  justify-content: flex-start;
+  background: transparent;
+  color: #bbc4e3;
+  font-size: 10px;
+}
+:where(.arena-page) .flat-amp span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+:where(.arena-page) .flat-amp small {
+  margin-left: auto;
+  font-size: 9px;
+}
+:where(.arena-page) .flat-arena .flat-amp.disabled {
+  color: #78829e;
+}
+:where(.arena-page) .flat-midline {
+  position: relative;
+  padding: 14px 0 31px;
+}
+:where(.arena-page) .flat-midline > span {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  justify-content: center;
+  font-size: 10px;
+  color: #a0b1d9;
+  letter-spacing: 0.18em;
+}
+:where(.arena-page) .flat-midline > span i {
+  flex: 1;
+  height: 1px;
+  background: #a1baff22;
+}
+:where(.arena-page) .flat-midline small {
+  color: #6e8db4;
+  font: 10px monospace;
+}
+:where(.arena-page) .flat-placement {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 8px;
+  text-align: center;
+  color: #b5c6ee;
+  font-size: 10px;
+  letter-spacing: 0.07em;
+}
+:where(.arena-page) .flat-placement.invalid {
+  color: #ffb4bb;
+}
+:where(.arena-page) .flat-host-anchors {
+  height: 5px;
+}
+:where(.arena-page) .flat-effects {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 10;
+  overflow: hidden;
+}
+:where(.arena-page) .flat-projectile {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 7px;
+  height: 7px;
+  margin: -3px;
+  background: currentColor;
+  border-radius: 50%;
+  box-shadow:
+    0 0 5px #fff,
+    0 0 15px currentColor,
+    0 0 24px currentColor;
+}
+:where(.arena-page) .flat-contact {
+  position: absolute;
+  display: block;
+  height: 2px;
+  transform-origin: 0 50%;
+  background: linear-gradient(90deg, transparent, currentColor);
+  box-shadow: 0 0 9px currentColor;
+}
+:where(.arena-page) .flat-number {
+  position: absolute;
+  font:
+    900 25px/1.1 Arial,
+    sans-serif;
+  text-shadow:
+    0 2px 1px #0b1027,
+    0 0 5px #0b1027,
+    1px 0 1px #0b1027,
+    -1px 0 1px #0b1027;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+:where(.arena-page) .flat-screen-corner {
+  position: absolute;
+  width: 13px;
+  height: 13px;
+  border-color: #b8c7f05e;
+  border-style: solid;
+  pointer-events: none;
+}
+:where(.arena-page) .flat-screen-corner.tl {
+  left: 6px;
+  top: 6px;
+  border-width: 1px 0 0 1px;
+}
+:where(.arena-page) .flat-screen-corner.tr {
+  right: 6px;
+  top: 6px;
+  border-width: 1px 1px 0 0;
+}
+:where(.arena-page) .flat-screen-corner.bl {
+  left: 6px;
+  bottom: 6px;
+  border-width: 0 0 1px 1px;
+}
+:where(.arena-page) .flat-screen-corner.br {
+  right: 6px;
+  bottom: 6px;
+  border-width: 0 1px 1px 0;
+}
+
+/* No reserved numeric slots. Extra rows consume art space, not font size. */
+:where(.arena-page) .collectible-card {
+  --rim: #9ba3b8;
+  --rim-light: #e6e9ef;
+  display: flex;
+  flex-direction: column;
+  position: relative;
+  isolation: isolate;
+  width: 100%;
+  height: 100%;
+  min-width: 0;
+  overflow: hidden;
+  border: 3px solid var(--rim);
+  border-radius: 9px;
+  text-align: left;
+  color: #f7f6f1;
+  box-shadow:
+    inset 0 0 0 1px var(--rim-light),
+    1px 3px 0 #040815,
+    0 6px 10px #04071988;
+  background: #11172c;
+  font-family: 'Microsoft YaHei', 'PingFang SC', sans-serif;
+}
+:where(.arena-page) .cc-rarity-1 {
+  --rim: #558ce4;
+  --rim-light: #b2d6ff;
+}
+:where(.arena-page) .cc-rarity-2 {
+  --rim: #a877d9;
+  --rim-light: #e3c7ff;
+}
+:where(.arena-page) .cc-rarity-3 {
+  --rim: #deac58;
+  --rim-light: #fff0bb;
+}
+:where(.arena-page) .cc-rarity-4 {
+  --rim: #c4cdf5;
+  --rim-light: #edffff;
+  border-color: transparent;
+  background:
+    linear-gradient(#172540, #172540) padding-box,
+    conic-gradient(
+        from 15deg,
+        #ffd4f1,
+        #c6faff,
+        #f7efb0,
+        #ecb8ff,
+        #aeeaff,
+        #ffd4f1
+      )
+      border-box;
+}
+:where(.arena-page) .cc-art {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: max(100%, 230px);
+  aspect-ratio: 1;
+  transform: translate(-50%, -50%);
+  z-index: -2;
+  background-image: var(--art);
+  background-size: 300% 400%;
+  background-position: var(--art-x) var(--art-y);
+}
+:where(.arena-page) .cc-catalog .cc-art {
+  width: max(100%, 175px);
+}
+:where(.arena-page) .cc-detail .cc-art {
+  width: max(100%, 400px);
+}
+:where(.arena-page) .cc-art::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    #0d123a90,
+    transparent 35%,
+    #080e270d 50%,
+    #080d24e8 100%
+  );
+}
+:where(.arena-page) .cc-heading {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  padding: 8px 6px 14px;
+  min-width: 0;
+  background: linear-gradient(#0a1029dd, #0d133577, transparent);
+  text-shadow: 0 1px 3px #080a19;
+}
+:where(.arena-page) .cc-heading strong {
+  font-weight: 800;
+  font-size: 12px;
+  line-height: 1.3;
+  letter-spacing: 0.01em;
+  overflow-wrap: anywhere;
+}
+:where(.arena-page) .cc-heading small {
+  color: #d8d9ee;
+  font-size: 8px;
+  line-height: 1.3;
+  letter-spacing: 0.02em;
+}
+:where(.arena-page) .cc-info {
+  display: flex;
+  flex-direction: column;
+  margin-top: auto;
+  min-width: 0;
+  padding: 18px 6px 6px;
+  background: linear-gradient(transparent, #101830e8 25%, #10162df5);
+}
+:where(.arena-page) .cc-clock {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  align-self: flex-start;
+  font-size: 11px;
+  line-height: 1.2;
+  padding: 3px 5px;
+  border: 1px solid #e5ecff6b;
+  border-radius: 4px;
+  background: #10182acf;
+  color: #f9f2d7;
+  margin-bottom: 5px;
+}
+:where(.arena-page) .cc-clock b {
+  font:
+    700 12px/1.1 Arial,
+    sans-serif;
+  font-variant-numeric: tabular-nums;
+}
+:where(.arena-page) .cc-clock small {
+  font-size: 8px;
+  opacity: 0.75;
+}
+:where(.arena-page) .cc-description {
+  font-size: 9px;
+  line-height: 1.5;
+  color: #c5cbdf;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+:where(.arena-page) .cc-numbers {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 3px 8px;
+  margin-top: 5px;
+  min-width: 0;
+}
+:where(.arena-page) .cc-numbers > span {
+  display: inline-block;
+  min-width: 1.15em;
+  text-align: center;
+  font:
+    900 24px/1.05 Arial,
+    sans-serif;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.04em;
+  text-shadow:
+    0 1px 1px #050915,
+    0 0 2px #ffffff44;
+}
+:where(.arena-page) .cc-numbers > [data-effect='corrode'] {
+  -webkit-text-stroke: 0.5px #92d2a7;
+  text-shadow:
+    0 1px 1px #020814,
+    0 0 5px #82df9130;
+}
+:where(.arena-page) .cc-timer {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background: #070d1d;
+}
+:where(.arena-page) .cc-timer i {
+  display: block;
+  height: 100%;
+  width: var(--progress);
+  background: var(--rim-light);
+  box-shadow: 0 0 8px var(--rim-light);
+}
+:where(.arena-page) .cc-foil {
+  display: none;
+}
+:where(.arena-page) .cc-rarity-4 .cc-foil {
+  display: block;
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  opacity: 0.36;
+  mix-blend-mode: screen;
+  background: linear-gradient(
+    115deg,
+    transparent 20%,
+    #baffec44 34%,
+    #ffc8fd88 38%,
+    #fff7b777 41%,
+    transparent 50%
+  );
+  background-size: 300% 100%;
+  animation: arena-cc-shine 7s linear infinite;
+}
+:where(.arena-page) .cc-active {
+  filter: brightness(1.25);
+  box-shadow:
+    0 0 16px var(--rim-light),
+    inset 0 0 14px #fff9;
+}
+:where(.arena-page) .cc-frozen .cc-art {
+  filter: saturate(0.45) hue-rotate(20deg);
+}
+:where(.arena-page) .cc-frozen {
+  box-shadow:
+    inset 0 0 25px #c6faff9c,
+    0 0 9px #8fdafa;
+}
+:where(.arena-page) .cc-catalog .cc-heading {
+  padding: 7px 5px;
+}
+:where(.arena-page) .cc-catalog .cc-heading strong {
+  font-size: 11px;
+}
+:where(.arena-page) .cc-catalog .cc-info {
+  padding: 18px 5px 6px;
+}
+:where(.arena-page) .cc-catalog .cc-description {
+  display: none;
+}
+:where(.arena-page) .cc-catalog .cc-clock {
+  padding: 2px 4px;
+  margin-bottom: 0;
+}
+:where(.arena-page) .cc-catalog .cc-numbers > span {
+  font-size: 22px;
+}
+:where(.arena-page) .cc-catalog .cc-clock b {
+  font-size: 10px;
+}
+:where(.arena-page) .cc-size-2 .cc-heading, :where(.arena-page) .cc-size-3 .cc-heading {
+  padding-left: 10px;
+}
+:where(.arena-page) .cc-size-2 .cc-info, :where(.arena-page) .cc-size-3 .cc-info {
+  padding-left: 10px;
+  padding-right: 10px;
+}
+:where(.arena-page) .cc-board.cc-size-3 .cc-heading strong {
+  font-size: 15px;
+}
+:where(.arena-page) .flat-detail-showcase {
+  perspective: 1000px;
+  padding: 22px 15px 28px;
+  background: radial-gradient(ellipse, #5965af40, transparent 70%);
+}
+:where(.arena-page) .cc-detail {
+  height: 400px;
+  transform: rotateY(-9deg) rotateX(3deg) rotateZ(-2deg);
+  box-shadow:
+    4px 7px 0 #080d20,
+    6px 12px 24px #020713;
+  transition: transform 0.4s;
+}
+:where(.arena-page) .cc-detail:hover {
+  transform: rotateY(5deg) rotateX(-2deg) rotateZ(1deg);
+}
+:where(.arena-page) .cc-detail .cc-heading {
+  padding: 16px 12px;
+}
+:where(.arena-page) .cc-detail .cc-heading strong {
+  font-size: 23px;
+}
+:where(.arena-page) .cc-detail .cc-heading small {
+  font-size: 11px;
+}
+:where(.arena-page) .cc-detail .cc-info {
+  padding: 30px 12px 12px;
+}
+:where(.arena-page) .cc-detail .cc-description {
+  display: block;
+  font-size: 11px;
+  line-height: 1.65;
+}
+:where(.arena-page) .cc-detail .cc-clock {
+  margin-bottom: 10px;
+  padding: 5px 8px;
+}
+:where(.arena-page) .cc-detail .cc-clock b {
+  font-size: 18px;
+}
+:where(.arena-page) .cc-detail .cc-numbers {
+  gap: 8px 16px;
+  margin-top: 12px;
+}
+:where(.arena-page) .cc-detail .cc-numbers > span {
+  font-size: 34px;
+}
+:where(.arena-page) .cc-edition {
+  padding: 6px 10px;
+  color: #d3dbef;
+  font-size: 9px;
+  background: #0a1025;
+  display: flex;
+  justify-content: space-between;
+}
+:where(.arena-page) .cc-edition i {
+  font-style: normal;
+  color: #7c8db5;
+}
+:where(.arena-page) .flat-arena .tac-controls {
+  background: #121a31;
+  border-color: #6171a638;
+  border-radius: 8px;
+  margin-top: 10px;
+  padding: 10px;
+}
+:where(.arena-page) .flat-arena .tac-build-hint {
+  color: #acb9db;
+}
+:where(.arena-page) .flat-arena .tac-build-hint b {
+  color: #f4dcae;
+}
+:where(.arena-page) .flat-arena .tac-build-hint > span {
+  color: #99add0;
+}
+:where(.arena-page) .flat-arena .tac-live-strip {
+  color: #8499c0;
+  border: 0;
+  padding: 10px;
+  background: transparent;
+}
+:where(.arena-page) .flat-arena .tac-inspector {
+  background: #131b32;
+  border-color: #8394ce55;
+  width: 370px;
+  max-width: 100vw;
+  box-shadow: -20px 0 70px #02071888;
+}
+:where(.arena-page) .flat-arena .tac-inspector h2 {
+  font-family: inherit;
+  color: #f0e9d9;
+}
+:where(.arena-page) .flat-arena .tac-eyebrow {
+  color: #829acc;
+}
+:where(.arena-page) .flat-arena .tac-effect-text {
+  color: #c6cee6;
+}
+:where(.arena-page) .flat-arena .arena-inspection {
+  background: #182039;
+  border-color: #9eadd05e;
+  color: #e3e8f8;
+  font-family: inherit;
+}
+:where(.arena-page) .flat-arena .arena-amp-options > button {
+  background: #111a30;
+  border-color: #6979a142;
+  color: #bdc9e8;
+}
+:where(.arena-page) .flat-arena .arena-amp-options > button.selected {
+  background: #354164;
+  border-color: #b6c9f4;
+}
+:where(.arena-page) .flat-arena .arena-amp-options strong {
+  color: #eee6d2;
+}
+:where(.arena-page) .flat-arena .arena-amp-option-title small {
+  color: #aabbe0;
+}
+:where(.arena-page) .flat-arena .arena-picker-actions {
+  background: #182039;
+  border-color: #67759b55;
+}
+:where(.arena-page) .flat-arena .arena-picker-help, :where(.arena-page) .flat-arena .arena-effect-help {
+  color: #c2cde6;
+}
+:where(.arena-page) .flat-arena .tac-detail-meta {
+  color: #b7c4e0;
+}
+:where(.arena-page) .flat-arena .tac-state-list span {
+  background: #28355e;
+  color: #cbd9fa;
+}
+:where(.arena-page) .flat-arena .tac-detail-relation {
+  background: #7167a928;
+  color: #d2befa;
+}
+:where(.arena-page) .flat-arena .tac-review-container {
+  margin-top: 20px;
+  background: #131a2c;
+  border-color: #8797ce3d;
+}
+:where(.arena-page) .flat-arena .tac-review-toggle {
+  background: #1d2840;
+}
+:where(.arena-page) .flat-arena .tac-event-list button {
+  background: #17213b;
+}
+:where(.arena-page) .flat-arena .tac-toast {
+  background: #30364f;
+  color: #fff0ce;
+  border-color: #dac98e66;
+}
+:where(.arena-page) .flat-arena .tac-timeline input {
+  accent-color: #b7c9ff;
+}
+:where(.arena-page) .flat-arena .tac-counter-note {
+  color: #bccae9;
+}
+@keyframes arena-cc-shine {
+  from {
+    background-position: 140% 0;
+  }
+  to {
+    background-position: -70% 0;
+  }
+}
+:where(.arena-page) .cc-reduced .cc-foil, :where(.arena-page) .reduce-motion .cc-foil {
+  animation: none;
+  background-position: 40% 0;
+}
+:where(.arena-page) .cc-detail.cc-reduced {
+  transform: none;
+  transition: none;
+}
+:where(.arena-page) .flat-arena.reduce-motion .flat-card-button {
+  transition: none;
+}
+:where(.arena-page) .flat-arena.reduce-motion .flat-card-button:hover {
+  transform: none;
+}
+@media (min-width: 1600px) {
+  :where(.arena-page) .flat-arena {
+    padding-left: 28px;
+    padding-right: 28px;
+  }
+  :where(.arena-page) .flat-arena .tac-catalog {
+    width: 280px;
+    flex-basis: 280px;
+  }
+  :where(.arena-page) .flat-arena .tac-catalog-list .tac-catalog-card {
+    height: 178px;
+  }
+  :where(.arena-page) .flat-arena .flat-card-button, :where(.arena-page) .flat-arena .flat-slot {
+    height: 230px;
+  }
+  :where(.arena-page) .cc-board .cc-heading strong {
+    font-size: 14px;
+  }
+  :where(.arena-page) .cc-board .cc-description {
+    font-size: 10px;
+  }
+}
+@media (max-width: 1100px) {
+  :where(.arena-page) .flat-arena .tac-command p {
+    display: block;
+    margin-top: 6px;
+  }
+  :where(.arena-page) .flat-arena .tac-command-actions > span {
+    display: none;
+  }
+  :where(.arena-page) .flat-arena .tac-header nav {
+    margin-left: 0;
+    gap: 5px;
+  }
+  :where(.arena-page) .flat-arena .tac-catalog {
+    width: 216px;
+    flex-basis: 216px;
+  }
+  :where(.arena-page) .flat-arena .tac-catalog-list {
+    gap: 8px;
+    padding: 4px 10px 12px;
+  }
+  :where(.arena-page) .flat-arena .tac-header-actions {
+    gap: 4px;
+  }
+}
+@media (max-width: 800px) {
+  :where(.arena-page) .flat-arena {
+    padding: 0 8px 16px;
+  }
+  :where(.arena-page) .flat-arena .tac-header {
+    height: auto;
+    min-height: 60px;
+    flex-wrap: wrap;
+    padding: 10px 4px;
+    gap: 8px;
+  }
+  :where(.arena-page) .flat-arena .tac-header nav {
+    display: none;
+  }
+  :where(.arena-page) .flat-arena .tac-brand {
+    font-size: 16px;
+  }
+  :where(.arena-page) .flat-arena .tac-header-actions button {
+    font-size: 10px;
+    padding: 6px;
+  }
+  :where(.arena-page) .flat-arena .tac-mode-link {
+    font-size: 10px;
+  }
+  :where(.arena-page) .flat-arena .tac-command {
+    padding: 12px 4px;
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 12px;
+  }
+  :where(.arena-page) .flat-arena .tac-command h1 {
+    font-size: 21px;
+  }
+  :where(.arena-page) .flat-arena .tac-command-actions {
+    width: 100%;
+    justify-content: flex-end;
+  }
+  :where(.arena-page) .flat-arena .tac-command-actions .tac-primary {
+    margin-left: auto;
+  }
+  :where(.arena-page) .flat-arena .tac-catalog {
+    display: none;
+    position: fixed;
+    inset: 0 auto 0 0;
+    height: 100dvh;
+    min-height: 0;
+    max-height: none;
+    width: 270px;
+    z-index: 55;
+    border-radius: 0;
+    box-shadow: 20px 0 80px #040b22d9;
+  }
+  :where(.arena-page) .flat-arena .tac-catalog.open {
+    display: flex;
+  }
+  :where(.arena-page) .flat-arena .tac-catalog-toggle, :where(.arena-page) .flat-arena .tac-mobile-close {
+    display: inline-flex;
+  }
+  :where(.arena-page) .flat-arena .tac-controls {
+    flex-wrap: wrap;
+  }
+  :where(.arena-page) .flat-arena .tac-inspector {
+    width: min(370px, 100vw);
+  }
+  :where(.arena-page) .flat-arena .tac-host {
+    padding: 8px 12px;
+  }
+  :where(.arena-page) .flat-arena .tac-host-track {
+    min-width: 40px;
+  }
+  :where(.arena-page) .flat-table {
+    padding-left: 14px;
+    padding-right: 14px;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  :where(.arena-page) .collectible-card .cc-foil {
+    animation: none;
+  }
+  :where(.arena-page) .cc-detail, :where(.arena-page) .cc-detail:hover {
+    transform: none;
+    transition: none;
+  }
+  :where(.arena-page) .flat-arena .flat-card-button {
+    transition: none;
+  }
+  :where(.arena-page) .flat-arena .flat-card-button:hover {
+    transform: none;
+  }
+}
+
+/* arena-light */
+/* Two art directions, one readable light interface and the same simulation. */
+:where(.arena-page) .cc-art-window {
+  display: contents;
+}
+:where(.arena-page) .light-arena {
+  --paper: #293e50;
+  --dim: #63788a;
+  --rule: #d9e4e9;
+  --accent: #267b9b;
+  --gold: #367c92;
+  --ink: #293e50;
+  --quiet: #657b88;
+  --line: #dce6eb;
+  --sheet: #ffffff;
+  background: #eef4f6;
+  color: var(--ink);
+}
+:where(.arena-page) .light-arena .tac-header {
+  border-bottom: 1px solid var(--line);
+}
+:where(.arena-page) .light-arena .tac-brand {
+  font-weight: 600;
+  letter-spacing: -0.04em;
+  color: #324957;
+}
+:where(.arena-page) .light-arena .tac-brand i {
+  color: #78a2b0;
+}
+:where(.arena-page) .light-arena .tac-header nav, :where(.arena-page) .light-arena .tac-header-actions b {
+  color: var(--quiet);
+}
+:where(.arena-page) .light-arena .tac-header nav .active {
+  color: #267b9b;
+}
+:where(.arena-page) .light-arena button {
+  color: var(--ink);
+  border-color: var(--line);
+  background-color: #fff;
+  border-radius: 10px;
+}
+:where(.arena-page) .light-arena button:hover {
+  border-color: #89b1c4;
+  background-color: #f2f9fb;
+}
+:where(.arena-page) .light-arena button:focus-visible {
+  outline: 2px solid #277b9b;
+  outline-offset: 3px;
+}
+:where(.arena-page) .light-arena button[aria-pressed='true'] {
+  color: #226681;
+  border-color: #a8ccd8;
+  background: #e5f2f6;
+}
+:where(.arena-page) .animal-style-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 18px 12px 0;
+}
+:where(.arena-page) .animal-style-bar > div:first-child {
+  display: flex;
+  align-items: baseline;
+  gap: 14px;
+}
+:where(.arena-page) .animal-style-bar strong {
+  font-size: 19px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+}
+:where(.arena-page) .animal-style-bar span {
+  color: var(--quiet);
+  font-size: 11px;
+}
+:where(.arena-page) .animal-style-switch {
+  margin: 0;
+  border: 0;
+  min-width: 0;
+  display: flex;
+  gap: 3px;
+  padding: 4px;
+  background: #dfe9ee;
+  border-radius: 13px;
+}
+:where(.arena-page) .light-arena .animal-style-switch button {
+  font-size: 12px;
+  padding: 8px 18px;
+  background: transparent;
+  border: 0;
+  color: #627a88;
+}
+:where(.arena-page) .light-arena .animal-style-switch button[aria-pressed='true'] {
+  background: #fff;
+  color: #28576e;
+  box-shadow: 0 2px 7px #2a526015;
+}
+:where(.arena-page) .light-arena .tac-command {
+  padding-top: 17px;
+  padding-bottom: 17px;
+}
+:where(.arena-page) .light-arena .tac-command h1 {
+  color: var(--ink);
+  font-size: 22px;
+}
+:where(.arena-page) .light-arena .tac-command p, :where(.arena-page) .light-arena .tac-command small {
+  color: var(--quiet);
+}
+:where(.arena-page) .light-arena .tac-primary {
+  color: #fff;
+  background: #287e9a;
+  border-color: #287e9a;
+  box-shadow: 0 4px 10px #287e9a20;
+}
+:where(.arena-page) .light-arena .tac-primary:hover {
+  color: #fff;
+  background: #206c86;
+}
+:where(.arena-page) .light-arena .tac-catalog {
+  background: #f9fcfd;
+  border-color: var(--line);
+  border-radius: 16px;
+  height: calc(100dvh - 238px);
+}
+:where(.arena-page) .light-arena .tac-section-title {
+  color: var(--ink);
+}
+:where(.arena-page) .light-arena .tac-section-title small {
+  color: var(--quiet);
+}
+:where(.arena-page) .light-arena .tac-search {
+  background: #eaf1f4;
+  color: var(--quiet);
+  border: 0;
+}
+:where(.arena-page) .light-arena .tac-search input {
+  color: var(--ink);
+}
+:where(.arena-page) .light-arena .tac-search input::placeholder {
+  color: #748693;
+}
+:where(.arena-page) .light-arena .tac-kind-filters button {
+  border: 0;
+  background: transparent;
+  color: #657b88;
+}
+:where(.arena-page) .light-arena .tac-kind-filters button[aria-pressed='true'] {
+  background: #dfedf3;
+  color: #24637e;
+}
+:where(.arena-page) .light-arena .tac-catalog-list {
+  scrollbar-color: #becfd7 #f9fcfd;
+  gap: 12px 10px;
+  padding-top: 6px;
+}
+:where(.arena-page) .light-arena .tac-catalog-list .tac-catalog-card {
+  height: 190px;
+}
+:where(.arena-page) .light-arena .tac-catalog-card.selected {
+  outline-color: #3688a3;
+}
+:where(.arena-page) .light-arena .tac-catalog footer {
+  background: #eef5f7;
+  color: var(--quiet);
+}
+:where(.arena-page) .light-arena .flat-catalog-size {
+  top: 49px;
+  right: 6px;
+  background: #fff9;
+  color: #61747c;
+  border-radius: 4px;
+}
+:where(.arena-page) .light-arena .tac-host {
+  background: #f9fcfd;
+  border-color: var(--line);
+  height: 44px;
+}
+:where(.arena-page) .light-arena .tac-host.enemy {
+  border-radius: 16px 16px 0 0;
+}
+:where(.arena-page) .light-arena .tac-host.own {
+  border-radius: 0 0 16px 16px;
+}
+:where(.arena-page) .light-arena .tac-host > span, :where(.arena-page) .light-arena .tac-host small {
+  color: var(--quiet);
+}
+:where(.arena-page) .light-arena .tac-host strong {
+  color: var(--ink);
+}
+:where(.arena-page) .light-arena .tac-host-track {
+  background: #e3ebef;
+  height: 5px;
+  border-radius: 4px;
+}
+:where(.arena-page) .light-arena .tac-host-track i {
+  background: #70acaa;
+}
+:where(.arena-page) .light-arena .tac-host.enemy .tac-host-track i {
+  background: #cf98a2;
+}
+:where(.arena-page) .light-arena .flat-table-scroll {
+  background: #e6eff2;
+  border-color: var(--line);
+  scrollbar-color: #adc3cc #e6eff2;
+}
+:where(.arena-page) .light-arena .flat-table {
+  background: linear-gradient(180deg, #edf1f4, #e7f0f2 48%, #e6f0ec);
+  box-shadow: none;
+  padding-top: 14px;
+  padding-bottom: 14px;
+}
+:where(.arena-page) .light-arena .flat-table::before {
+  background: none;
+}
+:where(.arena-page) .light-arena .flat-table::after {
+  content: '';
+}
+:where(.arena-page) .light-arena .flat-screen-corner {
+  display: none;
+}
+:where(.arena-page) .light-arena .flat-card-button, :where(.arena-page) .light-arena .flat-slot {
+  height: 250px;
+}
+:where(.arena-page) .light-arena .flat-slot {
+  background: #ffffff35;
+  border: 1px dashed #b8cdd4;
+  border-radius: 11px;
+  color: #9eb6bf;
+}
+:where(.arena-page) .light-arena .flat-slot.allowed {
+  border-color: #438c78;
+  background: #c9e6d8;
+  color: #317660;
+}
+:where(.arena-page) .light-arena .flat-slot.blocked {
+  border-color: #b9717e;
+  background: #f1dfe3;
+}
+:where(.arena-page) .light-arena .flat-card-button.selected, :where(.arena-page) .light-arena .flat-card-button.inspected {
+  outline-color: #3b8ca5;
+}
+:where(.arena-page) .light-arena .flat-card-button.related {
+  outline-color: #9677b4;
+  box-shadow: 0 0 0 4px #9677b41a;
+}
+:where(.arena-page) .light-arena .flat-card-state {
+  top: 60px;
+  background: #fffefaee;
+  color: #526478;
+  box-shadow: 0 1px 4px #203d4510;
+}
+:where(.arena-page) .light-arena .flat-barrier-top {
+  color: #38738b;
+}
+:where(.arena-page) .light-arena .flat-barrier-top small {
+  color: #647e89;
+}
+:where(.arena-page) .light-arena .flat-barrier-track {
+  background: #cadce2;
+  height: 4px;
+}
+:where(.arena-page) .light-arena .flat-barrier-track i {
+  background: #79acbd;
+  box-shadow: none;
+}
+:where(.arena-page) .light-arena .flat-barrier.broken .flat-barrier-top {
+  color: #889398;
+}
+:where(.arena-page) .light-arena .flat-status > span {
+  color: #b7642a;
+}
+:where(.arena-page) .light-arena .flat-status > span[title='侵蚀层数'] {
+  color: #26704a;
+}
+:where(.arena-page) .light-arena .flat-amp {
+  background: transparent;
+  color: #567887;
+}
+:where(.arena-page) .light-arena .flat-amp.disabled {
+  color: #788890;
+}
+:where(.arena-page) .light-arena .flat-midline > span {
+  color: #5d7e89;
+}
+:where(.arena-page) .light-arena .flat-midline > span i {
+  background: #bdcfd6;
+}
+:where(.arena-page) .light-arena .flat-midline small, :where(.arena-page) .light-arena .flat-placement {
+  color: #647f89;
+}
+:where(.arena-page) .light-arena .flat-placement.invalid {
+  color: #a34b60;
+}
+:where(.arena-page) .light-arena .flat-projectile {
+  box-shadow:
+    0 0 0 1.5px #3f5b6b,
+    0 2px 4px #23425430;
+}
+:where(.arena-page) .light-arena .flat-contact {
+  box-shadow: none;
+  height: 3px;
+}
+:where(.arena-page) .light-arena .flat-number {
+  padding: 3px 7px;
+  border-radius: 6px;
+  background: #273d4aeb;
+  text-shadow: none;
+  font-weight: 700;
+  font-size: 22px;
+}
+
+/* Art remains square at every span. Text never lies on the illustration. */
+:where(.arena-page) .light-arena .collectible-card {
+  border: 1px solid var(--rim);
+  border-top: 3px solid var(--rim);
+  border-radius: 11px;
+  background: #f5f5ef;
+  color: #33474e;
+  box-shadow:
+    0 2px 3px #273a4812,
+    0 6px 13px #273a480d;
+}
+:where(.arena-page) .light-arena .cc-heading {
+  background: #fffdf8;
+  padding: 9px 7px 7px;
+  text-shadow: none;
+  z-index: 1;
+}
+:where(.arena-page) .light-arena .cc-heading strong {
+  font-weight: 600;
+  font-size: 12px;
+  letter-spacing: 0;
+}
+:where(.arena-page) .light-arena .cc-heading small {
+  color: #7b898b;
+  font-size: 8px;
+}
+:where(.arena-page) .light-arena .cc-art {
+  top: 48px;
+  width: min(100%, 135px);
+  transform: translateX(-50%);
+  z-index: 0;
+}
+:where(.arena-page) .light-arena .cc-art::after {
+  background: none;
+}
+:where(.arena-page) .light-arena .cc-info {
+  position: relative;
+  z-index: 1;
+  background: #fffdf8;
+  padding: 7px 7px 6px;
+  border-top: 1px solid #e7e9e5;
+}
+:where(.arena-page) .light-arena .cc-clock {
+  background: #edf2f0;
+  border: 0;
+  color: #4c666e;
+  padding: 3px 5px;
+  border-radius: 5px;
+}
+:where(.arena-page) .light-arena .cc-clock b {
+  font-weight: 600;
+}
+:where(.arena-page) .light-arena .cc-description {
+  color: #697c81;
+  line-height: 1.5;
+}
+:where(.arena-page) .light-arena .cc-numbers {
+  background: #30454d;
+  margin: 6px -7px -6px;
+  padding: 5px 5px 7px;
+  gap: 4px 8px;
+  min-height: 34px;
+}
+:where(.arena-page) .light-arena .cc-numbers > span {
+  font-size: 23px;
+  font-weight: 700;
+  text-shadow: none;
+}
+:where(.arena-page) .light-arena .cc-numbers > [data-effect='corrode'] {
+  -webkit-text-stroke: 0.5px #76c79b;
+}
+:where(.arena-page) .light-arena .cc-timer {
+  height: 3px;
+  z-index: 3;
+  background: #b7c7cc;
+}
+:where(.arena-page) .light-arena .cc-timer i {
+  background: #619cad;
+  box-shadow: none;
+}
+:where(.arena-page) .light-arena .cc-active {
+  filter: none;
+  box-shadow:
+    0 0 0 2px #77afbc,
+    0 3px 14px #549cad55;
+}
+:where(.arena-page) .light-arena .cc-frozen {
+  box-shadow: inset 0 0 0 3px #b1d9e9;
+}
+:where(.arena-page) .light-arena .cc-rarity-4 {
+  background: #f5f5ef;
+  border-color: #a2c4cc;
+}
+:where(.arena-page) .light-arena .cc-rarity-4 .cc-foil {
+  inset: 0 0 auto;
+  height: 3px;
+  opacity: 0.8;
+  z-index: 4;
+  mix-blend-mode: normal;
+}
+:where(.arena-page) .light-arena .cc-catalog .cc-heading {
+  padding: 7px 5px 6px;
+}
+:where(.arena-page) .light-arena .cc-catalog .cc-heading strong {
+  font-size: 11px;
+}
+:where(.arena-page) .light-arena .cc-catalog .cc-art {
+  width: min(100%, 92px);
+  top: 45px;
+}
+:where(.arena-page) .light-arena .cc-catalog .cc-info {
+  padding-top: 4px;
+}
+:where(.arena-page) .light-arena .cc-catalog .cc-numbers {
+  min-height: 28px;
+  padding-top: 4px;
+}
+:where(.arena-page) .light-arena .cc-catalog .cc-numbers > span {
+  font-size: 20px;
+}
+:where(.arena-page) .light-arena .cc-board.cc-size-3 .cc-heading strong {
+  font-size: 14px;
+}
+:where(.arena-page) .light-arena .flat-detail-showcase {
+  background: #e8eff0;
+  border-radius: 16px;
+  margin: 14px 0;
+  padding: 24px;
+}
+:where(.arena-page) .light-arena .cc-detail {
+  height: 430px;
+  box-shadow:
+    3px 4px 0 #bfcbd0,
+    8px 12px 22px #32495420;
+}
+:where(.arena-page) .light-arena .cc-detail .cc-heading {
+  padding: 15px 12px;
+}
+:where(.arena-page) .light-arena .cc-detail .cc-heading strong {
+  font-size: 22px;
+}
+:where(.arena-page) .light-arena .cc-detail .cc-heading small {
+  font-size: 10px;
+}
+:where(.arena-page) .light-arena .cc-detail .cc-art {
+  top: 66px;
+  width: min(100%, 205px);
+}
+:where(.arena-page) .light-arena .cc-detail .cc-info {
+  padding: 12px;
+}
+:where(.arena-page) .light-arena .cc-detail .cc-description {
+  font-size: 12px;
+}
+:where(.arena-page) .light-arena .cc-detail .cc-numbers {
+  margin: 10px -12px -12px;
+  padding: 9px 12px;
+}
+:where(.arena-page) .light-arena .cc-detail .cc-numbers > span {
+  font-size: 32px;
+}
+:where(.arena-page) .light-arena .cc-edition {
+  background: #eaf0ed;
+  color: #68808a;
+  position: relative;
+  z-index: 1;
+}
+:where(.arena-page) .light-arena .cc-edition i {
+  color: #7e939b;
+}
+:where(.arena-page) .light-arena[data-skin='sticker'] .collectible-card {
+  background: #f5f5ef;
+  border-radius: 14px;
+}
+:where(.arena-page) .light-arena[data-skin='sticker'] .cc-heading strong {
+  font-weight: 700;
+}
+:where(.arena-page) .light-arena[data-skin='sticker'] .cc-art {
+  width: min(100%, 125px);
+}
+:where(.arena-page) .light-arena[data-skin='sticker'] .cc-catalog .cc-art {
+  width: min(100%, 90px);
+}
+:where(.arena-page) .light-arena[data-skin='sticker'] .cc-detail .cc-art {
+  width: min(100%, 195px);
+}
+
+:where(.arena-page) .light-arena .tac-controls {
+  background: #f9fcfd;
+  border-color: var(--line);
+  border-radius: 12px;
+}
+:where(.arena-page) .light-arena .tac-build-hint, :where(.arena-page) .light-arena .tac-build-hint > span, :where(.arena-page) .light-arena .tac-live-strip, :where(.arena-page) .light-arena .tac-counter-note {
+  color: var(--quiet);
+}
+:where(.arena-page) .light-arena .tac-build-hint b {
+  color: #276c83;
+}
+:where(.arena-page) .light-arena .tac-timeline input {
+  accent-color: #347e98;
+}
+:where(.arena-page) .light-arena .tac-inspector {
+  background: #f9fcfd;
+  border-color: var(--line);
+  box-shadow: -16px 0 55px #1e46542b;
+}
+:where(.arena-page) .light-arena .tac-inspector h2 {
+  color: var(--ink);
+}
+:where(.arena-page) .light-arena .tac-eyebrow, :where(.arena-page) .light-arena .tac-detail-meta {
+  color: var(--quiet);
+}
+:where(.arena-page) .light-arena .tac-effect-text {
+  color: #435f6a;
+}
+:where(.arena-page) .light-arena .tac-state-list span {
+  background: #e4eff3;
+  color: #396478;
+}
+:where(.arena-page) .light-arena .tac-detail-relation {
+  background: #eee9f4;
+  color: #77618c;
+}
+:where(.arena-page) .light-arena .arena-inspection {
+  background: #f8fbfc;
+  border-color: var(--line);
+  color: var(--ink);
+}
+:where(.arena-page) .light-arena .arena-amp-options > button {
+  background: #fff;
+  border-color: var(--line);
+  color: #566f7b;
+}
+:where(.arena-page) .light-arena .arena-amp-options > button.selected {
+  background: #e8f3f5;
+  border-color: #8dbbc9;
+}
+:where(.arena-page) .light-arena .arena-amp-options strong {
+  color: var(--ink);
+}
+:where(.arena-page) .light-arena .arena-amp-option-title small, :where(.arena-page) .light-arena .arena-picker-help, :where(.arena-page) .light-arena .arena-effect-help {
+  color: var(--quiet);
+}
+:where(.arena-page) .light-arena .arena-picker-actions {
+  background: #f8fbfc;
+  border-color: var(--line);
+}
+:where(.arena-page) .light-arena .tac-review-container {
+  background: #f8fbfc;
+  border-color: var(--line);
+}
+:where(.arena-page) .light-arena .tac-review-toggle {
+  background: #e6eff3;
+  color: #3f697c;
+}
+:where(.arena-page) .light-arena .tac-event-list button {
+  background: #fff;
+  color: var(--ink);
+}
+:where(.arena-page) .light-arena .tac-toast {
+  background: #fff;
+  color: #35576a;
+  border-color: #abc8d6;
+  box-shadow: 0 5px 24px #29445520;
+}
+@media (max-width: 800px) {
+  :where(.arena-page) .animal-style-bar {
+    flex-wrap: wrap;
+    padding: 12px 4px 0;
+  }
+  :where(.arena-page) .animal-style-bar > div:first-child {
+    gap: 10px;
+  }
+  :where(.arena-page) .animal-style-bar strong {
+    font-size: 16px;
+  }
+  :where(.arena-page) .animal-style-switch {
+    margin-left: auto;
+  }
+  :where(.arena-page) .light-arena .tac-catalog {
+    height: 100dvh;
+    border-radius: 0;
+  }
+}
+/* The illustration fits its remaining space rather than being masked by text. */
+:where(.arena-page) .light-arena .tac-review {
+  background: #f8fbfc;
+}
+:where(.arena-page) .light-arena .tac-controls time, :where(.arena-page) .light-arena .tac-review-head small, :where(.arena-page) .light-arena .tac-review-head > span, :where(.arena-page) .light-arena .tac-review-toggle span, :where(.arena-page) .light-arena .tac-review-filters small, :where(.arena-page) .light-arena .tac-event-list time, :where(.arena-page) .light-arena .tac-event-list b, :where(.arena-page) .light-arena .tac-lane-reports article > small, :where(.arena-page) .light-arena .tac-lane-reports dl > div, :where(.arena-page) .light-arena .tac-muted, :where(.arena-page) .light-arena .tac-report-scroll thead, :where(.arena-page) .light-arena .tac-report-scroll th small, :where(.arena-page) .light-arena .tac-compare-results span, :where(.arena-page) .light-arena .tac-history-list span small, :where(.arena-page) .light-arena .tac-history-list time, :where(.arena-page) .light-arena .arena-inspection p, :where(.arena-page) .light-arena .arena-inspection .arena-picker-rule, :where(.arena-page) .light-arena .tac-detail-meta span {
+  color: #607985;
+}
+:where(.arena-page) .light-arena .tac-review-head h2, :where(.arena-page) .light-arena .tac-lane-reports h3, :where(.arena-page) .light-arena .tac-lane-reports dd, :where(.arena-page) .light-arena .tac-compare-results b, :where(.arena-page) .light-arena .tac-history-list b {
+  color: #2e5869;
+  font-family: inherit;
+}
+:where(.arena-page) .light-arena .tac-event-list button.current {
+  background: #e2eff3;
+  color: #2e5869;
+}
+:where(.arena-page) .light-arena .tac-lane-reports article {
+  background: #fff;
+  border-color: var(--line);
+  border-radius: 12px;
+}
+:where(.arena-page) .light-arena .arena-effect-help summary {
+  color: #3e7a90;
+}
+:where(.arena-page) .light-arena .arena-effect-help p {
+  color: #607985 !important;
+}
+:where(.arena-page) .light-arena .arena-effect-help dt {
+  color: #3e687a;
+}
+:where(.arena-page) .light-arena .tac-inspector footer {
+  color: #6b818d;
+}
+:where(.arena-page) .light-arena .arena-inspection::backdrop {
+  background: #30485466;
+}
+:where(.arena-page) .light-arena .tac-detail-meta span {
+  border-color: var(--line);
+  background: #eef4f6;
+}
+:where(.arena-page) .light-arena .tac-live-strip button {
+  color: #557585;
+}
+:where(.arena-page) .light-arena .cc-art-window {
+  display: block;
+  position: relative;
+  order: 1;
+  flex: 1;
+  min-height: 0;
+  width: 100%;
+  container-type: size;
+  overflow: hidden;
+}
+:where(.arena-page) .light-arena .cc-heading {
+  order: 0;
+  flex-shrink: 0;
+}
+:where(.arena-page) .light-arena .cc-info {
+  order: 2;
+  flex-shrink: 0;
+  margin-top: 0;
+}
+:where(.arena-page) .light-arena .cc-edition {
+  order: 3;
+  flex-shrink: 0;
+}
+:where(.arena-page) .light-arena .collectible-card .cc-art-window .cc-art {
+  width: min(100cqw, 100cqh);
+  top: 50%;
+  transform: translate(-50%, -50%);
+}

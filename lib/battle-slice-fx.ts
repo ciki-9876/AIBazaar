@@ -1,4 +1,4 @@
-import type { CombatFrame } from './demo-combat.ts';
+import type { CombatFrame } from './cards/combat.ts';
 
 export const SETTLE_SECONDS = 1.4;
 export type SurfaceEvent = {

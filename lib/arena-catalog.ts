@@ -1,5 +1,6 @@
 // Experimental duel catalog. IDs are stable and never generated from display names.
 // Rules are the Lv0/Q0 values recorded in F9_CARD_POOL_NUMERICS_V0_2026-09-25.md.
+import { TRAINING_CARDS } from './training-catalog.ts';
 export type ArenaCard = {
   id: string;
   number: number;
@@ -459,7 +460,8 @@ export const AMPLIFIERS: Amplifier[] = [
 ];
 
 export const arenaCard = (id: string) =>
-  ARENA_CARDS.find((card) => card.id === id);
+  ARENA_CARDS.find((card) => card.id === id) ??
+  TRAINING_CARDS.find((card) => card.id === id);
 export const amplifier = (id: string | null | undefined) =>
   AMPLIFIERS.find((amp) => amp.id === id);
 

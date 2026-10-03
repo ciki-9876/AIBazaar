@@ -1,0 +1,92 @@
+IMAGE 1 — THREE SIZES / INFORMATION LAYOUT
+
+Use case: ui-mockup / precise-object-edit.
+Create a polished wide 16:9 refinement of our THREE original collectible item cards in their approved dark indigo arcade CRT screen environment.
+REFERENCE ROLES: Image1 is the existing full-art holographic card lineup and its approved CRT background, original item identities, printed illustration style, thin physical card construction, and 1:2:3 size family. Image2 is the user's annotated layout wireframe: treat its top name/role block, bottom description panel, and circular numeric counters as REQUIRED information placement. Do not copy the wireframe's gray placeholder blocks or placeholder text literally.
+
+Deliver exactly three finished CARDS in one row, with identical intrinsic height, and intrinsic WIDTHS 1:2:3. One narrow portrait, one approximately square, one panoramic landscape. About 230x490, 460x490 and 690x490 on a 1920x1080 design canvas. Maintain consistent border thickness, typography, cooldown size, and numeric-chip size across the three. Give each card only a tiny 3D yaw/roll (2-3 degrees), a visible paper-thin edge, and a soft shadow; prioritise layout readability over tilted perspective. All three remain separate and completely visible with their chips. No card overlap. These are thin printed trading cards, NOT cartridge casings.
+
+This sheet demonstrates a CONSISTENT RARE BLUE tier on all three sizes to keep rarity independent of slot size. Narrow sapphire-blue metallic/enameled border, subtle polished highlights, NO rainbow foil, NO purple rarity frame, NO gold rarity frame. The 3D display character from Image1 stays, but remove the top-tier holographic finish. Preserve item illustration colors independently of the blue rarity frame.
+Header in upper-left screen: "卡面信息布局". Upper-right small text: "稀有 · 三种尺寸". Under the card row: "1 格", "2 格", "3 格" and respectively 1/2/3 outlined occupancy squares.
+
+Each card face REQUIRED VERTICAL HIERARCHY:
+1. TOP approx 15%: elegant dark translucent navy title area integrated with full-art illustration, large item NAME, below it smaller ROLE AFFIX text, both legible and aligned. Name must be at the TOP, not the bottom.
+2. MIDDLE approx 48%: large bright original full-art item illustration. Strong silhouette; do not let it compete with text.
+3. LOWER approx 29%: dedicated matte dark navy DESCRIPTION PANEL, strong contrast and generous padding. At top of this panel, reserve a separate high-visibility COOLDOWN capsule: small clock icon plus large "3.0 秒" / "4.0 秒" / "6.0 秒". The capsule is WITHIN the description region, at its upper right, spatially separate from description text, with a clear border and lighter fill. The description body begins BELOW this capsule row. At the top-left of that row, a tiny "效果" label. Do not append cooldown to running rules text, do not put cooldown among the bottom output counters. For the narrow card, use short wrapped Chinese lines so neither the cooldown capsule nor the rules overflow.
+4. VERY BOTTOM: 1-3 circular raised numerical output CHIPS centered along and slightly overlapping the bottom card edge, exactly like the user's sketch. These chips display ONLY damage / healing / barrier repair values. Mechanism amounts such as adjacent cooldown -1 remain EXCLUSIVELY in the text panel, never on a numeric output chip. Each chip has a huge readable number and a small effect pictogram/short effect label; chip color communicates effect type. Ensure chips remain inside the safe visible presentation area.
+Chip color mapping is separate from rarity:
+- Direct damage: SILVER/neutral light gray with dark number and slash/impact icon.
+- Burn damage: ORANGE with dark number and flame icon.
+- Poison damage: DEEP FOREST GREEN with white number and droplet icon.
+- Healing: BRIGHT LIME GREEN with dark number and medical plus icon.
+- Barrier repair: YELLOW with dark number and shield/wrench icon.
+Do not use colors alone: the small icon/label reinforces each effect. Every badge belongs to its card and has the same physical diameter on all sizes.
+
+EXACT CARD COPY AND ART:
+LEFT / 1 SLOT:
+Top name "火花电池"
+Role line "辅助 · 充能"
+Art: original orange-gold battery with white lightning emblem and two prongs, vivid violet cloud and electric teal sparks, printed Japanese game collectible-item illustration, large clear object.
+Cooldown capsule: clock icon + "3.0 秒"
+Description exact content, wrapping as needed:
+"造成直伤。
+相邻卡牌
+冷却 -1 秒。"
+ONE bottom output chip only: SILVER, large "8", tiny "直伤". No -1 chip.
+
+CENTER / 2 SLOTS:
+Top name "汽水连发器"
+Role line "输出 · 灼烧 · 毒素"
+Art: white/pink soda blaster with translucent turquoise fizz reservoir, large bubbles and lemon yellow splashes, dynamically spanning the wide art window.
+Cooldown capsule: clock icon + "4.0 秒"
+Description:
+"发射汽水弹，造成直伤，
+并造成灼烧伤害与毒伤。"
+THREE bottom output chips, left to right: SILVER "12" tiny "直伤"; ORANGE "5" tiny "灼烧"; DEEP FOREST GREEN "3" tiny "毒伤". No cooldown chip.
+
+RIGHT / 3 SLOTS:
+Top name "午夜放映机"
+Role line "辅助 · 治疗 · 修复"
+Art: purple/cream film projector on the right sending a warm golden beam across a panoramic indigo star field with floating planets, rich original illustration, not a copied character.
+Cooldown capsule: clock icon + "6.0 秒"
+Description:
+"恢复生命，并修复屏障。
+相邻卡牌冷却 -1 秒。"
+TWO bottom output chips, left to right: BRIGHT LIME GREEN "20" tiny "治疗"; YELLOW "15" tiny "修复". No -1 chip.
+
+Preserve dark charcoal CRT bezel and deep indigo pixel/geometric low-contrast background from Image1. Keep scanlines faint and off the essential card text. Attractive premium game UI, thin rounded cards, rich illustration but crystal-clear information design, no copied game logo, no invented additional stats, no watermark, no dense embellishments, no extra cards. All example values are visual placeholders, not balanced game data.
+
+IMAGE 2 — FOUR RARITY TIERS
+
+Use case: ui-mockup / compositing.
+Create a second matching finished concept sheet for a game's collectible-card rarity visual system. Use the attached approved card-information-layout sheet as the style reference, with its dark charcoal CRT bezel, deep indigo pixel-motif arcade background, thin rounded physical cards, crisp rich game illustration, and readable navy text panels.
+This new sheet must show EXACTLY FOUR versions of the SAME "火花电池" card, in one evenly spaced horizontal row, all EXACTLY the same portrait size and composition. The four versions are ordinary GRAY, rare BLUE, epic PURPLE, legendary GOLD. This is a controlled material/color comparison, not four different subjects and not four card sizes. NO rainbow/holographic tier in this sheet; that highest tier already exists separately.
+
+Keep the underlying battery illustration IDENTICAL across all four cards: orange-gold two-prong energy battery with white lightning bolt, violet storm clouds and teal electric arcs from the leftmost card in the supplied reference. Keep the same number, text, illustration crop, title, role, description and cooldown on every copy. Only rarity border material and its tiny supporting accents change. Do not tint the entire illustration to the rarity color. Protect consistent artwork and information hierarchy.
+
+Canvas wide 16:9. All four cards fully visible, generous margins, same mild 2-degree 3D tilt and very thin visible laminate edge/shadow. Portrait cards approximately 280x540 on a 1920x1080 canvas, evenly distributed; do not make the gold card larger or more elevated. Matte text panels remain readable on all rarities. Top-left header: "稀有度样式". Top-right small text: "同卡同数值 · 四档对照".
+Above or below each respective card, place clear large labels LEFT TO RIGHT:
+"普通" with smaller "灰色"
+"稀有" with smaller "蓝色"
+"史诗" with smaller "紫色"
+"传说" with smaller "金色"
+
+RARITY FINISH:
+Ordinary: cool graphite-gray and silver-gray narrow frame, simple satin printed finish, restrained edge highlight, no aura or star glints. Still attractive and polished, not rusty/damaged.
+Rare: clean sapphire blue narrow enamel/metallic frame, restrained blue-white polished edge, very slight geometric faceting. No rainbow.
+Epic: rich amethyst purple narrow frame with a delicate engraved geometric facet pattern and soft lavender specular edge. Slightly richer than blue without growing thicker, no animated aura, no rainbow.
+Legendary: refined champagne-gold narrow metallic foil frame, fine gold edge etching and warm bright specular highlights. Premium but controlled, no multicolor holograph, no yellow flooding into the art, no ornate bulky jewelry frame. NO rainbow sheen for any of these four.
+All cards remain THIN laminated collectible cards, never cartridges, machines or thick plastic plaques.
+
+IDENTICAL INFORMATION LAYOUT ON EACH:
+- At TOP, dark translucent title area with large white "火花电池" and smaller "辅助 · 充能" directly below.
+- Middle full-color battery illustration, largest visual region.
+- Lower dedicated dark navy matte description panel occupying about lower third. At its upper-left small "效果". Upper-right IN THIS PANEL is a bordered separate capsule showing clock icon and large "3.0 秒". This cooldown position is conspicuous and separate from prose.
+- Exact description text under the capsule row:
+"造成直伤。
+相邻卡牌
+冷却 -1 秒。"
+- At the VERY BOTTOM center, a round raised SILVER damage chip slightly overlapping the card's lower edge: huge black "8", small black impact/slash icon and tiny label "直伤". This chip MUST REMAIN SILVER on ALL FOUR rarities, including gold and purple. It encodes DIRECT DAMAGE, not rarity.
+- No other numeric chips. The "-1" belongs only in description prose.
+
+The image's purpose is clean rarity comparison and physical finish. Strong type legibility and consistency, premium thin printed collectible-card construction, retain the exact approved arcade-screen backdrop aesthetic. No extra stats, no additional cards, no copied logos, no watermark, no nonsense text.

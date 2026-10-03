@@ -1,6 +1,6 @@
 import type { CSSProperties } from 'react';
-import { cardDef } from '@/lib/demo-cards';
-import type { CombatFrame, Duel, FighterCard } from '@/lib/demo-combat';
+import { cardDef } from '@/lib/cards/catalog';
+import type { CombatFrame, Duel, FighterCard } from '@/lib/cards/combat';
 import { ATLAS, KIND, LANES } from './art-data';
 export default function FlatBattle({
   duel,

@@ -1,0 +1,11 @@
+{
+  "created": "2026-09-26",
+  "generated": [{
+    "file": "painted-limestone.png",
+    "tool": "built-in image_gen.imagegen",
+    "usage": "Diffuse color texture on the real courtyard floor mesh, not a scene backdrop.",
+    "prompt": "Use case: stylized-concept. Asset type: production game diffuse/albedo ground texture to be mapped onto a horizontal 3D stone floor, not a beauty render. Create a square orthographic TOP DOWN hand-painted ancient Greek underworld stone pavement texture, high quality illustrated action roguelike aesthetic reminiscent of Hades: many large irregular interlocking worn limestone and muted sage stone slabs, strong carefully tapered dark blue-black ink cracks, broad deliberate painted brush planes, warm ivory edge chips, occasional ochre chips and subtle dark teal moss in recessed seams. Painterly natural variation, sophisticated restricted palette, expressive graphic texture but restrained contrast so a character reads above it. Full bleed seamless-looking texture, uniformly lit flat diffuse color, no cast shadows, no perspective, NO structures, NO columns, NO characters, no glowing effects, no arena diagram, no interface, no text, no watermark. All surface texture, approximate 8 by 8 varied stones across entire square, broad legible shape design, avoid tiny grain or photo noise. This will be used as a real mesh surface texture in a rotatable 3D scene."
+  }],
+  "reused": { "manifest": "../material-study/sources.json", "license": "CC0-1.0", "assets": ["concrete_floor_worn_001", "grey_plaster_02", "blue_metal_plate", "wood_table_001"] },
+  "geometry": "Procedural authored geometry in app/art/showcase/worlds.ts and kit.ts."
+}

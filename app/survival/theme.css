@@ -1,0 +1,5501 @@
+:where(.survival-page) button, :where(.survival-page) a{-webkit-tap-highlight-color:transparent}
+:where(.survival-page) button{font:inherit;cursor:pointer;transition:background .18s,transform .18s,border-color .18s}
+:where(.survival-page) button:disabled{cursor:not-allowed;opacity:.4}
+:where(.survival-page) button:focus-visible, :where(.survival-page) a:focus-visible{outline:2px solid #efb86b;outline-offset:4px}
+:where(.survival-page) button:not(:disabled):active{transform:translateY(1px)}
+:where(.survival-page) h1, :where(.survival-page) h2, :where(.survival-page) h3, :where(.survival-page) p{margin:0}
+:where(.survival-page) h1, :where(.survival-page) h2, :where(.survival-page) h3{font-family:Georgia,'Noto Serif SC','Songti SC','SimSun',serif;font-weight:500}
+:where(.survival-page) svg{flex-shrink:0;width:18px;height:18px}
+/* survival */
+.survival-page {
+  --paper: #e9e5cf;
+  --muted: #aaa996;
+  --line: #d7d6b724;
+  --gold: #dfb767;
+  --mint: #88cdb2;
+  position: relative;
+  width: 100%;
+  height: 100dvh;
+  min-height: 560px;
+  overflow: hidden;
+  background: #101614;
+  color: var(--paper);
+  font-family:
+    'Bahnschrift', 'Microsoft YaHei UI', 'Microsoft YaHei', sans-serif;
+  font-size: 13px;
+  color-scheme: dark;
+}
+.survival-page * {
+  box-sizing: border-box;
+}
+.survival-page button, .survival-page a {
+  -webkit-tap-highlight-color: transparent;
+}
+.survival-page button {
+  font: inherit;
+  cursor: pointer;
+}
+.survival-page button:disabled {
+  cursor: default;
+  opacity: 0.4;
+}
+.survival-page button:focus-visible, .survival-page a:focus-visible {
+  outline: 2px solid var(--gold);
+  outline-offset: 4px;
+}
+.survival-page a {
+  color: inherit;
+  text-decoration: none;
+}
+.survival-page h1, .survival-page h2, .survival-page p {
+  margin: 0;
+}
+:where(.survival-page) .survival-world, :where(.survival-page) .survival-canvas {
+  position: absolute;
+  inset: 0;
+}
+:where(.survival-page) .survival-canvas canvas {
+  display: block;
+  width: 100%;
+  height: 100%;
+  touch-action: none;
+}
+:where(.survival-page) .survival-vignette {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: linear-gradient(
+    180deg,
+    #0b100ec9 0%,
+    transparent 18%,
+    transparent 71%,
+    #0b100ec9 100%
+  );
+  box-shadow: inset 0 0 140px #05090855;
+}
+:where(.survival-page) .survival-header {
+  position: absolute;
+  left: 28px;
+  right: 28px;
+  top: 22px;
+  display: flex;
+  align-items: center;
+  gap: 24px;
+  z-index: 10;
+}
+:where(.survival-page) .survival-brand {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  border-right: 1px solid var(--line);
+  padding-right: 24px;
+}
+:where(.survival-page) .survival-brand > span {
+  font-size: 35px;
+  font-stretch: condensed;
+  font-weight: 800;
+  letter-spacing: -3px;
+}
+:where(.survival-page) .survival-brand svg {
+  color: var(--muted);
+}
+:where(.survival-page) .survival-location > span {
+  font-size: 9px;
+  letter-spacing: 2.2px;
+  color: var(--gold);
+}
+:where(.survival-page) .survival-location h1 {
+  font-size: 19px;
+  font-weight: 500;
+  letter-spacing: 3px;
+  margin-top: 3px;
+}
+:where(.survival-page) .survival-header-right {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: 13px;
+}
+:where(.survival-page) .survival-clock {
+  font-size: 17px;
+  font-variant-numeric: tabular-nums;
+  color: #d0d1b9;
+  letter-spacing: 2px;
+  margin-right: 8px;
+}
+:where(.survival-page) .survival-icon-button {
+  width: 38px;
+  height: 38px;
+  border: 1px solid var(--line);
+  background: #15211ad9;
+  color: var(--paper);
+  display: grid;
+  place-items: center;
+  border-radius: 2px;
+}
+:where(.survival-page) .survival-bag-button {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  height: 38px;
+  padding: 0 13px;
+  border: 1px solid var(--line);
+  background: #15211ad9;
+  color: var(--paper);
+}
+:where(.survival-page) .survival-bag-button b {
+  color: var(--gold);
+  font-size: 12px;
+  font-weight: 400;
+}
+:where(.survival-page) .survival-icon-button:hover, :where(.survival-page) .survival-bag-button:hover {
+  background: #304135;
+}
+:where(.survival-page) .survival-mission {
+  position: absolute;
+  left: 30px;
+  top: 105px;
+  max-width: 300px;
+  pointer-events: none;
+}
+:where(.survival-page) .survival-eyebrow {
+  font-size: 10px;
+  letter-spacing: 2.4px;
+  color: var(--gold);
+}
+:where(.survival-page) .survival-mission p {
+  font-size: 13px;
+  margin: 9px 0 12px;
+  color: #dedeca;
+}
+:where(.survival-page) .survival-mission > div {
+  display: flex;
+  gap: 15px;
+  font-size: 10px;
+  color: #8e9788;
+}
+:where(.survival-page) .survival-mission > div > span {
+  display: flex;
+  align-items: center;
+  gap: 3px;
+}
+:where(.survival-page) .survival-mission .done {
+  color: var(--mint);
+}
+:where(.survival-page) .survival-wave {
+  position: absolute;
+  right: 30px;
+  top: 110px;
+  text-align: right;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  max-width: 235px;
+  pointer-events: none;
+  color: #d3c3a1;
+  font-size: 11px;
+}
+:where(.survival-page) .survival-wave > i {
+  width: 5px;
+  height: 5px;
+  background: #cfa668;
+  border-radius: 50%;
+}
+:where(.survival-page) .survival-wave small {
+  width: 100%;
+  color: #8b9885;
+  font-size: 10px;
+  padding-top: 2px;
+}
+:where(.survival-page) .survival-markers {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+:where(.survival-page) .survival-marker {
+  position: absolute;
+  transform: translate(-50%, -100%);
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  white-space: nowrap;
+  padding: 5px 8px;
+  background: #17221deb;
+  border: 1px solid #b7b89844;
+  border-bottom: 2px solid #a4ac86;
+  color: #dadbc4;
+  font-size: 10px !important;
+  pointer-events: auto;
+  box-shadow: 0 3px 8px #0003;
+  overflow: hidden;
+  border-radius: 2px;
+  transition: background 0.15s;
+}
+:where(.survival-page) .survival-marker:hover {
+  background: #394735;
+  border-color: #e8d19c;
+}
+:where(.survival-page) .survival-marker .marker-dot {
+  width: 4px;
+  height: 4px;
+  background: #adb98d;
+  flex: none;
+}
+:where(.survival-page) .survival-marker.coil {
+  border-color: #7ac9aa66;
+  border-bottom-color: var(--mint);
+  color: #b9ebd0;
+}
+:where(.survival-page) .survival-marker.coil .marker-dot {
+  background: var(--mint);
+}
+:where(.survival-page) .survival-marker.blade, :where(.survival-page) .survival-marker.core {
+  border-bottom-color: var(--gold);
+  color: #edcf8b;
+}
+:where(.survival-page) .survival-marker.searching {
+  border-color: #edcd86;
+  background: #3b3d27;
+}
+:where(.survival-page) .survival-marker > i {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  height: 3px;
+  background: var(--gold);
+}
+:where(.survival-page) .survival-boss-tag {
+  position: absolute;
+  transform: translate(-50%, -100%);
+  text-align: center;
+  min-width: 112px;
+  color: #f0b398;
+  font-size: 10px;
+  text-shadow: 0 2px 4px #000;
+  background: #291c16bf;
+  padding: 6px 8px;
+  border: 1px solid #b26d3f50;
+}
+:where(.survival-page) .survival-boss-tag > div {
+  height: 3px;
+  background: #412a23;
+  margin-top: 6px;
+}
+:where(.survival-page) .survival-boss-tag i {
+  display: block;
+  height: 100%;
+  background: #d1845e;
+  transition: width 0.1s;
+}
+:where(.survival-page) .survival-player-tag {
+  position: absolute;
+  transform: translate(-50%, -100%);
+  white-space: nowrap;
+  color: #f4e4b4;
+  font-size: 10px;
+  text-shadow: 0 1px 5px #000;
+  background: #15221ccd;
+  padding: 3px 8px;
+}
+:where(.survival-page) .survival-notice {
+  position: absolute;
+  bottom: 172px;
+  left: 50%;
+  transform: translateX(-50%);
+  padding: 9px 16px;
+  max-width: calc(100% - 36px);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  white-space: normal;
+  width: max-content;
+  border: 1px solid #c4c39925;
+  background: #16221de8;
+  color: #e5ddbd;
+  font-size: 12px;
+  pointer-events: none;
+  box-shadow: 0 4px 22px #0003;
+  animation: survival-survival-notice-in 0.2s ease-out;
+}
+:where(.survival-page) .survival-notice > span {
+  width: 4px;
+  height: 4px;
+  background: var(--gold);
+  flex: none;
+}
+:where(.survival-page) .survival-extract {
+  position: absolute;
+  left: 50%;
+  bottom: 180px;
+  transform: translateX(-50%);
+  z-index: 6;
+}
+:where(.survival-page) .survival-extract button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  position: relative;
+  overflow: hidden;
+  border: 1px solid #a7c8a8;
+  background: #223b2eee;
+  padding: 13px 25px;
+  color: #e7efd5;
+  min-width: 240px;
+}
+:where(.survival-page) .survival-extract span {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+:where(.survival-page) .survival-extract small {
+  font-size: 10px;
+  color: #b4c7ab;
+}
+:where(.survival-page) .survival-extract i {
+  position: absolute;
+  left: 0;
+  bottom: 0;
+  height: 4px;
+  background: var(--mint);
+}
+:where(.survival-page) .survival-extract button:disabled {
+  opacity: 1;
+}
+:where(.survival-page) .survival-hud {
+  position: absolute;
+  bottom: 16px;
+  left: 28px;
+  right: 28px;
+  display: grid;
+  grid-template-columns: 240px minmax(390px, 600px) 145px;
+  justify-content: space-between;
+  gap: 12px 22px;
+  align-items: end;
+  pointer-events: none;
+}
+:where(.survival-page) .survival-vitals {
+  padding: 13px 15px 12px;
+  background: #17211beb;
+  border: 1px solid var(--line);
+  box-shadow: 0 8px 26px #0002;
+}
+:where(.survival-page) .survival-health {
+  display: flex;
+  gap: 7px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+:where(.survival-page) .survival-health > svg {
+  color: #d5c5a2;
+}
+:where(.survival-page) .survival-health > span {
+  font-size: 11px;
+  color: #bcc3ae;
+}
+:where(.survival-page) .survival-health strong {
+  margin-left: auto;
+  font-size: 20px;
+  font-weight: 500;
+  font-variant-numeric: tabular-nums;
+  line-height: 1;
+}
+:where(.survival-page) .survival-health strong small {
+  font-size: 10px;
+  color: #859680;
+  padding-left: 3px;
+}
+:where(.survival-page) .survival-health > div {
+  height: 5px;
+  flex-basis: 100%;
+  background: #394337;
+  margin: 2px 0 10px;
+}
+:where(.survival-page) .survival-health > div > i {
+  display: block;
+  height: 100%;
+  background: linear-gradient(90deg, #92ad82, #c8d4a4);
+  transition: width 0.1s;
+}
+:where(.survival-page) .survival-needs {
+  display: flex;
+  gap: 12px;
+}
+:where(.survival-page) .survival-needs > div {
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  flex-wrap: wrap;
+  flex: 1;
+  min-width: 0;
+  color: #a6b6a1;
+  font-size: 9px;
+}
+:where(.survival-page) .survival-needs b {
+  font-size: 10px;
+  font-weight: 400;
+  margin-left: auto;
+}
+:where(.survival-page) .survival-needs i {
+  display: block;
+  flex-basis: 100%;
+  height: 2px;
+  background: #384236;
+  margin-top: 3px;
+}
+:where(.survival-page) .survival-needs em {
+  display: block;
+  height: 100%;
+  background: #8a9b78;
+}
+:where(.survival-page) .survival-needs > div:first-child em {
+  background: #70a9a0;
+}
+:where(.survival-page) .survival-needs .low {
+  color: #e9a071;
+}
+:where(.survival-page) .survival-needs .low em {
+  background: #cb7d4f;
+}
+:where(.survival-page) .survival-loadout {
+  display: flex;
+  gap: 5px;
+  padding-bottom: 2px;
+}
+:where(.survival-page) .survival-weapon {
+  flex: 1;
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 14px 12px;
+  background: #17211bef;
+  border: 1px solid var(--line);
+  min-height: 65px;
+  overflow: hidden;
+}
+:where(.survival-page) .weapon-number {
+  font-size: 23px;
+  color: #c5b06e;
+  opacity: 0.6;
+  font-weight: 300;
+}
+:where(.survival-page) .survival-weapon b {
+  font-size: 12px;
+  font-weight: 500;
+  display: block;
+  letter-spacing: 1px;
+}
+:where(.survival-page) .survival-weapon small {
+  font-size: 9px;
+  color: #97a28b;
+  display: block;
+  margin-top: 5px;
+  white-space: nowrap;
+}
+:where(.survival-page) .survival-weapon i {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  height: 2px;
+  background: var(--gold);
+}
+:where(.survival-page) .survival-weapon.coil i {
+  background: var(--mint);
+}
+:where(.survival-page) .survival-weapon.empty {
+  opacity: 0.55;
+  border-style: dashed;
+}
+:where(.survival-page) .survival-weapon.empty b {
+  color: #b0b79d;
+  font-size: 11px;
+}
+:where(.survival-page) .survival-cargo {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding-bottom: 13px;
+  color: #b8c5ab;
+}
+:where(.survival-page) .survival-cargo strong {
+  font-size: 23px;
+  display: block;
+  font-weight: 400;
+  color: var(--gold);
+}
+:where(.survival-page) .survival-cargo small {
+  font-size: 10px;
+  color: #a3ad95;
+}
+:where(.survival-page) .survival-cargo span {
+  font-size: 10px;
+  display: block;
+  margin-top: 3px;
+}
+:where(.survival-page) .survival-controls {
+  grid-column: 1/-1;
+  display: flex;
+  justify-content: center;
+  gap: 24px;
+  color: #929c85;
+  font-size: 10px;
+  letter-spacing: 0.3px;
+  line-height: 20px;
+}
+:where(.survival-page) .survival-controls kbd {
+  font: inherit;
+  border: 1px solid #b3b69738;
+  padding: 1px 4px;
+  color: #c1c7ad;
+  margin-right: 2px;
+  border-radius: 2px;
+}
+:where(.survival-page) .survival-intro-wrap {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    90deg,
+    #101812f2 0%,
+    #101812d4 27%,
+    #10181245 56%,
+    transparent 80%
+  );
+  display: flex;
+  align-items: center;
+  padding: 90px 6vw 60px;
+}
+:where(.survival-page) .survival-intro {
+  max-width: 420px;
+}
+:where(.survival-page) .survival-intro h2 {
+  font-family: 'Microsoft YaHei UI', 'Microsoft YaHei', sans-serif;
+  font-size: clamp(28px, 3.3vw, 48px);
+  line-height: 1.55;
+  font-weight: 500;
+  letter-spacing: 3px;
+  margin: 22px 0 22px;
+}
+:where(.survival-page) .survival-intro > p {
+  font-size: 13px;
+  line-height: 2;
+  color: #b5beaa;
+  letter-spacing: 0.6px;
+}
+:where(.survival-page) .survival-intro-rules {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  margin: 27px 0 30px;
+  border-left: 1px solid #c5b4774a;
+  padding-left: 16px;
+}
+:where(.survival-page) .survival-intro-rules > span {
+  font-size: 11px;
+  color: #c2c7b1;
+  display: flex;
+  gap: 14px;
+  align-items: center;
+}
+:where(.survival-page) .survival-intro-rules b {
+  font-size: 10px;
+  color: #cdb577;
+  font-weight: 400;
+  letter-spacing: 2px;
+}
+:where(.survival-page) .survival-primary {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 15px;
+  border: 1px solid #efcc80;
+  background: #d9b66d;
+  color: #1f271a;
+  padding: 13px 24px;
+  min-height: 45px;
+  letter-spacing: 1.3px;
+  font-size: 13px !important;
+  transition:
+    background 0.15s,
+    transform 0.15s;
+}
+:where(.survival-page) .survival-primary:hover {
+  background: #f0d28d;
+  transform: translateY(-1px);
+}
+:where(.survival-page) .survival-intro .survival-primary {
+  width: 245px;
+  justify-content: space-between;
+}
+:where(.survival-page) .survival-intro-foot {
+  display: block;
+  margin-top: 18px;
+  color: #8d9c85;
+  font-size: 10px;
+  line-height: 1.9;
+}
+:where(.survival-page) .survival-modal-backdrop {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  z-index: 20;
+  background: #090f0bc7;
+  backdrop-filter: blur(4px);
+  padding: 25px;
+}
+:where(.survival-page) .survival-pause {
+  width: 370px;
+  padding: 32px;
+  background: #1b281f;
+  border: 1px solid #8a956044;
+  box-shadow: 0 20px 100px #0007;
+}
+:where(.survival-page) .survival-pause h2 {
+  font-size: 28px;
+  font-weight: 400;
+  letter-spacing: 3px;
+  margin: 19px 0 12px;
+}
+:where(.survival-page) .survival-pause > p {
+  font-size: 11px;
+  color: #a9b09a;
+  line-height: 1.9;
+  margin-bottom: 25px;
+}
+:where(.survival-page) .survival-pause .survival-primary, :where(.survival-page) .survival-secondary {
+  width: 100%;
+}
+:where(.survival-page) .survival-secondary {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  border: 1px solid #82907555;
+  color: #c7d0b6;
+  padding: 12px;
+  margin-top: 10px;
+}
+:where(.survival-page) .survival-reduced {
+  display: flex;
+  gap: 9px;
+  align-items: center;
+  font-size: 11px;
+  color: #a4ae94;
+  margin-top: 20px;
+}
+:where(.survival-page) .survival-reduced input {
+  accent-color: var(--gold);
+}
+:where(.survival-page) .survival-text-button {
+  display: flex;
+  gap: 7px;
+  align-items: center;
+  background: transparent;
+  border: 0;
+  color: #a8aa8d;
+  font-size: 11px !important;
+  padding: 0;
+  margin-top: 25px;
+}
+:where(.survival-page) .survival-inventory {
+  width: min(640px, 100%);
+  max-height: calc(100dvh - 50px);
+  display: flex;
+  flex-direction: column;
+  background: #19251edb;
+  border: 1px solid #8a956055;
+  box-shadow: 0 20px 100px #0005;
+}
+:where(.survival-page) .survival-inventory > header {
+  display: flex;
+  justify-content: space-between;
+  padding: 25px;
+  border-bottom: 1px solid var(--line);
+  align-items: center;
+}
+:where(.survival-page) .survival-inventory h2 {
+  font-weight: 400;
+  font-size: 23px;
+  letter-spacing: 2px;
+  margin-top: 8px;
+}
+:where(.survival-page) .survival-inventory-body {
+  padding: 22px 25px;
+  overflow: auto;
+}
+:where(.survival-page) .inventory-section-title {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  color: #dbddc5;
+}
+:where(.survival-page) .inventory-section-title > span {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+}
+:where(.survival-page) .inventory-section-title b {
+  font-size: 11px;
+  font-weight: 400;
+  color: var(--gold);
+}
+:where(.survival-page) .inventory-note {
+  color: #8d9d85;
+  font-size: 10px;
+  line-height: 1.7;
+  margin: 9px 0 14px !important;
+}
+:where(.survival-page) .safe-title {
+  margin-top: 25px;
+}
+:where(.survival-page) .survival-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 0;
+  border-bottom: 1px solid #a0b38320;
+}
+:where(.survival-page) .survival-item-icon {
+  width: 40px;
+  height: 40px;
+  display: grid;
+  place-items: center;
+  flex: none;
+  background: #263d2e;
+  color: #baccae;
+  border: 1px solid #a5b69b20;
+}
+:where(.survival-page) .survival-item.coil .survival-item-icon {
+  color: var(--mint);
+}
+:where(.survival-page) .survival-item.blade .survival-item-icon, :where(.survival-page) .survival-item.core .survival-item-icon {
+  color: var(--gold);
+}
+:where(.survival-page) .survival-item > div:nth-child(2) {
+  flex: 1;
+}
+:where(.survival-page) .survival-item strong {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  font-size: 12px;
+  font-weight: 500;
+}
+:where(.survival-page) .survival-item strong small {
+  font-size: 9px;
+  color: #8b9d80;
+  font-weight: 400;
+}
+:where(.survival-page) .survival-item p {
+  font-size: 10px;
+  color: #92a38a;
+  margin-top: 5px;
+  line-height: 1.6;
+}
+:where(.survival-page) .survival-item-actions {
+  display: flex;
+  gap: 6px;
+  flex: none;
+}
+:where(.survival-page) .survival-item-actions button {
+  border: 1px solid #b6b6804d;
+  color: #d3c188;
+  background: #35422a;
+  padding: 5px 8px;
+  font-size: 10px;
+}
+:where(.survival-page) .survival-item-actions .muted {
+  border-color: #a0ad8222;
+  background: transparent;
+  color: #97a48b;
+}
+:where(.survival-page) .survival-empty {
+  border: 1px dashed var(--line);
+  padding: 25px;
+  text-align: center;
+  font-size: 11px;
+  color: #8c9a83;
+}
+:where(.survival-page) .survival-safe-empty {
+  border: 1px dashed #8ca78955;
+  padding: 20px;
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  justify-content: center;
+  color: #9bb599;
+  font-size: 11px;
+}
+:where(.survival-page) .survival-inventory > footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 20px 25px;
+  border-top: 1px solid var(--line);
+  font-size: 11px;
+  color: #a9b49b;
+}
+:where(.survival-page) .survival-inventory > footer strong {
+  font-size: 23px;
+  color: var(--gold);
+  font-weight: 400;
+  margin-left: 8px;
+}
+:where(.survival-page) .survival-inventory > footer .survival-primary {
+  font-size: 12px !important;
+  min-height: 38px;
+  padding: 10px 16px;
+}
+:where(.survival-page) .survival-result {
+  width: min(550px, 100%);
+  padding: 34px;
+  background: #1d2a21;
+  border: 1px solid #9eac7344;
+  box-shadow: 0 20px 100px #0007;
+}
+:where(.survival-page) .survival-result.dead {
+  background: #2a241d;
+}
+:where(.survival-page) .survival-result h2 {
+  font-size: 28px;
+  font-weight: 400;
+  letter-spacing: 2px;
+  margin: 20px 0 13px;
+}
+:where(.survival-page) .survival-result > p {
+  font-size: 12px;
+  color: #aeb69e;
+  line-height: 1.9;
+}
+:where(.survival-page) .survival-result-stats {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  margin: 27px 0;
+  border-top: 1px solid var(--line);
+  border-bottom: 1px solid var(--line);
+  padding: 20px 0;
+  gap: 15px;
+}
+:where(.survival-page) .survival-result-stats b {
+  display: block;
+  font-size: 28px;
+  font-weight: 400;
+  color: var(--gold);
+  font-variant-numeric: tabular-nums;
+}
+:where(.survival-page) .survival-result-stats span {
+  display: block;
+  color: #98a88d;
+  font-size: 10px;
+  margin-top: 7px;
+}
+:where(.survival-page) .survival-result-loot {
+  display: flex;
+  gap: 7px;
+  flex-wrap: wrap;
+}
+:where(.survival-page) .survival-result-loot > span {
+  display: flex;
+  gap: 5px;
+  align-items: center;
+  background: #a9b08716;
+  border: 1px solid var(--line);
+  padding: 5px 8px;
+  font-size: 10px;
+  color: #d2d8ba;
+}
+:where(.survival-page) .survival-result-loot .muted {
+  color: #97a18b;
+}
+:where(.survival-page) .survival-result .survival-loss {
+  font-size: 10px;
+  color: #bd9978;
+  margin-top: 16px;
+}
+:where(.survival-page) .survival-result-note {
+  color: #9aac8c;
+  font-size: 11px;
+  margin: 24px 0;
+  line-height: 1.8;
+}
+:where(.survival-page) .survival-result .survival-primary {
+  width: 100%;
+}
+:where(.survival-page) .survival-result > small {
+  display: block;
+  text-align: center;
+  color: #87927a;
+  font-size: 10px;
+  margin-top: 12px;
+}
+:where(.survival-page) .survival-loading, :where(.survival-page) .survival-render-error {
+  height: 100%;
+  display: flex;
+  gap: 22px;
+  align-items: center;
+  justify-content: center;
+  color: #b4c1a3;
+  letter-spacing: 2px;
+  background: #101614;
+}
+:where(.survival-page) .survival-loading > span {
+  font-size: 46px;
+  font-weight: 700;
+  color: var(--gold);
+}
+@keyframes survival-survival-notice-in {
+  from {
+    opacity: 0;
+    translate: 0 6px;
+  }
+  to {
+    opacity: 1;
+    translate: 0 0;
+  }
+}
+@media (min-width: 1600px) {
+  :where(.survival-page) .survival-hud {
+    left: 45px;
+    right: 45px;
+    bottom: 24px;
+    grid-template-columns: 280px 660px 170px;
+  }
+  :where(.survival-page) .survival-vitals {
+    padding: 17px;
+  }
+  :where(.survival-page) .survival-weapon {
+    min-height: 75px;
+  }
+  :where(.survival-page) .survival-header {
+    left: 45px;
+    right: 45px;
+    top: 28px;
+  }
+}
+@media (max-width: 1050px) {
+  :where(.survival-page) .survival-hud {
+    grid-template-columns: 215px 1fr;
+    gap: 10px 12px;
+    left: 18px;
+    right: 18px;
+  }
+  :where(.survival-page) .survival-cargo {
+    display: none;
+  }
+  :where(.survival-page) .survival-weapon {
+    padding: 12px 8px;
+    gap: 6px;
+  }
+  :where(.survival-page) .survival-weapon small {
+    font-size: 8px;
+  }
+  :where(.survival-page) .weapon-number {
+    font-size: 17px;
+  }
+  :where(.survival-page) .survival-header {
+    left: 20px;
+    right: 20px;
+    gap: 16px;
+  }
+  :where(.survival-page) .survival-mission {
+    left: 21px;
+  }
+  :where(.survival-page) .survival-wave {
+    right: 21px;
+  }
+  :where(.survival-page) .survival-controls {
+    gap: 14px;
+    font-size: 9px;
+  }
+  :where(.survival-page) .survival-marker {
+    font-size: 9px !important;
+    padding: 4px 6px;
+  }
+  :where(.survival-page) .survival-intro-wrap {
+    padding-left: 5vw;
+  }
+}
+@media (max-width: 760px) {
+  .survival-page {
+    min-height: 620px;
+  }
+  :where(.survival-page) .survival-header {
+    top: 15px;
+    left: 15px;
+    right: 15px;
+    gap: 12px;
+  }
+  :where(.survival-page) .survival-brand {
+    padding-right: 12px;
+  }
+  :where(.survival-page) .survival-brand > span {
+    font-size: 30px;
+  }
+  :where(.survival-page) .survival-brand svg {
+    display: none;
+  }
+  :where(.survival-page) .survival-location > span {
+    font-size: 7px;
+    letter-spacing: 1px;
+  }
+  :where(.survival-page) .survival-location h1 {
+    font-size: 14px;
+    letter-spacing: 1px;
+  }
+  :where(.survival-page) .survival-header-right {
+    gap: 6px;
+  }
+  :where(.survival-page) .survival-clock {
+    font-size: 12px;
+    letter-spacing: 1px;
+    margin-right: 0;
+  }
+  :where(.survival-page) .survival-bag-button {
+    padding: 0 8px;
+    gap: 5px;
+    height: 33px;
+  }
+  :where(.survival-page) .survival-bag-button > span {
+    display: none;
+  }
+  :where(.survival-page) .survival-icon-button {
+    width: 33px;
+    height: 33px;
+  }
+  :where(.survival-page) .survival-mission {
+    left: 16px;
+    top: 78px;
+    max-width: 210px;
+  }
+  :where(.survival-page) .survival-mission p {
+    font-size: 11px;
+    margin: 7px 0;
+  }
+  :where(.survival-page) .survival-mission > div {
+    font-size: 9px;
+  }
+  :where(.survival-page) .survival-wave {
+    top: 81px;
+    right: 16px;
+    font-size: 9px;
+    max-width: 140px;
+  }
+  :where(.survival-page) .survival-wave small {
+    font-size: 8px;
+  }
+  :where(.survival-page) .survival-hud {
+    grid-template-columns: 1fr;
+    bottom: 10px;
+    gap: 9px;
+    left: 12px;
+    right: 12px;
+  }
+  :where(.survival-page) .survival-vitals {
+    padding: 9px 12px;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
+  }
+  :where(.survival-page) .survival-health {
+    gap: 5px;
+  }
+  :where(.survival-page) .survival-health > div {
+    margin: 0;
+  }
+  :where(.survival-page) .survival-health strong {
+    font-size: 17px;
+  }
+  :where(.survival-page) .survival-needs {
+    gap: 9px;
+    align-items: center;
+  }
+  :where(.survival-page) .survival-loadout {
+    gap: 4px;
+  }
+  :where(.survival-page) .survival-weapon {
+    min-height: 54px;
+    padding: 9px 7px;
+    gap: 6px;
+  }
+  :where(.survival-page) .survival-weapon b {
+    font-size: 10px;
+    letter-spacing: 0;
+  }
+  :where(.survival-page) .survival-weapon.empty b {
+    font-size: 9px;
+  }
+  :where(.survival-page) .survival-weapon small {
+    font-size: 8px;
+  }
+  :where(.survival-page) .weapon-number {
+    font-size: 15px;
+  }
+  :where(.survival-page) .survival-controls {
+    gap: 10px;
+    font-size: 8px;
+    line-height: 15px;
+    flex-wrap: wrap;
+  }
+  :where(.survival-page) .survival-controls > span:first-child {
+    display: none;
+  }
+  :where(.survival-page) .survival-notice {
+    bottom: 186px;
+    font-size: 10px;
+  }
+  :where(.survival-page) .survival-extract {
+    bottom: 179px;
+  }
+  :where(.survival-page) .survival-extract button {
+    min-width: 220px;
+    padding: 10px 16px;
+  }
+  :where(.survival-page) .survival-intro-wrap {
+    padding: 85px 28px 35px;
+    background: linear-gradient(90deg, #111b15f5, #111b15ad 70%, #111b1560);
+  }
+  :where(.survival-page) .survival-intro h2 {
+    font-size: 33px;
+    letter-spacing: 2px;
+    margin: 20px 0;
+  }
+  :where(.survival-page) .survival-intro > p {
+    font-size: 12px;
+  }
+  :where(.survival-page) .survival-intro-rules {
+    margin: 24px 0;
+  }
+  :where(.survival-page) .survival-modal-backdrop {
+    padding: 16px;
+  }
+  :where(.survival-page) .survival-inventory > header {
+    padding: 19px;
+  }
+  :where(.survival-page) .survival-inventory-body {
+    padding: 18px;
+  }
+  :where(.survival-page) .survival-item {
+    gap: 9px;
+  }
+  :where(.survival-page) .survival-item-icon {
+    width: 31px;
+    height: 36px;
+  }
+  :where(.survival-page) .survival-item strong {
+    font-size: 11px;
+  }
+  :where(.survival-page) .survival-item p {
+    font-size: 9px;
+  }
+  :where(.survival-page) .survival-item-actions {
+    flex-direction: column;
+    gap: 3px;
+  }
+  :where(.survival-page) .survival-inventory h2 {
+    font-size: 21px;
+  }
+  :where(.survival-page) .survival-result {
+    padding: 25px;
+  }
+  :where(.survival-page) .survival-result h2 {
+    font-size: 23px;
+  }
+  :where(.survival-page) .survival-result-stats b {
+    font-size: 24px;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .survival-page * {
+    animation: none !important;
+    transition: none !important;
+  }
+}
+.survival-page dialog[open] {
+  position: relative;
+  margin: 0;
+  color: inherit;
+  max-width: 100%;
+}
+/* Courtyard art direction / expedition HUD. Keep the center open for combat. */
+.survival-page {
+  --paper: #ede0ba;
+  --gold: #d5ac61;
+  --mint: #9ce4ca;
+}
+.survival-page .survival-hud {
+  left: 254px;
+  right: 30px;
+  bottom: 28px;
+  display: block;
+  padding: 0;
+  border: 0;
+  background: transparent;
+}
+.survival-page .survival-vitals {
+  position: fixed;
+  left: 30px;
+  bottom: 257px;
+  width: 198px;
+  padding: 12px;
+  background: #12282be8;
+  border: 1px solid #c2b07a40;
+}
+.survival-page .survival-cargo {
+  position: fixed;
+  right: 30px;
+  bottom: 177px;
+  padding: 8px 13px;
+  background: #12282bcc;
+  border-left: 2px solid var(--gold);
+}
+.survival-page .survival-controls {
+  left: 254px;
+  right: 30px;
+  bottom: 7px;
+}
+.survival-page .survival-notice {
+  top: 24%;
+  bottom: auto;
+  max-width: calc(100% - 360px);
+  background: #19312beb;
+}
+.survival-page .survival-extract {
+  bottom: 204px;
+}
+.survival-page .survival-inventory {
+  width: min(890px, 94vw);
+  max-height: 90dvh;
+}
+.survival-page .survival-inventory-body {
+  min-height: 0;
+  overflow-y: auto;
+}
+:where(.survival-page) .survival-minimap {
+  position: absolute;
+  z-index: 4;
+  left: 30px;
+  bottom: 28px;
+  width: 198px;
+  border: 1px solid #c2b07a70;
+  padding: 7px;
+  background: #102429f5;
+  box-shadow: 0 4px 20px #0004;
+}
+:where(.survival-page) .survival-minimap > div {
+  display: flex;
+  justify-content: space-between;
+  margin: 0 1px 7px;
+  font-size: 10px;
+  letter-spacing: 1px;
+  color: #d7c49b;
+}
+:where(.survival-page) .survival-minimap > div b {
+  color: var(--mint);
+  font-weight: 400;
+}
+:where(.survival-page) .survival-minimap canvas {
+  display: block;
+  width: 100%;
+  aspect-ratio: 1.2;
+  image-rendering: pixelated;
+  border: 1px solid #435954;
+}
+:where(.survival-page) .survival-minimap footer {
+  display: flex;
+  justify-content: space-between;
+  font-size: 9px;
+  color: #b7b793;
+  margin-top: 6px;
+}
+:where(.survival-page) .survival-minimap footer span:last-child {
+  color: #e79580;
+}
+:where(.survival-page) .equipment-panel {
+  width: 100%;
+  padding: 10px 13px 13px;
+  border: 1px solid #b6a97766;
+  background: #132a2eeb;
+  box-shadow: 0 5px 22px #0004;
+}
+:where(.survival-page) .equipment-heading {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  align-items: center;
+  color: #e6d7b1;
+  font-size: 11px;
+  letter-spacing: 1px;
+  margin-bottom: 6px;
+}
+:where(.survival-page) .equipment-heading b {
+  font-weight: 400;
+  color: #98c5ac;
+  margin-left: 10px;
+  font-size: 10px;
+}
+:where(.survival-page) .equipment-heading small {
+  color: #a5b6a8;
+  font-size: 10px;
+  letter-spacing: 0.5px;
+}
+:where(.survival-page) .equipment-strip {
+  display: grid;
+  grid-template-columns: repeat(10, minmax(0, 1fr));
+  grid-template-rows: 19px 86px;
+  gap: 3px;
+}
+:where(.survival-page) .equipment-anchor {
+  border: 0;
+  padding: 0;
+  font-size: 9px !important;
+  background: transparent;
+  color: #93aa9a;
+}
+:where(.survival-page) .equipment-panel .equipment-anchor:disabled {
+  opacity: 0.6;
+}
+:where(.survival-page) .equipment-panel.editing .equipment-anchor:not(:disabled) {
+  background: #dbb96b;
+  color: #183437;
+  cursor: pointer;
+}
+:where(.survival-page) .equipment-empty {
+  background: #091a2080;
+  border: 1px solid #7d948a33;
+  color: #859588;
+  display: grid;
+  place-items: center;
+  font-size: 20px;
+}
+:where(.survival-page) .equipment-card {
+  position: relative;
+  min-width: 0;
+  border: 1px solid #b9a47685;
+  background: linear-gradient(160deg, #3b4842, #20312f);
+  color: #e3ca95;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  padding: 5px 2px;
+  overflow: visible;
+}
+:where(.survival-page) .equipment-card svg {
+  flex-shrink: 0;
+}
+:where(.survival-page) .equipment-card b {
+  font-size: 11px;
+  letter-spacing: 0.5px;
+  font-weight: 500;
+}
+:where(.survival-page) .equipment-card small {
+  font-size: 9px;
+  color: #d0c4a3;
+}
+:where(.survival-page) .equipment-card i {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  max-width: 100%;
+  height: 3px;
+  background: currentColor;
+}
+:where(.survival-page) .equipment-card em {
+  position: absolute;
+  top: -4px;
+  right: 8px;
+  width: 5px;
+  height: 5px;
+  transform: rotate(45deg);
+  background: #e8cb84;
+  box-shadow: 0 0 7px #e8cb84aa;
+}
+:where(.survival-page) .equipment-card.coil {
+  background: linear-gradient(155deg, #335952, #1a373a);
+  color: #a0e9cb;
+  border-color: #87bba4;
+}
+:where(.survival-page) .equipment-card.laser {
+  background: linear-gradient(155deg, #53445a, #29343d);
+  color: #dbb3ec;
+  border-color: #b699be;
+}
+:where(.survival-page) .equipment-card.capacitor {
+  background: linear-gradient(155deg, #574c33, #293c37);
+  color: #e8c277;
+}
+:where(.survival-page) .equipment-card.coolant {
+  background: linear-gradient(155deg, #34546a, #29373e);
+  color: #a4d4e9;
+}
+:where(.survival-page) .equipment-card.selected {
+  outline: 2px solid #fff0b2;
+  outline-offset: -3px;
+  background: #5a5940;
+}
+:where(.survival-page) .equipment-card:hover {
+  filter: brightness(1.2);
+}
+:where(.survival-page) .equipment-panel.editing {
+  margin: 0 0 24px;
+  padding: 14px;
+  background: #11272b;
+}
+:where(.survival-page) .equipment-panel.editing .equipment-strip {
+  grid-template-rows: 26px 112px;
+}
+:where(.survival-page) .equipment-inspector {
+  min-height: 97px;
+  padding: 14px 0 0;
+  display: flex;
+  gap: 14px;
+  justify-content: space-between;
+  font-size: 11px;
+  line-height: 1.7;
+  color: #b9c2ad;
+}
+:where(.survival-page) .equipment-inspector strong {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--paper);
+}
+:where(.survival-page) .equipment-inspector strong small {
+  font-weight: 400;
+  margin-left: 8px;
+  color: #abaf93;
+}
+:where(.survival-page) .equipment-inspector p {
+  margin-top: 5px;
+}
+:where(.survival-page) .equipment-inspector .effective-stats {
+  color: var(--mint);
+}
+:where(.survival-page) .equipment-actions {
+  display: flex;
+  gap: 6px;
+  flex-direction: column;
+  align-items: flex-end;
+  flex-shrink: 0;
+}
+:where(.survival-page) .equipment-actions button {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  border: 1px solid #b8b3894d;
+  background: #263c35;
+  color: var(--paper);
+  padding: 5px 8px;
+  font-size: 10px;
+}
+@media (max-width: 1050px) {
+  .survival-page .survival-hud {
+    left: 210px;
+    right: 20px;
+  }
+  :where(.survival-page) .survival-minimap {
+    left: 20px;
+    width: 170px;
+  }
+  .survival-page .survival-vitals {
+    left: 20px;
+    width: 170px;
+    bottom: 235px;
+  }
+  :where(.survival-page) .equipment-card b {
+    font-size: 10px;
+    letter-spacing: 0;
+  }
+  :where(.survival-page) .equipment-card small {
+    font-size: 8px;
+  }
+  .survival-page .survival-controls {
+    left: 210px;
+  }
+}
+@media (max-width: 760px) {
+  .survival-page .survival-hud {
+    left: 150px;
+    right: 12px;
+    bottom: 26px;
+  }
+  :where(.survival-page) .survival-minimap {
+    left: 12px;
+    bottom: 26px;
+    width: 125px;
+    padding: 4px;
+  }
+  :where(.survival-page) .survival-minimap > div {
+    font-size: 8px;
+    letter-spacing: 0;
+  }
+  :where(.survival-page) .survival-minimap footer {
+    font-size: 7px;
+  }
+  .survival-page .survival-vitals {
+    left: 12px;
+    bottom: 186px;
+    width: 156px;
+  }
+  .survival-page .survival-cargo {
+    display: none;
+  }
+  .survival-page .survival-controls {
+    left: 150px;
+    right: 12px;
+    font-size: 9px;
+  }
+  :where(.survival-page) .equipment-panel.compact {
+    padding: 5px;
+  }
+  :where(.survival-page) .equipment-panel.compact .equipment-strip {
+    grid-template-rows: 14px 74px;
+    gap: 2px;
+  }
+  :where(.survival-page) .equipment-panel.compact .equipment-card b {
+    font-size: 9px;
+    line-height: 1.25;
+  }
+  :where(.survival-page) .equipment-panel.compact .equipment-card small {
+    display: none;
+  }
+  :where(.survival-page) .equipment-heading {
+    font-size: 9px;
+    letter-spacing: 0;
+  }
+  :where(.survival-page) .equipment-heading small {
+    display: none;
+  }
+  :where(.survival-page) .equipment-panel.editing .equipment-strip {
+    grid-template-rows: 22px 90px;
+    gap: 2px;
+  }
+  :where(.survival-page) .equipment-inspector {
+    flex-direction: column;
+  }
+  :where(.survival-page) .equipment-actions {
+    flex-direction: row;
+  }
+  .survival-page .survival-notice {
+    max-width: 85%;
+    top: 27%;
+    font-size: 11px;
+  }
+}
+@media (max-width: 760px) {
+  .survival-page .survival-vitals {
+    display: block;
+  }
+  :where(.survival-page) .equipment-panel.editing .equipment-card b {
+    font-size: 9px;
+  }
+  :where(.survival-page) .equipment-panel.editing .equipment-card small {
+    font-size: 8px;
+  }
+}
+/* Stable world-space labels are positioned by the same render frame as camera. */
+:where(.survival-page) .survival-markers [data-marker-id] {
+  visibility: hidden;
+  will-change: transform;
+}
+:where(.survival-page) .survival-marker small {
+  font-size: 9px;
+  color: #b8c6b4;
+}
+:where(.survival-page) .cargo-management {
+  margin-top: 22px;
+}
+:where(.survival-page) .cargo-grid-header, :where(.survival-page) .cargo-grid-header > span {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+:where(.survival-page) .cargo-grid-header {
+  justify-content: space-between;
+}
+:where(.survival-page) .cargo-grid-header b {
+  margin-left: 4px;
+  color: #b7c5ac;
+  font-size: 11px;
+  font-weight: 400;
+}
+:where(.survival-page) .cargo-grid-header button, :where(.survival-page) .cargo-buttons button {
+  background: #263e3b;
+  border: 1px solid #c1b17755;
+  color: #e0d5b1;
+  padding: 7px 10px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11px;
+}
+:where(.survival-page) .cargo-hint {
+  font-size: 10px;
+  line-height: 1.7;
+  color: #a4b5a6;
+  margin: 9px 0 12px !important;
+}
+:where(.survival-page) .cargo-grid-body {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 160px;
+  gap: 22px;
+}
+:where(.survival-page) .cargo-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  grid-template-rows: repeat(2, 104px);
+  gap: 5px;
+  position: relative;
+  background: #091e23;
+  padding: 8px;
+  border: 1px solid #acb29244;
+}
+:where(.survival-page) .cargo-cell {
+  min-width: 0;
+  position: relative;
+  border: 1px solid #8da69633;
+  background: #142e32;
+  color: #7a998b;
+  padding: 0;
+}
+:where(.survival-page) .cargo-cell > span {
+  position: absolute;
+  top: 5px;
+  left: 7px;
+  font-size: 9px;
+  opacity: 0.6;
+}
+:where(.survival-page) .cargo-cell.available {
+  background: #263e38;
+  border-style: dashed;
+  border-color: #becf9066;
+}
+:where(.survival-page) .cargo-cell.available:hover {
+  background: #3b5544;
+  border-color: #d9dda0;
+}
+:where(.survival-page) .cargo-piece {
+  position: relative;
+  min-width: 0;
+  z-index: 1;
+  background: linear-gradient(145deg, #365153, #1d3236);
+  border: 1px solid #adc3a777;
+  color: #d8e1bd;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-direction: column;
+  gap: 6px;
+  padding: 8px;
+  cursor: grab !important;
+}
+:where(.survival-page) .cargo-piece strong {
+  font-size: 12px;
+  font-weight: 500;
+}
+:where(.survival-page) .cargo-piece small {
+  font-size: 9px;
+  color: #b0bda4;
+}
+:where(.survival-page) .cargo-piece.selected, :where(.survival-page) .cargo-safe-piece.selected {
+  outline: 2px solid #efd186;
+  outline-offset: -3px;
+}
+:where(.survival-page) .cargo-piece.water {
+  color: #93d5de;
+  background: linear-gradient(145deg, #294b53, #1c303a);
+}
+:where(.survival-page) .cargo-piece.medicine {
+  color: #e6a390;
+  background: linear-gradient(145deg, #55453e, #2a3332);
+}
+:where(.survival-page) .cargo-piece.food {
+  color: #d2c79a;
+}
+:where(.survival-page) .cargo-piece.laser {
+  color: #cbb1e4;
+}
+:where(.survival-page) .cargo-piece {
+  touch-action: none;
+  user-select: none;
+}
+:where(.survival-page) .cargo-grid.dragging .cargo-piece.selected {
+  opacity: 0.65;
+}
+:where(.survival-page) .cargo-ghost {
+  z-index: 3;
+  pointer-events: none;
+  border: 2px solid;
+}
+:where(.survival-page) .cargo-ghost.valid {
+  border-color: #b6e5b2;
+  background: #a5ebba33;
+}
+:where(.survival-page) .cargo-ghost.invalid {
+  border-color: #f59b88;
+  background: #f59b8833;
+}
+:where(.survival-page) .safe-pocket {
+  border: 1px solid #c3b27860;
+  background: #292f24;
+  padding: 12px;
+}
+:where(.survival-page) .safe-pocket > span {
+  font-size: 10px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: #e1c997;
+  white-space: nowrap;
+}
+:where(.survival-page) .safe-pocket b {
+  font-weight: 400;
+  margin-left: auto;
+}
+:where(.survival-page) .cargo-safe-piece, :where(.survival-page) .cargo-safe-empty {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  gap: 10px;
+  min-height: 135px;
+  width: 100%;
+  margin-top: 12px;
+  border: 1px solid #d5b87b66;
+  background: #141f1c;
+  color: #cdb57d;
+}
+:where(.survival-page) .cargo-safe-piece strong {
+  font-size: 11px;
+  font-weight: 500;
+}
+:where(.survival-page) .cargo-safe-piece small, :where(.survival-page) .cargo-safe-empty small {
+  font-size: 9px;
+  color: #b8b995;
+}
+:where(.survival-page) .safe-pocket > p {
+  text-align: center;
+  margin-top: 10px;
+  font-size: 9px;
+  color: #a5ad94;
+}
+:where(.survival-page) .cargo-inspector {
+  border-top: 1px solid #b7bc9a33;
+  margin-top: 15px;
+  padding: 15px 0 0;
+  min-height: 84px;
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 15px;
+}
+:where(.survival-page) .cargo-inspector strong {
+  font-size: 13px;
+  font-weight: 500;
+  color: #e4d2aa;
+}
+:where(.survival-page) .cargo-inspector p {
+  font-size: 11px;
+  line-height: 1.8;
+  color: #b9c5b3;
+}
+:where(.survival-page) .cargo-inspector > p {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+}
+:where(.survival-page) .cargo-inspector small {
+  color: #a2b6a6;
+  font-size: 10px;
+}
+:where(.survival-page) .cargo-buttons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+  max-width: 260px;
+  flex-shrink: 0;
+  justify-content: flex-end;
+}
+@media (max-width: 760px) {
+  :where(.survival-page) .cargo-grid-body {
+    grid-template-columns: minmax(0, 1fr) 110px;
+    gap: 10px;
+  }
+  :where(.survival-page) .cargo-grid {
+    padding: 4px;
+    gap: 3px;
+    grid-template-rows: repeat(2, 85px);
+  }
+  :where(.survival-page) .cargo-piece {
+    padding: 3px;
+    gap: 4px;
+  }
+  :where(.survival-page) .cargo-piece strong {
+    font-size: 10px;
+  }
+  :where(.survival-page) .cargo-piece small {
+    font-size: 8px;
+  }
+  :where(.survival-page) .safe-pocket {
+    padding: 7px;
+  }
+  :where(.survival-page) .safe-pocket > span {
+    flex-wrap: wrap;
+    font-size: 9px;
+  }
+  :where(.survival-page) .cargo-safe-piece, :where(.survival-page) .cargo-safe-empty {
+    min-height: 107px;
+  }
+  :where(.survival-page) .cargo-inspector {
+    flex-direction: column;
+  }
+  :where(.survival-page) .cargo-buttons {
+    max-width: none;
+  }
+}
+/* Keep both the combat strip and the full bag visible in an ordinary desktop panel. */
+:where(.survival-page) .survival-inventory > header {
+  padding: 19px 25px;
+}
+:where(.survival-page) .survival-inventory > footer {
+  padding: 15px 25px;
+}
+:where(.survival-page) .survival-inventory-body {
+  padding: 18px 25px;
+}
+:where(.survival-page) .survival-inventory .equipment-panel.editing {
+  padding: 10px;
+  margin-bottom: 14px;
+}
+:where(.survival-page) .survival-inventory .equipment-panel.editing .equipment-strip {
+  grid-template-rows: 20px 78px;
+}
+:where(.survival-page) .survival-inventory .equipment-inspector {
+  min-height: 35px;
+  padding-top: 8px;
+}
+:where(.survival-page) .survival-inventory .equipment-inspector p {
+  margin-top: 2px;
+}
+:where(.survival-page) .survival-inventory .cargo-management {
+  margin-top: 14px;
+}
+:where(.survival-page) .survival-inventory .cargo-grid {
+  grid-template-rows: repeat(2, 82px);
+}
+:where(.survival-page) .survival-inventory .cargo-inspector {
+  min-height: 51px;
+  margin-top: 10px;
+  padding-top: 10px;
+}
+:where(.survival-page) .survival-inventory .cargo-piece {
+  gap: 4px;
+}
+:where(.survival-page) .survival-inventory .cargo-safe-piece, :where(.survival-page) .survival-inventory .cargo-safe-empty {
+  min-height: 101px;
+}
+
+/* Keep the new cabin readable above the departure text on narrow screens. */
+@media (min-width: 900px) {
+  .survival-page.extracted .ending-backdrop {
+    place-items: center start;
+    padding-left: 5vw;
+    backdrop-filter: none;
+    background: linear-gradient(
+      90deg,
+      #101812f0,
+      #101812b0 28%,
+      #10181215 64%,
+      transparent
+    );
+  }
+  .survival-page.extracted .survival-result {
+    width: min(400px, 35vw);
+    padding: 26px;
+    background: #192920e8;
+  }
+}
+@media (max-width: 899px) {
+  .survival-page.ready .survival-intro-wrap {
+    align-items: flex-end;
+    padding: 80px 24px 26px;
+    background: linear-gradient(
+      0deg,
+      #101812fa 0%,
+      #101812ef 25%,
+      #10181270 43%,
+      transparent 60%
+    );
+  }
+  .survival-page.ready .survival-intro {
+    max-width: 100%;
+  }
+  .survival-page.ready .survival-intro h2 {
+    font-size: 25px;
+    margin: 12px 0;
+    line-height: 1.5;
+  }
+  .survival-page.ready .survival-intro h2 br {
+    display: none;
+  }
+  .survival-page.ready .survival-intro-rules {
+    display: none;
+  }
+  .survival-page.ready .survival-primary {
+    margin-top: 18px;
+  }
+  .survival-page.ready .survival-intro-foot {
+    margin-top: 12px;
+  }
+}
+
+/* Eye-level arrival keeps the cabin itself as the main visual. */
+.survival-page.ready .survival-intro-wrap {
+  pointer-events: none;
+  align-items: flex-end;
+  padding: 0 34px 32px;
+  background: linear-gradient(0deg, #0d1c20e8, #0d1c2080 17%, transparent 40%);
+}
+.survival-page.ready .survival-intro {
+  max-width: 520px;
+}
+.survival-page.ready .survival-intro h2 {
+  font-size: clamp(24px, 2.6vw, 36px);
+  margin: 9px 0;
+}
+.survival-page.ready .survival-intro > p {
+  margin: 0 0 18px;
+  font-size: 13px;
+}
+.survival-page.ready .survival-intro-rules {
+  display: none;
+}
+.survival-page.ready .survival-intro .survival-primary {
+  pointer-events: auto;
+  width: 210px;
+  margin: 0;
+}
+.survival-page.ready .survival-intro-foot {
+  margin-top: 14px;
+  font-size: 11px;
+}
+.survival-page.ready .survival-header-right {
+  visibility: hidden;
+}
+.survival-page.ready .survival-canvas {
+  cursor: grab;
+}
+.survival-page.ready .survival-canvas:active {
+  cursor: grabbing;
+}
+:where(.survival-page) .survival-departure {
+  position: absolute;
+  bottom: 40px;
+  left: 50%;
+  transform: translateX(-50%);
+  text-align: center;
+  pointer-events: none;
+  white-space: nowrap;
+  padding: 18px 42px;
+  background: #102026b8;
+  border-top: 1px solid #dfb76770;
+}
+:where(.survival-page) .survival-departure > span {
+  color: var(--gold);
+  font-size: 10px;
+  letter-spacing: 3px;
+}
+:where(.survival-page) .survival-departure > p {
+  font-size: 17px;
+  margin: 9px 0;
+}
+:where(.survival-page) .survival-departure > small {
+  color: var(--muted);
+  font-size: 10px;
+}
+@media (max-width: 600px) {
+  .survival-page.ready .survival-intro-wrap {
+    padding: 0 20px 26px;
+  }
+  .survival-page.ready .survival-intro h2 {
+    font-size: 24px;
+  }
+  .survival-page.ready .survival-intro-foot {
+    max-width: 290px;
+    line-height: 1.7;
+  }
+}
+
+/* No visual HUD inside the car. Preserve an equivalent screen-reader action. */
+:where(.survival-page) .survival-screen-reader {
+  position: absolute !important;
+  width: 1px !important;
+  height: 1px !important;
+  padding: 0 !important;
+  margin: -1px !important;
+  overflow: hidden !important;
+  clip-path: inset(50%) !important;
+  white-space: nowrap !important;
+  border: 0 !important;
+}
+.survival-page.extracted .survival-canvas {
+  cursor: grab;
+}
+.survival-page.ready .survival-vignette, .survival-page.extracted .survival-vignette, .survival-page.departing .survival-vignette {
+  background: radial-gradient(
+    ellipse at 50% 42%,
+    transparent 32%,
+    #00060658 100%
+  );
+  box-shadow: inset 0 0 100px #01070755;
+}
+
+/* opening */
+:where(.survival-page) .opening-page {
+  min-height: 380px;
+  background: #030707;
+}
+:where(.survival-page) .opening-page .survival-world {
+  transition: filter 0.1s linear;
+}
+:where(.survival-page) .opening-page .survival-vignette {
+  pointer-events: none;
+  background: radial-gradient(
+    ellipse at 50% 42%,
+    transparent 30%,
+    #0208079c 100%
+  );
+}
+:where(.survival-page) .opening-entry {
+  position: absolute;
+  inset: 0;
+  z-index: 25;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 45px;
+  background: #030606;
+}
+:where(.survival-page) .opening-entry > span {
+  font-size: 16px;
+  letter-spacing: 14px;
+  color: #acb3a2;
+  margin-left: 14px;
+}
+:where(.survival-page) .opening-entry button {
+  border: 1px solid #a9b9a344;
+  padding: 14px 38px;
+  background: #13201c;
+  color: #d1d8c5;
+  letter-spacing: 4px;
+  transition: background 0.25s;
+}
+:where(.survival-page) .opening-entry button:hover {
+  background: #26382d;
+}
+:where(.survival-page) .opening-eyes {
+  position: absolute;
+  inset: 0;
+  z-index: 20;
+  pointer-events: none;
+  overflow: hidden;
+}
+:where(.survival-page) .opening-eyes i {
+  position: absolute;
+  left: -10%;
+  width: 120%;
+  height: 53%;
+  background: #020403;
+  filter: blur(9px);
+}
+:where(.survival-page) .opening-eyes i:first-child {
+  top: 0;
+  border-radius: 0 0 45% 45%;
+}
+:where(.survival-page) .opening-eyes i:last-child {
+  bottom: 0;
+  border-radius: 45% 45% 0 0;
+}
+:where(.survival-page) .opening-thought {
+  position: absolute;
+  z-index: 8;
+  left: 50%;
+  top: 36%;
+  width: max-content;
+  max-width: min(400px, 82vw);
+  transform: translate(-50%, -100%);
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.25s;
+}
+:where(.survival-page) .opening-thought.visible {
+  opacity: 1;
+}
+:where(.survival-page) .opening-thought > span {
+  display: block;
+  white-space: pre-line;
+  font-size: 17px;
+  line-height: 1.85;
+  letter-spacing: 1px;
+  padding: 17px 24px;
+  color: #d9ded0;
+  background: #14201de8;
+  border: 1px solid #92a38a66;
+  border-radius: 28px 30px 24px 32px;
+  box-shadow: 0 9px 35px #0006;
+}
+:where(.survival-page) .opening-thought i {
+  position: absolute;
+  bottom: -9px;
+  left: 50%;
+  width: 10px;
+  height: 8px;
+  background: #26352bed;
+  border: 1px solid #8a9d8466;
+  border-radius: 50%;
+}
+:where(.survival-page) .opening-thought i:last-child {
+  bottom: -19px;
+  left: 53%;
+  width: 5px;
+  height: 4px;
+}
+:where(.survival-page) .opening-found {
+  position: absolute;
+  z-index: 9;
+  bottom: 12%;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  align-items: center;
+  gap: 23px;
+  width: max-content;
+  max-width: 90%;
+  padding: 20px 27px;
+  background: #14231ce8;
+  border: 1px solid #bfc3a366;
+  border-radius: 4px;
+  box-shadow: 0 15px 70px #0008;
+}
+:where(.survival-page) .opening-found > svg {
+  color: #d4c191;
+}
+:where(.survival-page) .opening-found small {
+  color: #95a28c;
+  font-size: 12px;
+}
+:where(.survival-page) .opening-found p {
+  font-size: 17px;
+  margin: 5px 0 0;
+}
+:where(.survival-page) .opening-found button, :where(.survival-page) .opening-return {
+  color: #ebead3;
+  background: #536352;
+  padding: 10px 16px;
+  border: 1px solid #b1b59777;
+  border-radius: 3px;
+  white-space: nowrap;
+}
+:where(.survival-page) .opening-page kbd {
+  margin-left: 9px;
+  font: inherit;
+  font-size: 12px;
+  border: 1px solid #c7cbbb77;
+  padding: 2px 5px;
+  border-radius: 3px;
+}
+:where(.survival-page) .opening-equipment {
+  position: absolute;
+  pointer-events: none;
+  z-index: 7;
+  width: min(720px, 92%);
+  bottom: 18px;
+  left: 50%;
+  transform: translateX(-50%);
+  animation: survival-opening-equipment-rise 0.8s cubic-bezier(0.18, 0.85, 0.2, 1) both;
+}
+:where(.survival-page) .opening-equipment .equipment-panel {
+  padding: 8px 14px;
+  background: #0d1b19e8;
+  border-color: #899b7a66;
+  box-shadow: 0 8px 55px #0009;
+}
+:where(.survival-page) .opening-equipment .equipment-heading {
+  display: none;
+}
+:where(.survival-page) .opening-equipment .equipment-anchor {
+  visibility: hidden;
+  height: 10px;
+}
+:where(.survival-page) .opening-equipment .equipment-card {
+  min-height: 68px;
+}
+:where(.survival-page) .opening-equipment .equipment-card small {
+  display: none;
+}
+:where(.survival-page) .opening-equipment .equipment-card.phone {
+  background: linear-gradient(145deg, #293e43, #192a32);
+}
+:where(.survival-page) .opening-equipment .equipment-card.flashlight {
+  background: linear-gradient(145deg, #514f32, #252e26);
+}
+:where(.survival-page) .opening-search {
+  position: absolute;
+  z-index: 7;
+  left: 50%;
+  top: 64%;
+  transform: translateX(-50%);
+  width: 120px;
+  height: 2px;
+  background: #b9c4a538;
+  pointer-events: none;
+}
+:where(.survival-page) .opening-search > i {
+  display: block;
+  background: #d3d3ad;
+  height: 100%;
+}
+:where(.survival-page) .opening-search > span {
+  display: block;
+  text-align: center;
+  margin-top: 10px;
+  color: #c5ceb8;
+  font-size: 12px;
+}
+:where(.survival-page) .opening-near-hint {
+  position: absolute;
+  left: 50%;
+  top: 67%;
+  transform: translateX(-50%);
+  font-size: 12px;
+  color: #c5ceb8;
+  pointer-events: none;
+  text-shadow: 0 2px 5px #000;
+}
+:where(.survival-page) .opening-return {
+  position: absolute;
+  z-index: 8;
+  left: 50%;
+  bottom: 155px;
+  transform: translateX(-50%);
+}
+:where(.survival-page) .opening-pause {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 35;
+  margin: 0;
+  padding: 32px;
+  width: 300px;
+  color: #e6e5cf;
+  background: #14211ef7;
+  border: 1px solid #778471;
+  border-radius: 5px;
+  box-shadow: 0 0 0 100vmax #010504ad;
+}
+:where(.survival-page) .opening-pause h2 {
+  font-size: 21px;
+  font-weight: 400;
+  margin: 0 0 25px;
+}
+:where(.survival-page) .opening-pause button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  width: 100%;
+  margin: 8px 0;
+  padding: 11px;
+  border: 1px solid #77847155;
+  background: #304037;
+  color: inherit;
+}
+@keyframes survival-opening-equipment-rise {
+  from {
+    opacity: 0;
+    transform: translate(-50%, 120%);
+  }
+  to {
+    opacity: 1;
+    transform: translate(-50%, 0);
+  }
+}
+:where(.survival-page) .opening-reduced .opening-equipment {
+  animation: none;
+}
+:where(.survival-page) .opening-reduced .opening-thought, :where(.survival-page) .opening-reduced .survival-world {
+  transition: none;
+}
+@media (max-width: 600px) {
+  :where(.survival-page) .opening-thought > span {
+    font-size: 14px;
+    padding: 13px 18px;
+  }
+  :where(.survival-page) .opening-found {
+    gap: 12px;
+    padding: 15px;
+  }
+  :where(.survival-page) .opening-equipment {
+    bottom: 8px;
+  }
+  :where(.survival-page) .opening-equipment .equipment-card b {
+    font-size: 10px;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  :where(.survival-page) .opening-equipment {
+    animation: none;
+  }
+  :where(.survival-page) .opening-thought {
+    transition: none;
+  }
+}
+
+/* The terminal inherits the physical screen's dim phosphor and worn brass. */
+:where(.survival-page) .lift-terminal {
+  margin: auto;
+  padding: 0;
+  width: min(1060px, calc(100vw - 48px));
+  max-height: calc(100dvh - 48px);
+  overflow-y: auto;
+  color: #d0d7c7;
+  background: #0e1b18;
+  border: 1px solid #66796a;
+  border-radius: 5px;
+  box-shadow: 0 25px 100px #000a;
+  scrollbar-color: #41594c #0e1b18;
+}
+:where(.survival-page) .lift-terminal::backdrop {
+  background: #010605b8;
+  backdrop-filter: blur(5px);
+}
+.survival-page .lift-terminal[open] {
+  position: fixed;
+  inset: 0;
+  margin: auto;
+  color: #d0d7c7;
+}
+:where(.survival-page) .lift-terminal header {
+  display: flex;
+  align-items: center;
+  gap: 26px;
+  padding: 23px 30px;
+  border-bottom: 1px solid #83917a33;
+}
+:where(.survival-page) .lift-terminal header > div {
+  margin-right: auto;
+}
+:where(.survival-page) .lift-terminal header small {
+  color: #7d9988;
+  font-size: 10px;
+  letter-spacing: 3px;
+}
+:where(.survival-page) .lift-terminal h2 {
+  margin: 6px 0 0;
+  font-size: 23px;
+  font-weight: 400;
+  letter-spacing: 3px;
+}
+:where(.survival-page) .lift-terminal header > span {
+  font-size: 11px;
+  color: #b8a278;
+}
+:where(.survival-page) .lift-terminal header > span i {
+  display: inline-block;
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: currentColor;
+  margin-right: 8px;
+}
+:where(.survival-page) .lift-terminal header > span.online {
+  color: #9bb99c;
+}
+:where(.survival-page) .lift-terminal button {
+  cursor: pointer;
+}
+:where(.survival-page) .lift-terminal header > button {
+  color: #a9b7a4;
+  border: 1px solid #66796a55;
+  background: #1e3027;
+  padding: 8px;
+}
+:where(.survival-page) .lift-terminal button:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+}
+:where(.survival-page) .lift-terminal button:focus-visible {
+  outline: 2px solid #c3cda7;
+  outline-offset: 3px;
+}
+:where(.survival-page) .lift-terminal-guide {
+  padding: 0 30px;
+  background: linear-gradient(130deg, #28372c77, transparent);
+}
+:where(.survival-page) .lift-terminal-guide nav {
+  display: flex;
+  gap: 28px;
+  border-bottom: 1px solid #83917a33;
+  padding: 17px 0;
+  font-size: 11px;
+  letter-spacing: 1px;
+  color: #65786b;
+}
+:where(.survival-page) .lift-terminal-guide nav .active {
+  color: #dac59b;
+}
+:where(.survival-page) .lift-terminal-guide nav .done {
+  color: #a8c0a0;
+}
+:where(.survival-page) .lift-terminal-lesson {
+  display: flex;
+  align-items: center;
+  gap: 22px;
+  padding: 25px 0;
+  min-height: 136px;
+}
+:where(.survival-page) .lift-terminal-lesson > svg {
+  color: #b0b48b;
+  flex: none;
+  width: 29px;
+  height: 29px;
+}
+:where(.survival-page) .lift-terminal-lesson > div {
+  flex: 1;
+}
+:where(.survival-page) .lift-terminal h3 {
+  font-size: 17px;
+  font-weight: 400;
+  margin: 0 0 9px;
+  color: #d9dcc5;
+}
+:where(.survival-page) .lift-terminal p {
+  font-size: 12px;
+  line-height: 1.8;
+  margin: 0 0 7px;
+  color: #9cae9b;
+}
+:where(.survival-page) .lift-terminal-lesson small {
+  font-size: 10px;
+  color: #859781;
+}
+:where(.survival-page) .lift-terminal-lesson > button, :where(.survival-page) .lift-recover {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  border: 1px solid #a7b28a66;
+  padding: 12px 18px;
+  color: #dedcc0;
+  background: #425340;
+  font-size: 12px;
+  white-space: nowrap;
+}
+:where(.survival-page) .lift-recover {
+  margin: 0 0 15px auto;
+}
+:where(.survival-page) .lift-power-line {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  padding-bottom: 14px;
+  color: #8eaa8f;
+  font-size: 10px;
+}
+:where(.survival-page) .lift-layout-example {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  margin: 12px 0;
+  font-size: 11px;
+}
+:where(.survival-page) .lift-layout-example > span, :where(.survival-page) .lift-layout-example > b {
+  padding: 8px 16px;
+  border: 1px solid #78927855;
+  font-weight: 400;
+  background: #263c34;
+}
+:where(.survival-page) .lift-layout-example > b {
+  color: #e3c78c;
+  background: #4c4f30;
+}
+:where(.survival-page) .lift-layout-example > small {
+  margin-left: 9px;
+}
+:where(.survival-page) .lift-terminal-inventory {
+  display: grid;
+  gap: 17px;
+  padding: 20px 30px;
+}
+:where(.survival-page) .lift-terminal .equipment-panel {
+  background: #15251f;
+}
+:where(.survival-page) .lift-terminal .cargo-section {
+  background: #15251f;
+}
+:where(.survival-page) .lift-terminal footer {
+  display: flex;
+  justify-content: space-between;
+  padding: 16px 30px;
+  border-top: 1px solid #83917a33;
+  font-size: 10px;
+  color: #7f9685;
+}
+:where(.survival-page) .lift-receipts {
+  position: sticky;
+  bottom: 25px;
+  height: 0;
+  pointer-events: none;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 5px;
+}
+:where(.survival-page) .lift-receipts output {
+  padding: 8px 17px;
+  background: #223a2cee;
+  border: 1px solid #7b9a7166;
+  color: #d3dcb7;
+  box-shadow: 0 4px 18px #0008;
+  font-size: 13px;
+  animation: survival-lift-receipt 2.4s both;
+}
+@keyframes survival-lift-receipt {
+  0% {
+    transform: translateY(10px);
+    opacity: 0;
+  }
+  12%,
+  70% {
+    opacity: 1;
+  }
+  100% {
+    transform: translateY(-25px);
+    opacity: 0;
+  }
+}
+:where(.survival-page) .opening-bag-toggle {
+  position: absolute;
+  right: 22px;
+  bottom: 22px;
+  background: #17261ee8;
+  color: #cdd5bf;
+  border: 1px solid #87997666;
+  padding: 10px 15px;
+  z-index: 8;
+}
+:where(.survival-page) .opening-objective {
+  position: absolute;
+  top: 24px;
+  left: 50%;
+  transform: translateX(-50%);
+  color: #b9c7aa;
+  font-size: 12px;
+  letter-spacing: 2px;
+  text-shadow: 0 2px 6px #000;
+}
+:where(.survival-page) .opening-stage-expedition .opening-equipment {
+  pointer-events: auto;
+}
+:where(.survival-page) .opening-thought, :where(.survival-page) .survival-markers [data-marker-id] {
+  will-change: transform;
+}
+@media (max-width: 650px) {
+  :where(.survival-page) .lift-terminal {
+    width: calc(100vw - 20px);
+    max-height: calc(100dvh - 20px);
+  }
+  :where(.survival-page) .lift-terminal header, :where(.survival-page) .lift-terminal footer {
+    padding: 16px;
+  }
+  :where(.survival-page) .lift-terminal-guide {
+    padding: 0 16px;
+  }
+  :where(.survival-page) .lift-terminal-guide nav {
+    gap: 13px;
+    letter-spacing: 0;
+    font-size: 10px;
+  }
+  :where(.survival-page) .lift-terminal-lesson {
+    flex-wrap: wrap;
+    gap: 13px;
+    padding: 19px 0;
+  }
+  :where(.survival-page) .lift-terminal-lesson > svg {
+    display: none;
+  }
+  :where(.survival-page) .lift-terminal-lesson > div {
+    flex-basis: 100%;
+  }
+  :where(.survival-page) .lift-terminal-inventory {
+    padding: 15px 10px;
+  }
+  :where(.survival-page) .lift-layout-example {
+    flex-wrap: wrap;
+  }
+  :where(.survival-page) .lift-terminal header > span {
+    display: none;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  :where(.survival-page) .lift-receipts output {
+    animation: none;
+  }
+}
+
+:where(.survival-page) .opening-vitals {
+  position: absolute;
+  top: 24px;
+  left: 24px;
+  width: 153px;
+  padding: 11px 13px;
+  background: #102019c9;
+  border: 1px solid #78916b33;
+  pointer-events: none;
+}
+:where(.survival-page) .opening-vitals > div {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  color: #aebda4;
+  margin: 6px 0;
+  font-size: 10px;
+}
+:where(.survival-page) .opening-vitals i {
+  flex: 1;
+  height: 2px;
+  background: #83997933;
+}
+:where(.survival-page) .opening-vitals b {
+  display: block;
+  height: 100%;
+  background: #9baa7e;
+}
+:where(.survival-page) .opening-vitals small {
+  min-width: 19px;
+  text-align: right;
+  font: inherit;
+  font-variant-numeric: tabular-nums;
+}
+:where(.survival-page) .opening-vitals .low {
+  color: #dc9879;
+}
+:where(.survival-page) .opening-vitals .low b {
+  background: #dc9879;
+}
+@media (max-width: 650px) {
+  :where(.survival-page) .opening-vitals {
+    top: 15px;
+    left: 12px;
+    width: 132px;
+  }
+  :where(.survival-page) .opening-objective {
+    top: 125px;
+    font-size: 10px;
+  }
+}
+
+/* painted-ui */
+.survival-page {
+  --f9-ink: #080f12;
+  --f9-panel: #17262a;
+  --f9-raised: #243638;
+  --f9-moss: #52635b;
+  --f9-brass: #a38a59;
+  --f9-paper: #e0d3ad;
+  --f9-muted: #9fa798;
+  --f9-phosphor: #9fc4ab;
+  --f9-danger: #b96251;
+  --f9-shadow: #03080b;
+  --paper: var(--f9-paper);
+  --muted: var(--f9-muted);
+  --gold: var(--f9-brass);
+  --mint: var(--f9-phosphor);
+  --line: #a38a5940;
+  color: var(--f9-paper);
+  font-family: 'F9 Pixel', monospace;
+}
+.survival-page :is(h1, h2, h3) {
+  font-family: 'F9 Pixel', monospace;
+  letter-spacing: 1px;
+  font-weight: 700;
+  color: var(--f9-paper);
+}
+.survival-page button {
+  border-radius: 2px;
+  color: var(--f9-paper);
+  border-color: #a38a596b;
+  background-color: var(--f9-panel);
+  transition:
+    background-color 0.15s,
+    border-color 0.15s,
+    box-shadow 0.15s;
+}
+.survival-page button:hover:not(:disabled) {
+  border-color: var(--f9-brass);
+  background-color: #35443e;
+  box-shadow: inset 0 0 0 1px #a38a5930;
+}
+.survival-page button:focus-visible {
+  outline: 2px solid var(--f9-paper);
+  outline-offset: 4px;
+}
+.survival-page kbd {
+  background: var(--f9-ink);
+  border: 1px solid var(--f9-brass);
+  border-bottom-width: 3px;
+  border-radius: 1px;
+  color: var(--f9-paper);
+  font-size: 11px;
+  padding: 2px 6px;
+}
+.survival-page
+  :is(
+    .equipment-panel,
+    .cargo-management,
+    .survival-intro,
+    .survival-pause,
+    .survival-inventory,
+    .survival-result,
+    .opening-pause,
+    .opening-found,
+    .lift-terminal,
+    .base-upgrade,
+    .f9-design-system
+  ) {
+  color: var(--f9-paper);
+  border: 1px solid var(--f9-brass);
+  border-radius: 2px;
+  background:
+    linear-gradient(120deg, #8f9a7710, transparent 40%),
+    repeating-linear-gradient(
+      174deg,
+      #c9c29804 0px,
+      #c9c29804 1px,
+      transparent 1px,
+      transparent 8px
+    ),
+    var(--f9-panel);
+  box-shadow:
+    0 0 0 3px var(--f9-ink),
+    0 0 0 4px #a38a5940,
+    inset 0 0 0 5px #03080b40,
+    0 20px 70px #0009;
+}
+.survival-page :is(.equipment-card, .cargo-piece, .cargo-safe-piece) {
+  border-radius: 1px;
+  border: 1px solid #728175;
+  background:
+    linear-gradient(145deg, #66786b35, transparent 55%), var(--f9-raised);
+  box-shadow:
+    inset 0 0 0 3px #080f1259,
+    0 3px 0 #03080b;
+  color: var(--f9-paper);
+}
+.survival-page :is(.equipment-card, .cargo-piece, .cargo-safe-piece) > svg {
+  color: var(--f9-paper);
+  filter: drop-shadow(1px 2px 0 #080f12);
+  stroke-width: 1.7;
+}
+.survival-page :is(.equipment-card.flashlight, .cargo-piece.energy-core) {
+  background: linear-gradient(135deg, #77694088, #292f28);
+  border-color: var(--f9-brass);
+}
+.survival-page
+  :is(
+    .equipment-card.selected,
+    .cargo-piece.selected,
+    .cargo-safe-piece.selected
+  ) {
+  border-color: var(--f9-paper);
+  box-shadow:
+    inset 0 0 0 3px #a38a5999,
+    0 0 0 1px var(--f9-brass);
+}
+.survival-page :is(.equipment-slot, .equipment-anchor, .cargo-cell) {
+  border-radius: 0;
+  background: #071115a8;
+  border-color: #52635b70;
+  color: var(--f9-muted);
+}
+.survival-page
+  :is(
+    .equipment-inspector,
+    .cargo-inspector,
+    .safe-pocket,
+    .survival-intro-rules
+  ) {
+  background: #0711156b;
+  border-color: #a38a593d;
+  border-radius: 0;
+}
+.survival-page
+  :is(
+    .equipment-heading,
+    .cargo-grid-header,
+    .equipment-inspector strong,
+    .cargo-inspector strong
+  ) {
+  color: var(--f9-paper);
+}
+.survival-page
+  :is(
+    .cargo-hint,
+    .cargo-inspector p,
+    .equipment-inspector p,
+    .cargo-piece small,
+    .equipment-card small
+  ) {
+  color: var(--f9-muted);
+}
+.survival-page
+  :is(.survival-primary, .f9-primary, .opening-found button, .opening-return) {
+  background: linear-gradient(165deg, #625d42, #343b30);
+  border: 1px solid var(--f9-brass);
+  box-shadow: inset 0 0 0 2px #080f1299;
+  color: var(--f9-paper);
+}
+.survival-page .opening-thought > span, :where(.survival-page) .f9-ds-thought {
+  color: var(--f9-ink);
+  background: linear-gradient(120deg, #f0e5c7, #c8bc97);
+  border: 2px solid #060e12;
+  border-radius: 1px;
+  box-shadow: 3px 4px 0 #0006;
+  clip-path: polygon(2% 0, 98% 2%, 100% 94%, 97% 100%, 1% 97%, 0 5%);
+  font-family: 'F9 Pixel', monospace;
+  font-size: 20px;
+  font-weight: 600;
+  letter-spacing: 0.5px;
+}
+.survival-page .opening-thought i {
+  background: var(--f9-paper);
+  border: 1px solid var(--f9-ink);
+}
+.survival-page.opening-stage-home .opening-thought {
+  max-width: min(480px, 80vw);
+}
+.survival-page .opening-entry {
+  background: radial-gradient(
+    ellipse at 50% 40%,
+    #1b2c2c,
+    #080f12 55%,
+    #03080b
+  );
+}
+.survival-page .opening-entry > span {
+  font-family: 'F9 Pixel', monospace;
+  font-size: 48px;
+  letter-spacing: 18px;
+  color: var(--f9-brass);
+  text-shadow: 2px 4px var(--f9-shadow);
+}
+.survival-page .opening-entry button {
+  padding: 16px 52px;
+  border: 1px solid var(--f9-brass);
+  box-shadow: inset 0 0 0 4px #080f1270;
+}
+.survival-page
+  :is(.survival-marker, .opening-vitals, .survival-minimap, .survival-notice) {
+  background: #101f24e6;
+  border-color: #a38a5959;
+  border-radius: 0;
+  color: var(--f9-paper);
+}
+.survival-page .survival-minimap {
+  box-shadow:
+    0 0 0 3px #080f12,
+    0 0 0 4px #a38a5960;
+}
+.survival-page
+  :is(.opening-objective, .opening-near-hint, .opening-bag-toggle) {
+  color: var(--f9-paper);
+  text-shadow: 1px 2px var(--f9-ink);
+}
+.survival-page .opening-search > i {
+  background: var(--f9-brass);
+}
+.survival-page .opening-pause[open] {
+  position: fixed;
+  inset: 50% auto auto 50%;
+  margin: 0;
+  transform: translate(-50%, -50%);
+  width: 330px;
+  padding: 30px;
+  max-height: 90vh;
+  overflow: auto;
+}
+.survival-page .opening-pause h2 {
+  font-size: 30px;
+  margin-bottom: 18px;
+}
+.survival-page .opening-pause button {
+  padding: 12px 16px;
+  width: 100%;
+  margin-top: 9px;
+  border: 1px solid #a38a5950;
+}
+.survival-page :is(.base-upgrade, .f9-design-system, .lift-terminal)[open] {
+  position: fixed;
+  inset: 0;
+  margin: auto;
+  transform: none;
+  width: min(1120px, 94vw);
+  max-height: 92dvh;
+  padding: 0;
+  overflow: auto;
+}
+.survival-page :is(.base-upgrade, .f9-design-system, .lift-terminal)::backdrop {
+  background: #03080bd9;
+  backdrop-filter: none;
+}
+.survival-page :is(.base-upgrade, .f9-design-system, .lift-terminal) > header {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  padding: 22px 30px;
+  border-bottom: 1px solid #a38a594a;
+  background: #080f1266;
+}
+.survival-page
+  :is(.base-upgrade, .f9-design-system, .lift-terminal)
+  > header
+  > div {
+  flex: 1;
+}
+.survival-page
+  :is(.base-upgrade, .f9-design-system, .lift-terminal)
+  > header
+  small {
+  display: block;
+  letter-spacing: 3px;
+  font-size: 10px;
+  color: var(--f9-brass);
+  margin-bottom: 6px;
+}
+.survival-page :is(.base-upgrade, .f9-design-system, .lift-terminal) h2 {
+  font-size: 30px;
+  margin: 0;
+}
+.survival-page
+  :is(.base-upgrade, .f9-design-system, .lift-terminal)
+  > header
+  > span {
+  color: var(--f9-muted);
+  font-size: 12px;
+}
+.survival-page
+  :is(.base-upgrade, .f9-design-system, .lift-terminal)
+  > header
+  > button {
+  display: grid;
+  place-items: center;
+  border: 1px solid #a38a5950;
+  padding: 9px;
+}
+.survival-page :is(.base-upgrade, .f9-design-system, .lift-terminal) > footer {
+  display: flex;
+  justify-content: space-between;
+  padding: 14px 30px;
+  font-size: 11px;
+  color: var(--f9-muted);
+  border-top: 1px solid #a38a594a;
+}
+:where(.survival-page) .base-upgrade-layout {
+  display: grid;
+  grid-template-columns: minmax(250px, 0.85fr) minmax(400px, 1.35fr);
+  padding: 25px 30px;
+  align-items: center;
+}
+:where(.survival-page) .base-terminal {
+  position: relative;
+  max-height: none;
+  aspect-ratio: 600/860;
+  justify-self: center;
+  width: 100%;
+  max-width: min(335px, 41.86dvh);
+  border: 5px solid #080f12;
+  outline: 1px solid #a38a5980;
+  box-shadow: 8px 10px 0 #03080b88;
+}
+:where(.survival-page) .base-terminal canvas {
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+.survival-page .base-mouth {
+  position: absolute;
+  height: 16%;
+  border: 1px dashed #a38a5940;
+  border-radius: 50%;
+  background: transparent;
+  color: var(--f9-paper);
+  opacity: 1;
+  box-shadow: none;
+}
+.survival-page .base-mouth span {
+  font-size: 11px;
+  letter-spacing: 2px;
+  text-shadow: 0 2px 4px #000;
+}
+.survival-page .base-mouth.hover {
+  outline: 2px solid var(--f9-brass);
+  background: #a38a5926;
+  box-shadow: 0 0 35px #a38a5933;
+}
+:where(.survival-page) .base-task {
+  display: flex;
+  gap: 16px;
+  align-items: center;
+  margin-bottom: 25px;
+}
+:where(.survival-page) .base-task small {
+  color: var(--f9-brass);
+  font-size: 11px;
+  letter-spacing: 2px;
+}
+:where(.survival-page) .base-task h3 {
+  font-size: 25px;
+  margin: 5px 0 10px;
+}
+:where(.survival-page) .base-task p {
+  font-size: 13px;
+  line-height: 1.8;
+  color: var(--f9-muted);
+}
+:where(.survival-page) .f9-seal {
+  display: grid;
+  place-items: center;
+  min-width: 44px;
+  height: 54px;
+  background: var(--f9-ink);
+  border: 1px solid var(--f9-brass);
+  color: var(--f9-brass);
+  clip-path: polygon(50% 0, 100% 20%, 100% 80%, 50% 100%, 0 80%, 0 20%);
+}
+.survival-page .base-cargo .cargo-management {
+  background: none;
+  border: 0;
+  box-shadow: none;
+  padding: 0;
+}
+:where(.survival-page) .base-cargo .cargo-grid-body {
+  display: block;
+}
+:where(.survival-page) .base-cargo .cargo-grid {
+  width: 100%;
+  min-height: 200px;
+}
+:where(.survival-page) .base-cargo .cargo-piece {
+  min-height: 94px;
+  touch-action: none;
+}
+:where(.survival-page) .base-cargo .cargo-inspector {
+  min-height: 75px;
+  margin-top: 13px;
+}
+:where(.survival-page) .base-cargo .cargo-hint {
+  margin-bottom: 15px;
+  line-height: 1.7;
+}
+:where(.survival-page) .base-keyboard {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  color: var(--f9-brass);
+  font-size: 12px;
+  margin-top: 20px !important;
+  line-height: 1.6;
+}
+:where(.survival-page) .base-feedback {
+  display: block;
+  color: var(--f9-muted);
+  font-size: 12px;
+  min-height: 32px;
+  padding-top: 13px;
+}
+:where(.survival-page) .base-upgrade-progress {
+  position: relative;
+  height: 33px;
+  border: 1px solid var(--f9-brass);
+  background: var(--f9-ink);
+  margin-top: 18px;
+  overflow: hidden;
+}
+:where(.survival-page) .base-upgrade-progress > i {
+  position: absolute;
+  inset: 3px auto 3px 3px;
+  background: #a38a5960;
+  max-width: calc(100% - 6px);
+}
+:where(.survival-page) .base-upgrade-progress > span {
+  position: relative;
+  display: block;
+  text-align: center;
+  line-height: 31px;
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+}
+:where(.survival-page) .base-drag {
+  position: absolute;
+  transform: translate(-50%, -70%);
+  pointer-events: none;
+  z-index: 10;
+  background: var(--f9-panel);
+  border: 1px solid var(--f9-brass);
+  padding: 14px 18px;
+  color: var(--f9-paper);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  box-shadow: 0 12px 35px #000c;
+  white-space: nowrap;
+}
+:where(.survival-page) .f9-design-body {
+  padding: 30px;
+}
+:where(.survival-page) .f9-design-body > section {
+  padding: 26px 0;
+  border-top: 1px solid #a38a5939;
+}
+:where(.survival-page) .f9-design-body h3 {
+  font-size: 23px;
+  margin: 0 0 20px;
+}
+:where(.survival-page) .f9-design-body h3 > span {
+  font:
+    12px 'Bahnschrift',
+    sans-serif;
+  margin-right: 16px;
+  color: var(--f9-brass);
+}
+:where(.survival-page) .f9-design-intro {
+  max-width: 670px;
+  font-size: 15px;
+  line-height: 2.1;
+  margin: 0 0 30px !important;
+  color: var(--f9-muted);
+}
+:where(.survival-page) .f9-swatches {
+  display: grid;
+  grid-template-columns: repeat(10, 1fr);
+  gap: 12px;
+}
+:where(.survival-page) .f9-swatches > div {
+  display: grid;
+  gap: 8px;
+}
+:where(.survival-page) .f9-swatches i {
+  height: 54px;
+  border: 1px solid #e0d3ad20;
+}
+:where(.survival-page) .f9-swatches strong {
+  font-size: 12px;
+  font-weight: 400;
+}
+:where(.survival-page) .f9-swatches small {
+  font-size: 10px;
+  color: var(--f9-muted);
+}
+:where(.survival-page) .f9-design-body p {
+  line-height: 1.9;
+  font-size: 13px;
+  color: var(--f9-muted);
+  margin-top: 15px;
+}
+:where(.survival-page) .f9-design-body .f9-ds-thought {
+  display: table;
+  padding: 14px 22px;
+  color: var(--f9-ink);
+  font-size: 20px;
+}
+:where(.survival-page) .f9-control-samples {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 14px;
+  align-items: center;
+}
+:where(.survival-page) .f9-control-samples button {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  border: 1px solid var(--f9-brass);
+  padding: 12px 20px;
+}
+:where(.survival-page) .f9-receipt {
+  display: flex;
+  gap: 9px;
+  align-items: center;
+  color: var(--f9-paper);
+}
+:where(.survival-page) .f9-design-body .equipment-panel {
+  margin-bottom: 24px;
+}
+:where(.survival-page) .f9-design-body .base-upgrade-progress {
+  max-width: 440px;
+}
+:where(.survival-page) .opening-loot-reminder {
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
+  bottom: 160px;
+  color: var(--f9-paper);
+  background: #080f12c9;
+  border: 1px solid #a38a5960;
+  padding: 10px 18px;
+  z-index: 8;
+  font-size: 12px;
+}
+@media (max-width: 780px) {
+  :where(.survival-page) .base-upgrade-layout {
+    grid-template-columns: 1fr;
+    padding: 20px;
+    gap: 25px;
+  }
+  :where(.survival-page) .base-terminal {
+    max-width: 260px;
+  }
+  :where(.survival-page) .base-cargo {
+    width: 100%;
+  }
+  .survival-page
+    :is(.base-upgrade, .f9-design-system, .lift-terminal)
+    > header {
+    padding: 18px;
+  }
+  .survival-page
+    :is(.base-upgrade, .f9-design-system, .lift-terminal)
+    > header
+    > span {
+    display: none;
+  }
+  :where(.survival-page) .f9-swatches {
+    grid-template-columns: repeat(5, 1fr);
+  }
+  :where(.survival-page) .f9-design-body {
+    padding: 20px;
+  }
+  .survival-page
+    :is(.base-upgrade, .f9-design-system, .lift-terminal)
+    > footer {
+    gap: 15px;
+    padding: 14px 18px;
+  }
+  :where(.survival-page) .base-cargo .cargo-piece strong {
+    font-size: 11px;
+  }
+}
+:where(.survival-page) .opening-reduced * {
+  scroll-behavior: auto !important;
+}
+:where(.survival-page) .opening-reduced .base-mouth {
+  transition: none;
+}
+
+.survival-page .base-cargo .cargo-inspector {
+  min-height: 54px;
+  padding: 12px;
+}
+.survival-page .base-cargo .cargo-grid {
+  min-height: 180px;
+}
+.survival-page .base-cargo .cargo-piece {
+  min-height: 82px;
+}
+.survival-page .base-task {
+  margin-bottom: 16px;
+}
+.survival-page .base-drag {
+  will-change: left, top;
+}
+.survival-page
+  :is(
+    .survival-vitals,
+    .survival-cargo,
+    .survival-wave,
+    .survival-clock,
+    .survival-header-right button
+  ) {
+  background: #101f24eb;
+  border-color: #a38a5950;
+  border-radius: 1px;
+  color: var(--f9-paper);
+  box-shadow: inset 0 0 0 2px #080f1240;
+}
+.survival-page .survival-health > i, .survival-page .survival-needs i {
+  border-radius: 0;
+}
+
+/* Native 16-pixel Chinese glyphs, fine stepped frames and restrained material ramps. */
+.survival-page, .survival-page
+  :is(button, input, kbd, small, strong, b, h1, h2, h3, output, p, span) {
+  font-family: 'F9 Pixel', monospace;
+  font-synthesis: none;
+  font-weight: 400;
+  -webkit-font-smoothing: none;
+  letter-spacing: 0;
+}
+.survival-page {
+  font-size: 16px;
+}
+.survival-page
+  :is(
+    p,
+    small,
+    kbd,
+    button,
+    output,
+    .equipment-heading,
+    .cargo-grid-header,
+    .cargo-piece strong,
+    .equipment-card b,
+    .equipment-card small
+  ) {
+  font-size: 16px;
+}
+.survival-page :is(h1, h2, h3) {
+  font-size: 32px;
+  line-height: 1.4;
+}
+.survival-page button {
+  border-radius: 0;
+  transition: none;
+}
+.survival-page
+  :is(
+    .opening-pause,
+    .lift-terminal,
+    .base-upgrade,
+    .f9-design-system,
+    .equipment-panel,
+    .cargo-management,
+    .opening-found
+  ) {
+  background:
+    repeating-linear-gradient(0deg, #b3b99504 0 1px, transparent 1px 4px),
+    #15232a;
+  border: 2px solid #687b72;
+  box-shadow:
+    0 0 0 2px #070d14,
+    0 0 0 3px #99805a,
+    4px 5px 0 2px #02080d,
+    inset 0 0 0 2px #283b42,
+    inset 0 4px 0 #819087;
+  border-radius: 0;
+}
+.survival-page :is(.cargo-piece, .equipment-card, .cargo-safe-piece) {
+  background: linear-gradient(
+    0deg,
+    #17272d 0 12%,
+    #263a3e 12% 84%,
+    #384c4b 84% 100%
+  );
+  border: 1px solid #657b6c;
+  box-shadow:
+    inset 2px 2px #819183,
+    inset -2px -2px #071319;
+  border-radius: 0;
+}
+.survival-page :is(.cargo-piece.energy-core, .equipment-card.capacitor) {
+  background: linear-gradient(
+    0deg,
+    #3f3327 0 12%,
+    #534e39 12% 84%,
+    #7e7753 84%
+  );
+  border-color: #b1a076;
+}
+.survival-page :is(.cargo-piece.selected, .equipment-card.selected) {
+  outline: 2px solid #e1cd91;
+  outline-offset: -4px;
+}
+.survival-page .opening-thought, .survival-page.opening-stage-home .opening-thought {
+  left: 50%;
+  top: auto;
+  bottom: max(11vh, 64px);
+  transform: translateX(-50%);
+  max-width: min(600px, 86vw);
+  width: max-content;
+}
+.survival-page.opening-stage-expedition .opening-thought {
+  bottom: 175px;
+}
+.survival-page .opening-thought > span, :where(.survival-page) .f9-ds-thought {
+  font-size: 16px;
+  font-weight: 400;
+  line-height: 1.7;
+  padding: 16px 24px;
+  background: #d9d2ac;
+  border: 2px solid #070e16;
+  clip-path: polygon(
+    0 6px,
+    6px 6px,
+    6px 0,
+    calc(100% - 6px) 0,
+    calc(100% - 6px) 6px,
+    100% 6px,
+    100% calc(100% - 6px),
+    calc(100% - 6px) calc(100% - 6px),
+    calc(100% - 6px) 100%,
+    6px 100%,
+    6px calc(100% - 6px),
+    0 calc(100% - 6px)
+  );
+  box-shadow:
+    inset 0 2px #f5e9c7,
+    inset 0 -3px #b49f78;
+}
+.survival-page .opening-thought i {
+  border-radius: 0;
+}
+.survival-page .opening-entry > span {
+  font-size: 64px;
+}
+.survival-page .opening-pause {
+  width: min(440px, 90vw);
+}
+.survival-page .opening-pause h2 {
+  font-size: 32px;
+}
+.survival-page .base-upgrade[open] {
+  width: min(900px, 94vw);
+}
+.survival-page .base-upgrade > header {
+  padding: 16px 24px;
+  gap: 16px;
+}
+.survival-page .base-upgrade > header > span {
+  display: block;
+  font-size: 16px;
+  color: var(--f9-paper);
+}
+.survival-page .base-upgrade > header > button {
+  margin-left: auto;
+}
+:where(.survival-page) .base-upgrade header progress {
+  width: 104px;
+  height: 10px;
+  appearance: none;
+  border: 1px solid #7f8c70;
+}
+:where(.survival-page) .base-upgrade progress::-webkit-progress-bar {
+  background: #070f16;
+}
+:where(.survival-page) .base-upgrade progress::-webkit-progress-value {
+  background: #b9cc94;
+}
+:where(.survival-page) .base-upgrade-layout {
+  grid-template-columns: 256px minmax(0, 1fr);
+  gap: 32px;
+  padding: 24px;
+}
+:where(.survival-page) .base-terminal {
+  width: 256px;
+  max-width: 100%;
+  border: 4px solid #0a131c;
+  outline: 1px solid #8b9173;
+}
+:where(.survival-page) .base-terminal canvas {
+  image-rendering: pixelated;
+}
+.survival-page .base-mouth {
+  left: 16%;
+  top: 73%;
+  width: 68%;
+  height: 17%;
+  border: 0;
+  border-radius: 0;
+}
+.survival-page .base-mouth span {
+  font-size: 16px;
+  letter-spacing: 0;
+  text-shadow: 2px 2px #000;
+}
+.survival-page .base-mouth.hover {
+  outline: 2px dashed #c6c693;
+  background: #a5b78622;
+  box-shadow: none;
+}
+.survival-page .base-feedback {
+  min-height: 24px;
+  font-size: 16px;
+  color: #e0997b;
+}
+.survival-page .base-cargo .cargo-grid {
+  min-height: 200px;
+}
+.survival-page .base-cargo .cargo-piece {
+  min-height: 96px;
+  gap: 8px;
+}
+.survival-page .delivery .cargo-grid-header button {
+  display: none;
+}
+.survival-page .delivery .cargo-grid-header {
+  margin-bottom: 16px;
+}
+.survival-page .base-drag {
+  font-size: 16px;
+  box-shadow: 3px 3px #000;
+}
+.survival-page .equipment-strip {
+  min-width: 600px;
+}
+.survival-page .equipment-panel {
+  overflow-x: auto;
+}
+.survival-page .equipment-card {
+  min-height: 88px;
+  padding: 8px 4px;
+}
+.survival-page .equipment-card small {
+  font-size: 16px !important;
+}
+.survival-page .equipment-card.linked::after {
+  content: '';
+  position: absolute;
+  left: -4px;
+  right: -4px;
+  top: 8px;
+  height: 2px;
+  background: #b5c38f;
+  pointer-events: none;
+}
+.survival-page .opening-equipment .equipment-strip {
+  min-width: 480px;
+}
+.survival-page .opening-equipment .equipment-card {
+  min-height: 64px;
+}
+.survival-page .opening-equipment .equipment-card :is(b, small) {
+  display: none;
+}
+.survival-page .opening-equipment .equipment-heading small {
+  display: none;
+}
+.survival-page .f9-swatches {
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+}
+.survival-page .f9-design-system h2 {
+  font-size: 32px;
+}
+:where(.survival-page) .f9-demon-sample {
+  width: 192px;
+  height: 192px;
+  image-rendering: pixelated;
+  background: #22232b;
+}
+:where(.survival-page) .lift-system-body {
+  display: grid;
+  grid-template-columns: 256px minmax(0, 1fr);
+  gap: 32px;
+  padding: 24px;
+}
+:where(.survival-page) .lift-system-screen {
+  width: 256px;
+  align-self: start;
+  image-rendering: pixelated;
+  border: 3px solid #657766;
+}
+:where(.survival-page) .lift-system-content {
+  min-width: 0;
+}
+:where(.survival-page) .lift-system-content > p {
+  margin: 0 0 20px;
+  line-height: 1.8;
+}
+:where(.survival-page) .lift-system-content > button, :where(.survival-page) .lesson-actions button {
+  padding: 10px 16px;
+  border: 1px solid #8a9877;
+  margin: 4px 8px 4px 0;
+}
+:where(.survival-page) .lift-system-content .cargo-inspector {
+  flex-wrap: wrap;
+}
+:where(.survival-page) .lift-system-content .cargo-grid-body {
+  grid-template-columns: minmax(0, 1fr) 100px;
+}
+:where(.survival-page) .lift-system-content .cargo-piece strong {
+  font-size: 16px;
+}
+:where(.survival-page) .floor-schematic {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  margin: 24px 0;
+}
+:where(.survival-page) .floor-schematic i {
+  width: 48px;
+  height: 48px;
+  display: grid;
+  place-items: center;
+  font-style: normal;
+  border: 2px solid #576e67;
+}
+:where(.survival-page) .floor-schematic i:first-child {
+  border-color: #c0b486;
+  color: #c0b486;
+}
+:where(.survival-page) .system-choices {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  margin: 24px 0;
+}
+:where(.survival-page) .system-choices button {
+  padding: 20px 12px;
+  display: grid;
+  gap: 16px;
+  border: 1px solid #677e73;
+}
+:where(.survival-page) .system-choices span {
+  color: var(--f9-muted);
+}
+:where(.survival-page) .system-receipt {
+  display: grid;
+  gap: 12px;
+  margin: 20px 0;
+}
+:where(.survival-page) .system-receipt > div {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  padding-bottom: 12px;
+  border-bottom: 1px solid #43544d;
+}
+:where(.survival-page) .system-receipt small {
+  margin-left: auto;
+  color: var(--f9-muted);
+}
+:where(.survival-page) .lesson-actions {
+  position: absolute;
+  bottom: 140px;
+  right: 24px;
+  z-index: 10;
+}
+:where(.survival-page) .opening-vitals {
+  animation: survival-pixel-appear 0.4s steps(4);
+}
+@keyframes survival-pixel-appear {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+@media (max-width: 780px) {
+  :where(.survival-page) .base-upgrade-layout, :where(.survival-page) .lift-system-body {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 20px;
+    padding: 16px;
+  }
+  :where(.survival-page) .base-terminal {
+    width: 192px;
+  }
+  :where(.survival-page) .lift-system-screen {
+    width: 160px;
+    justify-self: center;
+  }
+  .survival-page .base-upgrade > header {
+    padding: 12px 16px;
+  }
+  .survival-page .base-cargo .cargo-piece strong {
+    font-size: 16px;
+  }
+  .survival-page .base-cargo .cargo-grid {
+    min-height: 160px;
+  }
+  .survival-page .base-cargo .cargo-piece {
+    min-height: 76px;
+  }
+  .survival-page .opening-thought {
+    bottom: 100px;
+  }
+  .survival-page.opening-stage-expedition .opening-thought {
+    bottom: 210px;
+  }
+  :where(.survival-page) .lift-system-content .cargo-grid-body {
+    display: block;
+  }
+  :where(.survival-page) .lesson-actions {
+    bottom: 140px;
+    right: 12px;
+  }
+}
+
+.survival-page
+  :is(
+    .cargo-grid-header b,
+    .safe-pocket > span,
+    .cargo-safe-piece small,
+    .equipment-anchor,
+    .equipment-heading b,
+    .equipment-inspector small,
+    .cargo-inspector small,
+    .cargo-piece small,
+    .opening-vitals small
+  ) {
+  font-size: 16px !important;
+}
+.survival-page .pixel-gear {
+  width: 32px;
+  height: 32px;
+  min-width: 32px;
+  filter: none;
+  image-rendering: pixelated;
+}
+.survival-page .delivery .pixel-gear {
+  width: 48px;
+  height: 48px;
+  min-width: 48px;
+}
+.survival-page .lift-system-content .cargo-grid-body {
+  grid-template-columns: minmax(0, 1fr) 136px;
+}
+.survival-page .safe-pocket > span {
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.survival-page .base-cargo .cargo-piece {
+  justify-content: center;
+}
+.survival-page .equipment-card.linked > em {
+  width: 4px;
+  height: 4px;
+  border-radius: 0;
+}
+.survival-page
+  :is(
+    .f9-design-body p,
+    .f9-design-intro,
+    .cargo-inspector p,
+    .equipment-inspector p
+  ) {
+  font-size: 16px;
+}
+.survival-page :is(.opening-bag-toggle, .opening-return) {
+  font-size: 16px;
+}
+@media (max-width: 780px) {
+  .survival-page .lift-system-content .cargo-grid-body {
+    display: block;
+  }
+}
+
+.survival-page.opening-stage-expedition .opening-return {
+  left: auto;
+  right: 24px;
+  bottom: 82px;
+  transform: none;
+}
+.survival-page .survival-minimap :is(span, b) {
+  font-size: 16px;
+}
+.survival-page .survival-minimap footer {
+  display: none;
+}
+
+.survival-page .base-mouth:disabled {
+  opacity: 1;
+  color: var(--f9-paper);
+  filter: none;
+  background: transparent;
+}
+.survival-page .base-mouth:disabled span {
+  opacity: 1;
+  color: var(--f9-paper);
+}
+
+.survival-page .equipment-card.link-preview.linked::after {
+  background: repeating-linear-gradient(
+    90deg,
+    #b5c38f 0 4px,
+    transparent 4px 8px
+  );
+}
+.survival-page .lift-system > footer button {
+  border: 1px solid #657b71;
+  padding: 8px 16px;
+}
+
+/* console */
+/* One terminal shell; the body changes without opening nested dialogs. */
+.survival-page .lift-console[open] {
+  width: min(1000px, 94vw);
+  height: min(650px, 90dvh);
+  max-height: 90dvh;
+  padding: 0;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+.survival-page .lift-console > .console-header {
+  padding: 14px 22px;
+  min-height: 60px;
+  flex: none;
+}
+.survival-page .lift-console .console-header h2 {
+  display: flex;
+  align-items: baseline;
+  gap: 18px;
+  margin: 0;
+  font-size: 24px;
+}
+.survival-page .lift-console .console-header h2 span {
+  font-size: 16px;
+  color: var(--f9-muted);
+}
+:where(.survival-page) .console-tabs {
+  display: flex;
+  gap: 0;
+  padding: 0 22px;
+  border-bottom: 1px solid #62756b;
+  background: #0b191e;
+  flex: none;
+}
+.survival-page .console-tabs button {
+  border: 0;
+  border-bottom: 3px solid transparent;
+  box-shadow: none;
+  min-width: 98px;
+  height: 45px;
+  color: #8fa397;
+  background: none;
+  position: relative;
+}
+.survival-page .console-tabs button[aria-selected='true'] {
+  color: #ead19c;
+  border-bottom-color: #c9ae71;
+  background: #b29d5f10;
+}
+:where(.survival-page) .console-tabs button i {
+  display: inline-block;
+  width: 5px;
+  height: 5px;
+  background: #ddbe77;
+  margin: 0 0 7px 7px;
+}
+:where(.survival-page) .console-panel {
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+}
+:where(.survival-page) .console-panel-inventory {
+  overflow: hidden;
+  display: flex;
+}
+:where(.survival-page) .console-task-layout {
+  padding: 24px;
+  display: grid;
+  grid-template-columns: 232px minmax(0, 1fr);
+  gap: 32px;
+  min-height: 100%;
+}
+:where(.survival-page) .console-robot {
+  display: block;
+  width: 100%;
+  align-self: start;
+  max-height: 100%;
+  aspect-ratio: 600/860;
+  object-fit: contain;
+  image-rendering: pixelated;
+  border: 1px solid #788575;
+  background: #0c161c;
+  padding: 4px;
+}
+:where(.survival-page) .console-task-copy {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  padding: 6px 0;
+  min-width: 0;
+}
+.survival-page .robot-dialogue {
+  font-size: 16px;
+  color: #afc3ad;
+  line-height: 1.85;
+  margin: 0 0 30px;
+  max-width: 34em;
+}
+:where(.survival-page) .robot-dialogue:before {
+  content: '「';
+  color: #bca773;
+}
+:where(.survival-page) .robot-dialogue:after {
+  content: '」';
+  color: #bca773;
+}
+.survival-page .console-task-copy h3, .survival-page .floor-picker h3 {
+  font-size: 16px;
+  color: #d8bf86;
+  margin: 0 0 12px;
+  letter-spacing: 2px;
+}
+.survival-page .task-objective {
+  color: #d9dfc4;
+  font-size: 16px;
+  line-height: 1.7;
+  margin: 0 0 20px;
+}
+:where(.survival-page) .task-object {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  padding: 12px 20px;
+  border-left: 2px solid #9a895e;
+  background: #0a171b;
+  margin-bottom: 22px;
+}
+:where(.survival-page) .task-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-top: auto;
+  padding-top: 18px;
+}
+.survival-page .console-primary, .survival-page .eat-bread {
+  border-color: #bda269;
+  background: #394338;
+  color: #eee0b1;
+}
+.survival-page .lift-console .lift-terminal-inventory {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 16px 22px;
+  width: 100%;
+  min-height: 0;
+}
+.survival-page .lift-console .equipment-panel.editing {
+  margin: 0;
+  padding: 0 0 10px;
+  border: 0;
+  border-bottom: 1px solid #61746660;
+  background: none;
+  box-shadow: none;
+}
+.survival-page .lift-console .equipment-heading {
+  margin: 0 0 4px;
+}
+.survival-page .lift-console .equipment-panel.editing .equipment-strip {
+  grid-template-rows: 22px 70px;
+  min-width: 0;
+  gap: 3px;
+}
+.survival-page .lift-console .equipment-card {
+  padding: 4px 1px;
+  gap: 2px;
+}
+.survival-page .lift-console .equipment-card b {
+  font-size: 16px;
+  letter-spacing: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  max-width: 100%;
+  text-overflow: ellipsis;
+}
+.survival-page .lift-console .equipment-inspector, .survival-page .lift-console .cargo-inspector {
+  min-height: 0;
+  padding: 8px 0 0;
+  margin: 0;
+  gap: 12px;
+  line-height: 1.35;
+  align-items: center;
+}
+.survival-page .lift-console .equipment-inspector p, .survival-page .lift-console .cargo-inspector p {
+  margin: 2px 0 0;
+  font-size: 16px;
+  line-height: 1.3;
+}
+.survival-page .lift-console .equipment-inspector strong, .survival-page .lift-console .cargo-inspector strong {
+  font-size: 16px;
+}
+.survival-page .lift-console .equipment-actions {
+  flex-direction: row;
+  align-items: center;
+}
+.survival-page .lift-console .equipment-actions button, .survival-page .lift-console .cargo-buttons button {
+  padding: 7px 10px;
+  min-height: 34px;
+  white-space: nowrap;
+}
+.survival-page .lift-console .cargo-management {
+  margin: 0;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+  flex: 1;
+}
+.survival-page .lift-console .cargo-grid-header {
+  min-height: 28px;
+  margin: 0;
+}
+.survival-page .lift-console .cargo-grid-header button {
+  padding: 3px 9px;
+  min-height: 28px;
+}
+.survival-page .lift-console .cargo-grid-body {
+  grid-template-columns: minmax(0, 1fr) 166px;
+  gap: 12px;
+}
+:where(.survival-page) .cargo-grid-viewport {
+  min-width: 0;
+  min-height: 0;
+}
+.survival-page .lift-console .cargo-grid-viewport {
+  overflow: auto;
+  max-height: 190px;
+  overscroll-behavior: contain;
+  scrollbar-color: #9d9b73 #0b171e;
+  scrollbar-width: thin;
+}
+.survival-page .lift-console .cargo-grid {
+  grid-template-rows: repeat(2, 76px);
+  grid-auto-rows: 76px;
+  padding: 4px;
+  gap: 4px;
+}
+.survival-page .lift-console .cargo-piece {
+  padding: 5px;
+  gap: 4px;
+}
+.survival-page .lift-console .cargo-piece strong {
+  font-size: 16px;
+  line-height: 1;
+}
+.survival-page .lift-console .safe-pocket {
+  padding: 8px;
+}
+.survival-page .lift-console .safe-pocket > span {
+  gap: 4px;
+  font-size: 16px;
+}
+.survival-page .lift-console .safe-pocket > span > svg {
+  display: none;
+}
+.survival-page .lift-console .cargo-safe-piece, .survival-page .lift-console .cargo-safe-empty {
+  min-height: 105px;
+  margin-top: 8px;
+  gap: 4px;
+}
+.survival-page .lift-console .cargo-inspector {
+  border: 0;
+}
+.survival-page .lift-console .base-upgrade-panel {
+  position: relative;
+  inset: auto;
+  width: 100%;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: none;
+  box-shadow: none;
+}
+.survival-page .lift-console .base-upgrade-panel > header {
+  padding: 12px 24px 0;
+  border: 0;
+}
+.survival-page .lift-console .base-upgrade-layout {
+  padding: 16px 24px;
+  grid-template-columns: 232px minmax(0, 1fr);
+  gap: 28px;
+}
+.survival-page .lift-console .base-terminal {
+  width: 232px;
+}
+.survival-page .lift-console .base-cargo {
+  min-width: 0;
+}
+.survival-page .lift-console .base-cargo .cargo-grid-body {
+  grid-template-columns: 1fr;
+}
+.survival-page .lift-console .base-cargo .cargo-grid {
+  grid-template-rows: repeat(2, 100px);
+}
+.survival-page .lift-console .base-cargo .cargo-grid-viewport {
+  max-height: 240px;
+}
+:where(.survival-page) .floor-picker {
+  width: min(550px, 100%);
+  margin: 0 auto;
+  padding: 24px;
+}
+.survival-page .floor-picker .robot-dialogue {
+  margin-bottom: 20px;
+}
+.survival-page .floor-choice {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  text-align: left;
+  gap: 22px;
+  padding: 15px 18px;
+  margin: 10px 0;
+  border-color: #657b69;
+  background: #15252b;
+}
+:where(.survival-page) .floor-choice > strong {
+  font-size: 32px;
+  font-weight: 400;
+  color: #b8cead;
+}
+:where(.survival-page) .floor-choice > span {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+:where(.survival-page) .floor-choice small {
+  color: #95a793;
+}
+:where(.survival-page) .floor-choice b {
+  margin-left: auto;
+  font-size: 16px;
+  font-weight: 400;
+  color: #deca8d;
+}
+.survival-page .floor-available {
+  border-color: #c5b27b;
+  box-shadow: inset 3px 0 #c5b27b;
+}
+:where(.survival-page) .floor-locked {
+  color: #b1bca4;
+}
+:where(.survival-page) .home-pickup {
+  position: absolute;
+  z-index: 15;
+  bottom: 22%;
+  left: 50%;
+  color: #e5cf91;
+  transform: translateX(-50%);
+  font-size: 16px;
+  text-shadow: 2px 2px #000;
+  pointer-events: none;
+  animation: survival-home-pickup 3s ease-out both;
+}
+@keyframes survival-home-pickup {
+  from {
+    opacity: 0;
+    translate: 0 15px;
+  }
+  15%,
+  70% {
+    opacity: 1;
+  }
+  to {
+    opacity: 0;
+    translate: 0 -18px;
+  }
+}
+.survival-page .gm-panel[open] {
+  width: min(880px, 94vw);
+  height: min(610px, 90dvh);
+  padding: 0;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+.survival-page .gm-panel > header {
+  padding: 18px 24px;
+}
+.survival-page .gm-panel h2 {
+  font-size: 24px;
+}
+:where(.survival-page) .gm-layout {
+  display: grid;
+  grid-template-columns: 310px minmax(0, 1fr);
+  flex: 1;
+  min-height: 0;
+}
+:where(.survival-page) .gm-index {
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  border-right: 1px solid #71846d60;
+  min-height: 0;
+}
+:where(.survival-page) .gm-index input {
+  width: 100%;
+  padding: 10px;
+  background: #0b181e;
+  border: 1px solid #72816d;
+  color: #d9dfc4;
+  font: inherit;
+}
+:where(.survival-page) .gm-stage-list {
+  overflow: auto;
+  min-height: 0;
+  scrollbar-width: thin;
+}
+.survival-page .gm-stage-list button {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 5px;
+  width: 100%;
+  margin: 0 0 5px;
+  padding: 10px;
+  background: none;
+  border: 1px solid transparent;
+  box-shadow: none;
+  text-align: left;
+}
+:where(.survival-page) .gm-stage-list small {
+  color: #92a58c;
+}
+:where(.survival-page) .gm-stage-list strong {
+  font-weight: 400;
+}
+.survival-page .gm-stage-list button[aria-pressed='true'] {
+  background: #2d3c32;
+  border-color: #beab76;
+}
+:where(.survival-page) .gm-preview {
+  padding: 30px;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 20px;
+  overflow: auto;
+}
+:where(.survival-page) .gm-preview h3 {
+  font-size: 24px;
+  margin: 0;
+}
+:where(.survival-page) .gm-preview p {
+  line-height: 1.8;
+  margin: 0;
+}
+:where(.survival-page) .gm-preview .gm-note {
+  color: #94a58d;
+  margin-top: auto;
+  font-size: 16px;
+}
+:where(.survival-page) .gm-preview output {
+  color: #d48776;
+  font-size: 12px;
+}
+@media (max-width: 700px) {
+  .survival-page .lift-console[open] {
+    width: 96vw;
+    height: 92dvh;
+    max-height: 92dvh;
+  }
+  .survival-page .lift-console > .console-header {
+    padding: 12px;
+    min-height: 54px;
+  }
+  .survival-page .console-tabs {
+    padding: 0 8px;
+  }
+  .survival-page .console-tabs button {
+    flex: 1;
+    min-width: 0;
+  }
+  :where(.survival-page) .console-task-layout {
+    grid-template-columns: 96px minmax(0, 1fr);
+    gap: 16px;
+    padding: 18px 12px;
+  }
+  :where(.survival-page) .console-task-copy {
+    padding: 0;
+  }
+  :where(.survival-page) .robot-dialogue {
+    margin-bottom: 20px;
+  }
+  :where(.survival-page) .task-actions {
+    margin-top: 8px;
+  }
+  .survival-page .lift-console .lift-terminal-inventory {
+    padding: 12px;
+    gap: 8px;
+    overflow: auto;
+  }
+  .survival-page .lift-console .equipment-panel.editing {
+    overflow: auto;
+  }
+  .survival-page .lift-console .equipment-panel.editing .equipment-strip {
+    min-width: 560px;
+  }
+  .survival-page .lift-console .equipment-inspector, .survival-page .lift-console .cargo-inspector {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+  .survival-page .lift-console .cargo-grid-body {
+    grid-template-columns: minmax(0, 1fr) 112px;
+    gap: 8px;
+  }
+  .survival-page .lift-console .cargo-grid {
+    grid-template-rows: repeat(2, 64px);
+  }
+  .survival-page .lift-console .cargo-piece strong {
+    font-size: 12px;
+  }
+  .survival-page .lift-console .safe-pocket {
+    padding: 5px;
+  }
+  .survival-page .lift-console .safe-pocket > span {
+    font-size: 12px;
+  }
+  .survival-page .lift-console .cargo-safe-piece, .survival-page .lift-console .cargo-safe-empty {
+    min-height: 98px;
+  }
+  .survival-page .lift-console .cargo-management {
+    flex: none;
+  }
+  .survival-page .lift-console .base-upgrade-layout {
+    grid-template-columns: 128px minmax(0, 1fr);
+    gap: 12px;
+    padding: 12px;
+  }
+  .survival-page .lift-console .base-terminal {
+    width: 128px;
+  }
+  .survival-page .lift-console .base-cargo .cargo-grid {
+    grid-template-rows: repeat(2, 76px);
+  }
+  :where(.survival-page) .gm-layout {
+    grid-template-columns: 45% minmax(0, 1fr);
+  }
+  :where(.survival-page) .gm-index {
+    padding: 10px;
+  }
+  :where(.survival-page) .gm-preview {
+    padding: 16px;
+    gap: 14px;
+  }
+  :where(.survival-page) .gm-preview h3 {
+    font-size: 20px;
+  }
+  :where(.survival-page) .gm-stage-list small {
+    font-size: 12px;
+  }
+}
+
+.survival-page .lift-console .console-header > button {
+  margin-left: auto;
+}
+.survival-page .lift-console .task-actions {
+  margin-top: 12px;
+}
+.survival-page .lift-console .task-actions button, .survival-page .gm-preview > button {
+  border: 1px solid #8b9271;
+  padding: 10px 16px;
+  background: #293930;
+  color: #e7d5a4;
+}
+.survival-page .lift-console .floor-choice {
+  border: 1px solid #657b6960;
+}
+.survival-page .lift-console .floor-available {
+  border-color: #b5a578;
+  background: #23352d;
+}
+.survival-page .lift-console .equipment-panel.editing {
+  height: auto;
+  overflow: visible;
+}
+.survival-page .lift-console .cargo-management {
+  border: 0;
+  box-shadow: none;
+  background: none;
+}
+@media (max-width: 700px) {
+  .survival-page .lift-console .equipment-panel.editing {
+    overflow-x: auto;
+  }
+}
+
+.survival-page .lift-console .equipment-card {
+  min-height: 0;
+}
+
+.survival-page .gm-panel > header > button {
+  margin-left: auto;
+}
+
+.survival-page .lift-console .cargo-grid-header, .survival-page .lift-console .cargo-inspector {
+  flex-shrink: 0;
+}
+.survival-page .lift-console .cargo-grid-body {
+  flex: 1;
+  max-height: 176px;
+  grid-template-rows: minmax(0, 1fr);
+}
+.survival-page .lift-console .safe-pocket {
+  min-height: 0;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+.survival-page .lift-console .cargo-safe-piece, .survival-page .lift-console .cargo-safe-empty {
+  min-height: 0;
+  flex: 1;
+}
+.survival-page .lift-console .base-cargo .cargo-grid-body {
+  flex: none;
+  max-height: none;
+}
+
+/* tutorial */
+:where(.survival-page) .tutorial-guide {
+  box-sizing: border-box;
+  position: fixed;
+  z-index: 60;
+  display: flex;
+  gap: 16px;
+  width: 430px;
+  max-width: calc(100vw - 32px);
+  padding: 20px;
+  border: 2px solid #947d4f;
+  outline: 2px solid #293e3c;
+  outline-offset: 3px;
+  background: linear-gradient(#1a3033ee, #101e22fa);
+  box-shadow: 8px 8px 0 #03090abf;
+  color: #c5cfb8;
+  font:
+    16px/1.8 'F9 Pixel',
+    monospace;
+  overflow: visible;
+}
+:where(.survival-page) .tutorial-guide.anchored {
+  margin: 0;
+}
+:where(.survival-page) .tutorial-guide.weak {
+  pointer-events: none;
+}
+:where(.survival-page) .tutorial-guide.strong:not(.anchored) {
+  margin: auto;
+}
+:where(.survival-page) .tutorial-guide::backdrop {
+  background: #01070880;
+}
+:where(.survival-page) .guide-robot {
+  width: 64px;
+  height: 64px;
+  flex: none;
+  image-rendering: pixelated;
+}
+:where(.survival-page) .tutorial-guide h3 {
+  color: #e0c58b;
+  font-size: 17px;
+  margin: 0 0 8px;
+}
+:where(.survival-page) .tutorial-guide p {
+  margin: 0;
+}
+:where(.survival-page) .tutorial-guide button {
+  float: right;
+  margin-top: 18px;
+  padding: 8px 18px;
+  background: #34483d;
+  border: 1px solid #ad9966;
+  color: #ede4c5;
+  font: inherit;
+  cursor: pointer;
+}
+:where(.survival-page) .tutorial-guide progress {
+  display: block;
+  margin-top: 14px;
+  height: 3px;
+  width: 100%;
+  accent-color: #8a9c83;
+}
+:where(.survival-page) .guide-pointer {
+  position: absolute;
+  top: -34px;
+  width: 1px;
+  height: 30px;
+  background: #dac995;
+}
+:where(.survival-page) .guide-pointer:before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -4px;
+  border: 4px solid #dac995;
+  transform: rotate(45deg);
+}
+:where(.survival-page) .opening-vitals > div > i {
+  position: relative;
+}
+:where(.survival-page) .opening-vitals .vital-threshold {
+  position: absolute;
+  left: 50%;
+  top: -3px;
+  height: 14px;
+  width: 1px;
+  background: #e4c581;
+  z-index: 2;
+}
+:where(.survival-page) .opening-vitals .vital-threshold:after {
+  content: '50';
+  position: absolute;
+  top: 10px;
+  left: -7px;
+  color: #a8aa91;
+  font-size: 9px;
+}
+:where(.survival-page) .opening-vitals > div {
+  margin-bottom: 12px;
+}
+:where(.survival-page) .opening-vitals > div.low {
+  color: #eea17d;
+}
+:where(.survival-page) .field-quest {
+  position: absolute;
+  left: 26px;
+  top: 194px;
+  width: 220px;
+  border-left: 2px solid #a28b55;
+  padding: 12px 16px;
+  background: linear-gradient(90deg, #102022e8, #10202200);
+  color: #c9d2bd;
+  font-family: 'F9 Pixel', monospace;
+  pointer-events: none;
+}
+:where(.survival-page) .field-quest small {
+  color: #869c94;
+  font-size: 11px;
+  letter-spacing: 3px;
+}
+:where(.survival-page) .field-quest h3 {
+  font-size: 17px;
+  font-weight: normal;
+  margin: 8px 0;
+}
+:where(.survival-page) .field-quest p {
+  font-size: 13px;
+  line-height: 1.8;
+  margin: 0;
+}
+:where(.survival-page) .field-quest progress {
+  width: 100%;
+  height: 3px;
+  accent-color: #b49c64;
+}
+:where(.survival-page) .inventory-drag-root {
+  position: relative;
+}
+:where(.survival-page) .inventory-drag-root [data-drag-uid] {
+  touch-action: none;
+  cursor: grab;
+}
+:where(.survival-page) .inventory-drag-ghost {
+  position: fixed;
+  z-index: 100;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 14px;
+  background: #152a30f5;
+  border: 2px solid #758d70;
+  pointer-events: none;
+  box-shadow: 5px 5px #0008;
+}
+:where(.survival-page) .inventory-drag-ghost.invalid {
+  border-color: #9e5350;
+}
+:where(.survival-page) .inventory-drag-ghost small {
+  color: #bcb38f;
+  font-size: 11px;
+}
+:where(.survival-page) .module-lesson {
+  margin: 0 0 10px;
+  color: #cfba7c;
+  font-size: 14px;
+}
+:where(.survival-page) .upgrade-cost {
+  display: flex;
+  gap: 14px;
+  margin: 24px 0;
+  flex-wrap: wrap;
+}
+:where(.survival-page) .upgrade-cost > div {
+  padding: 12px;
+  border: 1px solid #587267;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+:where(.survival-page) .upgrade-cost .missing {
+  border-color: #7d5549;
+  color: #c9997f;
+}
+:where(.survival-page) .task-objective b {
+  color: #d8bf89;
+}
+@media (max-width: 600px) {
+  :where(.survival-page) .tutorial-guide {
+    left: 16px !important;
+    top: auto !important;
+    bottom: 155px;
+    gap: 10px;
+    font-size: 14px;
+    padding: 14px;
+  }
+  :where(.survival-page) .tutorial-guide .guide-pointer {
+    display: none;
+  }
+  :where(.survival-page) .guide-robot {
+    width: 42px;
+    height: 42px;
+  }
+  :where(.survival-page) .field-quest {
+    left: 12px;
+    top: 184px;
+    width: 160px;
+    padding: 8px 10px;
+  }
+  :where(.survival-page) .field-quest h3 {
+    font-size: 14px;
+  }
+  :where(.survival-page) .field-quest p {
+    font-size: 11px;
+  }
+}
+
+:where(.survival-page) .opening-vitals {
+  left: auto;
+  right: 24px;
+  width: 208px;
+}
+:where(.survival-page) .opening-vitals > div {
+  display: grid;
+  grid-template-columns: 3.5em 1fr 2em;
+  font-size: 12px;
+  gap: 8px;
+  line-height: 20px;
+  margin: 4px 0 13px;
+}
+:where(.survival-page) .opening-vitals > div > i {
+  height: 4px;
+}
+:where(.survival-page) .field-quest {
+  top: 24px;
+}
+@media (max-width: 600px) {
+  :where(.survival-page) .opening-vitals {
+    right: 12px;
+    left: auto;
+    width: 175px;
+  }
+  :where(.survival-page) .field-quest {
+    top: 178px;
+  }
+  :where(.survival-page) .opening-vitals > div {
+    font-size: 11px;
+  }
+}
+
+.survival-page dialog.tutorial-guide[open] {
+  position: fixed;
+  max-width: calc(100vw - 32px);
+  margin: 0;
+  color: #c5cfb8;
+}
+.survival-page dialog.tutorial-guide.strong:not(.anchored) {
+  inset: 0;
+  margin: auto;
+}
+:where(.survival-page) .tutorial-guide > div {
+  min-width: 0;
+}
+@media (max-width: 600px) {
+  .survival-page .survival-minimap {
+    bottom: 148px;
+  }
+}
+
+/* refinement */
+/* Etched brass, lift-door chevrons and ghosted circuit traces; no texture assets. */
+.survival-page, .survival-page * {
+  user-select: none;
+  -webkit-user-select: none;
+}
+.survival-page :is(input, textarea) {
+  user-select: text;
+  -webkit-user-select: text;
+}
+.survival-page img, .survival-page canvas {
+  -webkit-user-drag: none;
+}
+.survival-page .console-panel, .survival-page .opening-pause, .survival-page .lift-terminal-body {
+  background-image:
+    linear-gradient(
+      135deg,
+      transparent 48.8%,
+      #bb9b5810 49%,
+      #bb9b5810 49.8%,
+      transparent 50%
+    ),
+    linear-gradient(
+      45deg,
+      transparent 48.8%,
+      #bb9b5808 49%,
+      #bb9b5808 49.8%,
+      transparent 50%
+    ),
+    repeating-linear-gradient(0deg, #0000 0 3px, #00000012 3px 4px);
+  background-size:
+    72px 72px,
+    72px 72px,
+    100% 4px;
+}
+.survival-page .console-header {
+  background:
+    linear-gradient(110deg, #b3a07414, transparent 35%),
+    repeating-linear-gradient(90deg, transparent 0 71px, #b3a07409 71px 72px),
+    #101d20;
+}
+.survival-page .dialogue-bubble {
+  position: relative;
+  background: #152825f5;
+  border: 1px solid #6d8070;
+  box-shadow:
+    inset 0 0 0 3px #0b171b,
+    3px 3px 0 #030a0b80;
+  padding: 4px 4px 26px;
+  width: 100%;
+  margin-bottom: 18px;
+  color: #c5d4b8;
+}
+.survival-page .dialogue-bubble:before {
+  content: '';
+  position: absolute;
+  left: -8px;
+  top: 22px;
+  width: 12px;
+  height: 12px;
+  background: #152825;
+  border-left: 1px solid #6d8070;
+  border-bottom: 1px solid #6d8070;
+  transform: rotate(45deg);
+}
+.survival-page .dialogue-line {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+  border: 0;
+  box-shadow: none;
+  background: none;
+  width: 100%;
+  min-height: 42px;
+  padding: 12px 14px;
+  text-align: left;
+  color: inherit;
+  font: inherit;
+  font-size: 16px;
+  line-height: 1.65;
+  white-space: pre-line;
+}
+:where(.survival-page) .dialogue-line > span {
+  flex: 1;
+}
+:where(.survival-page) .dialogue-head {
+  flex: none;
+  margin-top: 2px;
+  color: #b7d6aa;
+}
+:where(.survival-page) .dialogue-next {
+  flex: none;
+  align-self: flex-end;
+  color: #d5b876;
+}
+.survival-page .dialogue-auto {
+  position: absolute;
+  bottom: 5px;
+  right: 10px;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  padding: 2px 5px;
+  border: 0;
+  box-shadow: none;
+  background: none;
+  color: #91a492;
+  font-size: 12px;
+  min-height: 20px;
+}
+.survival-page .dialogue-auto[aria-pressed='true'] {
+  color: #edd292;
+}
+.survival-page .world-dialogue {
+  position: fixed;
+  z-index: 35;
+  bottom: 15%;
+  left: 50%;
+  transform: translateX(-50%);
+  width: min(540px, 85vw);
+  margin: 0;
+}
+.survival-page .dialogue-player {
+  background: #111c20f5;
+  border-color: #8a8b76;
+  color: #e0dbbf;
+}
+.survival-page:is(
+    .opening-stage-expedition,
+    .opening-stage-fight,
+    .opening-stage-aftermath,
+    .opening-stage-return
+  )
+  .world-dialogue {
+  bottom: max(20%, 155px);
+}
+:where(.survival-page) .dialogue-player .dialogue-head {
+  display: none;
+}
+.survival-page .console-task-copy > .dialogue-bubble {
+  flex: none;
+}
+.survival-page .lift-upgrade-title {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  width: 100%;
+  margin: 8px 0 16px;
+  border-bottom: 1px solid #86704c66;
+}
+:where(.survival-page) .lift-upgrade-title small {
+  letter-spacing: 3px;
+  color: #ab9e7b;
+}
+.survival-page .lift-upgrade-title h3 {
+  font-size: 28px;
+  letter-spacing: 3px;
+}
+:where(.survival-page) .upgrade-ledger {
+  width: 100%;
+  display: grid;
+  grid-template-columns: 1.15fr 1fr;
+  gap: 16px;
+}
+:where(.survival-page) .upgrade-ledger section {
+  padding: 14px 18px;
+  border: 1px solid #64716470;
+  background: linear-gradient(120deg, #111c20f0, #263a3420);
+  position: relative;
+}
+:where(.survival-page) .upgrade-ledger section:after {
+  content: '';
+  position: absolute;
+  right: 5px;
+  top: 5px;
+  width: 8px;
+  height: 8px;
+  border-top: 1px solid #bca36e;
+  border-right: 1px solid #bca36e;
+}
+:where(.survival-page) .upgrade-ledger h4 {
+  font-size: 14px;
+  margin: 0 0 12px;
+  color: #a5af98;
+  letter-spacing: 2px;
+  font-weight: 400;
+}
+.survival-page .upgrade-ledger .upgrade-cost {
+  margin: 0;
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 8px;
+}
+.survival-page .upgrade-ledger .upgrade-cost > div {
+  padding: 8px 10px;
+}
+:where(.survival-page) .upgrade-cost b {
+  display: block;
+  font-size: 19px;
+  letter-spacing: 2px;
+  margin-top: 5px;
+}
+:where(.survival-page) .upgrade-rewards strong {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  font-size: 22px;
+  font-weight: 400;
+  color: #ddc894;
+}
+:where(.survival-page) .upgrade-rewards strong span {
+  font-size: 32px;
+  padding-right: 16px;
+  border-right: 1px solid #b8a37466;
+}
+:where(.survival-page) .upgrade-rewards p {
+  margin: 8px 0 0;
+  font-size: 14px;
+  color: #92a190;
+}
+:where(.survival-page) .upgrade-complete {
+  color: #b1c9a4;
+  width: 100%;
+  margin-bottom: 0;
+}
+:where(.survival-page) .upgrade-complete small {
+  float: right;
+  color: #748779;
+}
+.survival-page .console-primary {
+  margin-top: 18px;
+}
+.survival-page .console-task-link {
+  align-self: flex-end;
+  background: transparent;
+  border: 0;
+  color: #c8b481;
+  margin-top: 10px;
+}
+:where(.survival-page) .item-traits {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin-top: 6px;
+}
+:where(.survival-page) .tutorial-guide .dialogue-bubble.guide-dialogue {
+  background: transparent;
+  border: 0;
+  box-shadow: none;
+  padding: 0 0 26px;
+  margin: 0 0 8px;
+}
+:where(.survival-page) .tutorial-guide .guide-dialogue:before, :where(.survival-page) .tutorial-guide .guide-dialogue .dialogue-head {
+  display: none;
+}
+:where(.survival-page) .tutorial-guide .guide-dialogue .dialogue-line {
+  padding: 0;
+  font-size: 16px;
+}
+:where(.survival-page) .tutorial-guide .guide-dialogue .dialogue-auto {
+  right: 0;
+}
+:where(.survival-page) .item-traits span {
+  font-size: 12px;
+  padding: 1px 5px;
+  color: #b5c6aa;
+  border: 1px solid #6e806252;
+  background: #122723;
+}
+.survival-page .safe-pocket {
+  background-image: linear-gradient(135deg, #a3c29110, transparent 50%);
+}
+:where(.survival-page) .first-upgrade-reward {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  font-size: 14px;
+  color: #c4be94;
+  padding: 8px 12px;
+}
+:where(.survival-page) .feeding-shell > .dialogue-bubble {
+  margin: 12px 18px;
+  width: calc(100% - 36px);
+}
+@media (max-width: 680px) {
+  .survival-page .world-dialogue {
+    bottom: 19%;
+  }
+  .survival-page .dialogue-line {
+    font-size: 14px;
+    padding: 10px;
+  }
+  :where(.survival-page) .upgrade-ledger {
+    grid-template-columns: 1fr;
+  }
+  :where(.survival-page) .upgrade-ledger section {
+    padding: 12px;
+  }
+  :where(.survival-page) .first-upgrade-reward {
+    flex-direction: column;
+  }
+  .survival-page .upgrade-ledger .upgrade-cost {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* interaction-polish */
+/* Pixel surfaces retain their tone during dialogue; the entire surface advances. */
+.survival-page .dialogue-bubble {
+  isolation: isolate;
+}
+.survival-page .dialogue-bubble > button.dialogue-hit-area {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 1;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  box-shadow: none;
+}
+.survival-page
+  .dialogue-bubble
+  > button.dialogue-hit-area:is(:hover, :active, :focus) {
+  background: transparent;
+  border: 0;
+  box-shadow: none;
+  transform: none;
+  filter: none;
+}
+.survival-page .dialogue-hit-area:focus-visible {
+  outline: 1px dashed #c3bf91;
+  outline-offset: -5px;
+}
+.survival-page .dialogue-line {
+  position: relative;
+  z-index: 2;
+  pointer-events: none;
+}
+.survival-page .dialogue-auto {
+  z-index: 2;
+}
+.survival-page .console-player-thought {
+  position: fixed;
+  z-index: 100;
+  bottom: 12px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: min(530px, 85vw);
+  margin: 0;
+}
+.survival-page .console-panel-tasks {
+  overflow: hidden;
+}
+.survival-page .console-panel-tasks .console-task-layout {
+  height: 100%;
+  min-height: 0;
+}
+.survival-page .console-task-copy {
+  min-height: 0;
+}
+.survival-page .system-receipt {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px 18px;
+  overflow: auto;
+  flex: 1;
+  min-height: 0;
+  width: 100%;
+  align-content: start;
+  scrollbar-width: thin;
+}
+.survival-page .system-receipt > div {
+  display: grid;
+  grid-template-columns: 32px minmax(0, 1fr);
+  gap: 3px 9px;
+  padding: 9px;
+  border: 1px solid #74856c40;
+  background: #0c1b2070;
+}
+.survival-page .system-receipt small {
+  grid-column: 2;
+}
+.survival-page .task-actions {
+  flex-shrink: 0;
+}
+.survival-page .opening-pause::backdrop {
+  background: #020508d9;
+  backdrop-filter: blur(3px);
+}
+.survival-page .opening-pause {
+  z-index: 2147483647;
+  cursor: default;
+}
+.survival-page .equipment-strip, .survival-page .lift-console .equipment-panel.editing .equipment-strip {
+  min-width: 0;
+  grid-template-rows: 18px auto;
+}
+.survival-page .equipment-empty {
+  aspect-ratio: 1;
+}
+.survival-page .equipment-card, .survival-page .opening-equipment .equipment-card {
+  min-height: 0;
+}
+.survival-page .lift-console .equipment-panel.editing {
+  flex: none;
+}
+.survival-page .lift-console .equipment-inspector {
+  min-height: 40px;
+  align-items: center;
+}
+.survival-page .lift-console .equipment-inspector .item-traits, .survival-page .lift-console .equipment-inspector p {
+  display: none;
+}
+.survival-page .lift-console .inventory-drag-root {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  flex: 1;
+  gap: 8px;
+}
+.survival-page .lift-console .cargo-management {
+  display: grid;
+  grid-template-columns: max-content minmax(0, 1fr);
+  grid-template-rows: 28px minmax(0, 1fr);
+  gap: 6px 20px;
+}
+.survival-page .lift-console .cargo-grid-header {
+  grid-column: 1 / -1;
+}
+.survival-page .lift-console .cargo-grid-body {
+  grid-column: 1;
+  grid-row: 2;
+  display: grid;
+  grid-template-columns: max-content 108px;
+  max-height: none;
+  min-height: 0;
+  gap: 10px;
+}
+.survival-page .cargo-grid, .survival-page .lift-console .cargo-grid, .survival-page .lift-console .base-cargo .cargo-grid {
+  --cargo-cell: clamp(48px, 7.8vh, 64px);
+  width: max-content;
+  grid-template-columns: repeat(4, var(--cargo-cell));
+  grid-template-rows: repeat(4, var(--cargo-cell));
+  grid-auto-rows: var(--cargo-cell);
+  padding: 4px;
+  gap: 4px;
+}
+.survival-page .lift-console .cargo-grid-viewport {
+  max-height: none;
+  overflow-y: auto;
+  overflow-x: hidden;
+}
+.survival-page .lift-console .cargo-inspector {
+  grid-column: 2;
+  grid-row: 2;
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: flex-start;
+  overflow: auto;
+  padding: 12px;
+  border: 1px solid #76886a35;
+  background: #0b171b70;
+}
+.survival-page .cargo-piece {
+  position: relative;
+  overflow: hidden;
+  min-height: 0;
+}
+.survival-page .lift-console .cargo-piece {
+  padding: 3px;
+  gap: 2px;
+}
+.survival-page .lift-console .cargo-piece strong {
+  font-size: 12px;
+  line-height: 1.2;
+}
+.survival-page .cargo-safe-piece {
+  position: relative;
+}
+.survival-page .stack-count {
+  position: absolute;
+  top: 2px;
+  right: 4px;
+  font-style: normal;
+  font-size: 14px;
+  color: #fff2b9;
+  text-shadow: 2px 2px #000;
+  background: #142023c0;
+  padding: 0 3px;
+}
+.survival-page .cargo-buttons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.survival-page .safe-pocket {
+  align-self: start;
+}
+.survival-page .lift-console .cargo-safe-piece, .survival-page .lift-console .cargo-safe-empty {
+  aspect-ratio: 1;
+  width: 100%;
+  flex: none;
+}
+.survival-page .item-hover {
+  position: fixed;
+  z-index: 999;
+  width: 302px;
+  padding: 16px;
+  border: 1px solid #b5a26a;
+  box-shadow:
+    0 0 0 3px #071016,
+    5px 7px #0008;
+  background: repeating-linear-gradient(0deg, #142329 0 3px, #132126 3px 4px);
+  pointer-events: none;
+  color: #d6d5b6;
+  font-size: 14px;
+}
+:where(.survival-page) .item-hover header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+:where(.survival-page) .item-hover p {
+  margin: 12px 0;
+  line-height: 1.65;
+}
+:where(.survival-page) .item-hover small {
+  color: #b7a77a;
+}
+.survival-page .opening-vitals > div {
+  position: relative;
+}
+.survival-page .opening-vitals > div > i > b {
+  transition: width 0.9s cubic-bezier(0.16, 1, 0.3, 1);
+}
+:where(.survival-page) .vital-gain {
+  position: absolute;
+  right: 0;
+  top: 0;
+  z-index: 5;
+  color: #d8ffa0;
+  white-space: nowrap;
+  font-size: 20px;
+  text-shadow: 2px 2px #08110b;
+  pointer-events: none;
+  animation: survival-vital-rise 2.5s ease-out both;
+}
+@keyframes survival-vital-rise {
+  0% {
+    opacity: 0;
+    transform: translateY(8px) scale(0.85);
+  }
+  15%,
+  65% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+    transform: translateY(-45px);
+  }
+}
+:where(.survival-page) .death-curtain {
+  position: fixed;
+  inset: 0;
+  z-index: 80;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-direction: column;
+  background: rgba(0, 0, 0, var(--death));
+  pointer-events: all;
+}
+:where(.survival-page) .death-curtain p {
+  opacity: var(--death);
+  font-size: 26px;
+  letter-spacing: 3px;
+  color: #d4d1c3;
+}
+:where(.survival-page) .death-curtain small {
+  opacity: var(--death);
+  color: #8c9288;
+  margin-top: 20px;
+}
+.survival-page .lift-upgrade-sequence {
+  width: 100vw;
+  height: 100dvh;
+  max-width: none;
+  max-height: none;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: radial-gradient(ellipse at 50% 44%, #24352bbb, #03090ce8 65%);
+  color: #e4cf92;
+  overflow: hidden;
+  text-align: center;
+}
+.survival-page .lift-upgrade-sequence[open] {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+:where(.survival-page) .lift-upgrade-sequence::backdrop {
+  background: #03080bbb;
+}
+:where(.survival-page) .upgrade-rays {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+:where(.survival-page) .upgrade-rays i {
+  position: absolute;
+  left: 50%;
+  top: 41%;
+  width: 2px;
+  height: 42vh;
+  background: linear-gradient(transparent, #d0b56e99, transparent);
+  transform-origin: top;
+  transform: rotate(calc(var(--ray)*15deg));
+  animation: survival-ray-feed 2s calc(var(--ray)*-0.12s) ease-in infinite;
+}
+@keyframes survival-ray-feed {
+  from {
+    opacity: 0;
+    scale: 1 0.95;
+  }
+  55% {
+    opacity: 0.7;
+  }
+  to {
+    opacity: 0;
+    scale: 1 0.2;
+  }
+}
+:where(.survival-page) .upgrade-orbits {
+  position: absolute;
+  width: 310px;
+  height: 310px;
+  top: calc(41% - 155px);
+  pointer-events: none;
+}
+:where(.survival-page) .upgrade-orbits i {
+  position: absolute;
+  inset: 0;
+  border: 1px solid #a9bd8580;
+  transform: rotate(45deg);
+  animation: survival-orbit-turn 8s linear infinite;
+  box-shadow: 0 0 25px #a8b47b15;
+}
+:where(.survival-page) .upgrade-orbits i:nth-child(2) {
+  inset: 30px;
+  border-style: dashed;
+  animation-direction: reverse;
+}
+:where(.survival-page) .upgrade-orbits i:nth-child(3) {
+  inset: -35px;
+  border-color: #819e6128;
+  animation-duration: 17s;
+}
+@keyframes survival-orbit-turn {
+  to {
+    transform: rotate(405deg);
+  }
+}
+:where(.survival-page) .upgrade-core {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  z-index: 1;
+  padding: 30px;
+  height: 150px;
+  margin-top: 20px;
+  color: #e7dfaf;
+  text-shadow: 0 0 30px #cacda788;
+  animation: survival-core-breathe 2s ease-in-out infinite;
+}
+:where(.survival-page) .upgrade-core span {
+  font-size: 110px;
+  line-height: 1;
+}
+@keyframes survival-core-breathe {
+  50% {
+    filter: drop-shadow(0 0 15px #a2bc8670);
+    transform: scale(1.025);
+  }
+}
+:where(.survival-page) .upgrade-phase {
+  letter-spacing: 7px;
+  font-size: 14px;
+  margin: 36px 0 12px;
+  position: relative;
+}
+.survival-page .lift-upgrade-sequence h2 {
+  position: relative;
+  font-size: 36px;
+  margin: 0 0 24px;
+  letter-spacing: 8px;
+}
+:where(.survival-page) .upgrade-reveal-reward {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  padding: 18px 32px;
+  border-top: 1px solid #a5995855;
+  border-bottom: 1px solid #a5995855;
+  background: #122b2677;
+  opacity: 0;
+  transform: translateY(14px);
+  transition:
+    opacity 0.8s,
+    transform 0.8s;
+}
+:where(.survival-page) .upgrade-reveal-reward strong {
+  font-weight: 400;
+  font-size: 24px;
+}
+:where(.survival-page) .upgrade-reveal-reward p {
+  font-size: 14px;
+  color: #acbca0;
+  margin: 8px 0 0;
+}
+:where(.survival-page) .revealed .upgrade-reveal-reward {
+  opacity: 1;
+  transform: none;
+}
+:where(.survival-page) .revealed .upgrade-rays {
+  animation: survival-upgrade-wave 1.3s ease-out both;
+}
+@keyframes survival-upgrade-wave {
+  from {
+    background: #d1d7a577;
+    scale: 0.7;
+  }
+  to {
+    background: transparent;
+    scale: 1.6;
+  }
+}
+.survival-page .lift-upgrade-sequence > button {
+  margin: 28px 0 0;
+  position: relative;
+  padding: 12px 32px;
+  border: 1px solid #bba465;
+  background: #1b302b;
+  color: #ebd6a2;
+}
+:where(.survival-page) .lift-upgrade-sequence.reduced * {
+  animation: none !important;
+  transition: none !important;
+}
+@media (max-width: 700px) {
+  .survival-page .lift-console .cargo-management {
+    grid-template-columns: 1fr;
+    grid-template-rows: 28px minmax(0, 1fr) auto;
+  }
+  .survival-page .lift-console .cargo-inspector {
+    grid-column: 1;
+    grid-row: 3;
+    max-height: 110px;
+  }
+  .survival-page .lift-console .cargo-grid-body {
+    justify-content: center;
+  }
+  .survival-page .console-task-layout {
+    grid-template-columns: 80px minmax(0, 1fr);
+  }
+  .survival-page .system-receipt {
+    grid-template-columns: 1fr;
+  }
+  :where(.survival-page) .death-curtain p {
+    font-size: 18px;
+    padding: 24px;
+  }
+}
+
+.survival-page .console-header > button:last-child {
+  margin-left: 8px;
+}
+:where(.survival-page) .lift-upgrade-sequence.paused, :where(.survival-page) .lift-upgrade-sequence.paused * {
+  animation-play-state: paused !important;
+}

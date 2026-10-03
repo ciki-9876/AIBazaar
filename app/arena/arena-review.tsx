@@ -1,6 +1,6 @@
 'use client';
 import { useState } from 'react';
-import { cardDef } from '@/lib/demo-cards';
+import { cardDef } from '@/lib/cards/catalog';
 import { amplifier } from '@/lib/arena-catalog';
 import {
   LANE_NAMES,
@@ -8,7 +8,7 @@ import {
   type arenaReview,
 } from '@/lib/arena-presentation';
 import type { ArenaMatch } from '@/lib/arena-archive';
-import type { Duel } from '@/lib/demo-combat';
+import type { Duel } from '@/lib/cards/combat';
 
 export function ArenaReview({
   review,
@@ -17,6 +17,7 @@ export function ArenaReview({
   onSeek,
   previous,
   current,
+  cardName = (id: string) => cardDef(id).name,
 }: {
   review: ReturnType<typeof arenaReview>;
   duel: Duel;
@@ -24,6 +25,7 @@ export function ArenaReview({
   onSeek: (t: number) => void;
   previous?: ArenaMatch;
   current: ArenaMatch;
+  cardName?: (id: string) => string;
 }) {
   const [tab, setTab] = useState('turns'),
     [side, setSide] = useState(0),
@@ -33,7 +35,7 @@ export function ArenaReview({
         const describe = (d: Duel) =>
           d.player
             .filter((c) => Math.floor(c.at / 3) === l)
-            .map((c) => `${cardDef(c.id).name}@${(c.at % 3) + 1}`)
+            .map((c) => `${cardName(c.id)}@${(c.at % 3) + 1}`)
             .join('、') || '空路';
         const a = describe(previous.duel),
           b = describe(duel),
@@ -177,7 +179,7 @@ export function ArenaReview({
                   return (
                     <tr key={c.uid}>
                       <th>
-                        {cardDef(c.id).name}
+                        {cardName(c.id)}
                         <small>
                           {LANE_NAMES[Math.floor(c.at / 3)]} · 第
                           {(c.at % 3) + 1}格

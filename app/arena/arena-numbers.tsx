@@ -6,8 +6,8 @@ import {
   numberPose,
   NUMBER_LIFETIME,
 } from '@/lib/arena-numbers';
-import type { CombatFrame, Duel } from '@/lib/demo-combat';
-import type { BoardAnchors } from '@/app/art/slice/scene';
+import type { CombatFrame, Duel } from '@/lib/cards/combat';
+import type { BoardAnchors } from '@/app/arena/render/scene';
 
 export function ArenaNumbers({
   duel,

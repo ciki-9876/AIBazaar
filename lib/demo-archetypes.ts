@@ -1,6 +1,6 @@
-import { cardDef, SCHOOLS, type School } from './demo-cards.ts';
-import { rarityOf } from './demo-card-rules.ts';
-import type { FighterCard, Duel } from './demo-combat.ts';
+import { cardDef, SCHOOLS, type School } from './cards/catalog.ts';
+import { rarityOf } from './cards/card-rules.ts';
+import type { FighterCard, Duel } from './cards/combat.ts';
 export const ARCHETYPES: {
   id: School;
   name: string;

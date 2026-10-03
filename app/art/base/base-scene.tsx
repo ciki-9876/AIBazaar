@@ -341,7 +341,7 @@ export default function BaseScene(props: Props) {
         ...moduleRoot.children,
         ...(luxDoors.length ? luxDoors : doors),
         ...(latest.current.view === 'build'
-          ? pads.filter((pad, i) => latest.current.state.expanded || i < 6)
+          ? pads.filter((_pad, i) => latest.current.state.expanded || i < 6)
           : []),
       ];
       const hit = ray.intersectObjects(candidates, true)[0];

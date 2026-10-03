@@ -2,8 +2,8 @@
 import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { Check, Shield, X } from 'lucide-react';
 import { AMPLIFIERS, amplifier, arenaEffectHelp } from '@/lib/arena-catalog';
-import { cardDef } from '@/lib/demo-cards';
-import type { FighterCard } from '@/lib/demo-combat';
+import { cardDef } from '@/lib/cards/catalog';
+import type { FighterCard } from '@/lib/cards/combat';
 
 export const LANES = ['左路', '中路', '右路'];
 export const RARITIES = ['普通', '精良', '稀有', '史诗', '奇迹'];
@@ -71,11 +71,13 @@ export function AmplifierPicker({
   current,
   onChoose,
   onClose,
+  rarityNames = RARITIES,
 }: {
   lane: number;
   current: string | null;
   onChoose: (id: string | null) => void;
   onClose: () => void;
+  rarityNames?: readonly string[];
 }) {
   const [choice, setChoice] = useState(current);
   const selected = amplifier(choice);
@@ -103,7 +105,7 @@ export function AmplifierPicker({
             <span className="arena-amp-option-title">
               <strong>{amp.name}</strong>
               <small>
-                {RARITIES[amp.rarity]}
+                {rarityNames[amp.rarity]}
                 {current === amp.id ? ' · 已装备' : ''}
               </small>
             </span>

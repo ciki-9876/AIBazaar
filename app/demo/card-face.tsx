@@ -2,9 +2,9 @@
 import { Sword, Heart, Shield, Zap, FastForward, Droplets } from 'lucide-react';
 import { useEffect, useRef } from 'react';
 import type { CSSProperties } from 'react';
-import type { FighterCard } from '@/lib/demo-combat';
+import type { FighterCard } from '@/lib/cards/combat';
 import { describeCard } from '@/lib/card-description';
-import { cardDef } from '@/lib/demo-cards';
+import { cardDef } from '@/lib/cards/catalog';
 import { heroDef, heroOwner } from '@/lib/heroes';
 export function cardSpecial(card: FighterCard) {
   return describeCard(card).summary;

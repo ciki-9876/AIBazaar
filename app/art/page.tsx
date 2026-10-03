@@ -12,11 +12,11 @@ import {
   Maximize2,
 } from 'lucide-react';
 import { archetypeDuel, ARCHETYPES } from '@/lib/demo-archetypes';
-import { simulateDuel, type FighterCard } from '@/lib/demo-combat';
-import { cardDef, type School } from '@/lib/demo-cards';
+import { simulateDuel, type FighterCard } from '@/lib/cards/combat';
+import { cardDef, type School } from '@/lib/cards/catalog';
 import { ATLAS, LANES } from './art-data';
 import FlatBattle from './flat-battle';
-import { advanceReplay } from './playback';
+import { advanceReplay } from '../../lib/cards/playback';
 const RoomBattle = lazy(() => import('./room-battle'));
 
 export default function ArtLab() {

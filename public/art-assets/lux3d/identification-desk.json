@@ -1,0 +1,16 @@
+{
+  "assetId": "identification-desk",
+  "displayName": "异常鉴定台",
+  "family": "home-facility",
+  "footprintSlots": 2,
+  "dimensionsMeters": [3.8, 1.6, 3.2],
+  "purpose": "回家后鉴定物品",
+  "style": ["旧金属", "扫描灯", "黄铜铭牌"],
+  "states": [
+    { "id": "normal", "node": "State_Normal", "label": "正常" },
+    { "id": "active", "node": "State_Active", "label": "使用中" },
+    { "id": "used", "node": "State_Used", "label": "今日已用" }
+  ],
+  "source": "outputs/lux3d-base-v2/analyzer/identification-desk.blend",
+  "model": "identification-desk.glb"
+}

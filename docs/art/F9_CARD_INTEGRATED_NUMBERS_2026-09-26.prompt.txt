@@ -1,0 +1,39 @@
+Use case: precise-object-edit / ui-mockup.
+Edit the supplied THREE-CARD INFORMATION LAYOUT screen (image1). Image2 is the user's new reference for how statistics are naturally integrated INTO the thin trading-card corners and edges. Deliver a polished wide landscape revised version of image1.
+
+Preserve the approved dark indigo arcade CRT backdrop, thin blue rare-tier card frames, three original illustrations, names, role lines, separate cooldown capsules, and 1/2/3 slot widths. There must remain exactly three cards of the same intrinsic height and widths 1:2:3 (narrow portrait, near-square, wide landscape). They stay fully visible and readable, with a very subtle physical card tilt and thin edges.
+
+THE TARGETED CHANGE IS THE BOTTOM OUTPUT NUMBERS:
+Completely REMOVE the protruding round COINS / medallions / hanging badges from image1.
+Replace them with understated integrated lower-corner / lower-edge number locations as part of the printed physical CARD FACE, inspired by the way image2's card statistics sit within its corners. Use a slim coherent neutral pearl-gray footer shape that rises gently into the corners and connects organically with the card's border. It is NOT a thick dashboard strip. The artwork and description blend down into this footer. Numeric glyphs sit directly on these small integrated neutral areas with a subtle thin contrasting keyline/shadow for legibility. No stats extend outside the card silhouette. No circular badges, no detached plaques, no thick tokens, no socket outlines, no separate outlines around each number.
+The FOOTER / NUMBER AREAS MUST CONTAIN ONLY NUMERIC GLYPHS. Absolutely no effect words, no Chinese labels, no small captions, no effect icons or pictograms, no "damage", no "直伤", no "灼烧", no "毒伤", no "治疗", no "修复" attached to or underneath these numbers. The COLOR OF THE NUMBER ITSELF conveys effect. The neutral footer material is the SAME across all output types, never orange/green/yellow filled disks.
+This ban applies to the numeric output display; preserve the previously requested card names, role lines, and separate mechanism-description paragraphs higher on the card, as detailed below.
+Make all bottom output NUMERALS the same font size and weight, bold clean condensed display numerals, integrated like a premium physical trading card print. Numbers read as part of the card graphic design, not UI widgets floating over it.
+
+EXACT NUMBER COLORS AND POSITIONS:
+Card1 left: only the numeral "8", colored SILVER GRAY (#B8C3D3) with a hairline dark contour so it reads against pearl. Place at its lower-left corner within the card face.
+Card2 middle: exactly three numbers along its bottom edge: "12" on the left in SILVER GRAY, "5" centered in saturated ORANGE (#F28B29), "3" on the right in unmistakably DEEP FOREST GREEN (#14603C). Every digit itself is colored, all share neutral supporting material. Deep green must be much darker than the bright healing green on card3.
+Card3 right: exactly "20" at lower-left in BRIGHT LIME GREEN (#60E566), and "15" at lower-right in warm YELLOW (#F3D544). These are printed in integrated corners, NOT in two centered circular coins.
+No other output numbers, icons or captions. Do not place the mechanism "-1" in the footer.
+
+PRESERVED OTHER CARD INFORMATION:
+Card1 top "火花电池", role "辅助 · 充能".
+Independent clock capsule "3.0 秒" at top-right of the lower description region.
+Mechanism text above the footer:
+"造成直伤。
+相邻卡牌
+冷却 -1 秒。"
+Card2 top "汽水连发器", role "输出 · 灼烧 · 毒素".
+Independent clock capsule "4.0 秒".
+Description:
+"发射汽水弹，造成直伤，
+并造成灼烧伤害与毒伤。"
+Card3 top "午夜放映机", role "辅助 · 治疗 · 修复".
+Independent clock capsule "6.0 秒".
+Description:
+"恢复生命，并修复屏障。
+相邻卡牌冷却 -1 秒。"
+Keep description paragraphs white and readable, separated from the colored numbers and independent cooldown. Remove the redundant tiny "效果" panel heading from all three cards for a cleaner design. The lower information region should be a subtle dark translucent gradient over the art with a reserved text-safe area, not a bulky blue-outlined rectangular box. Do not obscure title or illustration.
+Maintain all three original item images and rich polished collectible illustration. Do not copy image2's character, dice icon, character stats, blue menus, card library or game logos.
+Screen header "卡面信息布局"; upper-right "稀有 · 三种尺寸". Under the card row retain "1 格", "2 格", "3 格" and respective 1/2/3 tiny occupancy squares, separated from the card.
+No extra annotation arrows, legends, new labels or explanatory text outside the existing screen typography. No watermark. Refine integration and finish, keeping the existing rarity tier and recognizable card identities.

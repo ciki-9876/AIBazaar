@@ -1,0 +1,521 @@
+[
+  {
+    "id": "arena-shield-burn",
+    "product": "cards",
+    "rulesVersion": "f9-arena/1",
+    "duel": {
+      "player": [
+        {
+          "id": "arena-03",
+          "at": 0,
+          "uid": "golden-arena-03-0",
+          "rarity": 0,
+          "level": 0,
+          "quality": 0
+        },
+        {
+          "id": "arena-11",
+          "at": 3,
+          "uid": "golden-arena-11-3",
+          "rarity": 0,
+          "level": 0,
+          "quality": 0
+        },
+        {
+          "id": "arena-09",
+          "at": 6,
+          "uid": "golden-arena-09-6",
+          "rarity": 4,
+          "level": 0,
+          "quality": 0
+        }
+      ],
+      "enemy": [
+        {
+          "uid": "enemy-opening-0",
+          "id": "arena-01",
+          "at": 0,
+          "rarity": 0,
+          "quality": 0,
+          "level": 0
+        },
+        {
+          "uid": "enemy-opening-1",
+          "id": "arena-05",
+          "at": 1,
+          "rarity": 1,
+          "quality": 0,
+          "level": 0
+        },
+        {
+          "uid": "enemy-opening-2",
+          "id": "arena-11",
+          "at": 3,
+          "rarity": 0,
+          "quality": 0,
+          "level": 0
+        },
+        {
+          "uid": "enemy-opening-3",
+          "id": "arena-12",
+          "at": 5,
+          "rarity": 0,
+          "quality": 0,
+          "level": 0
+        },
+        {
+          "uid": "enemy-opening-4",
+          "id": "arena-21",
+          "at": 6,
+          "rarity": 0,
+          "quality": 0,
+          "level": 0
+        },
+        {
+          "uid": "enemy-opening-5",
+          "id": "arena-43",
+          "at": 7,
+          "rarity": 1,
+          "quality": 0,
+          "level": 0
+        }
+      ],
+      "maxHp": [
+        300,
+        300
+      ],
+      "barrierHp": [
+        [
+          90,
+          90,
+          90
+        ],
+        [
+          90,
+          90,
+          90
+        ]
+      ],
+      "weather": 0,
+      "weatherEnabled": false,
+      "layout": 0,
+      "name": "三路试探",
+      "kind": "guardian",
+      "botId": null,
+      "arena": {
+        "version": 1,
+        "amplifiers": [
+          [
+            "amp-04",
+            "amp-05",
+            "amp-01"
+          ],
+          [
+            "amp-04",
+            "amp-05",
+            "amp-01"
+          ]
+        ]
+      }
+    },
+    "expected": "e23b245a964c2aed55f52269bb1cfb1369eb24adf803b49fe8a9677a33d0963e"
+  },
+  {
+    "id": "training-original-v1",
+    "product": "cards",
+    "rulesVersion": "f9-arena/1",
+    "duel": {
+      "player": [
+        {
+          "uid": "user-keepsakes-0",
+          "id": "training-a",
+          "at": 0,
+          "rarity": 2,
+          "level": 0,
+          "quality": 0
+        },
+        {
+          "uid": "user-keepsakes-1",
+          "id": "training-b",
+          "at": 1,
+          "rarity": 2,
+          "level": 0,
+          "quality": 0
+        },
+        {
+          "uid": "user-keepsakes-2",
+          "id": "training-c",
+          "at": 3,
+          "rarity": 3,
+          "level": 0,
+          "quality": 0
+        },
+        {
+          "uid": "user-keepsakes-3",
+          "id": "training-d",
+          "at": 6,
+          "rarity": 2,
+          "level": 0,
+          "quality": 0
+        },
+        {
+          "uid": "user-keepsakes-4",
+          "id": "training-e",
+          "at": 7,
+          "rarity": 1,
+          "level": 0,
+          "quality": 0
+        },
+        {
+          "uid": "user-keepsakes-5",
+          "id": "training-f",
+          "at": 8,
+          "rarity": 0,
+          "level": 0,
+          "quality": 0
+        }
+      ],
+      "enemy": [
+        {
+          "uid": "assistant-round-01-0",
+          "id": "arena-04",
+          "at": 0,
+          "rarity": 2,
+          "level": 0,
+          "quality": 0
+        },
+        {
+          "uid": "assistant-round-01-1",
+          "id": "arena-12",
+          "at": 1,
+          "rarity": 0,
+          "level": 0,
+          "quality": 0
+        },
+        {
+          "uid": "assistant-round-01-2",
+          "id": "arena-15",
+          "at": 2,
+          "rarity": 1,
+          "level": 0,
+          "quality": 0
+        },
+        {
+          "uid": "assistant-round-01-3",
+          "id": "arena-26",
+          "at": 3,
+          "rarity": 2,
+          "level": 0,
+          "quality": 0
+        },
+        {
+          "uid": "assistant-round-01-4",
+          "id": "arena-21",
+          "at": 5,
+          "rarity": 0,
+          "level": 0,
+          "quality": 0
+        },
+        {
+          "uid": "assistant-round-01-5",
+          "id": "arena-16",
+          "at": 6,
+          "rarity": 0,
+          "level": 0,
+          "quality": 0
+        },
+        {
+          "uid": "assistant-round-01-6",
+          "id": "arena-19",
+          "at": 8,
+          "rarity": 1,
+          "level": 0,
+          "quality": 0
+        }
+      ],
+      "maxHp": [
+        300,
+        300
+      ],
+      "barrierHp": [
+        [
+          90,
+          90,
+          90
+        ],
+        [
+          90,
+          90,
+          90
+        ]
+      ],
+      "weather": 0,
+      "weatherEnabled": false,
+      "layout": 0,
+      "name": "你的「借雨添灯」 vs 我的「炉火不熄」",
+      "kind": "guardian",
+      "botId": null,
+      "arena": {
+        "version": 1,
+        "amplifiers": [
+          [
+            "amp-01",
+            "amp-01",
+            "amp-06"
+          ],
+          [
+            "amp-05",
+            "amp-07",
+            "amp-08"
+          ]
+        ],
+        "training": "original-v1"
+      }
+    },
+    "expected": "08ef061fd5afd6fc8b106f15d95510b0c05ad29ac73ec8995f4f3266dce351e3"
+  },
+  {
+    "id": "training-tuned-v1",
+    "product": "cards",
+    "rulesVersion": "f9-arena/1",
+    "duel": {
+      "player": [
+        {
+          "uid": "user-keepsakes-0",
+          "id": "training-a",
+          "at": 0,
+          "rarity": 2,
+          "level": 0,
+          "quality": 0
+        },
+        {
+          "uid": "user-keepsakes-1",
+          "id": "training-b",
+          "at": 1,
+          "rarity": 2,
+          "level": 0,
+          "quality": 0
+        },
+        {
+          "uid": "user-keepsakes-2",
+          "id": "training-c",
+          "at": 3,
+          "rarity": 3,
+          "level": 0,
+          "quality": 0
+        },
+        {
+          "uid": "user-keepsakes-3",
+          "id": "training-d",
+          "at": 6,
+          "rarity": 2,
+          "level": 0,
+          "quality": 0
+        },
+        {
+          "uid": "user-keepsakes-4",
+          "id": "training-e",
+          "at": 7,
+          "rarity": 1,
+          "level": 0,
+          "quality": 0
+        },
+        {
+          "uid": "user-keepsakes-5",
+          "id": "training-f",
+          "at": 8,
+          "rarity": 0,
+          "level": 0,
+          "quality": 0
+        }
+      ],
+      "enemy": [
+        {
+          "uid": "assistant-round-01-0",
+          "id": "arena-04",
+          "at": 0,
+          "rarity": 2,
+          "level": 0,
+          "quality": 0
+        },
+        {
+          "uid": "assistant-round-01-1",
+          "id": "arena-12",
+          "at": 1,
+          "rarity": 0,
+          "level": 0,
+          "quality": 0
+        },
+        {
+          "uid": "assistant-round-01-2",
+          "id": "arena-15",
+          "at": 2,
+          "rarity": 1,
+          "level": 0,
+          "quality": 0
+        },
+        {
+          "uid": "assistant-round-01-3",
+          "id": "arena-26",
+          "at": 3,
+          "rarity": 2,
+          "level": 0,
+          "quality": 0
+        },
+        {
+          "uid": "assistant-round-01-4",
+          "id": "arena-21",
+          "at": 5,
+          "rarity": 0,
+          "level": 0,
+          "quality": 0
+        },
+        {
+          "uid": "assistant-round-01-5",
+          "id": "arena-16",
+          "at": 6,
+          "rarity": 0,
+          "level": 0,
+          "quality": 0
+        },
+        {
+          "uid": "assistant-round-01-6",
+          "id": "arena-19",
+          "at": 8,
+          "rarity": 1,
+          "level": 0,
+          "quality": 0
+        }
+      ],
+      "maxHp": [
+        300,
+        300
+      ],
+      "barrierHp": [
+        [
+          90,
+          90,
+          90
+        ],
+        [
+          90,
+          90,
+          90
+        ]
+      ],
+      "weather": 0,
+      "weatherEnabled": false,
+      "layout": 0,
+      "name": "你的「借雨添灯」 vs 我的「炉火不熄」",
+      "kind": "guardian",
+      "botId": null,
+      "arena": {
+        "version": 1,
+        "amplifiers": [
+          [
+            "amp-01",
+            "amp-01",
+            "amp-06"
+          ],
+          [
+            "amp-05",
+            "amp-07",
+            "amp-08"
+          ]
+        ],
+        "training": "tuned-v1"
+      }
+    },
+    "expected": "8193c1bf44402bf990f09222a7b98987713184c66fe91d65aa3d021304454251"
+  },
+  {
+    "id": "survival-92601",
+    "product": "elevator",
+    "rulesVersion": "f9-survival/6",
+    "seed": 92601,
+    "ticks": 480,
+    "player": {
+      "x": 48,
+      "z": 50
+    },
+    "gear": [
+      "phone",
+      "flashlight"
+    ],
+    "inputs": [
+      {
+        "from": 0,
+        "until": 90,
+        "input": {
+          "x": 1,
+          "z": 0
+        }
+      },
+      {
+        "from": 90,
+        "until": 210,
+        "input": {
+          "x": 0,
+          "z": -1
+        }
+      },
+      {
+        "from": 210,
+        "until": 480,
+        "input": {}
+      }
+    ],
+    "expected": [
+      "19125f5b30efe051d781f42505cfbca81c9cd85d0f515410beafb5c61e3775ee",
+      "0a238bcb4f38f32b3d3262993f86fb9c74b6b308433402da669801c2099d8437",
+      "12320f8976350a1d1826934244f7ad129f8cd3ac97ba59578adf71a12678d442",
+      "2fc1ab937c666ec933fcfcf0c8abdbf5bd3912c0c3a4629eaa9e7e4b637768cb",
+      "2701c7253b74092f1930d86c84f486d52ecde4e1bb958f78e97739111831bc9c"
+    ]
+  },
+  {
+    "id": "survival-92620",
+    "product": "elevator",
+    "rulesVersion": "f9-survival/6",
+    "seed": 92620,
+    "ticks": 480,
+    "player": {
+      "x": 48,
+      "z": 50
+    },
+    "gear": [
+      "phone",
+      "flashlight"
+    ],
+    "inputs": [
+      {
+        "from": 0,
+        "until": 90,
+        "input": {
+          "x": 1,
+          "z": 0
+        }
+      },
+      {
+        "from": 90,
+        "until": 210,
+        "input": {
+          "x": 0,
+          "z": -1
+        }
+      },
+      {
+        "from": 210,
+        "until": 480,
+        "input": {}
+      }
+    ],
+    "expected": [
+      "06ee19d26801443ed4fc15801d36578217658c0b0f7ae852118ae9eec02c57fe",
+      "fd901085e3d88372140307b860ad34ca2140ae58df936323365714bac01f9dcf",
+      "2709d8ecaf75a3f39cb9143a22907008f119e6d53ea53775d3c938e0f5c4a20c",
+      "887b8c876957ceda1a6a2874d4fe9ca7fe62cb594e6b7fc95b884f455474a982",
+      "2c0398c627435643d9bb550b2ad8e5f3126fef53fcdbf4c922cf70e1c568e0a2"
+    ]
+  }
+]

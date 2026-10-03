@@ -1,0 +1,132 @@
+{
+  "license": "CC0-1.0",
+  "licenseUrl": "https://polyhaven.com/license",
+  "maps": [
+    {
+      "file": "wood_table_001-color.jpg",
+      "source": "https://polyhaven.com/a/wood_table_001",
+      "url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/1k/wood_table_001/wood_table_001_diff_1k.jpg",
+      "md5": "56652a7339b16a76afad20d3585f66ea",
+      "bytes": 215573
+    },
+    {
+      "file": "wood_table_001-normal.jpg",
+      "source": "https://polyhaven.com/a/wood_table_001",
+      "url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/1k/wood_table_001/wood_table_001_nor_gl_1k.jpg",
+      "md5": "6360e09967add8baecaa5ecc55fb5e03",
+      "bytes": 51927
+    },
+    {
+      "file": "wood_table_001-arm.jpg",
+      "source": "https://polyhaven.com/a/wood_table_001",
+      "url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/1k/wood_table_001/wood_table_001_arm_1k.jpg",
+      "md5": "b39a1587c9b99e3104baedae8d5dfa48",
+      "bytes": 214520
+    },
+    {
+      "file": "brown_leather-color.jpg",
+      "source": "https://polyhaven.com/a/brown_leather",
+      "url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/1k/brown_leather/brown_leather_albedo_1k.jpg",
+      "md5": "080b3bf1372766ff2c7ff121ed07b5e8",
+      "bytes": 503348
+    },
+    {
+      "file": "brown_leather-normal.jpg",
+      "source": "https://polyhaven.com/a/brown_leather",
+      "url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/1k/brown_leather/brown_leather_nor_gl_1k.jpg",
+      "md5": "b63ae0121a415c23d74eed0b07fc6065",
+      "bytes": 863280
+    },
+    {
+      "file": "brown_leather-arm.jpg",
+      "source": "https://polyhaven.com/a/brown_leather",
+      "url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/1k/brown_leather/brown_leather_arm_1k.jpg",
+      "md5": "40778465932d0a0816a9fbdab00e2a5d",
+      "bytes": 436931
+    },
+    {
+      "file": "grey_plaster_02-color.jpg",
+      "source": "https://polyhaven.com/a/grey_plaster_02",
+      "url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/1k/grey_plaster_02/grey_plaster_02_diff_1k.jpg",
+      "md5": "fe17ee482114c15690c2bc853c572bbc",
+      "bytes": 772312
+    },
+    {
+      "file": "grey_plaster_02-normal.jpg",
+      "source": "https://polyhaven.com/a/grey_plaster_02",
+      "url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/1k/grey_plaster_02/grey_plaster_02_nor_gl_1k.jpg",
+      "md5": "48636f9e7c651f6370b2549e0d3eaa4b",
+      "bytes": 636432
+    },
+    {
+      "file": "grey_plaster_02-arm.jpg",
+      "source": "https://polyhaven.com/a/grey_plaster_02",
+      "url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/1k/grey_plaster_02/grey_plaster_02_arm_1k.jpg",
+      "md5": "25b57d92f54badf861a3c1fa0118123e",
+      "bytes": 353175
+    },
+    {
+      "file": "blue_metal_plate-color.jpg",
+      "source": "https://polyhaven.com/a/blue_metal_plate",
+      "url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/1k/blue_metal_plate/blue_metal_plate_diff_1k.jpg",
+      "md5": "a906d0e554596fb76c6969f2f644c5e6",
+      "bytes": 395923
+    },
+    {
+      "file": "blue_metal_plate-normal.jpg",
+      "source": "https://polyhaven.com/a/blue_metal_plate",
+      "url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/1k/blue_metal_plate/blue_metal_plate_nor_gl_1k.jpg",
+      "md5": "f14c0f01832f8b18c39f07e4b5d6f749",
+      "bytes": 238025
+    },
+    {
+      "file": "blue_metal_plate-arm.jpg",
+      "source": "https://polyhaven.com/a/blue_metal_plate",
+      "url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/1k/blue_metal_plate/blue_metal_plate_arm_1k.jpg",
+      "md5": "7314bc335cd9bcc8a18841ad15e10985",
+      "bytes": 419910
+    },
+    {
+      "file": "concrete_floor_worn_001-color.jpg",
+      "source": "https://polyhaven.com/a/concrete_floor_worn_001",
+      "url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/1k/concrete_floor_worn_001/concrete_floor_worn_001_diff_1k.jpg",
+      "md5": "e35597cca586150b1ab2aa9a331a39c5",
+      "bytes": 118806
+    },
+    {
+      "file": "concrete_floor_worn_001-normal.jpg",
+      "source": "https://polyhaven.com/a/concrete_floor_worn_001",
+      "url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/1k/concrete_floor_worn_001/concrete_floor_worn_001_nor_gl_1k.jpg",
+      "md5": "9de6626758f8793b71182b892c110827",
+      "bytes": 110906
+    },
+    {
+      "file": "concrete_floor_worn_001-arm.jpg",
+      "source": "https://polyhaven.com/a/concrete_floor_worn_001",
+      "url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/1k/concrete_floor_worn_001/concrete_floor_worn_001_arm_1k.jpg",
+      "md5": "8174fe8a5c982edef079c3c3775e5377",
+      "bytes": 152919
+    },
+    {
+      "file": "metal_plate_02-color.jpg",
+      "source": "https://polyhaven.com/a/metal_plate_02",
+      "url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/1k/metal_plate_02/metal_plate_02_diff_1k.jpg",
+      "md5": "531b7e067dc537e0b3c7962175e04ffd",
+      "bytes": 625917
+    },
+    {
+      "file": "metal_plate_02-normal.jpg",
+      "source": "https://polyhaven.com/a/metal_plate_02",
+      "url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/1k/metal_plate_02/metal_plate_02_nor_gl_1k.jpg",
+      "md5": "ce8198004fd9409f592a7f024be0c01e",
+      "bytes": 183264
+    },
+    {
+      "file": "metal_plate_02-arm.jpg",
+      "source": "https://polyhaven.com/a/metal_plate_02",
+      "url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/1k/metal_plate_02/metal_plate_02_arm_1k.jpg",
+      "md5": "ff6e0499763d76c76b1568b16f5f93f6",
+      "bytes": 1075839
+    }
+  ]
+}

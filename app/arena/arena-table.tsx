@@ -24,7 +24,7 @@ import {
 } from 'lucide-react';
 import { ArenaNumbers } from './arena-numbers';
 import { arenaCard, amplifier } from '@/lib/arena-catalog';
-import { cardDef } from '@/lib/demo-cards';
+import { cardDef } from '@/lib/cards/catalog';
 import {
   cardStatus,
   amplifierStatus,
@@ -36,10 +36,10 @@ import {
   rounded,
 } from '@/lib/arena-presentation';
 import type { ArenaFrame } from '@/lib/arena-engine';
-import type { Duel, FighterCard } from '@/lib/demo-combat';
-import type { Anchor, BoardAnchors } from '@/app/art/slice/scene';
+import type { Duel, FighterCard } from '@/lib/cards/combat';
+import type { Anchor, BoardAnchors } from '@/app/arena/render/scene';
 
-const Scene = lazy(() => import('@/app/art/slice/scene'));
+const Scene = lazy(() => import('@/app/arena/render/scene'));
 export type Selection = { id: string; uid?: string };
 export type Inspection = {
   kind: 'card' | 'amplifier';
@@ -48,7 +48,7 @@ export type Inspection = {
   at: number;
   uid?: string;
 };
-type Props = {
+export type ArenaTableProps = {
   duel: Duel;
   frames: ArenaFrame[];
   frame: ArenaFrame;
@@ -64,7 +64,7 @@ type Props = {
   onAmp: (side: number, lane: number) => void;
 };
 
-export function ArenaTable(p: Props) {
+export function ArenaTable(p: ArenaTableProps) {
   const tableRef = useRef<HTMLDivElement>(null);
   const [tableHeight, setTableHeight] = useState(1000);
   const [anchors, setAnchors] = useState<Anchor[]>([]),

@@ -1,0 +1,8 @@
+{
+  "asset": "demon-pixel-v3.png",
+  "generator": "Built-in image_gen.imagegen",
+  "date": "2026-09-27",
+  "prompt": "Redesign the supplied demon logo completely per this direction. Final transparent PNG game UI sprite. Pixel art, simple BLACK ROUND FACE, two glowing RED EYES and a wide tooth-baring grimace with ivory jagged teeth. Small pointed horns, solid circular black charcoal head, sinister expression. Remove all ornate filigree, skeletal anatomy, metallic engraving and tall antlers from reference. Readable iconic face, expressive angry eyes, gritted sharp teeth. Deliberate stepped square pixel clusters at approximately 96x96 logical pixels, crisply enlarged, limited palette 10-14 shades of charcoal black, cool edge highlight, dark red, crimson, ivory teeth. Minimal subtle pixel shading to give round volume, NOT realistic, NOT intricate fantasy illustration, NOT blurry. Complete centered silhouette, about 12% transparent margin all sides, no text, no frame, no background, actual alpha. It should feel like a threatening malicious face on an old game terminal.",
+  "source": "User-directed edit of previously generated demon; no external art.",
+  "display": "Nearest-neighbor / pixelated. Transparent PNG is copied unchanged."
+}

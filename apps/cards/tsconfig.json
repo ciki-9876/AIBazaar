@@ -1,0 +1,10 @@
+{
+  "extends": "../../tsconfig.json",
+  "include": [
+    "app/**/*.ts",
+    "app/**/*.tsx",
+    "vite.config.ts",
+    "../../next-env.d.ts"
+  ],
+  "exclude": ["dist", ".public", ".vinext"]
+}

@@ -1,0 +1,46 @@
+INITIAL REVISION
+
+Use case: precise-object-edit / ui-mockup.
+Revise the supplied three-card design to fix a structural flaw: the output statistics are currently trapped in fixed corner pockets. The new design must demonstrate a FLEXIBLE WRAPPING LIST of colored output numbers, independent of card size or number of effects.
+
+Keep the approved indigo arcade CRT background, three distinct 1-slot/2-slot/3-slot card sizes, blue rare borders, item illustrations, thin 3D card edges, header names, and independent cooldown capsules. Exactly three cards, same intrinsic height, intrinsic widths in ratio 1:2:3. Keep a slight physical tilt but prioritise crisp readable UI.
+Use the existing names "火花电池", "汽水连发器", "午夜放映机". Change the role line under EACH name to "复合 · 联动", because all three are now explicitly multi-effect LAYOUT STRESS TEST examples. Keep the clock capsules "3.0 秒", "4.0 秒", "6.0 秒".
+Each description now contains only the special mechanism text "相邻卡牌冷却 -1 秒。" (wrap onto two lines for the narrow card). Do not repeat the damage or healing outputs in prose. Cooldowns remain in independent conspicuous capsules within the lower description area.
+
+CRITICAL NEW DATA: ALL THREE CARDS have ALL FIVE output numbers simultaneously. EXACT same list on every card, for a fair size comparison:
+1. "128" in SILVER GRAY (#B8C3D3)
+2. "24" in ORANGE (#F28B29)
+3. "16" in DARK FOREST GREEN (#14603C)
+4. "36" in YELLOW (#F3D544)
+5. "48" in BRIGHT LIME GREEN (#60E566).
+The order MUST be silver, orange, dark green, yellow, bright green. Keep each number as ONE intact group; never wrap a number's digits. These values are example layout data, not game balancing.
+
+LAYOUT BEHAVIOR TO VISUALLY DEMONSTRATE:
+- LEFT NARROW 1-SLOT card: show all FIVE numbers on TWO ROWS, exactly THREE numbers on the first row ("128", "24", "16") and TWO numbers on the second row ("36", "48"). Center each row. The shared stat area grows upward to accommodate two rows. Shift the mechanism description/cooldown upward enough to maintain clear separation; the illustration has slightly less exposed height. DO NOT make the card taller. DO NOT shrink the number font.
+- MIDDLE 2-SLOT card: all FIVE numbers fit in ONE ROW with consistent comfortable gaps, centered as one compact list.
+- RIGHT 3-SLOT card: all FIVE numbers also in ONE ROW, with the SAME font size and SAME inter-number gaps as the middle card, centered as one compact list. Do NOT scatter values into widely separated corners. Do NOT stretch the gaps across the whole width.
+- Use exactly the SAME numeric font size, weight, and line height for all three cards. The one-slot card must look usable with every effect present, not microscopic. Large clean bold condensed numerals, subtle thin dark outline for readability on neutral backing.
+- The layout is an ordered flow of numbers, NOT a fixed 3-column/5-column socket grid. Do NOT draw empty cells or reserve per-effect slots. Numbers are adjacent repeatable text elements, no cell boundaries.
+
+VISUAL INTEGRATION:
+Remove ALL sculpted corner pockets, triangular wells, mechanical corners, individual stat plaques, dangling circles, coins, separate badge backplates, separators and stat icons from the old design.
+Give the bottom stat group ONE restrained neutral pearl-gray/smoky laminate region integrated into the full card bottom, smoothly fading into the artwork/description. It is a flexible full-width low-key footer with soft material continuity, not a thick external panel, keyboard or dashboard. For the left card this neutral region is naturally taller for two lines. For the middle/right it is a shallow one-line region. The card's thin blue outer frame wraps consistently around it.
+The numeral GLYPH COLORS convey effect. The footer background is neutral on every card, never orange/green/yellow filled cells.
+ABSOLUTELY NO TEXT LABELS OR ICONS beside or under the output numbers. No 直伤/灼烧/毒伤/治疗/修复 words in the stat region. No plus signs, no shield or flame pictograms. ONLY the five colored numbers per card. Ordinary title/role/mechanism text and clock icons remain outside this stat area.
+Nothing extends outside card boundaries, no card overlap.
+
+Screen title at top-left: "弹性数值布局". Top-right small text: "五项并存 · 同字号". Under cards: "1 格", "2 格", "3 格" and 1/2/3 occupancy squares, as before. No other instructions, arrows, labels or legends. Keep the coherent polished collectible-game illustration and arcade-screen finish. No watermark. The central purpose is proving that the NARROW card can carry all five effects by wrapping naturally, while wider cards use the same typographic system in one row.
+
+FINAL TYPOGRAPHIC REFINEMENT
+
+Use case: precise-object-edit.
+Make ONE targeted typographic correction to the supplied "弹性数值布局" three-card concept screen. Preserve absolutely everything except the scale and spacing of the bottom colored numerals.
+
+The left/narrow card already has the correct WRAPPING structure: first row 128 / 24 / 16, second row 36 / 48. The middle and right cards each have all five values in one row. Keep these arrangements and the same colors.
+
+CRITICAL CORRECTION: the generated source made the numerals bigger and much farther apart on the wide card. Fix this so every card uses the IDENTICAL numeral glyph size and weight, copied from the LEFT CARD. Numeral height must NOT scale with card width.
+Copy the narrow card's numeral shapes, stroke thickness, glyph dimensions and color treatment exactly to the middle and right cards. For example, "128" must have the same on-screen width and height on all three cards; likewise all other values.
+Use a consistent gap of approximately 16 pixels between number groups on the source 1672x941 canvas. Do NOT use space-between/full-width distribution. The full five-number row should be a compact group about 280-300 pixels wide on BOTH the middle and the right card. Center this group inside each card's neutral footer. The wide/right card therefore has much more empty neutral space on either side of its compact list. The middle and right groups must be visibly identical size and spacing, like duplicated UI components.
+On the left keep the first three values in one centered row and the remaining two in a second centered row, same font size and standard gaps. Preserve the existing two-row footer height and lower information layout.
+
+No other changes: same three artworks, blue frames, CRT background, titles, role lines, independent cooldowns, mechanism text, footer shape, 1/2/3 size ratio and overall positioning. Numeric regions contain digits ONLY, no labels/icons/cell outlines. Colors remain silver128, orange24, deep-green16, yellow36, bright-green48. This is a precise font/spacing normalization, not a redesign.

@@ -37,15 +37,15 @@ import {
   sliceCard,
   sliceEvidence,
 } from '@/lib/battle-slice';
-import { simulateDuel, type Duel, type FighterCard } from '@/lib/demo-combat';
-import { cardDef, cardFamily } from '@/lib/demo-cards';
+import { simulateDuel, type Duel, type FighterCard } from '@/lib/cards/combat';
+import { cardDef, cardFamily } from '@/lib/cards/catalog';
 import { describeCard } from '@/lib/card-description';
 import { sitePath } from '@/lib/site-path';
-import { advanceReplay } from '../playback';
+import { advanceReplay } from '../../../lib/cards/playback';
 import { SETTLE_SECONDS } from '@/lib/battle-slice-fx';
-import type { Anchor, BoardAnchors } from './scene';
+import type { Anchor, BoardAnchors } from '../../arena/render/scene';
 import './slice.css';
-const BattleScene = lazy(() => import('./scene'));
+const BattleScene = lazy(() => import('../../arena/render/scene'));
 type Step = 'preview' | 'build' | 'combat' | 'victory' | 'reward' | 'done';
 const lanes = ['左路', '中路', '右路'];
 const short: Record<string, string> = {

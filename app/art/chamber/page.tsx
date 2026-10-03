@@ -36,16 +36,16 @@ import {
   sliceEvidence,
   sliceCard,
 } from '@/lib/battle-slice';
-import { simulateDuel, type Duel, type FighterCard } from '@/lib/demo-combat';
-import { cardDef } from '@/lib/demo-cards';
+import { simulateDuel, type Duel, type FighterCard } from '@/lib/cards/combat';
+import { cardDef } from '@/lib/cards/catalog';
 import { describeCard } from '@/lib/card-description';
 import { SETTLE_SECONDS, battleFeedback } from '@/lib/battle-slice-fx';
 import { sitePath } from '@/lib/site-path';
-import { advanceReplay } from '../playback';
-import type { Anchor, BoardAnchors } from '../slice/scene';
-import type { ChamberView, RoomPoint } from '../slice/chamber';
+import { advanceReplay } from '../../../lib/cards/playback';
+import type { Anchor, BoardAnchors } from '../../arena/render/scene';
+import type { ChamberView, RoomPoint } from '../../arena/render/chamber';
 import './chamber.css';
-const Scene = lazy(() => import('../slice/scene'));
+const Scene = lazy(() => import('../../arena/render/scene'));
 const lanes = ['左路', '中路', '右路'];
 type Phase =
   | 'explore'

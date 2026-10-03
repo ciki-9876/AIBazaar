@@ -1,0 +1,33 @@
+name: Product isolation checks
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  product:
+    name: Product (${{ matrix.product }})
+    strategy:
+      fail-fast: false
+      matrix:
+        product: [elevator, cards]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - run: npm ci
+      - run: npm run check:determinism
+      - run: node scripts/check-boundaries.mjs ${{ matrix.product }}
+      - run: node scripts/product.mjs ${{ matrix.product }} lint
+      - run: node scripts/product.mjs ${{ matrix.product }} typecheck
+      - run: node scripts/test.mjs ${{ matrix.product }}
+      - run: node scripts/product.mjs ${{ matrix.product }} build
+      - uses: actions/upload-artifact@v4
+        with:
+          name: f9-${{ matrix.product }}
+          path: apps/${{ matrix.product }}/dist/client
+          include-hidden-files: true

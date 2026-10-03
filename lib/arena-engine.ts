@@ -1,12 +1,15 @@
-import { cardDef, cardFamily } from './demo-cards.ts';
+import { cardDef, cardFamily } from './cards/catalog.ts';
 import { AMPLIFIERS, arenaCard } from './arena-catalog.ts';
-import type { Barrier, CombatFrame, Duel, FighterCard, Hit, Projectile } from './demo-combat.ts';
+import type { Barrier, CombatFrame, Duel, FighterCard, Hit, Projectile } from './cards/combat.ts';
+import { isTrainingCard, trainingValues, type TrainingRuleset } from './training-catalog.ts';
 
 export type ArenaOptions = {
   version: 1;
   amplifiers: [Array<string | null>, Array<string | null>];
+  training?: TrainingRuleset;
 };
 export type ArenaFrame = CombatFrame & {
+  trainingState?: Record<string, { energy: number; bonus: number; bonusSeconds: number; echoRemaining: number }>;
   // Read-only presentation evidence, reconstructed when replaying v1 archives.
   cardState?: Record<string, { activations: number; growth: number; upgrade: number; questHits: number; questAbsorbed: number; rage: number; overdrive: number; regen: number }>;
   links?: Array<{ from: string; to: string; label: string }>;
@@ -46,12 +49,14 @@ type Event = {
   shieldOnly?: number;
   bonusIfBurning?: number;
   bonusIfBroken?: number;
+  conditionalOutputScale?: number;
   bonusPerCorrosion?: number;
   slow?: number;
   freeze?: number;
   burn?: number;
   corrode?: number;
   lifesteal?: number;
+  shieldLeech?: boolean;
   procEligible?: boolean;
   free?: boolean;
 };
@@ -115,7 +120,7 @@ export function validateArenaBoard(board: FighterCard[]) {
 export function placeArenaCard(board: FighterCard[], id: string, at: number, uid: string) {
   const next = [...board, { uid, id, at, rarity: cardDef(id).rarity ?? 0, quality: 0, level: 0 }];
   validateArenaBoard(next);
-  return next.sort((a, b) => a.at - b.at || a.uid.localeCompare(b.uid));
+  return next.sort((a, b) => a.at - b.at || a.uid.localeCompare(b.uid, 'en'));
 }
 
 export function simulateArenaDuel(d: Duel): ArenaResult {
@@ -124,8 +129,11 @@ export function simulateArenaDuel(d: Duel): ArenaResult {
   if (!Array.isArray(options.amplifiers) || options.amplifiers.length !== 2 ||
     !Array.isArray(d.maxHp) || d.maxHp.length !== 2 || d.maxHp.some((hp) => !Number.isFinite(hp) || hp <= 0))
     throw Error('对战博弈输入无效');
-  const boards = [d.player, d.enemy].map((b) => [...b].sort((a, c) => a.at - c.at || a.uid.localeCompare(c.uid))) as [FighterCard[], FighterCard[]];
+  const boards = [d.player, d.enemy].map((b) => [...b].sort((a, c) => a.at - c.at || a.uid.localeCompare(c.uid, 'en'))) as [FighterCard[], FighterCard[]];
   boards.forEach(validateArenaBoard);
+  if (boards.flat().some(c => isTrainingCard(c.id)) && !options.training) throw Error('新牌需要明确的训练场规则版本');
+  const training = options.training ? trainingValues(options.training) : null;
+  const trainingState = new Map(boards.flat().map(c => [c.uid, { energy: 0, buffs: [] as { amount: number; until: number }[], echoAt: -100 }]));
   if (new Set(boards.flat().map((card) => card.uid)).size !== boards[0].length + boards[1].length)
     throw Error('双方卡牌 UID 重复');
   for (const row of options.amplifiers) {
@@ -183,10 +191,11 @@ export function simulateArenaDuel(d: Duel): ArenaResult {
     a.uid !== b.uid && laneOf(a) === laneOf(b) &&
     (a.at + cardDef(a.id).size === b.at || b.at + cardDef(b.id).size === a.at);
   const neighbors = (side: Side, card: FighterCard) => boards[side].filter((x) => adjacent(card, x));
+  let trainingTargetTimers: Map<string, number> | null = null;
   const targetCard = (side: Side, lane: number) => sameLane(side, lane).sort((a, b) => {
-    const ar = Math.max(0, cardDef(a.id).cd - state.get(a.uid)!.timer);
-    const br = Math.max(0, cardDef(b.id).cd - state.get(b.uid)!.timer);
-    return ar - br || a.at - b.at || a.uid.localeCompare(b.uid);
+    const ar = Math.max(0, cardDef(a.id).cd - (trainingTargetTimers?.get(a.uid) ?? state.get(a.uid)!.timer));
+    const br = Math.max(0, cardDef(b.id).cd - (trainingTargetTimers?.get(b.uid) ?? state.get(b.uid)!.timer));
+    return ar - br || a.at - b.at || a.uid.localeCompare(b.uid, 'en');
   })[0];
   const weakerAdjacent = (side: Side, lane: number, intactOnly = false) =>
     [lane - 1, lane + 1].filter((x) => x >= 0 && x < 3 && (!intactOnly || !barrier[side][x].broken))
@@ -198,13 +207,16 @@ export function simulateArenaDuel(d: Duel): ArenaResult {
   let links: NonNullable<ArenaFrame['links']> = [];
   const put = (input: Omit<Event, 'serial' | 'tick' | 'launchedTick' | 'source'> & { delay?: number; source?: string }) => {
     const { delay = 0, ...rest } = input;
-    if (input.causeUid) links.push({ from: input.causeUid, to: input.sourceUid, label: input.causeUid.startsWith('barrier-') ? '灼烧触发' : '触发' });
+    if (input.causeUid) links.push({ from: input.causeUid, to: input.sourceUid, label: input.causeUid.startsWith('barrier-') ? cardsByUid.get(input.sourceUid)?.id === 'training-d' ? '承伤触发' : '灼烧触发' : '触发' });
     pending.push({ ...rest, source: input.source ?? source(input.sourceUid), tick: now + Math.round(delay * 4), launchedTick: now, serial: serial++ });
+    const passive = cardsByUid.get(input.sourceUid);
+    if (training && input.causeUid && passive && [7, 12, 39, 42].includes(nOf(passive))) trainingActivation(input.origin, passive);
   };
   const frames: ArenaFrame[] = [];
   const procTimes = new Map<string, number>();
   const healBand = new Map<string, number>();
   const baseDirect = (card: FighterCard) => {
+    if (nOf(card) === 102 && training) return training.damage;
     const base: Record<number, number> = { 1: 12, 2: 20, 3: 75, 4: 7, 5: 8, 6: 26, 8: 27, 9: 50, 10: 5, 13: 28, 17: 7, 18: 8, 19: 10, 20: 12, 25: 9, 26: 22, 41: 26, 43: 9, 44: 23, 46: 10, 48: 28, 50: 38 };
     return base[nOf(card)] ?? cardDef(card.id).power;
   };
@@ -213,6 +225,46 @@ export function simulateArenaDuel(d: Duel): ArenaResult {
     procTimes.set(key, now);
     return true;
   };
+
+  const outputMultiplier = (card: FighterCard, targetLane: number) => {
+    if (!training) return 1;
+    const side = owner.get(card.uid)!;
+    const mirrors = boards[side].filter(c => nOf(c) === 103 && Math.abs(laneOf(c) - laneOf(card)) === 1);
+    const b = barrier[other(side)][targetLane];
+    // The largest mirror wins: duplicates cannot multiply the same percentage twice.
+    return mirrors.length && !b.broken ? 1 + b.hp / b.maxHp : 1;
+  };
+  const trainingOutput = (card: FighterCard, amount: number, targetLane: number) => {
+    if (!training) return amount;
+    const side = owner.get(card.uid)!;
+    const bonus = trainingState.get(card.uid)!.buffs.filter(b => b.until > now).reduce((sum, b) => sum + b.amount, 0);
+    const multiplier = outputMultiplier(card, targetLane);
+    for (const mirror of boards[side].filter(c => nOf(c) === 103 && Math.abs(laneOf(c) - laneOf(card)) === 1))
+      if (multiplier > 1) links.push({from: mirror.uid, to: card.uid, label: `映照 +${round((multiplier - 1) * 100)}%`});
+    return round((amount + bonus) * multiplier);
+  };
+  const trainingStacks = (card: FighterCard, base: number, targetLane: number) => {
+    if (!training) return stacks(card, base);
+    const st = state.get(card.uid)!;
+    const amount = trainingOutput(card, base * factor(card) * (1 + st.upgrade), targetLane) + st.carry;
+    const whole = Math.floor(amount + 1e-9);
+    st.carry = amount - whole;
+    return whole;
+  };
+  // New passive activations can wake E, but its own 3 s gate closes before chaining.
+  const trainingActivation = (side: Side, card: FighterCard): void => {
+    if (!training) return;
+    for (const echo of neighbors(side, card)) if (nOf(echo) === 105) {
+      const state = trainingState.get(echo.uid)!;
+      if (state.echoAt > now || stateFreeze(echo.uid)) continue;
+      state.echoAt = now + 12;
+      const lane = laneOf(echo);
+      put({ kind: 'burn', sourceUid: echo.uid, causeUid: card.uid, origin: side, targetSide: other(side), lane,
+        value: trainingStacks(echo, training.burn, lane), delay: 1.25, projectile: true, free: true });
+      trainingActivation(side, echo);
+    }
+  };
+  const stateFreeze = (uid: string) => state.get(uid)!.freeze > 0;
 
   for (now = 0; now <= 360; now++) {
     links = [];
@@ -229,9 +281,9 @@ export function simulateArenaDuel(d: Duel): ArenaResult {
     const applyDamage = (ev: Event) => {
       const defender = ev.targetSide, lane = ev.lane, b = barrier[defender][lane];
       const attackerCard = cardsByUid.get(ev.sourceUid);
-      let amount = ev.value + (ev.bonusIfBurning && burn[defender][lane] > 0 ? ev.bonusIfBurning : 0)
+      let amount = ev.value + ((ev.bonusIfBurning && burn[defender][lane] > 0 ? ev.bonusIfBurning : 0)
         + (ev.bonusIfBroken && b.broken ? ev.bonusIfBroken : 0)
-        + (ev.bonusPerCorrosion ? Math.min(9, corrosion[defender][lane] * ev.bonusPerCorrosion) : 0);
+        + (ev.bonusPerCorrosion ? Math.min(9, corrosion[defender][lane] * ev.bonusPerCorrosion) : 0)) * (ev.conditionalOutputScale ?? 1);
       if (attackerCard && ev.projectile && !ev.periodic && laneOf(attackerCard) === lane && activeAmp(ev.origin, lane, 'amp-04'))
         amount += Math.min(8, amount * 0.15);
       if (attackerCard && !ev.periodic && laneOf(attackerCard) === lane && activeAmp(ev.origin, lane, 'amp-07')) {
@@ -268,6 +320,22 @@ export function simulateArenaDuel(d: Duel): ArenaResult {
         targetName: `${['左路', '中路', '右路'][lane]}${b.broken ? '宿主' : '屏障'}` });
       if (actualHostLoss > 0 && ev.lifesteal) delayedHeals.push({ side: ev.origin, lane: laneOf(attackerCard ?? { at: lane * 3 } as FighterCard), value: actualHostLoss * ev.lifesteal, uid: ev.sourceUid, name: ev.source });
       if (ev.slow && ev.targetUid && amount > 0) put({ kind: 'slow', sourceUid: ev.sourceUid, origin: ev.origin, targetSide: defender, lane, value: ev.slow, targetUid: ev.targetUid });
+      if (training && toBarrier + bonusBarrier > 0) {
+        for (const watcher of sameLane(defender, lane)) {
+          if (nOf(watcher) === 101 && !ev.periodic) {
+            trainingState.get(watcher.uid)!.energy += value(watcher, training.energy);
+            links.push({from: `barrier-${defender}-${lane}`, to: watcher.uid, label: `攒光 +${training.energy}`});
+            trainingActivation(defender, watcher);
+          }
+          if (nOf(watcher) === 104 && !stateFreeze(watcher.uid)) {
+            for (const ally of sameLane(defender, 0).filter(c => cardDef(c.id).cd > 0))
+              put({kind: 'charge', sourceUid: watcher.uid, causeUid: `barrier-${defender}-${lane}`, origin: defender, targetSide: defender, lane: 0, value: 0.25, targetUid: ally.uid});
+            trainingActivation(defender, watcher);
+          }
+        }
+      }
+      if (ev.shieldLeech && attackerCard && toBarrier + bonusBarrier + actualHostLoss > 0)
+        put({kind: 'shield', sourceUid: ev.sourceUid, origin: ev.origin, targetSide: ev.origin, lane: laneOf(attackerCard), value: toBarrier + bonusBarrier + actualHostLoss});
       if (toBarrier + bonusBarrier > 0 && !ev.periodic) {
         for (const card of sameLane(defender, lane)) {
           const st = state.get(card.uid)!;
@@ -297,7 +365,7 @@ export function simulateArenaDuel(d: Duel): ArenaResult {
       }
       if (ev.procEligible && attackerCard && !ev.periodic && amount > 0) {
         for (const card of neighbors(ev.origin, attackerCard)) if (nOf(card) === 12 && canProc(`ignite:${card.uid}`, 2))
-          put({ kind: 'burn', sourceUid: card.uid, causeUid: attackerCard.uid, origin: ev.origin, targetSide: defender, lane, value: stacks(card, 2) });
+          put({ kind: 'burn', sourceUid: card.uid, causeUid: attackerCard.uid, origin: ev.origin, targetSide: defender, lane, value: trainingStacks(card, 2, lane) });
       }
     };
     const process = () => {
@@ -350,7 +418,7 @@ export function simulateArenaDuel(d: Duel): ArenaResult {
             const st = ev.targetUid ? state.get(ev.targetUid) : undefined;
             const actual = st && st.freeze <= 0 ? ev.value : 0;
             if (st) st.timer += actual;
-            localHit(ev, 'charge', actual, { targetUid: ev.targetUid, targetName: actual ? '充能' : '无效充能' });
+            localHit(ev, 'charge', actual, { targetUid: ev.targetUid, targetName: actual ? '充能' : '无效充能', ...(card && nOf(card) === 104 ? { value: actual } : {}) });
           } else if (ev.kind === 'slow' || ev.kind === 'freeze' || ev.kind === 'haste') {
             const target = ev.targetUid ? cardsByUid.get(ev.targetUid) : undefined;
             let actual = target ? ev.value : 0;
@@ -403,6 +471,9 @@ export function simulateArenaDuel(d: Duel): ArenaResult {
       origin: healing.side, targetSide: healing.side, lane: healing.lane, value: healing.value });
     process();
     if (now > 0 && hp.every((h) => h > 0)) {
+      // The opt-in training rules select controls from one shared start-of-phase
+      // snapshot; player/enemy loop order must not change a newly authored duel.
+      trainingTargetTimers = training ? new Map([...state].map(([uid,s])=>[uid,s.timer])) : null;
       for (let side = 0; side < 2; side++) for (const card of boards[side]) {
         const st = state.get(card.uid)!, def = cardDef(card.id), lane = laneOf(card);
         if (!def.cd) continue;
@@ -420,18 +491,37 @@ export function simulateArenaDuel(d: Duel): ArenaResult {
         const shotLanes: number[] = [];
         const attack = (amount: number, targetLane = lane, extra: Partial<Event> = {}, travel = 1.25) => {
           shotLanes.push(targetLane);
-          put({ kind: 'damage', sourceUid: card.uid, origin: s, targetSide: enemy, lane: targetLane, value: value(card, amount) + st.growth,
-            delay: travel, projectile: travel > 0, procEligible: true, ...extra });
+          const scale = outputMultiplier(card, targetLane);
+          const scaledExtras = training ? { ...extra, conditionalOutputScale: scale,
+            ...(extra.pierce === undefined ? {} : { pierce: extra.pierce * scale }),
+            ...(extra.shieldOnly === undefined ? {} : { shieldOnly: extra.shieldOnly * scale }) } : extra;
+          put({ kind: 'damage', sourceUid: card.uid, origin: s, targetSide: enemy, lane: targetLane, value: trainingOutput(card, value(card, amount) + st.growth, targetLane),
+            delay: travel, projectile: travel > 0, procEligible: true, ...scaledExtras });
         };
         const corrode = (amount: number, targetLane = lane, travel = 1.25) =>
-          put({ kind: 'corrode', sourceUid: card.uid, origin: s, targetSide: enemy, lane: targetLane, value: stacks(card, amount), delay: travel, projectile: travel > 0 });
+          put({ kind: 'corrode', sourceUid: card.uid, origin: s, targetSide: enemy, lane: targetLane, value: trainingStacks(card, amount, targetLane), delay: travel, projectile: travel > 0 });
         const ignite = (amount: number, targetLane = lane, travel = 1.25) =>
-          put({ kind: 'burn', sourceUid: card.uid, origin: s, targetSide: enemy, lane: targetLane, value: stacks(card, amount), delay: travel, projectile: travel > 0 });
+          put({ kind: 'burn', sourceUid: card.uid, origin: s, targetSide: enemy, lane: targetLane, value: trainingStacks(card, amount, targetLane), delay: travel, projectile: travel > 0 });
         const shield = (amount: number, targetLane = lane) => put({ kind: 'shield', sourceUid: card.uid, origin: s, targetSide: s, lane: targetLane, value: value(card, amount) });
         const heal = (amount: number) => put({ kind: 'heal', sourceUid: card.uid, origin: s, targetSide: s, lane, value: value(card, amount) });
         const charge = (uid: string | undefined, amount: number) => uid && put({ kind: 'charge', sourceUid: card.uid, origin: s, targetSide: s, lane, value: duration(card, amount, amount + 1), targetUid: uid });
         const close = neighbors(s, card)[0];
         switch (num) {
+          case 101: {
+            const energy = trainingState.get(card.uid)!;
+            const adjacentCards = neighbors(s, card);
+            if (adjacentCards.length && energy.energy > 0) {
+              const share = energy.energy / adjacentCards.length;
+              for (const ally of adjacentCards) {
+                trainingState.get(ally.uid)!.buffs.push({ amount: share, until: now + 16 });
+                links.push({from: card.uid, to: ally.uid, label: `添火 +${round(share)} / 4秒`});
+              }
+              energy.energy = 0;
+            }
+            break;
+          }
+          case 102: attack(training!.damage, lane, { shieldLeech: true }); break;
+          case 106: shield(training!.repair); break;
           case 1: st.ammo--; attack(12); break;
           case 2: { const shots = Math.min(2, st.ammo); st.ammo -= shots; for (let i = 0; i < shots; i++) attack(20, lane, {}, 1.25 + i * 0.25); break; }
           case 3: attack(75); break;
@@ -490,10 +580,11 @@ export function simulateArenaDuel(d: Duel): ArenaResult {
             else if (family === 'slingshot') attack(def.power);
           }
         }
+        trainingActivation(s, card);
         for (const watcher of boards[side]) if (watcher.uid !== card.uid) {
           const wn = nOf(watcher), ws = state.get(watcher.uid)!;
           if (wn === 7 && adjacent(watcher, card) && ['damage', 'control', 'corrode', 'burn'].includes(cardDef(card.id).kind) && canProc(`echo:${watcher.uid}`, 2))
-            put({ kind: 'damage', sourceUid: watcher.uid, causeUid: card.uid, origin: s, targetSide: enemy, lane: shotLanes[0] ?? lane, value: value(watcher, 6), delay: 1.25, projectile: true, free: true });
+            put({ kind: 'damage', sourceUid: watcher.uid, causeUid: card.uid, origin: s, targetSide: enemy, lane: shotLanes[0] ?? lane, value: trainingOutput(watcher, value(watcher, 6), shotLanes[0] ?? lane), delay: 1.25, projectile: true, free: true });
           if (wn === 42 && adjacent(watcher, card) && canProc(`resonate:${watcher.uid}:${card.uid}`, 3))
             put({ kind: 'charge', sourceUid: watcher.uid, causeUid: card.uid, origin: s, targetSide: s, lane, value: duration(watcher, 0.5, 1.5), targetUid: card.uid });
           if (wn === 49 && adjacent(watcher, card) && ws.upgrade === 0) {
@@ -508,6 +599,7 @@ export function simulateArenaDuel(d: Duel): ArenaResult {
           }
         }
       }
+      trainingTargetTimers = null;
       process();
       for (let side = 0; side < 2; side++) hp[side] = Math.max(0, hp[side] - hostDamage[side]);
       hostDamage.fill(0);
@@ -532,6 +624,10 @@ export function simulateArenaDuel(d: Duel): ArenaResult {
     const cd = [Array<number>(9).fill(0), Array<number>(9).fill(0)];
     boards.forEach((board, side) => board.forEach((card) => { timers[side][card.at] = state.get(card.uid)!.timer; cd[side][card.at] = nOf(card) === 50 && state.get(card.uid)!.overdrive > 0 ? 4 : cardDef(card.id).cd; }));
     frames.push({ time, hp: hp.map(round), barriers: structuredClone(barrier), corrosion: corrosion.map((x) => [...x]), burn: burn.map((x) => [...x]),
+      ...(training ? {trainingState: Object.fromEntries([...trainingState].map(([uid, t]) => [uid, {
+        energy: round(t.energy), bonus: round(t.buffs.filter(b=>b.until > now).reduce((sum,b)=>sum+b.amount,0)),
+        bonusSeconds: Math.max(0, ...t.buffs.map(b=>(b.until-now)/4)), echoRemaining: Math.max(0,(t.echoAt-now)/4),
+      }]))} : {}),
       links: [...links], cardState: Object.fromEntries([...state].map(([uid, s]) => [uid, { activations: s.count, growth: round(s.growth), upgrade: s.upgrade, questHits: s.questHits, questAbsorbed: round(s.questAbsorbed), rage: round(s.rage), overdrive: s.overdrive, regen: round(s.regen) }])),
       amplifierState: amps.map(row=>row.map(a=>({stored:round(a.stored),used:a.used}))),
       stored: Object.fromEntries([...state].map(([uid, s]) => [uid, round(s.stored)])), heroMeters: [[0, 0, 0], [0, 0, 0]], energy: [0, 0], timers, cd, fired, waiting, hits,

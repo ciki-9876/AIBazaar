@@ -5,9 +5,9 @@ import {
   type MinigameState,
 } from './minigame.ts';
 import { pipeConnected } from './tutorial-pipes.ts';
-import { CARDS, cardDef, identifyVariant } from './demo-cards.ts';
+import { CARDS, cardDef, identifyVariant } from './cards/catalog.ts';
 import { layout } from './cargo-layout.ts';
-import { rarityOf, growthCost, growthRefund } from './demo-card-rules.ts';
+import { rarityOf, growthCost, growthRefund } from './cards/card-rules.ts';
 import { rng, hash } from './design-model.ts';
 import { FOUR, FACILITIES, RARITY as OLD_RARITY } from './demo-config.ts';
 import {
@@ -17,8 +17,8 @@ import {
   puzzleSpec,
 } from './demo-content.ts';
 import { WEATHER as OLD_WEATHER } from './demo-config.ts';
-import { simulateDuel } from './demo-combat.ts';
-import type { Duel, FighterCard } from './demo-combat.ts';
+import { simulateDuel } from './cards/combat.ts';
+import type { Duel, FighterCard } from './cards/combat.ts';
 import {
   OBJECTS,
   FIELD_NODES,
@@ -341,7 +341,7 @@ export function makeItem(
     level: 0,
   };
 }
-export function newRun(seed = Date.now() >>> 0, tutorial = false): Run {
+export function newRun(seed: number, tutorial = false): Run {
   const random = rng(seed),
     pool = [...THEMES];
   for (let i = pool.length - 1; i > 0; i--) {
@@ -540,7 +540,7 @@ export function refineIngredient(s: Run, item: Item) {
         x.quality === item.quality &&
         x.zone !== 'board',
     )
-    .sort((a, b) => a.level - b.level || a.uid.localeCompare(b.uid))[0];
+    .sort((a, b) => a.level - b.level || a.uid.localeCompare(b.uid, 'en'))[0];
 }
 export const volume = (items: Item[]) =>
   items.reduce((n, x) => n + x.volume, 0);

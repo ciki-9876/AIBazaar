@@ -1,0 +1,51 @@
+name: Independent product release
+on:
+  workflow_dispatch:
+    inputs:
+      product:
+        type: choice
+        options: [elevator, cards]
+        required: true
+      publish:
+        type: boolean
+        default: false
+        description: Publish to the selected product's configured Cloudflare Pages project
+permissions:
+  contents: read
+concurrency:
+  group: release-${{ inputs.product }}
+  cancel-in-progress: false
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    environment: f9-${{ inputs.product }}
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - run: npm ci
+      - run: npm test
+      - run: npm run lint
+      - run: npm run typecheck
+      - run: npm run check:boundaries
+      - run: npm run check:determinism
+      - run: npm run check:dependencies
+      - run: node scripts/check-boundaries.mjs ${{ inputs.product }}
+      - run: node scripts/product.mjs ${{ inputs.product }} lint
+      - run: node scripts/product.mjs ${{ inputs.product }} typecheck
+      - run: node scripts/test.mjs ${{ inputs.product }}
+      - run: node scripts/product.mjs ${{ inputs.product }} build
+      - uses: actions/upload-artifact@v4
+        with:
+          name: f9-${{ inputs.product }}-release
+          path: apps/${{ inputs.product }}/dist/client
+          include-hidden-files: true
+      - if: inputs.publish
+        run: node scripts/publish-product.mjs ${{ inputs.product }}
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          F9_ELEVATOR_PAGES_PROJECT: ${{ vars.F9_ELEVATOR_PAGES_PROJECT }}
+          F9_CARDS_PAGES_PROJECT: ${{ vars.F9_CARDS_PAGES_PROJECT }}

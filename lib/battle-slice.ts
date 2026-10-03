@@ -1,6 +1,6 @@
 import { newRun, makeItem, makeDuel, act, type Run } from './demo-engine.ts';
-import { cardDef, cardFamily } from './demo-cards.ts';
-import type { CombatFrame, Duel } from './demo-combat.ts';
+import { cardDef, cardFamily } from './cards/catalog.ts';
+import type { CombatFrame, Duel } from './cards/combat.ts';
 
 // Isolated, repeatable checkpoint after the existing first three tutorial rooms.
 // No browser storage is read or written and no adventure reward is granted.

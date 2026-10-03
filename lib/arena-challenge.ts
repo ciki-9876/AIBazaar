@@ -1,5 +1,5 @@
-import { cardDef } from './demo-cards.ts';
-import { simulateDuel, type Duel, type FighterCard } from './demo-combat.ts';
+import { cardDef } from './cards/catalog.ts';
+import { simulateDuel, type Duel, type FighterCard } from './cards/combat.ts';
 import type { ArenaOptions } from './arena-engine.ts';
 
 export type ArenaLineup = { id: string; title: string; thesis: string; cards: FighterCard[]; amps: Array<string | null> };
@@ -52,7 +52,7 @@ export function chooseCounter(player: FighterCard[], playerAmps: Array<string | 
     const result = simulateDuel(makeArenaDuel(player, lineup, playerAmps));
     const last = result.frames.at(-1)!;
     return { lineup, enemyWins: result.winner === 1 ? 1 : 0, playerHp: last.hp[0], enemyHp: last.hp[1] };
-  }).sort((a, b) => b.enemyWins - a.enemyWins || a.playerHp - b.playerHp || b.enemyHp - a.enemyHp || a.lineup.id.localeCompare(b.lineup.id));
+  }).sort((a, b) => b.enemyWins - a.enemyWins || a.playerHp - b.playerHp || b.enemyHp - a.enemyHp || a.lineup.id.localeCompare(b.lineup.id, 'en'));
   const best = ranked[0];
   return { ...best, tested: ranked.length, counterFound: !!best.enemyWins };
 }

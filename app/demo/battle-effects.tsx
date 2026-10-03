@@ -1,7 +1,7 @@
 'use client';
 import { useEffect, useState, useRef } from 'react';
 import type { CSSProperties, RefObject } from 'react';
-import type { CombatFrame } from '@/lib/demo-combat';
+import type { CombatFrame } from '@/lib/cards/combat';
 export const SHOT_COLORS = {
   damage: '#ff4d54',
   heal: '#70ed89',

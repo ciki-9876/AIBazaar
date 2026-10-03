@@ -1,5 +1,46 @@
 # AIBazaar 游戏设计迭代日志
 
+2026-09-30：用户接受电梯主线“我被取代了”的方向，要求持续攀爬动力、自洽替身原理、真实关系冲突与玩法联动。见 [ADR-0024](./decisions/ADR-0024-replacement-mystery-direction.md)。[底层框架推演](../F9_REPLACEMENT_FRAMEWORK_PROPOSAL_2026-09-30.md)中的现实修复设施、章节行动窗口和人物例子仍为提案，未实装。
+
+2026-09-28 生存最新修订：[ADR-0023](./decisions/ADR-0023-survival-sight-brains-and-recovery.md) 实装死亡背包追回、四品质脑浆／20堆叠、怪物视野与脱战、双高度遮挡、16格背包和升级演出。取代旧的永久销毁背包、角色跟随灯和净水自动使用。
+
+2026-09-28：[通用卡牌框架首个执行内核](./iterations/F9/2026-09-28-generated-card-framework-runtime.md)已接入结构化定义、严格校验、自动描述、10毫秒独立模拟、因果及快照恢复。见[入口和支持矩阵](../F9_CARD_FRAMEWORK_IMPLEMENTATION_2026-09-28.md)；旧对局未迁移，发布仍受未校准预算阻断。
+
+2026-09-27 卡牌新入口：[六件新旧物与对战训练场](./iterations/F9/2026-09-27-wandeng-six-keepsakes-training.md)，独立 `/wandeng/training` 已接入用户六牌、原始／调校版本和锁定对手。实验不改变原50卡或旧回放；与随后批准的通用生成框架分开版本。
+
+2026-09-27 新修订：[ADR-0022](./decisions/ADR-0022-survival-interaction-and-theme-creatures.md) 实装并存怪物预算、物品多选词条与主动补给、手动对话、电梯首页与主题鬼怪；[探索动机提案](../F9_SURVIVAL_ESCAPE_MOTIVATION_PROPOSAL_2026-09-27.md) 仅为待讨论建议。
+
+2026-09-27 后续更新：[ADR-0021](./decisions/ADR-0021-themed-kits-and-jiangnan-sample.md) 采纳主题资产包复用方向，实装“听雨庭”江南样板与三套配色／陈设。新第三层使用雨夜庭院；旧沙岩快照保留。通用随机关卡生成器仍待后续。
+
+
+2026-09-27 最新更新：[ADR-0020](./decisions/ADR-0020-survival-needs-guidance-and-ascent.md) 已接入饥渴／精神力强弱引导、50 阈值效果、二层半面积与矮墙、手动返程结算及拖拽教学、升级与单向第三层。生成方案单列为待讨论提案，旧地图快照保留。
+
+
+2026-09-27 后续更新：[ADR-0019](./decisions/ADR-0019-terminal-tabs-meal-and-floor-selection.md) 接入统一系统 Tab、极简行囊、62 阶段 GM，以及“黑孔吐面包 → 主动吃掉 → 解锁饥渴 → E 选二层”。第二次及后续出发均须先选层；当前只接通二层。局部取代 ADR-0018 的直接出发及战后首次显示饥渴。
+
+2026-09-27 更新：[ADR-0018](./decisions/ADR-0018-pixel-terminal-and-second-expedition.md) 已接入细像素 UI、黑脸红眼恶魔、电梯系统、顶灯及 18–34 维保廊引导。可选保护、真实相邻、提前返回和本地继续已接通；未来升级仍是预览。
+
+
+## 2026-09-27：归物师最新 UI
+
+后续[战斗可读性与首轮公开组牌](./iterations/F9/2026-09-27-wandeng-readability-and-first-deck.md)：数字与飘字加粗，桌面/卡面降亮，弹道加强；助手已锁定「炉火不熄」，等待用户阵容。
+
+最新视觉方向：[精细像素美术](./iterations/F9/2026-09-27-wandeng-pixel-art.md)已替换现有插画、中文字体、图标与材质，保留温馨可爱氛围和原战斗。素材及完整生成提示词位于 `public/art-assets/wandeng/pixel/`。
+
+后续已实装[护幕、心灯与战斗反馈](./iterations/F9/2026-09-27-wandeng-soul-battle-feedback.md)：数字背后的效果图标、五档品质材质、同路垂直弹道和越界飘字。此修订局部取代下方纯数字与仅色点区分品质的表现，玩法基线不变。
+
+`/wandeng` 已按用户新参考实装奶油纸、暖棕圆润文字、白边物品卡与收藏册图鉴。视觉方向与边界见 [本轮记录](./iterations/F9/2026-09-27-wandeng-cozy-ui.md)，战斗规则仍以下方恢复基线为准。
+
+## 2026-09-27：先看战斗基线恢复
+
+用户明确卡牌方向只换二维表现，继续采用 50 卡与每路增幅器的原战斗。见 [ADR-0017](./decisions/ADR-0017-wandeng-arena-baseline.md) 和 [实装核对](./iterations/F9/2026-09-27-wandeng-combat-restoration.md)。后续 [自制卡脑暴](../F9_WANDENG_CUSTOM_CARDS_BRAINSTORM_2026-09-27.md) 仅为提案，尚未实现。
+
+
+当前电梯生存入口：[`/survival` 返程与首次开灯](./decisions/ADR-0016-lift-host-and-first-light.md)，取代此前 1 X 修复流程；[后续 18–34 步方案](../F9_SURVIVAL_AFTER_LIGHTS_DESIGN_2026-09-26.md)尚未实装。
+
+
+当前归物师实装入口：[`/wandeng` 开场与三程旅途](../F9_WANDENG_PROTOTYPE_2026-09-26.md)。规则按 [ADR-0014](./decisions/ADR-0014-wandeng-ransom-and-opening.md)：玩家战败用路费赎回全部伙伴；不指定物品、不在途中赠送，只在终局统一送达。旧 v0 的途中归家与玩家掉牌已被局部取代。
+
 这套日志不是聊天记录的备份，而是给未来的设计者、开发者和 Agent 使用的“可执行设计知识库”。目标是：一个不了解 AIBazaar 的新 Agent，只阅读本目录和被引用的系统文档，就能理解我们为什么这样设计，并据此设计出具有相似体验目标、但不必复制具体内容的新游戏。
 
 ## 先读什么
@@ -46,8 +87,14 @@
 
 ## 当前导航
 
+- [电梯生存：返程与首次修复](./iterations/F9/2026-09-26-survival-homecoming-refinement.md)：迷雾、电筒视野、即时材料、相邻教学与携物再出发；接续首次返程。
+- [电梯生存：梦中荒原开场](./iterations/F9/2026-09-26-survival-dream-opening.md)：用户指定 20 步、真实首次战斗和返程；与独立卡牌世界观分开。
+
+- [当前：万灯城归物师核心骨架](../F9_WANDENG_SOULS_CORE_DESIGN_V0_2026-09-26.md)：物灵、修复、同行、对决失散与归家；区分用户世界设定和玩法提案。
+- [归物委托机制组合 MC-05](./01_DESIGN_DNA.md#mc-05-归物委托中的收集修复同行与归家)
+- [独立卡牌联赛核心骨架](../F9_CIRCUIT_LEAGUE_CORE_DESIGN_V0_2026-09-26.md)：巡回器具师、60–90 分钟、局外图鉴与局内培养；区分已定方向与系统提案。
+- [巡回联赛机制组合 MC-04](./01_DESIGN_DNA.md#mc-04-巡回联赛中的收集与单局成长)
 - [F9 相关设计文档索引](./iterations/F9/INDEX.md)
 - [战斗机制组合](./01_DESIGN_DNA.md#mc-01-战斗机制组合)
 - [卡牌机制组合](./01_DESIGN_DNA.md#mc-02-卡牌机制组合)
 - [电梯楼层机制组合](./01_DESIGN_DNA.md#mc-03-电梯楼层机制组合)
-
