@@ -27,5 +27,13 @@
     ".next/dev/types/**/*.ts",
     "**/*.mts"
   ],
-  "exclude": ["node_modules", "outputs", "dist"]
+  "exclude": [
+    "node_modules",
+    "outputs",
+    "dist",
+    "**/dist",
+    "**/.vinext",
+    "**/.public",
+    "apps/*/.next"
+  ]
 }

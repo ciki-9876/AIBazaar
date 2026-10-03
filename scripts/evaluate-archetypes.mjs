@@ -1,8 +1,8 @@
 import { writeFileSync } from 'node:fs';
 import { ARCHETYPES, archetypeDuel } from '../lib/demo-archetypes.ts';
-import { simulateDuel } from '../lib/demo-combat.ts';
-import { SYSTEM_CARDS, cardDef } from '../lib/demo-cards.ts';
-import { rarityOf } from '../lib/demo-card-rules.ts';
+import { simulateDuel } from '../lib/cards/combat.ts';
+import { SYSTEM_CARDS, cardDef } from '../lib/cards/catalog.ts';
+import { rarityOf } from '../lib/cards/card-rules.ts';
 
 // Deterministic cases, not repeated random seeds: two compositions, all lane
 // permutations, swapped sides and five equal-growth / equal-health profiles.

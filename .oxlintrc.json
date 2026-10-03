@@ -29,7 +29,11 @@
     "build/**",
     "dist/**",
     "coverage/**",
-    "next-env.d.ts"
+    "next-env.d.ts",
+    "**/.next/**",
+    "**/.vinext/**",
+    "**/dist/**",
+    "**/.public/**"
   ],
   "rules": {
     "no-array-constructor": "error",
@@ -52,5 +56,13 @@
     "typescript/no-require-imports": "error",
     "typescript/no-unnecessary-type-constraint": "error",
     "typescript/no-unsafe-function-type": "error"
-  }
+  },
+  "overrides": [
+    {
+      "files": ["**/*.test.mjs"],
+      "rules": {
+        "typescript/no-floating-promises": "off"
+      }
+    }
+  ]
 }

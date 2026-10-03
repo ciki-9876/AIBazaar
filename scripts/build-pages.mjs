@@ -1,71 +1,57 @@
 import { spawnSync } from 'node:child_process';
-import {
-  writeFileSync,
-  readFileSync,
-  existsSync,
-  readdirSync,
-  mkdirSync,
-  copyFileSync,
-} from 'node:fs';
-import { join, dirname } from 'node:path';
+import fs from 'node:fs';
+import path from 'node:path';
+import { ROOT } from './module-graph.mjs';
 
 const base = process.env.NEXT_PUBLIC_BASE_PATH ?? '/AIBazaar';
-if (!/^\/[A-Za-z0-9._-]+$/.test(base) && base !== '') {
-  throw new Error(
-    'NEXT_PUBLIC_BASE_PATH must be empty or a single repository path',
+if (base !== '' && !/^\/[A-Za-z0-9._-]+$/.test(base))
+  throw new Error('Invalid Pages prefix');
+const output = path.resolve(ROOT, 'dist/client');
+if (output !== path.join(ROOT, 'dist', 'client'))
+  throw new Error('Invalid Pages output');
+fs.rmSync(output, { recursive: true, force: true });
+fs.mkdirSync(output, { recursive: true });
+for (const product of ['elevator', 'cards']) {
+  const build = spawnSync(
+    process.execPath,
+    ['scripts/product.mjs', product, 'build'],
+    {
+      cwd: ROOT,
+      stdio: 'inherit',
+      env: { ...process.env, NEXT_PUBLIC_BASE_PATH: `${base}/${product}` },
+    },
+  );
+  if (build.error) throw build.error;
+  if (build.status) process.exit(build.status);
+  fs.cpSync(
+    path.resolve(ROOT, 'apps', product, 'dist/client'),
+    path.join(output, product),
+    { recursive: true },
   );
 }
-const build = spawnSync(
-  process.execPath,
-  ['node_modules/vinext/dist/cli.js', 'build'],
-  {
-    stdio: 'inherit',
-    env: { ...process.env, NEXT_PUBLIC_BASE_PATH: base },
-  },
-);
-if (build.status !== 0) process.exit(build.status ?? 1);
-// vinext currently prerenders flat HTML reliably; Pages also needs directory
-// indexes for existing trailing-slash links and direct page refreshes.
-const output = 'dist/client';
-const pages = readdirSync(output, { recursive: true }).filter(
-  (name) =>
-    name.endsWith('.html') &&
-    !['index.html', '404.html'].includes(name) &&
-    !name.endsWith('/index.html') &&
-    !name.endsWith('\\index.html'),
-);
-for (const page of pages) {
-  const target = join(output, page.slice(0, -5), 'index.html');
-  mkdirSync(dirname(target), { recursive: true });
-  copyFileSync(join(output, page), target);
+const redirect = (to) =>
+  `<!doctype html><html lang="zh-CN"><meta charset="utf-8"><meta http-equiv="refresh" content="0;url=${to}"><title>正在进入游戏</title><a href="${to}">进入游戏</a></html>`;
+for (const [route, destination] of Object.entries({
+  survival: 'elevator/survival',
+  wandeng: 'cards/wandeng',
+  'wandeng/training': 'cards/wandeng/training',
+  arena: 'cards/arena',
+  'arena/2d': 'cards/arena/2d',
+  'arena/2d/storybook': 'cards/arena/2d/storybook',
+  'arena/2d/sticker': 'cards/arena/2d/sticker',
+})) {
+  const dir = path.join(output, route);
+  fs.mkdirSync(dir, { recursive: true });
+  fs.writeFileSync(
+    path.join(dir, 'index.html'),
+    redirect(`${base}/${destination}/`),
+  );
 }
-// CSS-only modules can leave optional JS preload hints in vinext's manifest.
-// Drop only hints for absent files; required scripts and links must validate.
-for (const name of readdirSync(output, { recursive: true }).filter((n) =>
-  n.endsWith('.html'),
-)) {
-  const file = join(output, name);
-  const html = readFileSync(file, 'utf8').replace(/<link\b[^>]*>/g, (tag) => {
-    const href = tag.match(/href="([^"]+)"/)?.[1];
-    if (
-      tag.includes('rel="modulepreload"') &&
-      href?.startsWith(`${base}/`) &&
-      !existsSync(join(output, href.slice(base.length + 1)))
-    )
-      return '';
-    return tag;
-  });
-  for (const match of html.matchAll(
-    /(?:src|href)="(\/[^"?#]*)(?:[?#][^"]*)?"/g,
-  )) {
-    const url = match[1];
-    if (url.startsWith('//')) continue;
-    if (!url.startsWith(`${base}/`))
-      throw new Error(`Missing Pages prefix in ${name}: ${url}`);
-    const target = join(output, url.slice(base.length + 1));
-    if (!existsSync(target) && !existsSync(`${target.replace(/\/$/, '')}.html`))
-      throw new Error(`Missing exported target in ${name}: ${url}`);
-  }
-  writeFileSync(file, html);
-}
-writeFileSync('dist/client/.nojekyll', '');
+fs.writeFileSync(
+  path.join(output, 'index.html'),
+  `<!doctype html><html lang="zh-CN"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>F9</title><style>body{margin:0;min-height:100vh;display:grid;place-content:center;background:#101918;color:#e9e5d5;font:18px system-ui}nav{display:flex;gap:24px}a{color:inherit;border:1px solid #78866a;padding:24px;text-decoration:none}h1{font-weight:400}</style><h1>F9</h1><nav><a href="${base}/elevator/">安泊 · 电梯求生</a><a href="${base}/cards/">万灯城 · 归物师</a></nav></html>`,
+);
+fs.writeFileSync(path.join(output, '.nojekyll'), '');
+console.log(
+  'Pages export contains two isolated products and compatibility redirects; no experimental routes.',
+);

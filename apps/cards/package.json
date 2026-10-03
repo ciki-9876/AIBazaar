@@ -1,0 +1,22 @@
+{
+  "name": "@f9/cards",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "scripts": {
+    "dev": "node ../../scripts/product.mjs cards dev",
+    "build": "node ../../scripts/product.mjs cards build",
+    "typecheck": "node ../../scripts/product.mjs cards typecheck",
+    "lint": "node ../../scripts/product.mjs cards lint",
+    "test": "node ../../scripts/test.mjs cards",
+    "start": "node ../../scripts/preview-product.mjs cards"
+  },
+  "dependencies": {
+    "react": "19.2.6",
+    "react-dom": "19.2.6",
+    "lucide-react": "1.31.0",
+    "three": "^0.183.2",
+    "vinext": "1.0.0-beta.5",
+    "react-server-dom-webpack": "19.2.6"
+  }
+}

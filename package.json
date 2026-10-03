@@ -7,29 +7,39 @@
   },
   "scripts": {
     "dev": "vinext dev",
-    "build": "vinext build",
-    "start": "wrangler dev --config dist/server/wrangler.json",
-    "lint": "oxlint app lib vite.config.ts next.config.ts",
+    "build": "node scripts/build-products.mjs",
+    "start": "node scripts/preview-product.mjs elevator",
+    "lint": "oxlint app lib components packages scripts apps vite.config.ts next.config.ts",
     "format": "oxfmt",
-    "test": "node --test lib/*.test.mjs",
-    "build:pages": "node scripts/build-pages.mjs"
+    "test": "node scripts/test.mjs",
+    "build:pages": "node scripts/build-pages.mjs",
+    "test:elevator": "node scripts/test.mjs elevator",
+    "test:cards": "node scripts/test.mjs cards",
+    "test:experiments": "node scripts/test.mjs experiments",
+    "typecheck": "tsc --noEmit --incremental false",
+    "build:elevator": "node scripts/product.mjs elevator build",
+    "build:cards": "node scripts/product.mjs cards build",
+    "build:experiments": "node scripts/product.mjs experiments build",
+    "dev:elevator": "node scripts/product.mjs elevator dev",
+    "dev:cards": "node scripts/product.mjs cards dev",
+    "dev:experiments": "node scripts/product.mjs experiments dev",
+    "check:boundaries": "node scripts/check-boundaries.mjs",
+    "typecheck:elevator": "node scripts/product.mjs elevator typecheck",
+    "typecheck:cards": "node scripts/product.mjs cards typecheck",
+    "publish:elevator": "node scripts/publish-product.mjs elevator",
+    "publish:cards": "node scripts/publish-product.mjs cards",
+    "preview:elevator": "node scripts/preview-product.mjs elevator",
+    "preview:cards": "node scripts/preview-product.mjs cards",
+    "preview:experiments": "node scripts/preview-product.mjs experiments"
   },
   "dependencies": {
     "@base-ui/react": "1.7.0",
-    "@shadcn/react": "0.3.0",
     "class-variance-authority": "0.7.1",
     "clsx": "2.1.1",
-    "cmdk": "1.1.1",
-    "date-fns": "4.1.0",
-    "embla-carousel-react": "8.5.2",
-    "input-otp": "1.4.2",
     "lucide-react": "1.31.0",
     "react": "19.2.6",
-    "react-day-picker": "9.8.1",
     "react-dom": "19.2.6",
-    "react-resizable-panels": "4.5.8",
     "react-server-dom-webpack": "19.2.6",
-    "recharts": "3.8.0",
     "shadcn": "4.18.0",
     "tailwind-merge": "3.6.0",
     "three": "^0.183.2",
@@ -55,5 +65,8 @@
     "vite": "8.0.13",
     "wrangler": "4.92.0"
   },
-  "type": "module"
+  "type": "module",
+  "workspaces": [
+    "apps/*"
+  ]
 }
