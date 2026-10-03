@@ -34,9 +34,14 @@ Run checks for the product and code you changed:
 | Card gameplay or data | `npm run test:cards` |
 | TypeScript or React | `npm run lint` and the relevant `npm run typecheck:elevator` or `npm run typecheck:cards` |
 | Product boundaries | `npm run check:boundaries` |
+| Simulation and replay compatibility | `npm run check:determinism` and `npm test` |
+| Dependency changes | `npm run check:dependencies` |
 | Routes, configuration, or publishing | Build the affected product; run `npm run build:pages` for Pages changes |
 
 Run `npm test` and `npm run lint` when a change crosses product boundaries or affects shared behavior.
+PRs run complete repository checks as well as both product builds. Tests are discovered recursively under app, apps, lib, packages, components, hooks, scripts, tests and experiments; generated output is excluded. Product test commands also include shared tests.
+
+New save files use a product/version envelope with corruption detection. Existing storage keys and supported legacy JSON migrations remain intact. Do not overwrite golden replay expectations to conceal an unversioned rules change.
 
 ## Design records
 

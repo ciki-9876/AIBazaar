@@ -16,6 +16,7 @@ AIBazaar contains two independent products in one repository: elevator survival 
 - Run `npm run lint` after TypeScript/React changes.
 - Run `npm run build` when changing routes, configuration, or deployment behavior.
 - Run `npm run typecheck` and `npm run check:boundaries` before submitting a PR. PRs must pass full-repository checks and both product builds.
+- Run `npm run check:determinism` and `npm run check:dependencies` before submitting a PR. Do not remove Knip exceptions without checking CSS imports, Vite/vinext aliases and command-line runtime dependencies.
 - Product commands use `:elevator` and `:cards` suffixes (dev, test, typecheck, build, preview). Product checks supplement full-repository checks.
 
 ## Working rules
@@ -26,6 +27,7 @@ AIBazaar contains two independent products in one repository: elevator survival 
 - Preserve stable identities and deterministic serialization for cards, items, saves, replays, and generated worlds.
 - Elevator and cards must not import one another or experimental code, including type-only imports. Shared modules must not depend on product or experiment modules.
 - Simulation inputs must explicitly supply seeds and simulation ticks. Keep wall-clock timestamps and fresh seed generation in adapters, outside deterministic rules.
+- Golden replay fixtures in `tests/fixtures/replays-v1.json` are compatibility evidence; do not regenerate them simply to make failing tests pass. Preserve existing RNG streams for existing rules versions; named RNG streams in `packages/core/random.ts` are for new mechanisms.
 - Preserve existing storage keys and migrate supported legacy saves when changing their envelope. Reject mismatched product or unsupported rules versions before restoring state.
 - Keep user-facing descriptions aligned with executable behavior.
 - Record design knowledge separately from implementation noise: facts, decisions, hypotheses, rejected alternatives, and evidence must be distinguishable.
