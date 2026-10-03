@@ -813,8 +813,8 @@ export default function WandengExperience() {
           setState(parseWandeng(raw));
           setSaved(true);
         }
-      } catch {
-        setNotice('旧的旅途记录无法读取，你仍可以开启新旅途。');
+      } catch (error) {
+        setNotice(error instanceof Error ? error.message : '旧的旅途记录无法读取，你仍可以开启新旅途。');
       }
       setReady(true);
     });

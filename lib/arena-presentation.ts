@@ -70,7 +70,7 @@ export function placeOnArena(
   if (!current) throw Error('未找到要移动的装备');
   const next = board.map((c) => (c.uid === uid ? { ...c, at } : c));
   validateArenaBoard(next);
-  return next.sort((a, b) => a.at - b.at || a.uid.localeCompare(b.uid));
+  return next.sort((a, b) => a.at - b.at || a.uid.localeCompare(b.uid, 'en'));
 }
 
 export function placementPreview(
