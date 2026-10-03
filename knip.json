@@ -1,0 +1,14 @@
+{
+  "$schema": "https://unpkg.com/knip@6/schema.json",
+  "ignoreDependencies": ["shadcn", "tw-animate-css", "tailwindcss", "wrangler", "next"],
+  "workspaces": {
+    ".": {
+      "entry": ["app/**/{page,layout}.tsx", "scripts/*.mjs", "lib/**/*.test.mjs", "app/**/*.test.mjs", "packages/**/*.test.mjs", "experiments/**/*.tsx", "vite.config.ts", "next.config.ts"],
+      "project": ["app/**/*.{ts,tsx}", "lib/**/*.{ts,mjs}", "components/**/*.{ts,tsx}", "hooks/**/*.{ts,tsx}", "packages/**/*.{ts,mjs}", "scripts/**/*.mjs", "experiments/**/*.tsx", "*.config.ts"]
+    },
+    "apps/*": {
+      "entry": ["app/**/{page,layout}.tsx", "vite.config.ts", "next.config.mjs"],
+      "project": ["app/**/*.{ts,tsx}", "*.config.{ts,mjs}"]
+    }
+  }
+}

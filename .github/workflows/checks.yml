@@ -21,3 +21,4 @@ jobs:
       - run: npm run typecheck
       - run: npm run check:boundaries
       - run: npm run check:determinism
+      - run: npm run check:dependencies

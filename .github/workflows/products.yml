@@ -7,6 +7,7 @@ permissions:
   contents: read
 jobs:
   product:
+    name: Product (${{ matrix.product }})
     strategy:
       fail-fast: false
       matrix:
@@ -19,6 +20,7 @@ jobs:
           node-version: '22'
           cache: npm
       - run: npm ci
+      - run: npm run check:determinism
       - run: node scripts/check-boundaries.mjs ${{ matrix.product }}
       - run: node scripts/product.mjs ${{ matrix.product }} lint
       - run: node scripts/product.mjs ${{ matrix.product }} typecheck

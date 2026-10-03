@@ -26,6 +26,12 @@ jobs:
           node-version: '22'
           cache: npm
       - run: npm ci
+      - run: npm test
+      - run: npm run lint
+      - run: npm run typecheck
+      - run: npm run check:boundaries
+      - run: npm run check:determinism
+      - run: npm run check:dependencies
       - run: node scripts/check-boundaries.mjs ${{ inputs.product }}
       - run: node scripts/product.mjs ${{ inputs.product }} lint
       - run: node scripts/product.mjs ${{ inputs.product }} typecheck
