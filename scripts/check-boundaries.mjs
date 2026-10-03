@@ -3,6 +3,8 @@ import {
   walk,
   boundaryViolations,
   runtimeCycles,
+  productSources,
+  SOURCE_ROOTS,
 } from './module-graph.mjs';
 
 const targets = process.argv[2] ? [process.argv[2]] : ['elevator', 'cards'];
@@ -13,7 +15,8 @@ for (const target of targets) {
     /\/(page|layout)\.tsx$/.test(file),
   );
   if (!entries.length) throw new Error(`Missing ${target} entry points`);
-  const graph = closure(entries),
+  const source = productSources(SOURCE_ROOTS.flatMap(walk), target);
+  const graph = closure([...entries, ...source]),
     violations = boundaryViolations(graph.edges, target),
     cycles = runtimeCycles(graph.edges);
   if (violations.length || cycles.length)

@@ -4,6 +4,7 @@ import { fileURLToPath } from 'node:url';
 import ts from 'typescript';
 
 export const ROOT = fileURLToPath(new URL('../', import.meta.url));
+export const SOURCE_ROOTS = ['app', 'apps', 'lib', 'packages', 'components', 'hooks', 'scripts', 'tests', 'experiments'];
 export const slash = (value) => value.replaceAll('\\', '/');
 export function walk(directory) {
   if (!fs.existsSync(path.resolve(ROOT, directory))) return [];
@@ -24,15 +25,39 @@ export function walk(directory) {
         : [`${directory}/${entry.name}`],
     );
 }
-export function resolveImport(from, specifier) {
-  if (!specifier.startsWith('.') && !specifier.startsWith('@/')) return null;
+export function workspacePackages() {
+  const packages = new Map();
+  for (const root of ['apps', 'packages']) {
+    const directory = path.resolve(ROOT, root);
+    if (!fs.existsSync(directory)) continue;
+    for (const entry of fs.readdirSync(directory, { withFileTypes: true })) {
+      const manifest = path.join(directory, entry.name, 'package.json');
+      if (!entry.isDirectory() || !fs.existsSync(manifest)) continue;
+      const pkg = JSON.parse(fs.readFileSync(manifest, 'utf8'));
+      if (pkg.name) packages.set(pkg.name, { directory: `${root}/${entry.name}`, manifest: pkg });
+    }
+  }
+  return packages;
+}
+export function resolveImport(from, specifier, packages = workspacePackages()) {
+  const packageName = [...packages.keys()].find((name) => specifier === name || specifier.startsWith(`${name}/`));
+  if (!specifier.startsWith('.') && !specifier.startsWith('@/') && !packageName) return null;
+  let packagePath;
+  if (packageName) {
+    const { directory, manifest } = packages.get(packageName);
+    const subpath = specifier.slice(packageName.length + 1);
+    const exported = manifest.exports?.[subpath ? `./${subpath}` : '.'];
+    const target = typeof exported === 'string' ? exported : exported?.import ?? exported?.default;
+    packagePath = path.join(directory, target ?? (subpath || manifest.module || manifest.main || 'index.ts'));
+  }
   const base = slash(
     path.normalize(
-      specifier.startsWith('@/')
+      packageName ? packagePath : specifier.startsWith('@/')
         ? specifier.slice(2)
         : path.join(path.dirname(from), specifier),
     ),
   );
+  if (base.startsWith('../') || path.isAbsolute(base)) throw new Error(`Import outside workspace: ${specifier}`);
   return (
     [
       base,
@@ -56,9 +81,10 @@ export function resolveImport(from, specifier) {
 export function dependencies(file) {
   const text = fs.readFileSync(path.resolve(ROOT, file), 'utf8'),
     edges = [];
+  const packages = workspacePackages();
   const add = (specifier, typeOnly = false) => {
-    if (!specifier.startsWith('.') && !specifier.startsWith('@/')) return;
-    const target = resolveImport(file, specifier);
+    if (!specifier.startsWith('.') && !specifier.startsWith('@/') && ![...packages.keys()].some((name) => specifier === name || specifier.startsWith(`${name}/`))) return;
+    const target = resolveImport(file, specifier, packages);
     if (!target)
       throw new Error(`Missing local dependency: ${file} -> ${specifier}`);
     edges.push({ from: file, to: target, typeOnly });
@@ -105,10 +131,11 @@ export function dependencies(file) {
         add(node.argument.literal.text, true);
       if (
         ts.isCallExpression(node) &&
-        node.expression.kind === ts.SyntaxKind.ImportKeyword &&
-        ts.isStringLiteral(node.arguments[0])
-      )
+        (node.expression.kind === ts.SyntaxKind.ImportKeyword || (ts.isIdentifier(node.expression) && node.expression.text === 'require'))
+      ) {
+        if (!node.arguments[0] || !ts.isStringLiteral(node.arguments[0])) throw new Error(`Non-static module import: ${file}`);
         add(node.arguments[0].text);
+      }
       ts.forEachChild(node, visit);
     };
     visit(ast);
@@ -131,8 +158,9 @@ export function closure(entries) {
 }
 
 export function owner(file) {
+  if (file === 'app/survival/waterworks/page.tsx') return 'experiments';
   if (
-    /^(packages\/|lib\/(site-path|utils)\.ts$|app\/(globals\.css|layout\.tsx)$|components\/)/.test(
+    /^(packages\/|lib\/(site-path|utils)\.ts$|app\/(globals\.css|layout\.tsx)$|components\/|hooks\/|scripts\/product-config\.ts$)/.test(
       file,
     )
   )
@@ -147,6 +175,9 @@ export function owner(file) {
     return 'cards';
   return 'experiments';
 }
+export function productSources(files, product) {
+  return files.filter((file) => /\.(ts|tsx|mjs|js)$/.test(file) && !/\.test\./.test(file) && [product, 'shared'].includes(owner(file)));
+}
 export function boundaryViolations(edges, product) {
   return edges.filter(({ from, to }) => {
     const a = owner(from),
@@ -155,8 +186,7 @@ export function boundaryViolations(edges, product) {
       ? b !== 'shared'
       : product
         ? !['shared', product].includes(b)
-        : (a === 'elevator' && b === 'cards') ||
-          (a === 'cards' && b === 'elevator');
+        : ['elevator', 'cards'].includes(a) && !['shared', a].includes(b);
   });
 }
 export function runtimeCycles(edges) {

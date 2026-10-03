@@ -47,15 +47,15 @@ import {
   presentationFrame,
   retargetPresentation,
 } from '@/lib/survival-presentation';
-import type { Marker } from './scene';
-import CargoGrid from './cargo';
-import '../../experiments/survival-waterworks/survival.css';
-import '../../experiments/survival-waterworks/painted-ui.css';
-import DesignSystem from './design-system';
-import { uiVariables } from './design-tokens';
-import EquipmentBoard from './equipment';
-import Minimap from './minimap';
-const Scene = lazy(() => import('./scene'));
+import type { Marker } from '@/app/survival/scene';
+import CargoGrid from '@/app/survival/cargo';
+import './survival.css';
+import './painted-ui.css';
+import DesignSystem from '@/app/survival/design-system';
+import { uiVariables } from '@/app/survival/design-tokens';
+import EquipmentBoard from '@/app/survival/equipment';
+import Minimap from '@/app/survival/minimap';
+const Scene = lazy(() => import('@/app/survival/scene'));
 type Mode = 'none' | 'pause' | 'bag';
 function clock(ticks: number) {
   const seconds = Math.floor(ticks * STEP);

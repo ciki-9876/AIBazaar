@@ -9,7 +9,7 @@
     "dev": "vinext dev",
     "build": "node scripts/build-products.mjs",
     "start": "node scripts/preview-product.mjs elevator",
-    "lint": "oxlint app lib components packages scripts apps vite.config.ts next.config.ts",
+    "lint": "oxlint app lib components hooks packages scripts apps experiments vite.config.ts next.config.ts",
     "format": "oxfmt",
     "test": "node scripts/test.mjs",
     "build:pages": "node scripts/build-pages.mjs",
