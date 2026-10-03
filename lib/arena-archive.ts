@@ -1,8 +1,12 @@
 import type { CombatFrame, Duel } from './cards/combat.ts';
 import { validateArenaBoard } from './arena-engine.ts';
 import { AMPLIFIERS } from './arena-catalog.ts';
+import { decodeSave, encodeSave } from '../packages/core/save-envelope.ts';
 
 export const ARENA_ARCHIVE_KEY = 'f9-arena-matches-v1';
+export function serializeArchive(archive: ArenaArchive): string {
+  return encodeSave('cards', 'f9-arena/1', archive);
+}
 export type ArenaMatch = {
   id: string;
   createdAt: string;
@@ -52,7 +56,7 @@ export function summarizeMatch(id: string, challengeId: string, parentMatchId: s
   };
 }
 export function parseArchive(raw: string): ArenaArchive {
-  const value: unknown = JSON.parse(raw);
+  const value: unknown = decodeSave(raw, 'cards', 'f9-arena/1');
   if (!value || typeof value !== 'object' || !('version' in value) || value.version !== 1 || !('matches' in value) || !Array.isArray(value.matches))
     throw Error('对局档案格式不符');
   const knownAmps = new Set(AMPLIFIERS.map((amp) => amp.id));

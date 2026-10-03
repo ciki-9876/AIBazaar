@@ -3,6 +3,7 @@ import { useEffect, useState, type RefObject } from 'react';
 import {
   OPENING_SAVE_KEY,
   readOpeningCheckpoint,
+  serializeOpeningCheckpoint,
 } from '@/lib/survival-checkpoint';
 import type { OpeningState } from '@/lib/survival-opening';
 
@@ -22,7 +23,7 @@ export function useOpeningCheckpoint(opening: RefObject<OpeningState>) {
       const current = opening.current;
       if (current.stage === 'waiting' || current === lastSaved) return;
       try {
-        localStorage.setItem(OPENING_SAVE_KEY, JSON.stringify(current));
+        localStorage.setItem(OPENING_SAVE_KEY, serializeOpeningCheckpoint(current));
         lastSaved = current;
       } catch {
         /* Retry on the next checkpoint if storage becomes available. */

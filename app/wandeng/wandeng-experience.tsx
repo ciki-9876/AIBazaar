@@ -28,6 +28,7 @@ import {
   eventOffers,
   fighter,
   parseWandeng,
+  serializeWandeng,
   playerBoard,
   soulName,
   wandengReducer,
@@ -822,7 +823,7 @@ export default function WandengExperience() {
   useEffect(() => {
     if (!ready || menu) return;
     try {
-      localStorage.setItem(WANDENG_SAVE_KEY, JSON.stringify(state));
+      localStorage.setItem(WANDENG_SAVE_KEY, serializeWandeng(state));
     } catch {
       queueMicrotask(() => setNotice('浏览器未能保存旅途，请保持此页面开启。'));
     }

@@ -4,6 +4,7 @@ appendMatch,
 ARENA_ARCHIVE_KEY,
 emptyArchive,
 parseArchive,
+serializeArchive,
 summarizeMatch,
 type ArenaArchive,
 type ArenaMatch,
@@ -282,7 +283,7 @@ export default function ArenaExperience({
   };
   const save = (match: ArenaMatch) => {
     const next = appendMatch(archive, match);
-    localStorage.setItem(ARENA_ARCHIVE_KEY, JSON.stringify(next));
+    localStorage.setItem(ARENA_ARCHIVE_KEY, serializeArchive(next));
     setArchive(next);
   };
   const start = () => {
@@ -346,7 +347,7 @@ export default function ArenaExperience({
     }
   };
   const exportArchive = () => {
-    const blob = new Blob([JSON.stringify(archive, null, 2)], {
+    const blob = new Blob([serializeArchive(archive)], {
       type: 'application/json',
     });
     const url = URL.createObjectURL(blob);
@@ -364,7 +365,7 @@ export default function ArenaExperience({
       for (const match of incoming.matches)
         if (!merged.matches.some((x) => x.id === match.id))
           merged.matches.push(match);
-      localStorage.setItem(ARENA_ARCHIVE_KEY, JSON.stringify(merged));
+      localStorage.setItem(ARENA_ARCHIVE_KEY, serializeArchive(merged));
       setArchive(merged);
       setNotice(
         `已合并 ${merged.matches.length - archive.matches.length} 场对局。`,

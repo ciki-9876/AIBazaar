@@ -3,6 +3,7 @@ import { validateArenaBoard, simulateArenaDuel } from './arena-engine.ts';
 import { makeArenaDuel, type ArenaLineup } from './arena-challenge.ts';
 import { TRAINING_RULESETS, type TrainingRuleset } from './training-catalog.ts';
 import type { FighterCard, Duel } from './cards/combat.ts';
+import { decodeSave, encodeSave } from '../packages/core/save-envelope.ts';
 
 function roster(prefix: string, slots: [string, number][]): FighterCard[] {
   return slots.map(([id, at], i) => ({
@@ -56,10 +57,10 @@ export function makeTrainingDuel(
 }
 export const TRAINING_REPLAY_FORMAT = 'wandeng-training-v1';
 export function exportTrainingDuel(duel: Duel) {
-  return JSON.stringify({ format: TRAINING_REPLAY_FORMAT, duel }, null, 2);
+  return encodeSave('cards', 'f9-arena/1', { format: TRAINING_REPLAY_FORMAT, duel });
 }
 export function parseTrainingDuel(raw: string): Duel {
-  const value = JSON.parse(raw);
+  const value = decodeSave(raw, 'cards', 'f9-arena/1') as { format: string; duel: Duel };
   const d = value?.duel as Duel;
   if (
     value?.format !== TRAINING_REPLAY_FORMAT ||

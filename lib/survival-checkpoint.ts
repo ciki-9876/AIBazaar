@@ -4,8 +4,13 @@ import type { OpeningState } from './survival-opening.ts';
 import { ITEMS, fits, capacity } from './survival-room.ts';
 import { cargoLayout, cargoFits } from './survival-cargo.ts';
 import { ROOM } from './survival-world.ts';
+import { decodeSave, encodeSave } from '../packages/core/save-envelope.ts';
 
 export const OPENING_SAVE_KEY = 'f9-survival-opening-v4';
+export const SURVIVAL_RULES_VERSION = 'f9-survival/6';
+export function serializeOpeningCheckpoint(state: OpeningState): string {
+  return encodeSave('elevator', SURVIVAL_RULES_VERSION, state);
+}
 const stages =
   'waiting eyes where phone put-away door-thought door departing find-light equip-light find-box rustle sound-thought edge reveal fight aftermath return returning home second-departing expedition collapse'.split(
     ' ',
@@ -21,7 +26,7 @@ const phases =
 /** Versioned local prototype checkpoint, separate from card-game saves. */
 export function readOpeningCheckpoint(text: string): OpeningState | null {
   try {
-    const s = JSON.parse(text) as OpeningState,
+    const s = decodeSave(text, 'elevator', SURVIVAL_RULES_VERSION) as OpeningState,
       r = s.room,
       a = s.afterlight;
     // Keep the same storage slot and migrate the previous playable chapter.

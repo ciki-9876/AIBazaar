@@ -3,8 +3,13 @@ import { simulateArenaDuel, validateArenaBoard } from './arena-engine.ts';
 import type { Duel, FighterCard } from './cards/combat.ts';
 import { ARENA_CARDS, AMPLIFIERS } from './arena-catalog.ts';
 import { cardIllustration } from './arena-card-face.ts';
+import { decodeSave, encodeSave } from '../packages/core/save-envelope.ts';
 
 export const WANDENG_SAVE_KEY = 'f9-wandeng-run-v1';
+export const CARD_RULES_VERSION = 'f9-arena/1';
+export function serializeWandeng(state: WandengState): string {
+  return encodeSave('cards', CARD_RULES_VERSION, state);
+}
 export const SOULS: Record<
   string,
   { name: string; tile: number; story: string; rule: string }
@@ -516,11 +521,11 @@ export function validateWandengBattle(b: Battle) {
 }
 export function serializeWandengReplay(battle: Battle) {
   validateWandengBattle(battle);
-  return JSON.stringify({ version: 1, battle }, null, 2);
+  return encodeSave('cards', CARD_RULES_VERSION, { version: 1, battle });
 }
 export function parseWandengReplay(text: string): Battle {
   if (text.length > 100000) throw Error('回放文件过大。');
-  const raw = JSON.parse(text);
+  const raw = decodeSave(text, 'cards', CARD_RULES_VERSION) as { version?: number; battle: Battle };
   if (raw?.version !== 1) throw Error('回放版本不支持。');
   validateWandengBattle(raw.battle);
   return raw.battle;
@@ -732,7 +737,7 @@ export function wandengReducer(
 }
 
 export function parseWandeng(raw: string): WandengState {
-  const s = JSON.parse(raw) as WandengState;
+  const s = decodeSave(raw, 'cards', CARD_RULES_VERSION) as WandengState;
   const integer = (n: unknown, max = 1e6) =>
     typeof n === 'number' && Number.isInteger(n) && n >= 0 && n <= max;
   if (
