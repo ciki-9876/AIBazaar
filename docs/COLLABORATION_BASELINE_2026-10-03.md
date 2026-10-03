@@ -43,3 +43,9 @@
 Knip 6.39.0 按工作区入口检查依赖；移除无消费者的 `@cloudflare/vite-plugin`、`@openai/sites-vite-plugin` 与子工作区重复的 lucide-react 声明。固定 Three.js 0.183.2 与类型定义 0.183.1。保留 vinext 需要的 React/RSC peer 依赖。
 
 Knip 的例外均有真实消费者：shadcn、tw-animate-css、tailwindcss 来自 CSS／PostCSS；wrangler 由发布脚本通过安装路径调用；next 是 vinext 的兼容导入别名。它们不是待删除的闲置依赖。
+
+## 本地验证
+
+干净 `npm ci` 后，Node 24.14.0 环境下全量 **305/305** 测试通过，lint、类型、边界、确定性和依赖检查通过；边界覆盖电梯 88、卡牌 83 个依赖文件，确定性检查覆盖 72 个规则／共享模块。两个无前缀独立包、实验工作台和带 `/AIBazaar` 前缀的 Pages 合并包均构建通过；分别预渲染 3、8、35 个页面，无跳过。Pages 校验确认仅发布两个产品及兼容跳转。
+
+远端 main 的六个竞技场提交已合并入本分支历史，恢复的较新实现和历史设计记录保留。构建继续存在既有 Three.js 大 chunk 和 vinext 内部静态／动态导入提示。本轮未进行浏览器人工试玩，也未宣称性能数值提升。GitHub Actions 使用 Node 22；远端检查结果应以 PR 状态为准。
