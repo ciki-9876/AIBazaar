@@ -341,7 +341,7 @@ export function makeItem(
     level: 0,
   };
 }
-export function newRun(seed = Date.now() >>> 0, tutorial = false): Run {
+export function newRun(seed: number, tutorial = false): Run {
   const random = rng(seed),
     pool = [...THEMES];
   for (let i = pool.length - 1; i > 0; i--) {
@@ -540,7 +540,7 @@ export function refineIngredient(s: Run, item: Item) {
         x.quality === item.quality &&
         x.zone !== 'board',
     )
-    .sort((a, b) => a.level - b.level || a.uid.localeCompare(b.uid))[0];
+    .sort((a, b) => a.level - b.level || a.uid.localeCompare(b.uid, 'en'))[0];
 }
 export const volume = (items: Item[]) =>
   items.reduce((n, x) => n + x.volume, 0);

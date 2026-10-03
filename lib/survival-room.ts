@@ -1107,7 +1107,7 @@ export function stepSurvival(
   const visible = s.enemies
     .filter((e) => e.hp > 0 && e.awake && isVisible(s, e))
     .sort(
-      (a, b) => distance(p, a) - distance(p, b) || a.id.localeCompare(b.id),
+      (a, b) => distance(p, a) - distance(p, b) || a.id.localeCompare(b.id, 'en'),
     );
   for (const gear of s.equipment) {
     if (rules.combat === false) continue;

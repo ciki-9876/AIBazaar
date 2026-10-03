@@ -24,6 +24,7 @@
     "dev:cards": "node scripts/product.mjs cards dev",
     "dev:experiments": "node scripts/product.mjs experiments dev",
     "check:boundaries": "node scripts/check-boundaries.mjs",
+    "check:determinism": "node scripts/check-determinism.mjs",
     "typecheck:elevator": "node scripts/product.mjs elevator typecheck",
     "typecheck:cards": "node scripts/product.mjs cards typecheck",
     "publish:elevator": "node scripts/publish-product.mjs elevator",

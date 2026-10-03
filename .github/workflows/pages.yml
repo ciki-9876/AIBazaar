@@ -26,6 +26,7 @@ jobs:
       - run: npm run lint
       - run: npm run typecheck
       - run: npm run check:boundaries
+      - run: npm run check:determinism
       - run: npm test
       - run: npm run build:pages
         env:

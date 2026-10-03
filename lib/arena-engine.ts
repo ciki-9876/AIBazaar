@@ -120,7 +120,7 @@ export function validateArenaBoard(board: FighterCard[]) {
 export function placeArenaCard(board: FighterCard[], id: string, at: number, uid: string) {
   const next = [...board, { uid, id, at, rarity: cardDef(id).rarity ?? 0, quality: 0, level: 0 }];
   validateArenaBoard(next);
-  return next.sort((a, b) => a.at - b.at || a.uid.localeCompare(b.uid));
+  return next.sort((a, b) => a.at - b.at || a.uid.localeCompare(b.uid, 'en'));
 }
 
 export function simulateArenaDuel(d: Duel): ArenaResult {
@@ -129,7 +129,7 @@ export function simulateArenaDuel(d: Duel): ArenaResult {
   if (!Array.isArray(options.amplifiers) || options.amplifiers.length !== 2 ||
     !Array.isArray(d.maxHp) || d.maxHp.length !== 2 || d.maxHp.some((hp) => !Number.isFinite(hp) || hp <= 0))
     throw Error('对战博弈输入无效');
-  const boards = [d.player, d.enemy].map((b) => [...b].sort((a, c) => a.at - c.at || a.uid.localeCompare(c.uid))) as [FighterCard[], FighterCard[]];
+  const boards = [d.player, d.enemy].map((b) => [...b].sort((a, c) => a.at - c.at || a.uid.localeCompare(c.uid, 'en'))) as [FighterCard[], FighterCard[]];
   boards.forEach(validateArenaBoard);
   if (boards.flat().some(c => isTrainingCard(c.id)) && !options.training) throw Error('新牌需要明确的训练场规则版本');
   const training = options.training ? trainingValues(options.training) : null;
@@ -195,7 +195,7 @@ export function simulateArenaDuel(d: Duel): ArenaResult {
   const targetCard = (side: Side, lane: number) => sameLane(side, lane).sort((a, b) => {
     const ar = Math.max(0, cardDef(a.id).cd - (trainingTargetTimers?.get(a.uid) ?? state.get(a.uid)!.timer));
     const br = Math.max(0, cardDef(b.id).cd - (trainingTargetTimers?.get(b.uid) ?? state.get(b.uid)!.timer));
-    return ar - br || a.at - b.at || a.uid.localeCompare(b.uid);
+    return ar - br || a.at - b.at || a.uid.localeCompare(b.uid, 'en');
   })[0];
   const weakerAdjacent = (side: Side, lane: number, intactOnly = false) =>
     [lane - 1, lane + 1].filter((x) => x >= 0 && x < 3 && (!intactOnly || !barrier[side][x].broken))
