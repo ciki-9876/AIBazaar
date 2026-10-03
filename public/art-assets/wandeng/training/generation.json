@@ -1,0 +1,31 @@
+{
+  "tool": "built-in image_gen",
+  "reference": "../pixel/items-atlas.png",
+  "transparent_background": true,
+  "prompts": [
+    {
+      "id": "a",
+      "prompt": "Create ONE production game item sprite for the cozy Chinese old-object soul game Wandeng. Match the supplied image ONLY as pixel-art craft reference, not as content to modify. SINGLE isolated complete object, centered with generous transparent margins. Detailed high-resolution pixel art with unmistakable square clusters, stepped dark outlines, delicate wear, limited layered warm palette, crisp edge pixels; warm lovable treasured household object, no character face, no lettering, no interface, no text, no backdrop, no floor shadow, no soft photographic rendering. Readable silhouette at 112px. A small round brass antique pocket hand-warmer with a carved leaf lattice and copper folding handle, amber stored-light embers glowing in its belly, a tiny fabric repair patch and a warm tassel. It patiently stores warmth when things strike its protective curtain. Squat, endearing but no face."
+    },
+    {
+      "id": "b",
+      "prompt": "Create ONE production game item sprite for the cozy Chinese old-object soul game Wandeng. Match the supplied image ONLY as pixel-art craft reference, not as content to modify. SINGLE isolated complete object, centered with generous transparent margins. Detailed high-resolution pixel art with unmistakable square clusters, stepped dark outlines, delicate wear, limited layered warm palette, crisp edge pixels; warm lovable treasured household object, no character face, no lettering, no interface, no text, no backdrop, no floor shadow, no soft photographic rendering. Readable silhouette at 112px. A celadon green antique teapot with round belly, a golden repaired crack, wooden lid knob, curved spout and a blue bead hung from the handle, one very small arc of tea flowing back into its spout to suggest restorative siphon. Distinct from copper kettle. Horizontal silhouette."
+    },
+    {
+      "id": "c",
+      "prompt": "Create ONE production game item sprite for the cozy Chinese old-object soul game Wandeng. Match the supplied image ONLY as pixel-art craft reference, not as content to modify. SINGLE isolated complete object, centered with generous transparent margins. Detailed high-resolution pixel art with unmistakable square clusters, stepped dark outlines, delicate wear, limited layered warm palette, crisp edge pixels; warm lovable treasured household object, no character face, no lettering, no interface, no text, no backdrop, no floor shadow, no soft photographic rendering. Readable silhouette at 112px. A broad three-panel tabletop dressing mirror in a worn walnut wood frame, hinged side mirrors angled inward, softly reflecting pale blue and amber light, a small floral carving and repaired brass joints. A single connected household object with very wide silhouette, three panels 2:1 overall aspect. No room or human reflection."
+    },
+    {
+      "id": "d",
+      "prompt": "Create ONE production game item sprite for the cozy Chinese old-object soul game Wandeng. Match the supplied image ONLY as pixel-art craft reference, not as content to modify. SINGLE isolated complete object, centered with generous transparent margins. Detailed high-resolution pixel art with unmistakable square clusters, stepped dark outlines, delicate wear, limited layered warm palette, crisp edge pixels; warm lovable treasured household object, no character face, no lettering, no interface, no text, no backdrop, no floor shadow, no soft photographic rendering. Readable silhouette at 112px. A small antique rain wind-chime: green patinated brass bell, a tiny cloud-shaped wooden cap, red cord and narrow cream paper tail with NO lettering. Tiny blue glass raindrop bead. Hanging compact silhouette, soothing and magical."
+    },
+    {
+      "id": "e",
+      "prompt": "Create ONE production game item sprite for the cozy Chinese old-object soul game Wandeng. Match the supplied image ONLY as pixel-art craft reference, not as content to modify. SINGLE isolated complete object, centered with generous transparent margins. Detailed high-resolution pixel art with unmistakable square clusters, stepped dark outlines, delicate wear, limited layered warm palette, crisp edge pixels; warm lovable treasured household object, no character face, no lettering, no interface, no text, no backdrop, no floor shadow, no soft photographic rendering. Readable silhouette at 112px. A small partially open vintage dark-red matchbox with a cream blank label, three golden wooden matches visible, one tiny orange ember rising like a small leaf. Square friendly worn paper edges and a green repair tape. No letters or logo. Ember warm and restrained."
+    },
+    {
+      "id": "f",
+      "prompt": "Create ONE production game item sprite for the cozy Chinese old-object soul game Wandeng. Match the supplied image ONLY as pixel-art craft reference, not as content to modify. SINGLE isolated complete object, centered with generous transparent margins. Detailed high-resolution pixel art with unmistakable square clusters, stepped dark outlines, delicate wear, limited layered warm palette, crisp edge pixels; warm lovable treasured household object, no character face, no lettering, no interface, no text, no backdrop, no floor shadow, no soft photographic rendering. Readable silhouette at 112px. A plump sage-green ball of sewing thread with a single oversized brass needle tucked through it, golden stitch thread curling underneath around a small blue patched cloth scrap. Small cream pin cushion base, domestic repair object, readable round silhouette."
+    }
+  ]
+}

@@ -1,5 +1,5 @@
 import type { HeroId } from './hero-cards.ts';
-import { cardDef } from './demo-cards.ts';
+import { cardDef } from './cards/catalog.ts';
 export const HEROES: {
   id: HeroId;
   name: string;
