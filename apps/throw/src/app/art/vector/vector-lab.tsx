@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState, type CSSProperties } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
+import { sitePath } from '../../../lib/site-path';
 import { EditorialScene } from '../../adventure/editorial-scene';
 import {
   loadEditorialSceneManifest,
@@ -112,12 +113,12 @@ export default function VectorLab() {
   return (
     <main className="vl-page">
       <header className="vl-header">
-        <Link className="vl-brand" href="/">
+        <Link className="vl-brand" href={sitePath('/')}>
           ♠ <span>THE LAST ACE</span>
         </Link>
         <nav>
-          <Link href="/">现版主线</Link>
-          <Link href="/art/vector/play" className="vl-play">
+          <Link href={sitePath('/')}>现版主线</Link>
+          <Link href={sitePath('/art/vector/play')} className="vl-play">
             进入 SVG 试演 ↗
           </Link>
         </nav>
@@ -234,7 +235,7 @@ export default function VectorLab() {
                   unoptimized
                   width={200}
                   height={256}
-                  src={`/art-assets/throw/vector-v1/${selected}${night ? '-midnight' : ''}.svg`}
+                  src={sitePath(`/art-assets/throw/vector-v1/${selected}${night ? '-midnight' : ''}.svg`)}
                   alt={`SVG ${label}`}
                 />
               </div>
@@ -250,11 +251,11 @@ export default function VectorLab() {
       </section>
       <footer className="vl-footer">
         <p>这是一轮制作方式试验。主线继续使用已选定的插画版本。</p>
-        <a href="/art-assets/throw/vector-v1/eli.svg" download="eli.svg">
+        <a href={sitePath('/art-assets/throw/vector-v1/eli.svg')} download="eli.svg">
           下载主角 SVG ↓
         </a>
         <a
-          href={`/art-assets/throw/vector-v1/${selected}.svg`}
+          href={sitePath(`/art-assets/throw/vector-v1/${selected}.svg`)}
           download={`${selected}.svg`}
         >
           下载所选素材 ↓

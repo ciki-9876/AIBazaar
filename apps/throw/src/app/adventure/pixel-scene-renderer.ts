@@ -1,4 +1,4 @@
-import { MAPS, type MapId } from '../../lib/adventure/magician-world';
+import { MAPS, type MapId } from '../../lib/adventure/magician-world.ts';
 import {
   HERO_WORLD_HEIGHT,
   DECOR_IDS,
@@ -11,7 +11,7 @@ import {
   type SceneLight,
   type SceneProp,
   type PixelFrameRect,
-} from './pixel-scene-assets';
+} from './pixel-scene-assets.ts';
 
 type Rect = PixelFrameRect;
 type Atlas = {

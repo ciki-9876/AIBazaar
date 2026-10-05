@@ -1,4 +1,5 @@
-import { MAPS, type MapId } from '../../lib/adventure/magician-world';
+import { MAPS, type MapId } from '../../lib/adventure/magician-world.ts';
+import { sitePath } from '../../lib/site-path.ts';
 import {
   HERO_WORLD_HEIGHT,
   nativeSceneSize,
@@ -7,7 +8,7 @@ import {
   type PixelFrameRect,
   type PixelSceneManifest,
   type SceneProp,
-} from './pixel-scene-assets';
+} from './pixel-scene-assets.ts';
 import {
   cpuLighting,
   webglLighting,
@@ -16,9 +17,9 @@ import {
   type RendererStatus,
   type SceneActors,
   type SceneLightingOptions,
-} from './pixel-scene-renderer';
+} from './pixel-scene-renderer.ts';
 
-export const EDITORIAL_ART_ROOT = '/art-assets/throw/editorial-v1';
+export const EDITORIAL_ART_ROOT = sitePath('/art-assets/throw/editorial-v1');
 export type EditorialArtMode = 'raster' | 'vector';
 export const EDITORIAL_RASTER_SCALE = 3;
 export type EditorialSceneManifest = PixelSceneManifest & { items?: unknown };
@@ -50,7 +51,7 @@ export function loadEditorialSceneManifest(
     })
     .then(async (manifest) => {
       if (mode !== 'vector') return manifest;
-      const response = await fetch('/art-assets/throw/vector-v1/manifest.json');
+      const response = await fetch(sitePath('/art-assets/throw/vector-v1/manifest.json'));
       if (!response.ok) throw new Error('Vector trial manifest is unavailable');
       const vector = (await response.json()) as Pick<
         EditorialSceneManifest,
@@ -69,7 +70,7 @@ export function loadEditorialSceneManifest(
   return result;
 }
 export function editorialImageUrl(file: string) {
-  return file.startsWith('/') ? file : `${EDITORIAL_ART_ROOT}/${file}`;
+  return file.startsWith('/') ? sitePath(file) : `${EDITORIAL_ART_ROOT}/${file}`;
 }
 
 export function editorialSceneSize(mapId: MapId) {

@@ -1,9 +1,10 @@
 import { MAPS, type MapId } from '../../lib/adventure/magician-world.ts';
+import { sitePath } from '../../lib/site-path.ts';
 
 /** One native art pixel is four adventure-world units. All placements are in native pixels. */
 export const PIXEL_WORLD_SCALE = 4;
 export const HERO_WORLD_HEIGHT = 192;
-export const PIXEL_ART_ROOT = '/art-assets/throw/western-rpg-v2';
+export const PIXEL_ART_ROOT = sitePath('/art-assets/throw/western-rpg-v2');
 export type PixelFrameRect = {
   x: number;
   y: number;

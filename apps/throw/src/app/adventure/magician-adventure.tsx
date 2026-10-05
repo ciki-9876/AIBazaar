@@ -9,6 +9,7 @@ import {
   type PointerEvent,
 } from 'react';
 import Link from 'next/link';
+import { sitePath } from '../../lib/site-path';
 import {
   abandonAdventureBattle,
   advanceDialogue,
@@ -358,10 +359,12 @@ export default function MagicianAdventure({
           >
             <EditorialIcon name="map" /> 地图 <kbd>M</kbd>
           </button>
-          <Link href="/wandeng/throw">
+          <Link href={sitePath('/wandeng/throw')}>
             <EditorialIcon name="cards" /> 练习场
           </Link>
-          {artMode === 'vector' && <Link href="/art/vector">SVG 对照</Link>}
+          {artMode === 'vector' && (
+            <Link href={sitePath('/art/vector')}>SVG 对照</Link>
+          )}
         </nav>
       </header>
 
