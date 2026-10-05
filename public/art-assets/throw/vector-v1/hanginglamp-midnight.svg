@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="200" height="256" viewBox="0 0 200 256" role="img"><defs>
+    <linearGradient id="wood" x2="1" y2=".3"><stop stop-color="#94746b"/><stop offset=".45" stop-color="#665363"/><stop offset="1" stop-color="#493f4d"/></linearGradient>
+    <linearGradient id="brass" x2=".9" y2=".3"><stop stop-color="#ead29a"/><stop offset=".4" stop-color="#d0b775"/><stop offset="1" stop-color="#947044"/></linearGradient>
+    <linearGradient id="glass" x2=".7" y2="1"><stop stop-color="#70969a"/><stop offset="1" stop-color="#365663"/></linearGradient>
+    <linearGradient id="shade" x2=".7" y2=".8"><stop stop-color="#677e95"/><stop offset=".55" stop-color="#42536f"/><stop offset="1" stop-color="#304b50"/></linearGradient>
+  </defs><rect x="95" y="4" width="9" height="60" fill="#414b48" /><path d="M78 69Q85 61 100 61Q115 61 122 69L130 102H70Z" fill="url(#shade)" /><path d="M71 92Q48 117 18 131Q99 146 182 131Q151 116 129 92Z" fill="url(#shade)" /><path d="M23 131Q103 142 177 131" fill="none" stroke="#91a093" stroke-width="2"/><rect x="94" y="56" width="12" height="10" fill="url(#brass)" rx="3"/><circle cx="100" cy="136" r="10" fill="#edc879" /><path d="M94 136Q100 129 106 136" fill="none" stroke="#f6e3ad" stroke-width="2"/><path d="M75 95Q82 73 95 70" fill="none" stroke="#8da69a" stroke-width="2" opacity=".6"/></svg>

@@ -1,1 +1,1 @@
-export { default, metadata } from '../src/app/wandeng/throw/page';
+export { default, metadata } from '../src/app/adventure/page';

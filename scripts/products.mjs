@@ -11,9 +11,9 @@ export const PRODUCTS = {
     assets: ['fonts', 'art-assets/wandeng'],
   },
   throw: {
-    title: '万灯城 · 甩牌对决',
+    title: '最后一张王牌 · 魔术师之旅',
     home: 'app/page.tsx',
-    assets: ['fonts', 'art-assets/wandeng'],
+    assets: ['fonts', 'art-assets/wandeng', 'art-assets/throw'],
   },
 };
 
