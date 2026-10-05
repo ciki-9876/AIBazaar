@@ -126,3 +126,14 @@
 - [ADR-0042-resonance-healing-monsters](decisions/ADR-0042-resonance-healing-monsters.md)
 - [ADR-0044-resonance-outline-authoring](decisions/ADR-0044-resonance-outline-authoring.md)
 - [ADR-0047-resonance-presentation-comparison](decisions/ADR-0047-resonance-presentation-comparison.md)
+
+
+## 2026-10-05 · throw 项目提交
+
+- [ADR-0035-throw-card-duel-baseline](decisions/ADR-0035-throw-card-duel-baseline.md)
+- [ADR-0036-throw-duel-selection-and-relic](decisions/ADR-0036-throw-duel-selection-and-relic.md)
+- [ADR-0038-throw-workbench-and-world-candidates](decisions/ADR-0038-throw-workbench-and-world-candidates.md)
+- [ADR-0041-throw-magician-personal-championship](decisions/ADR-0041-throw-magician-personal-championship.md)
+- [ADR-0043-throw-western-pixel-rpg-opening](decisions/ADR-0043-throw-western-pixel-rpg-opening.md)
+- [ADR-0045-throw-atomic-pixel-scenes](decisions/ADR-0045-throw-atomic-pixel-scenes.md)
+- [ADR-0046-throw-editorial-illustration](decisions/ADR-0046-throw-editorial-illustration.md)

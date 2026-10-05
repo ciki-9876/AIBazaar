@@ -31,9 +31,12 @@ export function finalizeStatic(output, base = '') {
     )) {
       const url = match[1];
       if (url.startsWith('//')) continue;
-      if (!url.startsWith(`${base}/`))
+      if (url !== base && !url.startsWith(`${base}/`))
         throw new Error(`Missing product prefix in ${name}: ${url}`);
-      const target = path.join(output, decodeURI(url.slice(base.length + 1)));
+      const target = path.join(
+        output,
+        url === base ? '' : decodeURI(url.slice(base.length + 1)),
+      );
       if (
         !fs.existsSync(target) &&
         !fs.existsSync(`${target.replace(/[/\\]$/, '')}.html`)

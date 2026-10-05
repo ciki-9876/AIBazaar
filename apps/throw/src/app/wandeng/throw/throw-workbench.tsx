@@ -1,5 +1,6 @@
 'use client';
-import { useState, type CSSProperties } from 'react';
+import { useEffect, useRef, useState } from 'react';
+import InventoryDrag from '../../../../../../packages/ui/inventory-drag';
 import { Art } from '../wandeng-cards';
 import {
   ITEMS,
@@ -17,6 +18,7 @@ import {
   type Style,
   type Family,
 } from '../../../lib/cards/throw-loadout';
+
 type Props = {
   layout: ItemPlacement[];
   relic: RelicId | null;
@@ -35,6 +37,102 @@ const families: { id: Family | 'all'; name: string }[] = [
   { id: 'heal', name: '续航' },
   { id: 'utility', name: '联动' },
 ];
+
+function RelicPicker({
+  equipped,
+  onEquip,
+  onClose,
+  tap,
+}: {
+  equipped: RelicId | null;
+  onEquip: (id: RelicId | null) => void;
+  onClose: () => void;
+  tap: () => void;
+}) {
+  const [draft, setDraft] = useState<RelicId>(equipped ?? RELICS[0].id);
+  const dialog = useRef<HTMLDialogElement>(null);
+  const selected = RELICS.find((entry) => entry.id === draft)!;
+  useEffect(() => {
+    dialog.current!.showModal();
+  }, []);
+  return (
+    <dialog
+      ref={dialog}
+      className="tp-relic-picker"
+      aria-labelledby="tp-relic-picker-title"
+      onCancel={onClose}
+      onClose={onClose}
+      onPointerDown={(event) => {
+        if (event.target !== event.currentTarget) return;
+        const bounds = event.currentTarget.getBoundingClientRect();
+        if (
+          event.clientX < bounds.left ||
+          event.clientX > bounds.right ||
+          event.clientY < bounds.top ||
+          event.clientY > bounds.bottom
+        )
+          onClose();
+      }}
+    >
+      <header>
+        <div>
+          <small>遗物</small>
+          <h2 id="tp-relic-picker-title">选择遗物</h2>
+        </div>
+        <button aria-label="关闭遗物选择" onClick={onClose}>
+          ×
+        </button>
+      </header>
+      <div className="tp-relic-choices">
+        {RELICS.map((entry) => (
+          <button
+            key={entry.id}
+            aria-pressed={draft === entry.id}
+            className={draft === entry.id ? 'is-selected' : ''}
+            onClick={() => {
+              tap();
+              setDraft(entry.id);
+            }}
+          >
+            <Art tile={entry.tile} />
+            <strong>{entry.name}</strong>
+            <small>{equipped === entry.id ? '已装备' : '\u00a0'}</small>
+          </button>
+        ))}
+      </div>
+      <div className="tp-relic-preview">
+        <Art tile={selected.tile} />
+        <div>
+          <h3>{selected.name}</h3>
+          <p>{selected.text}</p>
+        </div>
+      </div>
+      <footer>
+        <button
+          disabled={!equipped}
+          onClick={() => {
+            tap();
+            onEquip(null);
+            onClose();
+          }}
+        >
+          卸下
+        </button>
+        <button
+          className="tp-primary"
+          onClick={() => {
+            tap();
+            onEquip(draft);
+            onClose();
+          }}
+        >
+          装备
+        </button>
+      </footer>
+    </dialog>
+  );
+}
+
 export default function ThrowWorkbench({
   layout,
   relic,
@@ -46,145 +144,239 @@ export default function ThrowWorkbench({
 }: Props) {
   const [chosen, setChosen] = useState<ItemId | null>(null),
     [filter, setFilter] = useState<Family | 'all'>('all'),
-    [notice, setNotice] = useState(
-      '点击旧物装入；点行囊中的旧物，再点空格移动。',
-    );
+    [error, setError] = useState(''),
+    [picker, setPicker] = useState(false);
   const used = layout.reduce(
       (sum, entry) => sum + itemDefinition(entry.id).size,
       0,
     ),
     selected = chosen ? layout.find((entry) => entry.id === chosen) : undefined;
-  const currentRelic = RELICS.find((entry) => entry.id === relic);
-  const move = (start: number) => {
-    if (!chosen) return;
-    const next = placeThrowItem(layout, chosen, start);
+  const selectedItem = chosen ? itemDefinition(chosen) : null,
+    currentRelic = RELICS.find((entry) => entry.id === relic);
+  const place = (id: ItemId, start?: number) => {
+    const next = placeThrowItem(layout, id, start);
+    setChosen(id);
     if (next === layout) {
-      setNotice(
-        '放不下：目标处需要连续 ' + itemDefinition(chosen).size + ' 格空位。',
-      );
+      setError(`需要连续 ${itemDefinition(id).size} 格空位`);
       return;
     }
     tap();
     onLayout(next);
-    setNotice('位置已更新；只有边缘贴合的旧物才算相邻。');
+    setError('');
   };
   return (
-    <>
+    <InventoryDrag<number>
+      className="tp-workbench"
+      resolve={(root, source, x, y) => {
+        if (!ITEMS.some((entry) => entry.id === source.id)) return null;
+        const item = itemDefinition(source.id as ItemId),
+          cells = [...root.querySelectorAll<HTMLElement>('[data-drop-slot]')];
+        for (const node of cells) {
+          const bounds = node.getBoundingClientRect();
+          if (
+            x < bounds.left ||
+            x >= bounds.right ||
+            y < bounds.top ||
+            y >= bounds.bottom
+          )
+            continue;
+          const start = Number(node.dataset.dropSlot),
+            last =
+              cells[
+                Math.min(BAG_CELLS - 1, start + item.size - 1)
+              ].getBoundingClientRect();
+          return {
+            value: start,
+            bounds: {
+              x: bounds.left,
+              y: bounds.top,
+              width: last.right - bounds.left,
+              height: bounds.height,
+            },
+          };
+        }
+        return null;
+      }}
+      canDrop={(source, start) =>
+        placeThrowItem(layout, source.id as ItemId, start) !== layout
+      }
+      onDrop={(source, start) => place(source.id as ItemId, start)}
+      ghostClassName="tp-drag-ghost"
+      highlightClassName="tp-drop-highlight"
+      renderGhost={(source, valid) => {
+        const item = itemDefinition(source.id as ItemId);
+        return (
+          <>
+            <Art tile={item.tile} />
+            <strong>{item.name}</strong>
+            <small>{valid ? `${item.size}格` : '无法放置'}</small>
+          </>
+        );
+      }}
+    >
       <div className="tp-section-heading">
-        <div>
-          <span className="tp-eyebrow">旧物决定你的出手方式</span>
-          <h2>十格同行行囊</h2>
-        </div>
+        <h2>道具布阵</h2>
         <b>
           {used}/{BAG_CELLS}格
         </b>
       </div>
       <div className="tp-presets tp-strategy-presets">
-        {(Object.keys(PRESETS) as Style[]).map((value) => (
-          <button
-            key={value}
-            className={style === value ? 'is-active' : ''}
-            onClick={() => {
-              tap();
-              onStyle(value);
-              onLayout(packThrowItems(PRESETS[value].items));
-              onRelic(PRESETS[value].relic);
-              setChosen(null);
-              setNotice(
-                '已装好「' + PRESETS[value].name + '」。可以重新摆放测试联动。',
+        {(Object.keys(PRESETS) as Style[]).map((value) => {
+          const preset = PRESETS[value],
+            active =
+              style === value &&
+              preset.relic === relic &&
+              preset.items.length === layout.length &&
+              preset.items.every((id) =>
+                layout.some((entry) => entry.id === id),
               );
-            }}
-          >
-            {PRESETS[value].name}
-          </button>
-        ))}
-      </div>
-      <p className="tp-preset-hint">{PRESETS[style].hint}</p>
-      <div className="tp-bag" aria-label="十格行囊布局">
-        {Array.from({ length: BAG_CELLS }, (_, index) => (
-          <button
-            key={'cell' + index}
-            className="tp-bag-cell"
-            aria-label={'行囊第' + (index + 1) + '格'}
-            style={{ gridColumn: index + 1, gridRow: 1 }}
-            onClick={() => move(index)}
-          >
-            <small>{index + 1}</small>
-            <span>＋</span>
-          </button>
-        ))}
-        {layout.map((entry) => {
-          const item = itemDefinition(entry.id),
-            neighbors = adjacentThrowItems(layout, entry.id);
           return (
             <button
-              key={entry.id}
-              data-layout-id={entry.id}
-              data-layout-start={entry.start}
-              className={`tp-bag-item tp-family-${item.family} ${chosen === entry.id ? 'is-chosen' : ''}`}
-              aria-label={`摆放 ${item.name}，第${entry.start + 1}至${itemEnd(entry)}格`}
-              aria-pressed={chosen === entry.id}
-              style={
-                {
-                  gridColumn: `${entry.start + 1} / span ${item.size}`,
-                  gridRow: 1,
-                } as CSSProperties
-              }
-              title={
-                item.text +
-                '；贴邻：' +
-                neighbors.map((n) => itemDefinition(n.id).name).join('、')
-              }
+              key={value}
+              aria-pressed={active}
+              title={preset.hint}
+              className={active ? 'is-active' : ''}
               onClick={() => {
                 tap();
-                setChosen(chosen === entry.id ? null : entry.id);
-                setNotice(item.name + ' · ' + item.text);
+                onStyle(value);
+                onLayout(packThrowItems(preset.items));
+                onRelic(preset.relic);
+                setChosen(null);
+                setError('');
               }}
             >
-              <Art tile={item.tile} />
-              <small>{item.size}格</small>
-              <b>{item.tag}</b>
+              {preset.name}
             </button>
           );
         })}
       </div>
+      <div className="tp-board-and-relic">
+        <div className="tp-bag" aria-label="十格道具布阵">
+          {Array.from({ length: BAG_CELLS }, (_, index) => (
+            <button
+              key={'cell' + index}
+              data-drop-slot={index}
+              className="tp-bag-cell"
+              aria-label={'行囊第' + (index + 1) + '格'}
+              style={{ gridColumn: index + 1, gridRow: 1 }}
+              onClick={() => {
+                if (chosen) place(chosen, index);
+              }}
+            >
+              <small>{index + 1}</small>
+              <span>＋</span>
+            </button>
+          ))}
+          {layout.map((entry) => {
+            const item = itemDefinition(entry.id),
+              neighbors = adjacentThrowItems(layout, entry.id);
+            return (
+              <button
+                key={entry.id}
+                data-drag-uid={entry.id}
+                data-layout-id={entry.id}
+                data-layout-start={entry.start}
+                className={`tp-bag-item tp-family-${item.family} ${chosen === entry.id ? 'is-chosen' : ''}`}
+                aria-label={`摆放 ${item.name}，第${entry.start + 1}至${itemEnd(entry)}格`}
+                aria-pressed={chosen === entry.id}
+                style={{
+                  gridColumn: `${entry.start + 1} / span ${item.size}`,
+                  gridRow: 1,
+                }}
+                title={
+                  item.text +
+                  (neighbors.length
+                    ? ' · 相邻：' +
+                      neighbors.map((n) => itemDefinition(n.id).name).join('、')
+                    : '')
+                }
+                onClick={() => {
+                  tap();
+                  setChosen(chosen === entry.id ? null : entry.id);
+                  setError('');
+                }}
+              >
+                <Art tile={item.tile} />
+                <small>{item.size}格</small>
+                <b>{item.name}</b>
+              </button>
+            );
+          })}
+        </div>
+        <button
+          className={`tp-relic-slot ${relic ? 'is-equipped' : ''}`}
+          data-relic-slot
+          aria-label="遗物槽"
+          onClick={() => {
+            tap();
+            setPicker(true);
+          }}
+        >
+          <small>遗物</small>
+          {currentRelic ? (
+            <Art tile={currentRelic.tile} />
+          ) : (
+            <span className="tp-relic-empty">＋</span>
+          )}
+          <strong>{currentRelic?.name ?? '选择遗物'}</strong>
+        </button>
+      </div>
       <div className="tp-bag-tools">
-        <output>{notice}</output>
+        <div className="tp-item-preview">
+          {selectedItem && (
+            <>
+              <strong>{selectedItem.name}</strong>
+              <p>{selectedItem.text}</p>
+            </>
+          )}
+          {error && <output>{error}</output>}
+        </div>
         <div>
           <button
             disabled={!selected || selected.start === 0}
-            onClick={() => move(selected!.start - 1)}
+            onClick={() => place(selected!.id, selected!.start - 1)}
           >
             左移
           </button>
           <button
             disabled={!selected || itemEnd(selected) === BAG_CELLS}
-            onClick={() => move(selected!.start + 1)}
+            onClick={() => place(selected!.id, selected!.start + 1)}
           >
             右移
           </button>
           <button
             disabled={!selected}
             onClick={() => {
+              tap();
               onLayout(layout.filter((entry) => entry.id !== chosen));
               setChosen(null);
-              setNotice('已取下，可以换上另一件旧物。');
+              setError('');
             }}
           >
             取下
           </button>
         </div>
       </div>
-      <div className="tp-catalog-filters">
-        {families.map((family) => (
-          <button
-            key={family.id}
-            className={filter === family.id ? 'is-active' : ''}
-            onClick={() => setFilter(family.id)}
-          >
-            {family.name}
-          </button>
-        ))}
+      <div className="tp-catalog-heading">
+        <h3>道具</h3>
+        <div className="tp-catalog-filters">
+          {families.map((family) => (
+            <button
+              key={family.id}
+              aria-pressed={filter === family.id}
+              className={filter === family.id ? 'is-active' : ''}
+              onClick={() => setFilter(family.id)}
+            >
+              {family.name}
+            </button>
+          ))}
+        </div>
+        <span>
+          {
+            ITEMS.filter((item) => filter === 'all' || item.family === filter)
+              .length
+          }
+        </span>
       </div>
       <div className="tp-items tp-strategy-catalog">
         {ITEMS.filter((item) => filter === 'all' || item.family === filter).map(
@@ -193,25 +385,16 @@ export default function ThrowWorkbench({
             return (
               <button
                 key={item.id}
+                data-drag-uid={item.id}
                 className={`tp-item tp-family-${item.family} ${equipped ? 'is-equipped' : ''}`}
                 aria-pressed={equipped}
                 title={item.text}
                 onClick={() => {
-                  tap();
-                  setChosen(item.id);
                   if (equipped) {
-                    setNotice(
-                      '已选中 ' + item.name + '；点空格移动，或按取下。',
-                    );
-                    return;
-                  }
-                  const next = placeThrowItem(layout, item.id);
-                  if (next === layout)
-                    setNotice('连续空位不足，先取下旧物或重新布局。');
-                  else {
-                    onLayout(next);
-                    setNotice(item.name + '已装入。' + item.text);
-                  }
+                    tap();
+                    setChosen(item.id);
+                    setError('');
+                  } else place(item.id);
                 }}
               >
                 <Art tile={item.tile} />
@@ -228,33 +411,14 @@ export default function ThrowWorkbench({
           },
         )}
       </div>
-      <div className="tp-relic-heading">
-        <h3>唯一遗物</h3>
-        <span>{relic ? '1 / 1' : '0 / 1'} · 点击更换</span>
-      </div>
-      <div className="tp-relics tp-strategy-relics">
-        {RELICS.map((entry) => (
-          <button
-            key={entry.id}
-            aria-pressed={relic === entry.id}
-            title={entry.text}
-            className={relic === entry.id ? 'is-equipped' : ''}
-            onClick={() => {
-              tap();
-              onRelic(relic === entry.id ? null : entry.id);
-            }}
-          >
-            <Art tile={entry.tile} />
-            <strong>{entry.name}</strong>
-            <span>{relic === entry.id ? '已携带' : '遗物'}</span>
-          </button>
-        ))}
-      </div>
-      <div className="tp-relic-description">
-        <strong>{currentRelic?.name ?? '暂不携带遗物'}</strong>
-        <p>{currentRelic?.text ?? '只依靠行囊中的伙伴对决。'}</p>
-        <small>{currentRelic?.story ?? '一只小行囊，也有自己的默契。'}</small>
-      </div>
-    </>
+      {picker && (
+        <RelicPicker
+          equipped={relic}
+          onEquip={onRelic}
+          onClose={() => setPicker(false)}
+          tap={tap}
+        />
+      )}
+    </InventoryDrag>
   );
 }
