@@ -1,0 +1,551 @@
+/* These skins change presentation only. The healing simulation is shared. */
+.wh-root.wh-art-summer .wh-card,
+.wh-root.wh-art-storybook .wh-card {
+  grid-template-rows: 30px minmax(30px, 1fr) 28px 10px;
+}
+.wh-root.wh-art-summer .wh-card footer,
+.wh-root.wh-art-storybook .wh-card footer {
+  font-size: 7px !important;
+}
+.wh-root.wh-art-summer .wh-card .pa-card-art,
+.wh-root.wh-art-storybook .wh-card .pa-card-art {
+  background: none;
+}
+.wh-art-summer,
+.wh-art-storybook {
+  --pa-frame: #78969a;
+  --pa-light: #fff1cb;
+}
+.wd-root.wr-root.wh-art-summer {
+  --wh-paper: #e8e8ca;
+  --wh-ink: #3d605c;
+  --wh-green: #547773;
+  background-image: none;
+  background-color: #ecedda;
+  padding: 12px 28px 6px;
+}
+.wh-art-summer .wh-header {
+  border-color: #a9ba9b;
+}
+.wh-art-summer .wh-eyebrow {
+  color: #789177;
+}
+.wh-art-summer .wh-header nav > a {
+  background: #648675;
+  border-color: #557569;
+  color: #fff5db;
+}
+.wh-art-summer .wh-table,
+.wh-art-storybook .wh-table {
+  isolation: isolate;
+  background-color: #2d525f;
+  background-image: none;
+  border-color: #8fabad;
+  outline-color: #33545c;
+  box-shadow: 4px 4px #7c967538;
+}
+.wh-art-summer .wh-table::before,
+.wh-art-storybook .wh-table::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: -2;
+  background-image: var(--pa-battle-scene);
+  background-position: center;
+  background-size: cover;
+  opacity: 0.34;
+  pointer-events: none;
+}
+.wh-art-summer .wh-table::before {
+  image-rendering: pixelated;
+}
+.wh-art-summer .wh-table::after,
+.wh-art-storybook .wh-table::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  background: linear-gradient(#20395270, #31586bc2 52%, #264b58d9);
+  pointer-events: none;
+}
+.wh-art-summer .wh-enemies,
+.wh-art-storybook .wh-enemies {
+  background-image: none;
+}
+.wh-art-summer .wh-scene-title {
+  color: #e6ecda;
+}
+.wh-art-summer .wh-scene-title small {
+  color: #bcd4cf;
+}
+.wh-art-summer .wh-enemy-title b {
+  color: #f2eace;
+}
+.wh-art-summer .wh-enemy-title small {
+  color: #bed5d6;
+}
+.wh-art-summer .wh-enemy.is-target .wh-enemy-title small {
+  color: #ffc886;
+}
+.wh-art-summer .wh-entity-anchor,
+.wh-art-storybook .wh-entity-anchor {
+  max-width: 230px;
+  display: grid;
+  place-items: center;
+}
+.pa-sprite {
+  display: block;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+}
+.pa-demon-art {
+  max-height: 100%;
+  filter: drop-shadow(0 4px 0 #223a4b66);
+}
+.wh-art-summer .wh-entity-anchor .pa-demon-art {
+  animation: pa-pixel-breathe 2.4s steps(3) infinite;
+}
+.wh-art-summer .wh-life-track {
+  border-color: #a3c6c5;
+  background: #20394c;
+}
+.wh-art-summer .wh-life-fill {
+  background: #76bda9;
+  box-shadow: inset 0 4px #b8ded0;
+}
+.wh-art-summer .wh-enemy .wh-life-fill {
+  background: #cd918b;
+  box-shadow: inset 0 4px #edc0ad;
+}
+.wh-art-summer .wh-skill-next {
+  color: #cddfd6;
+}
+.wh-art-summer .wh-skill-track {
+  background: #1c3c4c;
+}
+.wh-art-summer .wh-skill-track i {
+  background: #c29968;
+}
+.wh-art-summer .wh-skill-help {
+  background: #365462;
+  color: #cedfd4;
+}
+.wh-art-summer .wh-battle-caption {
+  background: #27465ccc;
+  border-color: #729798;
+}
+.wh-art-summer .wh-battle-caption b {
+  color: #ffe2a7;
+}
+.wh-art-summer .wh-battle-caption span {
+  color: #c8d7d4;
+}
+.wh-art-summer .wh-root .wh-slot-grid button,
+.wh-art-summer .wh-slot-grid button {
+  background: #224c58;
+  border-color: #7caaa5;
+  color: #92b5a7;
+}
+.wh-art-summer .wh-card {
+  --rim: #b9c4b5;
+  --tint: #d8dfc4;
+  border-width: 3px;
+  background-image: none;
+  color: #4a6250;
+  box-shadow:
+    inset 0 0 0 2px #fff7d899,
+    3px 4px 0 #203e4e;
+}
+.wh-art-summer .wh-card[data-rarity='1'] {
+  --rim: #80b4c6;
+  --tint: #c4dbdf;
+}
+.wh-art-summer .wh-card[data-rarity='2'] {
+  --rim: #b8a1ce;
+  --tint: #d9cbe3;
+}
+.wh-art-summer .wh-card[data-rarity='3'] {
+  --rim: #e6b95b;
+  --tint: #e9d39a;
+}
+.wh-art-summer .wh-card header {
+  border-color: #6a82564a;
+}
+.wh-art-summer .wh-card small,
+.wh-art-summer .wh-card footer {
+  color: #60765c;
+}
+.wh-art-summer .wh-card .wr-picture {
+  padding: 0 4px;
+}
+.wh-art-summer .wh-card .wr-numbers {
+  background: #274957;
+  border: 1px solid #eff4d355;
+}
+.wh-art-summer .wh-card.is-fired {
+  background-color: #fff0b7;
+  outline: 3px solid #ffe299;
+  outline-offset: -5px;
+}
+.wh-art-summer .wh-player-host {
+  border-top-color: #9caf93;
+}
+.wh-art-summer .wh-player-name b {
+  color: #f5e8be;
+}
+.wh-art-summer .wh-player-name span {
+  color: #cbded1;
+}
+.wh-art-summer .wh-player-portrait {
+  height: 100%;
+  width: 88px;
+  background: #527b743d;
+  border: 2px solid #819d8e;
+  overflow: hidden;
+}
+.wh-art-summer .wh-player-portrait .pa-healer-art {
+  height: 140%;
+  transform: translateY(-3%);
+}
+.wh-art-summer .wh-song-strip .wr-record,
+.wh-art-storybook .wh-song-strip .wr-record {
+  border: 0;
+  background: none;
+  box-shadow: none;
+  width: 42px;
+  height: 42px;
+  animation: none;
+}
+.wh-art-summer .wh-song-strip .wr-record.is-spinning .pa-sprite {
+  animation: pa-pixel-breathe 0.6s steps(2) infinite;
+}
+.wh-art-summer .wh-song-strip b {
+  color: #496b5e;
+}
+.wh-art-summer .wh-beats i {
+  background: #b6c6ad;
+  border-color: #96ad93;
+}
+.wh-art-summer .wh-beats i.is-beat {
+  background: #e3b362;
+}
+.pa-numbers {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 7px;
+}
+.pa-number {
+  position: relative;
+  display: inline-grid;
+  place-items: center;
+  min-width: 30px;
+  isolation: isolate;
+}
+.pa-number > span {
+  position: relative;
+  font-weight: 900;
+  -webkit-text-stroke: 0.4px currentColor;
+  text-shadow: 2px 2px #1b313bbb;
+}
+.pa-number > svg {
+  position: absolute;
+  width: 29px;
+  height: 29px;
+  opacity: 0.22;
+  z-index: -1;
+}
+.pa-card-art .pa-sprite {
+  filter: drop-shadow(0 2px 0 #4b594432);
+}
+.wh-art-summer .wh-dialog {
+  border-color: #9eb8a5;
+  background: #eef0d5;
+}
+.wh-art-summer .wh-dialog .wh-monster-detail .pa-demon-art,
+.wh-art-storybook .wh-dialog .wh-monster-detail .pa-demon-art {
+  width: 90px;
+  height: 90px;
+  flex-shrink: 0;
+}
+.wh-art-summer .wh-story-art,
+.wh-art-storybook .wh-story-art {
+  background-image: var(--pa-battle-scene);
+  background-size: cover;
+  background-position: center;
+}
+.wh-art-summer .wh-story-art .pa-healer-art,
+.wh-art-storybook .wh-story-art .pa-healer-art {
+  height: 125px;
+  width: 115px;
+  z-index: 2;
+}
+.wh-art-summer .wh-story-moon,
+.wh-art-summer .wh-story-ground,
+.wh-art-storybook .wh-story-moon,
+.wh-art-storybook .wh-story-ground {
+  display: none;
+}
+.wd-root.wr-root.wh-art-storybook {
+  --wh-paper: #efe1c7;
+  --wh-ink: #705138;
+  --wh-green: #826a44;
+  font-family: 'Noto Serif SC', 'Songti SC', SimSun, serif;
+  background-image: radial-gradient(#ab874b15 0.6px, transparent 0.6px);
+  background-size: 4px 4px;
+}
+.wh-art-storybook .wh-header {
+  border-color: #c9ad7e;
+}
+.wh-art-storybook .wh-header h1 {
+  font-size: 23px;
+}
+.wh-art-storybook .wh-header nav > a {
+  border-radius: 13px 3px;
+  background: #8b754b;
+  color: #fff3d5;
+  border-color: #a68b57;
+}
+.wh-art-storybook button,
+.wh-art-storybook .wh-dialog button {
+  border-radius: 10px 3px;
+}
+.wh-art-storybook .wh-table {
+  border: 3px solid #ab8c59;
+  border-radius: 12px 30px;
+  outline: 1px solid #d1b382;
+  outline-offset: -8px;
+  background-color: #514b3e;
+}
+.wh-art-storybook .wh-table::before {
+  opacity: 0.38;
+}
+.wh-art-storybook .wh-table::after {
+  border-radius: inherit;
+  background: linear-gradient(#3c423e63, #425951b5 45%, #3b524cf2);
+}
+.wh-art-storybook .wh-enemy-title b {
+  color: #f7e6c4;
+  font-size: 16px;
+  font-weight: 600;
+}
+.wh-art-storybook .wh-enemy-title small {
+  color: #cfb993;
+}
+.wh-art-storybook .wh-entity-anchor .pa-demon-art {
+  animation: pa-paper-breathe 3s ease-in-out infinite;
+}
+.wh-art-storybook .wh-enemy.is-target .wh-entity-anchor {
+  filter: drop-shadow(0 0 5px #efd59e88);
+}
+.wh-art-storybook .wh-life-track {
+  border-radius: 12px;
+  border-color: #c5af78;
+  background: #313e39;
+  box-shadow: inset 0 2px 5px #1a2b2860;
+}
+.wh-art-storybook .wh-life-fill {
+  border-radius: 12px;
+  background: #9dab77;
+  box-shadow: inset 0 4px #c3ca99;
+}
+.wh-art-storybook .wh-enemy .wh-life-fill {
+  background: #bc8c84;
+  box-shadow: inset 0 4px #d7a697;
+}
+.wh-art-storybook .wh-life-track b {
+  font-family: Georgia, serif;
+  font-size: 19px;
+}
+.wh-art-storybook .wh-life-track span {
+  text-shadow: 1px 1px #54452f;
+}
+.wh-art-storybook .wh-skill-track {
+  background: #354439;
+  border-radius: 3px;
+}
+.wh-art-storybook .wh-skill-track i {
+  background: #bfa36c;
+  border-radius: 3px;
+}
+.wh-art-storybook .wh-skill-help {
+  background: #615f4c;
+  color: #e3d3ae;
+  border-radius: 8px;
+}
+.wh-art-storybook .wh-battle-caption {
+  border-color: #a08b63;
+  background: #3f4f48d9;
+  border-radius: 7px;
+}
+.wh-art-storybook .wh-battle-caption b {
+  color: #eed4a0;
+}
+.wh-art-storybook .wh-slot-grid button {
+  background: #334a40;
+  border-radius: 8px;
+  border-color: #8c9b76;
+}
+.wh-art-storybook .wh-card {
+  --rim: #bdb69d;
+  --tint: #ddd3b8;
+  border: 2px solid var(--rim);
+  border-radius: 9px 18px 9px 18px;
+  background-image: radial-gradient(#93774a18 0.65px, transparent 0.65px);
+  background-size: 3px 3px;
+  box-shadow:
+    inset 0 0 0 3px #f8edd59e,
+    0 3px 5px #26352b70;
+  padding: 5px;
+}
+.wh-art-storybook .wh-card[data-rarity='1'] {
+  --rim: #7d9daa;
+  --tint: #cad9d9;
+}
+.wh-art-storybook .wh-card[data-rarity='2'] {
+  --rim: #ac8eaf;
+  --tint: #d9c8d4;
+}
+.wh-art-storybook .wh-card[data-rarity='3'] {
+  --rim: #d5ab51;
+  --tint: #e3cc91;
+}
+.wh-art-storybook .wh-card strong {
+  font-family: inherit;
+  font-weight: 600;
+  font-size: clamp(11px, 1.1vw, 16px);
+}
+.wh-art-storybook .wh-card small {
+  color: #85724e;
+}
+.wh-art-storybook .wh-card .wr-picture {
+  padding: 2px 6px;
+}
+.wh-art-storybook .wh-card .wr-numbers {
+  border-radius: 8px 3px;
+  background: #3c5148;
+  box-shadow: inset 0 1px #f3e4ba33;
+}
+.wh-art-storybook .wh-card .wr-number {
+  font-family: Georgia, serif;
+  font-size: clamp(21px, 2.2vw, 30px);
+  font-weight: 900;
+}
+.wh-art-storybook .wh-card footer {
+  color: #836d43;
+}
+.wh-art-storybook .wh-card.is-current {
+  outline: 2px solid #ffdc95;
+  outline-offset: -5px;
+  box-shadow: 0 0 8px #efcf8580;
+}
+.wh-art-storybook .wh-card.is-fired {
+  background-color: #f4e1b5;
+}
+.wh-art-storybook .wh-scan {
+  width: 4px;
+  border-radius: 2px;
+  background: #fff1c4;
+  box-shadow: 0 0 14px #f8db8c;
+}
+.wh-art-storybook .wh-scan span {
+  border-radius: 20px;
+  font-family: Georgia, serif;
+}
+.wh-art-storybook .wh-player-name b {
+  color: #f5dfb2;
+  font-size: 16px;
+}
+.wh-art-storybook .wh-player-name span {
+  color: #c8c3a5;
+}
+.wh-art-storybook .wh-player-portrait {
+  height: 100%;
+  width: 88px;
+  border: 2px solid #b9a16d;
+  border-radius: 40% 40% 10% 10%;
+  background: #e0d1aa;
+  overflow: hidden;
+}
+.wh-art-storybook .wh-player-portrait .pa-healer-art {
+  width: 100%;
+  height: 100%;
+}
+.wh-art-storybook .wh-float {
+  font-family: Georgia, serif;
+  font-size: 33px;
+  filter: drop-shadow(0 1px 2px #31413a);
+}
+.wh-art-storybook .wh-effects {
+  filter: drop-shadow(0 0 3px #f4d78e60);
+}
+.wh-art-storybook .wh-effects line {
+  stroke-linecap: round;
+}
+.wh-art-storybook .wh-dialog {
+  font-family: inherit;
+  background: #f4e5c9;
+  border: 2px solid #b79b6b;
+  border-radius: 9px 25px;
+}
+.wh-art-storybook .wh-dialog h2 {
+  font-family: inherit;
+}
+.wh-art-storybook .wh-dialog button {
+  font-family: inherit;
+}
+.wh-art-storybook .wh-song-strip .wr-record.is-spinning .pa-sprite {
+  animation: pa-paper-breathe 0.7s ease-in-out infinite;
+}
+.wh-art-storybook .wh-beats i {
+  border-radius: 50%;
+  background: #c0bd96;
+  border-color: #a49c77;
+}
+.wh-art-storybook .wh-beats i.is-beat {
+  background: #cfa65a;
+  box-shadow: 0 0 4px #cfa65a66;
+}
+@keyframes pa-pixel-breathe {
+  50% {
+    transform: translateY(-3px);
+  }
+}
+@keyframes pa-paper-breathe {
+  50% {
+    transform: translateY(-3px) scale(1.02);
+  }
+}
+@media (max-width: 760px) {
+  .wh-root.wh-art-summer .wh-card,
+  .wh-root.wh-art-storybook .wh-card {
+    grid-template-rows: 29px minmax(20px, 1fr) 42px 8px;
+  }
+  .wd-root.wr-root.wh-art-summer {
+    padding: 8px 8px 4px;
+  }
+  .wh-art-summer .wh-header nav > a:nth-of-type(2),
+  .wh-art-storybook .wh-header nav > a:nth-of-type(2) {
+    display: none;
+  }
+  .wh-art-storybook .wh-header h1 {
+    font-size: 18px;
+  }
+  .wh-art-storybook .wh-table {
+    border-radius: 8px 15px;
+  }
+}
+@media (max-height: 640px) and (min-width: 761px) {
+  .wh-root.wh-art-summer .wh-card,
+  .wh-root.wh-art-storybook .wh-card {
+    grid-template-rows: 24px minmax(20px, 1fr) 23px 9px;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .wh-art-summer .pa-sprite,
+  .wh-art-storybook .pa-sprite {
+    animation: none !important;
+  }
+}
