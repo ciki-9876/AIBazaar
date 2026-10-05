@@ -1,28 +1,33 @@
 'use client';
 import DialogueBubble, { type DialogueControls } from './dialogue';
 import type { DialogueCue } from '@/lib/survival-opening';
-import { ASCENT_COST, ascentReady } from '@/lib/survival-ascent';
-import {
-  brainExperience,
-  countKind,
-  itemName,
-  itemCount,
-} from '@/lib/survival-stacks';
-import { ITEMS } from '@/lib/survival-room';
+import { itemName } from '@/lib/survival-stacks';
 import { useEffect, useRef } from 'react';
 import { X, Settings } from 'lucide-react';
 import type { OpeningState, OpeningAction } from '@/lib/survival-opening';
 import { afterlightSettlement } from '@/lib/survival-afterlight';
+import { settlementCards } from '@/lib/survival-settlement';
 import { paintTerminal } from './terminal-screen';
 import { GearIcon } from './equipment';
 import LiftTerminal from './lift-terminal';
 import BaseUpgrade from './base-upgrade';
-export type SystemTab = 'tasks' | 'inventory' | 'upgrade' | 'floors';
+import { RaceHome, RaceBoard, RaceRoutes } from './race-console';
+import Warehouse from './warehouse';
+import { SeasonHome, SeasonRoutes, SeasonBoard } from './season-console';
+export type SystemTab =
+  | 'tasks'
+  | 'inventory'
+  | 'warehouse'
+  | 'upgrade'
+  | 'floors'
+  | 'race';
 const tabs: [SystemTab, string][] = [
   ['upgrade', '电梯'],
   ['tasks', '任务'],
   ['inventory', '行囊'],
+  ['warehouse', '仓库'],
   ['floors', '楼层'],
+  ['race', '赛事'],
 ];
 const objectives: Partial<Record<OpeningState['afterlight']['phase'], string>> =
   {
@@ -95,13 +100,16 @@ export default function LiftSystem({
       );
   }, [state, reduced, tab, phase]);
   const disabled = (t: SystemTab) =>
-    feeding ? t !== 'upgrade' : state.stage !== 'home' && t !== 'inventory';
+    (t === 'race' && !state.race && !state.season) ||
+    (feeding ? t !== 'upgrade' : state.stage !== 'home' && t !== 'inventory');
   const select = (t: SystemTab) => {
     if (disabled(t)) return;
     if (t === 'floors') act({ type: 'open-door' });
     onTab(t);
   };
-  const receipt = afterlightSettlement(state.afterlight, state.room);
+  const receipt = settlementCards(
+    afterlightSettlement(state.afterlight, state.room),
+  );
   return (
     <dialog
       ref={dialog}
@@ -115,7 +123,7 @@ export default function LiftSystem({
     >
       <header className="console-header">
         <h2>
-          安泊 <span>居所 {state.room.liftLevel || 0}</span>
+          安泊 <span>电梯 Lv.{state.room.liftLevel || 0}</span>
         </h2>
         <button aria-label="设置与暂停" onClick={onPause}>
           <Settings size={17} />
@@ -152,23 +160,25 @@ export default function LiftSystem({
             ?.focus();
         }}
       >
-        {tabs.map(([t, label]) => (
-          <button
-            key={t}
-            id={`console-tab-${t}`}
-            role="tab"
-            aria-controls={`console-panel-${t}`}
-            aria-selected={tab === t}
-            tabIndex={tab === t ? 0 : -1}
-            disabled={disabled(t)}
-            onClick={() => select(t)}
-          >
-            {label}
-            {t === 'inventory' && phase === 'eat-food' && (
-              <i aria-label="面包待食用" />
-            )}
-          </button>
-        ))}
+        {tabs
+          .filter(([t]) => t !== 'race' || state.race || state.season)
+          .map(([t, label]) => (
+            <button
+              key={t}
+              id={`console-tab-${t}`}
+              role="tab"
+              aria-controls={`console-panel-${t}`}
+              aria-selected={tab === t}
+              tabIndex={tab === t ? 0 : -1}
+              disabled={disabled(t)}
+              onClick={() => select(t)}
+            >
+              {label}
+              {t === 'inventory' && phase === 'eat-food' && (
+                <i aria-label="面包待食用" />
+              )}
+            </button>
+          ))}
       </div>
       <section
         className={`console-panel console-panel-${tab}`}
@@ -177,132 +187,32 @@ export default function LiftSystem({
         aria-labelledby={`console-tab-${tab}`}
       >
         {tab === 'inventory' && <LiftTerminal state={state} act={act} />}
-        {tab === 'tasks' && (
-          <div className="console-task-layout">
-            <canvas
-              ref={canvas}
-              className="console-robot"
-              width={600}
-              height={860}
-              aria-label="机器人终端"
-            />
-            <section className="console-task-copy">
-              {speech && (
-                <DialogueBubble
-                  text={speech.text}
-                  speaker={speech.speaker}
-                  controls={dialogue}
-                  portrait={false}
-                />
-              )}
-              {phase === 'report' && state.afterlight.failedReturn && (
-                <p>精神力耗尽，普通背包已丢失。电梯已完成紧急恢复。</p>
-              )}
-              <h3>任务目标</h3>
-              <p className="task-objective">{objectives[phase]}</p>
-              {phase === 'eat-food' && (
-                <div className="task-object">
-                  <GearIcon kind="bread" size={64} />
-                  <span>面包 × 1</span>
-                </div>
-              )}
-              {phase === 'depart' && (
-                <div className="task-object">
-                  <GearIcon kind="water" size={64} />
-                  <span>2 层 · 维保廊</span>
-                </div>
-              )}
-              {phase === 'report' && (
-                <div className="system-receipt">
-                  {receipt.length ? (
-                    receipt.map((i) => (
-                      <div key={i.uid}>
-                        <GearIcon kind={i.kind} />
-                        <span>
-                          {itemName(i)}
-                          {itemCount(i) > 1 ? ` ×${itemCount(i)}` : ''}
-                        </span>
-                        <small>{i.location}</small>
-                      </div>
-                    ))
-                  ) : (
-                    <p>没有新增物资</p>
-                  )}
-                </div>
-              )}
-              <div className="task-actions">
-                {phase === 'report' && (
-                  <button
-                    className="console-primary"
-                    onClick={() => act({ type: 'confirm-report' })}
-                  >
-                    确认结算
-                  </button>
-                )}
-                {phase === 'upgrade-goal' && (
-                  <>
-                    <button
-                      className="console-primary"
-                      onClick={() => onTab('upgrade')}
-                    >
-                      查看升级
-                    </button>
-                    <button onClick={close}>继续搜集</button>
-                  </>
-                )}
-                {phase === 'ascend' && (
-                  <button onClick={close}>
-                    去选层按键 <kbd>E</kbd>
-                  </button>
-                )}
-                {['safe', 'eat-food', 'serve-food', 'equip-module'].includes(
-                  phase,
-                ) && (
-                  <button
-                    className="console-primary"
-                    onClick={() => onTab('inventory')}
-                  >
-                    打开行囊
-                  </button>
-                )}
-                {phase === 'safe' && (
-                  <button onClick={() => act({ type: 'skip-safe' })}>
-                    先不保护
-                  </button>
-                )}
-                {phase === 'depart' && (
-                  <button onClick={close}>
-                    去按键处 <kbd>E</kbd>
-                  </button>
-                )}
-                {phase === 'branches' && (
-                  <button
-                    onClick={() => {
-                      act({ type: 'finish-tutorial' });
-                      close();
-                    }}
-                  >
-                    准备好了
-                  </button>
-                )}
-              </div>
-            </section>
-          </div>
+        {state.season && (tab === 'upgrade' || tab === 'tasks') && (
+          <SeasonHome
+            state={state}
+            act={act}
+            reduced={reduced}
+            navigate={select}
+            close={close}
+          />
         )}
-        {tab === 'upgrade' &&
-          (feeding ? (
-            <div className="feeding-shell">
-              {speech && (
-                <DialogueBubble
-                  text={speech.text}
-                  speaker={speech.speaker}
-                  controls={dialogue}
-                  portrait={false}
-                />
-              )}
-              <BaseUpgrade state={state} act={act} reduced={reduced} />
-            </div>
-          ) : (
+        {state.season && tab === 'floors' && (
+          <SeasonRoutes state={state} act={act} close={close} />
+        )}
+        {state.season && tab === 'race' && <SeasonBoard state={state} />}
+        {tab === 'race' && state.race && <RaceBoard state={state} />}
+        {tab === 'tasks' && state.race && phase !== 'report' && (
+          <RaceHome
+            state={state}
+            act={act}
+            close={close}
+            navigate={select}
+            reduced={reduced}
+          />
+        )}
+        {tab === 'tasks' &&
+          !state.season &&
+          (!state.race || phase === 'report') && (
             <div className="console-task-layout">
               <canvas
                 ref={canvas}
@@ -320,97 +230,149 @@ export default function LiftSystem({
                     portrait={false}
                   />
                 )}
-                <div className="lift-upgrade-title">
-                  <small>居所升级</small>
-                  <h3>
-                    {(state.room.liftLevel || 1) >= 2
-                      ? '02 / 已接通'
-                      : '01 → 02'}
-                  </h3>
-                </div>
-                <div className="upgrade-ledger">
-                  <section>
-                    <h4>
-                      {(state.room.liftLevel || 1) >= 2
-                        ? '升级条件 · 已投入'
-                        : '升级条件'}
-                    </h4>
-                    <div className="upgrade-cost">
-                      {ASCENT_COST.map((cost) => {
-                        const complete = (state.room.liftLevel || 1) >= 2;
-                        const count = complete
-                          ? cost.count
-                          : cost.kind === 'lift-material'
-                            ? brainExperience(state.room.bag) +
-                              (state.room.liftExperience || 0)
-                            : countKind(state.room.bag, cost.kind);
-                        return (
-                          <div
-                            key={cost.kind}
-                            className={
-                              count < cost.count ? 'missing' : 'fulfilled'
-                            }
-                          >
-                            <GearIcon kind={cost.kind} />
-                            <span>
-                              {cost.kind === 'lift-material'
-                                ? '脑浆经验'
-                                : ITEMS[cost.kind].name}
-                              <b>
-                                {Math.min(count, cost.count)} / {cost.count}
-                              </b>
-                            </span>
-                          </div>
-                        );
-                      })}
-                    </div>
-                  </section>
-                  <section className="upgrade-rewards">
-                    <h4>升级奖励</h4>
-                    <strong>
-                      <span>03</span>听雨庭
-                    </strong>
-                    <p>接通第三层 · 解锁新的世界</p>
-                  </section>
-                </div>
-                {(state.room.liftLevel || 1) < 2 ? (
-                  <>
-                    {state.room.safe.some((i) =>
-                      ASCENT_COST.some((c) => c.kind === i.kind),
-                    ) && <small>保护格中的材料需先取回背包</small>}
+                {phase === 'report' && state.afterlight.failedReturn && (
+                  <p>精神力耗尽，普通背包已丢失。电梯已完成紧急恢复。</p>
+                )}
+                <h3>任务目标</h3>
+                <p className="task-objective">{objectives[phase]}</p>
+                {phase === 'eat-food' && (
+                  <div className="task-object">
+                    <GearIcon kind="bread" size={64} />
+                    <span>面包 × 1</span>
+                  </div>
+                )}
+                {phase === 'depart' && (
+                  <div className="task-object">
+                    <GearIcon kind="water" size={64} />
+                    <span>2 层 · 维保廊</span>
+                  </div>
+                )}
+                {phase === 'report' && (
+                  <div className="system-receipt">
+                    {receipt.length ? (
+                      receipt.map((i) => (
+                        <div key={i.key}>
+                          <GearIcon kind={i.item.kind} />
+                          <span>
+                            {itemName(i.item)}
+                            {i.count > 1 ? (
+                              <b className="receipt-count"> ×{i.count}</b>
+                            ) : (
+                              ''
+                            )}
+                          </span>
+                          <small>{i.location}</small>
+                        </div>
+                      ))
+                    ) : (
+                      <p>没有新增物资</p>
+                    )}
+                  </div>
+                )}
+                <div className="task-actions">
+                  {phase === 'report' && (
                     <button
                       className="console-primary"
-                      disabled={
-                        !ascentReady(state.room) ||
-                        !state.afterlight.equipmentTaught
-                      }
-                      onClick={() => act({ type: 'upgrade-lift' })}
+                      onClick={() => act({ type: 'confirm-report' })}
                     >
-                      升级电梯
+                      确认结算
                     </button>
-                  </>
-                ) : (
-                  <p className="upgrade-complete">
-                    ✓ 本次升级已完成 <small>更高等级尚未开放</small>
-                    {!!state.room.liftExperience && (
-                      <small>
-                        盈余经验 · {state.room.liftExperience} 已保留
-                      </small>
-                    )}
-                  </p>
-                )}
-                {!['ascend', 'complete', 'branches'].includes(phase) && (
-                  <button
-                    className="console-task-link"
-                    onClick={() => onTab('tasks')}
-                  >
-                    当前任务 →
-                  </button>
-                )}
+                  )}
+                  {phase === 'upgrade-goal' && (
+                    <>
+                      <button
+                        className="console-primary"
+                        onClick={() => onTab('upgrade')}
+                      >
+                        查看升级
+                      </button>
+                      <button onClick={close}>继续搜集</button>
+                    </>
+                  )}
+                  {phase === 'ascend' && (
+                    <button onClick={close}>
+                      去选层按键 <kbd>E</kbd>
+                    </button>
+                  )}
+                  {['safe', 'eat-food', 'serve-food', 'equip-module'].includes(
+                    phase,
+                  ) && (
+                    <button
+                      className="console-primary"
+                      onClick={() => onTab('inventory')}
+                    >
+                      打开行囊
+                    </button>
+                  )}
+                  {phase === 'safe' && (
+                    <button onClick={() => act({ type: 'skip-safe' })}>
+                      先不保护
+                    </button>
+                  )}
+                  {phase === 'depart' && (
+                    <button onClick={close}>
+                      去按键处 <kbd>E</kbd>
+                    </button>
+                  )}
+                  {phase === 'branches' && (
+                    <button
+                      onClick={() => {
+                        act({ type: 'finish-tutorial' });
+                        close();
+                      }}
+                    >
+                      准备好了
+                    </button>
+                  )}
+                </div>
               </section>
             </div>
-          ))}
-        {tab === 'floors' && (
+          )}
+        {tab === 'upgrade' && state.race && (
+          <RaceHome
+            state={state}
+            act={act}
+            close={close}
+            navigate={select}
+            reduced={reduced}
+          />
+        )}
+        {tab === 'upgrade' && !state.race && !state.season && (
+          <div className="feeding-shell">
+            {speech && (
+              <DialogueBubble
+                text={speech.text}
+                speaker={speech.speaker}
+                controls={dialogue}
+                portrait={false}
+              />
+            )}
+            <BaseUpgrade state={state} act={act} reduced={reduced} />
+          </div>
+        )}
+        {tab === 'warehouse' && <Warehouse state={state} act={act} />}
+        {tab === 'warehouse' && state.season && (
+          <div className="season-actions">
+            <button
+              aria-pressed={!!state.room.rescueReserved?.length}
+              onClick={() =>
+                act({
+                  type: 'reserve-rescue',
+                  enabled: !state.room.rescueReserved?.length,
+                })
+              }
+            >
+              {state.room.rescueReserved?.length
+                ? '解除救援锁定'
+                : '锁定救援包'}
+            </button>
+            <small>药 ×1 · 食物 ×1 · 水 ×1</small>
+          </div>
+        )}
+        {tab === 'floors' && state.race && (
+          <RaceRoutes state={state} act={act} close={close} navigate={select} />
+        )}
+        {tab === 'floors' && !state.race && !state.season && (
           <div className="floor-picker">
             {speech && (
               <DialogueBubble

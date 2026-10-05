@@ -1,10 +1,32 @@
-import { itemCount, itemName, type BrainQuality } from './survival-stacks.ts';
+import {
+  itemCount,
+  itemName,
+  itemIds,
+  withIds,
+  type BrainQuality,
+} from './survival-stacks.ts';
 import { hasTrait, ITEM_PROPERTIES } from './survival-item-traits.ts';
 import { transferItem, type Transfer } from './survival-transfer.ts';
 import { activeCaches } from './survival-cache-lifecycle.ts';
-import { isEquipment, adjacent, fits, firstFit } from './survival-equipment-rules.ts';
-export { EQUIPMENT_SIZE, isEquipment, adjacent, fits, firstFit } from './survival-equipment-rules.ts';
-import { putInBag, packBag, unplaced } from './survival-cargo.ts';
+import {
+  isEquipment,
+  adjacent,
+  fits,
+  firstFit,
+} from './survival-equipment-rules.ts';
+export {
+  EQUIPMENT_SIZE,
+  isEquipment,
+  adjacent,
+  fits,
+  firstFit,
+} from './survival-equipment-rules.ts';
+import {
+  putInBag,
+  packBag,
+  unplaced,
+  warehouseRows,
+} from './survival-cargo.ts';
 import {
   PLAYER_RADIUS,
   LIFT,
@@ -62,6 +84,7 @@ export type ItemKind =
   | 'food'
   | 'bread'
   | 'medicine'
+  | 'golden'
   | 'core';
 export type Item = {
   stack?: string[];
@@ -95,6 +118,7 @@ export const ITEMS: Record<ItemKind, Omit<Item, 'uid'>> = {
   bread: { kind: 'bread', name: '面包', size: 1, value: 0 },
   food: { kind: 'food', name: '压缩口粮', size: 1, value: 3 },
   medicine: { kind: 'medicine', name: '急救包', size: 1, value: 5 },
+  golden: { kind: 'golden', name: '黄金通行证', size: 1, value: 0 },
   core: { kind: 'core', name: '净水机芯', size: 2, value: 48 },
 };
 export type Cache = Point & {
@@ -109,6 +133,7 @@ export type Cache = Point & {
   loose?: boolean;
   pickup?: 'touch';
   manualEquip?: boolean;
+  manualPickup?: boolean;
 };
 export type EnemyKind = 'crawler' | 'runner' | 'brute' | 'boss';
 export type Enemy = Point & {
@@ -156,9 +181,16 @@ export type Spawn = Point & {
   pursuit?: 'territorial' | 'ambush';
 };
 export type SurvivalState = {
+  seasonRules?: boolean;
+  lootBudget?: number;
+  forbidGolden?: boolean;
+  rescueReserved?: string[];
+  resting?: boolean;
   floor?: number;
   liftLevel?: number;
   liftExperience?: number;
+  liftParts?: number;
+  warehouse?: Item[];
   liftLightOn?: boolean;
   seed: number;
   world: RoomWorld;
@@ -198,7 +230,12 @@ export type SurvivalState = {
   notice: string;
   noticeUntil: number;
 };
-export type SurvivalInput = { x?: number; z?: number };
+export type SurvivalInput = {
+  x?: number;
+  z?: number;
+  interact?: boolean;
+  cache?: string;
+};
 export type SurvivalAction =
   | Transfer
   | { type: 'start' }
@@ -207,11 +244,14 @@ export type SurvivalAction =
   | { type: 'protect'; uid: string }
   | { type: 'unprotect'; uid: string }
   | { type: 'discard'; uid: string }
+  | { type: 'drop'; uid: string; quantity?: number }
+  | { type: 'destroy'; uid: string }
   | { type: 'consume'; uid: string }
   | { type: 'equip'; uid: string; slot: number }
   | { type: 'unequip'; uid: string }
   | { type: 'cargo-move'; uid: string; slot: number; rotated: boolean }
-  | { type: 'cargo-pack' };
+  | { type: 'cargo-pack' }
+  | { type: 'warehouse-pack' };
 export const distance = (a: Point, b: Point) =>
   Math.hypot(a.x - b.x, a.z - b.z);
 export const capacity = (items: Item[]) =>
@@ -454,6 +494,91 @@ export function survivalAction(
   state: SurvivalState,
   action: SurvivalAction,
 ): SurvivalState {
+  if (
+    'uid' in action &&
+    state.rescueReserved?.includes(action.uid) &&
+    !['cargo-move'].includes(action.type)
+  )
+    return state;
+  if ('uid' in action) {
+    const item = [
+      ...state.bag,
+      ...state.safe,
+      ...state.equipment.map((e) => e.item),
+      ...(state.warehouse || []),
+    ].find((i) => i.uid === action.uid);
+    if (
+      item?.kind === 'golden' &&
+      ['destroy', 'protect', 'discard'].includes(action.type)
+    )
+      return state;
+  }
+  if (action.type === 'drop') {
+    if (state.status !== 'running') return state;
+    const item = [...state.bag, ...state.equipment.map((e) => e.item)].find(
+      (i) => i.uid === action.uid,
+    );
+    const quantity = action.quantity ?? 1;
+    if (
+      !item ||
+      !Number.isInteger(quantity) ||
+      quantity < 1 ||
+      quantity > itemCount(item) ||
+      (item.kind === 'golden' && insideLift(state.player, ELEVATOR))
+    )
+      return state;
+    const candidates = [
+      { x: state.player.x, z: state.player.z },
+      ...Array.from({ length: 25 }, (_, i) => ({
+        x: Math.floor(state.player.x) + (i % 5) - 1.5,
+        z: Math.floor(state.player.z) + Math.floor(i / 5) - 1.5,
+      })),
+    ]
+      .filter((p) => walkable(p, PLAYER_RADIUS, state.world))
+      .sort(
+        (a, b) =>
+          distance(a, state.player) - distance(b, state.player) ||
+          a.x - b.x ||
+          a.z - b.z,
+      );
+    const at = candidates[0];
+    if (!at) return state;
+    const ids = itemIds(item),
+      dropped = unplaced(withIds(item, ids.slice(0, quantity))),
+      left = ids.slice(quantity);
+    const bag = state.bag.flatMap((i) =>
+      i.uid !== item.uid ? [i] : left.length ? [withIds(i, left)] : [],
+    );
+    if (!state.bag.some((i) => i.uid === item.uid) && left.length) return state;
+    const next = {
+      ...state,
+      serial: state.serial + 1,
+      bag,
+      equipment: state.equipment.filter((e) => e.item.uid !== item.uid),
+      caches: [
+        ...state.caches,
+        {
+          id: `dropped-${state.seed}-${state.serial}`,
+          ...at,
+          item: dropped,
+          contents: [dropped],
+          container: 'loose' as const,
+          searched: false,
+          opened: false,
+          available: state.tick,
+          loose: true,
+          manualEquip: true,
+          manualPickup: true,
+        },
+      ],
+      notice: `已扔下 ${itemName(dropped)} ×${quantity}`,
+      noticeUntil: state.tick + 90,
+    };
+    return {
+      ...next,
+      fog: revealFog(next.player, next.fog, next.world, visionRange(next)),
+    };
+  }
   if (action.type === 'start')
     return state.status === 'ready'
       ? { ...state, status: 'departing', departureTick: 0 }
@@ -471,11 +596,49 @@ export function survivalAction(
         'cargo-pack',
         'consume',
         'transfer',
+        'destroy',
+        'warehouse-pack',
       ].includes(action.type)
     )
   )
     return state;
+  if (action.type === 'warehouse-pack') {
+    if (state.status !== 'extracted') return state;
+    const warehouse = packBag(
+      state.warehouse || [],
+      warehouseRows(state.liftLevel),
+    );
+    return warehouse ? { ...state, warehouse } : state;
+  }
+  if (action.type === 'destroy') {
+    const owned = [
+      ...state.bag,
+      ...state.safe,
+      ...state.equipment.map((e) => e.item),
+      ...(state.warehouse || []),
+    ];
+    if (!owned.some((i) => i.uid === action.uid)) return state;
+    const next = {
+      ...state,
+      bag: state.bag.filter((i) => i.uid !== action.uid),
+      safe: state.safe.filter((i) => i.uid !== action.uid),
+      equipment: state.equipment.filter((e) => e.item.uid !== action.uid),
+      ...(state.warehouse
+        ? { warehouse: state.warehouse.filter((i) => i.uid !== action.uid) }
+        : {}),
+    };
+    return {
+      ...next,
+      fog: revealFog(next.player, next.fog, next.world, visionRange(next)),
+    };
+  }
   if (action.type === 'transfer') {
+    if (
+      state.status !== 'extracted' &&
+      (action.zone === 'warehouse' ||
+        state.warehouse?.some((i) => i.uid === action.uid))
+    )
+      return state;
     const next = transferItem(state, action);
     return next === state
       ? state
@@ -623,6 +786,7 @@ export function recordPickup(s: SurvivalState, item: Item) {
   });
 }
 function collectCache(s: SurvivalState, cache: Cache) {
+  if (s.forbidGolden && cache.contents.some((i) => i.kind === 'golden')) return;
   const firstSearch = !cache.searched;
   cache.searched = true;
   const obtained: string[] = [],
@@ -715,7 +879,7 @@ function hitEnemy(s: SurvivalState, enemy: Enemy, amount: number) {
     ),
   );
   const quality = (['low', 'normal', 'fine', 'supreme'] as const)[tier];
-  const drops =
+  const baseDrops =
     enemy.kind === 'boss'
       ? 6
       : enemy.kind === 'brute'
@@ -723,38 +887,42 @@ function hitEnemy(s: SurvivalState, enemy: Enemy, amount: number) {
         : enemy.kind === 'runner'
           ? 2
           : 1;
-  const brain = {
-    ...ITEMS['lift-material'],
-    quality,
-    name: `${({ low: '低质', normal: '普通', fine: '精良', supreme: '极品' } as const)[quality]}脑浆`,
-    uid: `brain-${s.seed}-${s.serial++}`,
-  };
-  const contents = [
-    {
-      ...brain,
-      ...(drops > 1
-        ? {
-            stack: Array.from(
-              { length: drops - 1 },
-              () => `brain-${s.seed}-${s.serial++}`,
-            ),
-          }
-        : {}),
-    },
-  ];
-  s.caches.push({
-    id: `brain-cache-${s.serial++}`,
-    x: enemy.x,
-    z: enemy.z,
-    item: contents[0],
-    contents,
-    container: 'loose',
-    searched: false,
-    opened: false,
-    available: s.tick + 12,
-    pickup: 'touch',
-    loose: true,
-  });
+  const drops = Math.min(baseDrops, s.lootBudget ?? baseDrops);
+  if (s.lootBudget !== undefined) s.lootBudget -= drops;
+  if (drops > 0) {
+    const brain = {
+      ...ITEMS['lift-material'],
+      quality,
+      name: `${({ low: '低质', normal: '普通', fine: '精良', supreme: '极品' } as const)[quality]}脑浆`,
+      uid: `brain-${s.seed}-${s.serial++}`,
+    };
+    const contents = [
+      {
+        ...brain,
+        ...(drops > 1
+          ? {
+              stack: Array.from(
+                { length: drops - 1 },
+                () => `brain-${s.seed}-${s.serial++}`,
+              ),
+            }
+          : {}),
+      },
+    ];
+    s.caches.push({
+      id: `brain-cache-${s.serial++}`,
+      x: enemy.x,
+      z: enemy.z,
+      item: contents[0],
+      contents,
+      container: 'loose',
+      searched: false,
+      opened: false,
+      available: s.tick + 12,
+      pickup: 'touch',
+      loose: true,
+    });
+  }
   if (enemy.kind === 'boss' && !s.bossDefeated) {
     s.bossDefeated = true;
     s.caches.push({
@@ -774,6 +942,7 @@ function hitEnemy(s: SurvivalState, enemy: Enemy, amount: number) {
   }
 }
 function hurtPlayer(s: SurvivalState, amount: number) {
+  if (s.seasonRules && insideLift(s.player, ELEVATOR)) return;
   if (s.tick < s.player.hurtUntil) return;
   const actual = Math.min(s.player.hp, amount);
   s.player.hp = Math.max(0, s.player.hp - actual);
@@ -839,6 +1008,7 @@ export function stepSurvival(
     waves?: boolean;
     combat?: boolean;
     search?: boolean;
+    supplies?: boolean;
   } = {},
 ): SurvivalState {
   // One-time arrival: open, walk through the door, then raise the camera.
@@ -870,7 +1040,10 @@ export function stepSurvival(
     safe: [...state.safe],
     path: [...state.path],
     enemies: state.enemies.map((e) => ({ ...e })),
-    caches: activeCaches(state.caches).map((c) => ({ ...c, contents: [...c.contents] })),
+    caches: activeCaches(state.caches).map((c) => ({
+      ...c,
+      contents: [...c.contents],
+    })),
     spawns: [...state.spawns],
     effects: state.effects.filter(
       (e) => state.tick - e.tick < (e.kind === 'pickup' ? 72 : 27),
@@ -912,7 +1085,7 @@ export function stepSurvival(
   }
   for (const kind of Object.keys(ITEM_PROPERTIES) as ItemKind[]) {
     const use = ITEM_PROPERTIES[kind].use;
-    if (use?.automaticBelow !== undefined)
+    if (rules.supplies !== false && use?.automaticBelow !== undefined)
       supply(s, kind, use.stat, use.automaticBelow, use.gain);
   }
   if (
@@ -1107,7 +1280,8 @@ export function stepSurvival(
   const visible = s.enemies
     .filter((e) => e.hp > 0 && e.awake && isVisible(s, e))
     .sort(
-      (a, b) => distance(p, a) - distance(p, b) || a.id.localeCompare(b.id, 'en'),
+      (a, b) =>
+        distance(p, a) - distance(p, b) || a.id.localeCompare(b.id, 'en'),
     );
   for (const gear of s.equipment) {
     if (rules.combat === false) continue;
@@ -1203,7 +1377,9 @@ export function stepSurvival(
           .filter(
             (c) =>
               !c.opened &&
+              (!input.cache || input.cache === c.id) &&
               c.pickup !== 'touch' &&
+              (!c.manualPickup || !!input.interact) &&
               c.available <= s.tick &&
               distance(p, c) <= 1.65 &&
               clearSight(p, c, s.world),

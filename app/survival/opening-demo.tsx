@@ -1,6 +1,6 @@
 'use client';
 import { afterlightLine } from '@/lib/survival-afterlight';
-import { ASCENT_COST } from '@/lib/survival-ascent';
+import FieldQuest from './field-quest';
 import { guidePaused } from '@/lib/survival-guidance';
 import {
   advanceDialogue,
@@ -13,7 +13,7 @@ import {
   createHomecomingRehearsal,
 } from '@/lib/survival-rehearsal';
 import { distance, ELEVATOR, searchDuration } from '@/lib/survival-room';
-import { brainExperience, countKind } from '@/lib/survival-stacks';
+import { countKind } from '@/lib/survival-stacks';
 import { Flashlight, Play, RotateCcw, Volume2, VolumeX } from 'lucide-react';
 import { lazy, Suspense } from 'react';
 import DesignSystem from './design-system';
@@ -29,6 +29,13 @@ import TutorialGuide from './tutorial-guide';
 import UpgradeSequence from './upgrade-sequence';
 import { useOpeningController } from './use-opening-controller';
 import Vitals from './vitals';
+import { racePaused } from '@/lib/survival-race';
+import RaceHUD from './race-hud';
+import RaceDirector from './race-director';
+import './race.css';
+import { SeasonHUD } from './season-console';
+import { seasonStopped } from '@/lib/survival-season';
+import './season.css';
 
 const Scene = lazy(() => import('./scene'));
 export default function OpeningDemo() {
@@ -145,7 +152,9 @@ export default function OpeningDemo() {
               !!upgradeShow ||
               paused ||
               terminal ||
-              state.stage === 'waiting'
+              state.stage === 'waiting' ||
+              racePaused(state.race) ||
+              seasonStopped(state.season)
             }
           />
         </Suspense>
@@ -202,7 +211,7 @@ export default function OpeningDemo() {
             className="world-dialogue"
           />
         )}
-      {state.stage === 'collapse' && (
+      {state.stage === 'collapse' && state.season?.phase !== 'defeat' && (
         <div
           className="death-curtain"
           style={
@@ -222,7 +231,7 @@ export default function OpeningDemo() {
           paused={paused}
           done={() => {
             setUpgradeShow(null);
-            if (upgradeShow === 2) {
+            if (upgradeShow >= 2) {
               setConsoleTab('upgrade');
               changeTerminal(true);
             } else commit(advanceDialogue(opening.current));
@@ -266,6 +275,9 @@ export default function OpeningDemo() {
         </div>
       )}
       {['return', 'aftermath', 'expedition'].includes(state.stage) &&
+        (!state.season ||
+          state.season.phase === 'live' ||
+          state.season.phase === 'boarding') &&
         (state.stage === 'expedition' || openingLootReady(state)) &&
         distance(state.room.player, ELEVATOR) < 3 && (
           <button
@@ -309,73 +321,24 @@ export default function OpeningDemo() {
           </button>
         )}
       <Vitals state={state} />
+      {state.season &&
+        state.stage === 'home' &&
+        !terminal &&
+        !seasonStopped(state.season) && (
+          <button className="opening-bag-toggle" onClick={openTerminal}>
+            电梯终端 <kbd>F</kbd>
+          </button>
+        )}
       {state.stage === 'expedition' && (
         <>
-          <Minimap state={state.room} />
+          <Minimap state={state.room} race={state.race} season={state.season} />
           <button className="opening-bag-toggle" onClick={openTerminal}>
             行囊 <kbd>B</kbd>
           </button>
-          <aside className="field-quest" aria-label="任务目标">
-            <small>任务目标</small>
-            {state.room.floor === 3 ? (
-              <>
-                <h3>
-                  探索
-                  {state.room.world.theme === 'dunes' ? '风蚀遗庭' : '听雨庭'}
-                </h3>
-                <p>搜寻遗物，带回电梯</p>
-              </>
-            ) : !state.afterlight.equipmentTaught ? (
-              <>
-                <h3>{state.afterlight.waterFound ? '回到电梯' : '寻找饮水'}</h3>
-                <p>
-                  净水瓶{' '}
-                  {state.afterlight.waterFound ? '1 / 1 · 已完成' : '0 / 1'}
-                </p>
-                <progress max={1} value={Number(state.afterlight.waterFound)} />
-              </>
-            ) : (
-              <>
-                <h3>
-                  {ASCENT_COST.every(
-                    (c) =>
-                      (c.kind === 'lift-material'
-                        ? brainExperience([
-                            ...state.room.bag,
-                            ...state.room.safe,
-                          ])
-                        : countKind(
-                            [...state.room.bag, ...state.room.safe],
-                            c.kind,
-                          )) >= c.count,
-                  )
-                    ? '回到电梯'
-                    : '寻找升级物资'}
-                </h3>
-                {ASCENT_COST.map((c) => (
-                  <p key={c.kind}>
-                    {c.kind === 'scrap' ? '机械零件' : '脑浆经验'}{' '}
-                    {Math.min(
-                      c.count,
-                      c.kind === 'lift-material'
-                        ? brainExperience([
-                            ...state.room.bag,
-                            ...state.room.safe,
-                          ])
-                        : countKind(
-                            [...state.room.bag, ...state.room.safe],
-                            c.kind,
-                          ),
-                    )}{' '}
-                    / {c.count}
-                  </p>
-                ))}
-              </>
-            )}
-          </aside>
+          {!state.race && !state.season && <FieldQuest state={state} />}
         </>
       )}
-      {terminal && (
+      {terminal && !seasonStopped(state.season) && (
         <LiftSystem
           state={state}
           act={act}
@@ -392,6 +355,23 @@ export default function OpeningDemo() {
             act({ type: 'close-floor' });
             changeTerminal(false);
           }}
+        />
+      )}
+      {state.race && state.race.scene === 'live' && !terminal && (
+        <RaceHUD state={state} />
+      )}
+      {state.season && (!terminal || seasonStopped(state.season)) && (
+        <SeasonHUD state={state} act={act} restart={restart} />
+      )}
+      {state.race && state.race.scene !== 'live' && (
+        <RaceDirector
+          key={state.race.scene}
+          state={state}
+          act={act}
+          restart={restart}
+          onPause={() => setPause(true)}
+          paused={paused}
+          reduced={reduced}
         />
       )}
       <span className="survival-screen-reader" aria-live="polite">

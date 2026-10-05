@@ -27,7 +27,13 @@ export default function ItemHover({ state }: { state: SurvivalState }) {
   } | null>(null);
   useEffect(() => {
     const show = (e: PointerEvent) => {
-      if (e.buttons) return;
+      if (
+        e.buttons ||
+        document.querySelector('[data-inventory-drag-active="true"]')
+      ) {
+        setHover(null);
+        return;
+      }
       const node = (e.target as Element)?.closest<HTMLElement>(
         '[data-item-uid]',
       );
@@ -39,6 +45,7 @@ export default function ItemHover({ state }: { state: SurvivalState }) {
       const item = [
         ...s.bag,
         ...s.safe,
+        ...(s.warehouse || []),
         ...s.equipment.map((g) => g.item),
       ].find((i) => i.uid === node.dataset.itemUid);
       if (!item) return;
@@ -56,11 +63,14 @@ export default function ItemHover({ state }: { state: SurvivalState }) {
     };
     const hide = () => setHover(null);
     document.addEventListener('pointerover', show);
-    document.addEventListener('pointerdown', hide);
+    // Inventory owns the gesture and stops propagation. Hide before its capture handler.
+    document.addEventListener('pointerdown', hide, true);
+    document.addEventListener('pointercancel', hide, true);
     window.addEventListener('blur', hide);
     return () => {
       document.removeEventListener('pointerover', show);
-      document.removeEventListener('pointerdown', hide);
+      document.removeEventListener('pointerdown', hide, true);
+      document.removeEventListener('pointercancel', hide, true);
       window.removeEventListener('blur', hide);
     };
   }, []);

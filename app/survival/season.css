@@ -1,0 +1,451 @@
+.season-home {
+  display: flex;
+  gap: 24px;
+  min-height: 420px;
+}
+.season-floor {
+  width: 150px;
+  flex: none;
+  border: 1px solid #49605b;
+  background: #0b1619;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  gap: 12px;
+  padding: 20px 12px;
+  color: #b8bd9e;
+}
+.season-floor > strong {
+  font: 72px monospace;
+  color: #e3ca86;
+}
+.season-floor small {
+  font-size: 11px;
+}
+.season-track {
+  position: absolute;
+  right: 14px;
+  top: 58px;
+  bottom: 50px;
+  width: 6px;
+  border: 1px solid #60746b;
+  display: flex;
+  align-items: flex-end;
+}
+.season-track i {
+  display: block;
+  width: 100%;
+  background: #d5ca8b;
+}
+.season-home-main {
+  flex: 1;
+  min-width: 0;
+}
+.season-metrics {
+  display: flex;
+  gap: 28px;
+  border-bottom: 1px solid #354b47;
+  padding: 16px 0 24px;
+  flex-wrap: wrap;
+}
+.season-metrics > span {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: #e1c783;
+}
+.season-metrics small {
+  color: #8c9c8e;
+}
+.season-actions {
+  display: flex;
+  gap: 12px;
+  margin: 24px 0;
+  flex-wrap: wrap;
+}
+.survival-page .season-actions button {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  min-height: 44px;
+  height: 46px;
+  margin: 0;
+  line-height: 1.2;
+  box-sizing: border-box;
+  white-space: nowrap;
+  padding: 10px 14px;
+  border: 1px solid #566858;
+  background: #162a25;
+  color: #c8c7a4;
+  cursor: pointer;
+}
+.survival-page .season-actions button.console-primary {
+  background: #344731;
+  border-color: #b5a971;
+  color: #eed9a0;
+}
+.survival-page .season-actions button:hover {
+  border-color: #d0be86;
+  background: #2b3d2d;
+}
+.season-actions button:focus-visible,
+.season-route:focus-visible {
+  outline: 2px solid #e3cb83;
+  outline-offset: 3px;
+}
+.season-actions small {
+  font-size: 10px;
+  color: #9fa78f;
+}
+.season-routes h3 {
+  display: flex;
+  gap: 15px;
+  align-items: center;
+}
+.season-routes > div {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+  gap: 12px;
+}
+.survival-page .season-route {
+  min-height: 110px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  align-items: center;
+  justify-content: center;
+  padding: 14px;
+  background: #102522;
+  border: 1px solid #566858;
+  color: #d4c492;
+  cursor: pointer;
+}
+.survival-page .season-route:hover:not(:disabled) {
+  border-color: #d0be86;
+  background: #20372b;
+}
+.survival-page .season-route:disabled {
+  opacity: 0.45;
+  cursor: default;
+}
+.season-route strong {
+  font: 26px monospace;
+}
+.season-route small {
+  font-size: 11px;
+  max-width: 140px;
+}
+.season-board > header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.season-board h3 small {
+  font-size: 14px;
+  margin-left: 12px;
+}
+.season-control-note {
+  font-size: 12px;
+  color: #81978b;
+}
+.season-roster {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+}
+.season-roster > div {
+  padding: 14px;
+  background: #102120;
+  border: 1px solid #3a5049;
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 9px;
+}
+.season-roster small {
+  color: #829a8c;
+}
+.season-board ol {
+  padding: 20px 30px;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 20px;
+}
+.season-board li p {
+  font-size: 13px;
+  color: #9baf9e;
+  line-height: 1.7;
+}
+.season-hud {
+  position: absolute;
+  top: 20px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  align-items: center;
+  gap: 22px;
+  background: #0b181be8;
+  border: 1px solid #596e61;
+  padding: 12px 20px;
+  color: #b2c0a8;
+  font-size: 13px;
+  z-index: 8;
+}
+.season-hud strong {
+  font: 23px monospace;
+  color: #ecd295;
+  white-space: nowrap;
+}
+.season-hud span {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  white-space: nowrap;
+}
+.season-hud b {
+  color: #ebc869;
+  white-space: nowrap;
+}
+.season-broadcast {
+  position: absolute;
+  left: 50%;
+  bottom: 105px;
+  transform: translateX(-50%);
+  width: min(570px, 86vw);
+  padding: 16px 22px;
+  background: #172e26ef;
+  border: 1px solid #8e976d;
+  display: flex;
+  gap: 16px;
+  align-items: center;
+  color: #d8d6aa;
+  z-index: 8;
+}
+.season-broadcast p {
+  font-size: 13px;
+  margin: 8px 0 0;
+  line-height: 1.5;
+}
+.season-broadcast small {
+  margin-left: auto;
+  opacity: 0.6;
+}
+.season-source {
+  position: absolute;
+  left: 50%;
+  bottom: 95px;
+  transform: translateX(-50%);
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 9px 16px;
+  min-width: 225px;
+  background: #142420ee;
+  padding: 14px 20px;
+  border: 1px solid #9e955f;
+  z-index: 8;
+  color: #d9c583;
+}
+.season-source progress {
+  grid-column: 1/-1;
+  width: 100%;
+  height: 5px;
+  accent-color: #d2c58c;
+  order: 2;
+}
+.season-source small {
+  color: #9aaa94;
+}
+.season-gold-warning,
+.season-notice {
+  position: absolute;
+  left: 50%;
+  bottom: 165px;
+  transform: translateX(-50%);
+  background: #392f20ef;
+  color: #ead295;
+  padding: 10px 16px;
+  font-size: 13px;
+  z-index: 9;
+  max-width: 85vw;
+}
+.season-notice {
+  bottom: 210px;
+  background: #0e2525ef;
+  color: #acbeaa;
+}
+.season-result {
+  position: absolute;
+  inset: 0;
+  background: #050c0ff2;
+  display: grid;
+  place-items: center;
+  z-index: 45;
+}
+.season-result > div {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 18px;
+  color: #d9c28c;
+  padding: 24px;
+  text-align: center;
+}
+.season-result h2 {
+  font-size: 36px;
+  margin: 0;
+}
+.season-result p {
+  color: #95aa99;
+}
+.season-result small {
+  font: 17px monospace;
+}
+.season-result button {
+  padding: 12px 30px;
+}
+@media (max-width: 650px) {
+  .season-home {
+    gap: 15px;
+  }
+  .season-floor {
+    width: 85px;
+    padding: 15px 6px;
+  }
+  .season-floor > strong {
+    font-size: 44px;
+  }
+  .season-floor small {
+    font-size: 9px;
+  }
+  .season-track {
+    right: 5px;
+  }
+  .season-metrics {
+    gap: 16px;
+    font-size: 12px;
+  }
+  .season-roster {
+    grid-template-columns: 1fr 1fr;
+  }
+  .season-board ol {
+    grid-template-columns: 1fr;
+  }
+  .season-hud {
+    top: 70px;
+    gap: 12px;
+    padding: 10px 13px;
+    font-size: 11px;
+  }
+  .season-hud strong {
+    font-size: 18px;
+  }
+  .season-broadcast {
+    bottom: 150px;
+    padding: 14px;
+    gap: 12px;
+  }
+  .season-broadcast p {
+    font-size: 12px;
+  }
+  .season-home-main .base-upgrade-compact {
+    max-width: 100%;
+  }
+}
+.season-target {
+  position: absolute;
+  right: 20px;
+  top: 110px;
+  z-index: 8;
+  background: #25352b;
+  border: 1px solid #a17e5f;
+  color: #d4c69f;
+  padding: 10px 14px;
+}
+.season-target[aria-pressed='true'] {
+  border-color: #d38463;
+  background: #512f25;
+}
+.survival-page .season-home {
+  padding: 22px;
+  gap: 24px;
+}
+.survival-page .season-floor small {
+  font-size: 11px;
+  max-width: calc(100% - 12px);
+  line-height: 1.5;
+  text-align: center;
+}
+.survival-page .season-home .compact-feeding {
+  padding: 0;
+  background: none;
+  border: 0;
+}
+.survival-page .season-result {
+  width: 100vw;
+  height: 100vh;
+  max-width: none;
+  max-height: none;
+  padding: 0;
+  margin: 0;
+  border: 0;
+}
+.season-home-main .feed-progress {
+  max-width: 520px;
+}
+.season-home-main .compact-rewards {
+  max-width: 520px;
+}
+.season-pickup {
+  position: absolute;
+  left: 50%;
+  bottom: 95px;
+  transform: translateX(-50%);
+  z-index: 9;
+  background: #24372d;
+  border: 1px solid #d1b56c;
+  color: #e5cf90;
+  padding: 12px 20px;
+}
+.season-source button {
+  font-size: 12px;
+  background: #2c3928;
+  border: 1px solid #a29562;
+  color: #d5c386;
+  padding: 5px 10px;
+}
+.season-pickup kbd,
+.season-source kbd {
+  margin-left: 8px;
+  opacity: 0.7;
+}
+.season-events {
+  margin-top: 16px;
+  color: #9eaf9b;
+  font-size: 12px;
+  max-width: 600px;
+  width: 100%;
+}
+.season-events summary {
+  cursor: pointer;
+  padding: 12px;
+  border: 1px solid #3d5249;
+  list-style-position: inside;
+}
+.season-events ul {
+  list-style: none;
+  padding: 12px 16px;
+  margin: 0;
+  background: #12211e;
+  max-height: 240px;
+  overflow: auto;
+}
+.season-events li {
+  display: grid;
+  grid-template-columns: 52px 1fr;
+  gap: 12px;
+  padding: 8px 0;
+  border-bottom: 1px solid #2a3c33;
+  line-height: 1.5;
+  text-align: left;
+}

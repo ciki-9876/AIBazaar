@@ -301,6 +301,10 @@ export function createActors(
         local.box(0.1, 0.16, 1, gold, [x, 0.05, 0.48], 0.005, lid);
         local.box(0.14, 0.68, 0.045, gold, [x, 0.38, -0.36], 0.01, g);
       }
+    } else if (kind === 'golden') {
+      local.box(.9,.08,.55,gold,[0,.16,0],.02,g);
+      local.box(.56,.025,.34,ivory,[0,.21,0],.01,g);
+      for(const x of [-.25,.25])local.box(.035,.026,.36,ink,[x,.23,0],0,g);
     } else if (kind === 'flashlight') {
       local.box(0.19, 0.18, 0.68, ink, [0, 0.14, 0], 0.04, g);
       local.box(0.29, 0.26, 0.18, gold, [0, 0.18, 0.38], 0.04, g);

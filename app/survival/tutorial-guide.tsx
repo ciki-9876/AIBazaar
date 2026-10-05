@@ -38,7 +38,10 @@ export default function TutorialGuide({
   const [read, setRead] = useState(false);
   useEffect(() => {
     const panel = dialog.current;
-    if (copy.strong) panel?.showModal();
+    if (copy.strong) {
+      panel?.showModal();
+      panel?.querySelector<HTMLButtonElement>('.guide-ack')?.focus();
+    }
     const update = () => {
       const node = document.querySelector(
         `[data-guide-target="${copy.target}"]`,
@@ -74,7 +77,7 @@ export default function TutorialGuide({
           />
         )}
         {copy.strong ? (
-          <button onClick={acknowledge}>
+          <button className="guide-ack" onClick={acknowledge}>
             {active.id === 'ascent' ? '确认，前往第三层' : '明白了'}
           </button>
         ) : (

@@ -52,7 +52,7 @@ export default function Vitals({ state }: { state: OpeningState }) {
       )
         .filter(([key]) =>
           key === 'hp'
-            ? state.guidance.seen.includes('spirit')
+            ? !!state.season || state.guidance.seen.includes('spirit')
             : state.afterlight.breadEaten,
         )
         .map(([key, label]) => (

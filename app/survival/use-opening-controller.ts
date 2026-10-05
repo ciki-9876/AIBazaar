@@ -2,8 +2,9 @@
 import { advanceDialogue, dialogueCue } from '@/lib/survival-opening';
 import { afterlightLine } from '@/lib/survival-afterlight';
 import { guidePaused } from '@/lib/survival-guidance';
+import { racePaused } from '@/lib/survival-race';
 import {
-  createOpening,
+  createSeasonOpening,
   openingAction,
   ROBOT_LINES,
   stepOpeningDialogue,
@@ -21,13 +22,13 @@ import { useOpeningCheckpoint } from './use-opening-checkpoint';
 
 /** Simulation, input, pause and terminal orchestration; UI is rendered by OpeningDemo. */
 export function useOpeningController() {
-  const [state, setState] = useState(createOpening),
+  const [state, setState] = useState(createSeasonOpening),
     opening = useRef(state),
     world = useRef(state.room);
   const presentation = useRef(presentationFrame(state.room));
   const [designSystem, setDesignSystem] = useState(false);
-  const [saved, setSaved] = useOpeningCheckpoint(opening);
-  const [upgradeShow, setUpgradeShow] = useState<1 | 2 | null>(null);
+  const [saved, setSaved, replaceCheckpoint] = useOpeningCheckpoint(opening);
+  const [upgradeShow, setUpgradeShow] = useState<number | null>(null);
   const upgradeActive = useRef(false);
   useEffect(() => {
     upgradeActive.current = upgradeShow !== null;
@@ -78,7 +79,9 @@ export function useOpeningController() {
         }
         if (
           (a.type === 'feed-core' && next !== before) ||
-          (a.type === 'upgrade-lift' && next !== before)
+          ((a.type === 'upgrade-lift' || a.type === 'feed-lift') &&
+            !next.race &&
+            next.room.liftLevel !== before.room.liftLevel)
         ) {
           terminalRef.current = false;
           setTerminal(false);
@@ -87,6 +90,26 @@ export function useOpeningController() {
           audio.current?.upgrade();
         }
         commit(next);
+        if (
+          next.race &&
+          next.race.scene !== 'live' &&
+          next.race.scene !== before.race?.scene
+        ) {
+          terminalRef.current = false;
+          setTerminal(false);
+          keys.current.clear();
+          audio.current?.programme(next.race.scene);
+        }
+        if (
+          (a.type === 'upgrade-race' || a.type === 'feed-lift') &&
+          next.room.liftLevel !== before.room.liftLevel
+        ) {
+          terminalRef.current = false;
+          setTerminal(false);
+          keys.current.clear();
+          setUpgradeShow(next.room.liftLevel!);
+          audio.current?.upgrade();
+        }
       }
     },
     [commit],
@@ -99,7 +122,12 @@ export function useOpeningController() {
   }, []);
   const openTerminal = useCallback(() => {
     const s = opening.current;
-    if (pauseRef.current || guidePaused(opening.current.guidance)) return;
+    if (
+      pauseRef.current ||
+      guidePaused(opening.current.guidance) ||
+      racePaused(opening.current.race)
+    )
+      return;
     if (s.stage === 'home' && s.homecoming.scene === 'mouth') {
       act({ type: 'open-mouth' });
       setConsoleTab('upgrade');
@@ -143,7 +171,9 @@ export function useOpeningController() {
     audio.current?.start();
     audio.current?.mute(muted);
     setReady(false);
-    commit(createOpening());
+    const next = openingAction(createSeasonOpening(), { type: 'enter' });
+    replaceCheckpoint(next);
+    commit(next);
     setPause(false);
     setGeneration((n) => n + 1);
   };
@@ -182,7 +212,10 @@ export function useOpeningController() {
         !pauseRef.current &&
         !upgradeActive.current &&
         !document.hidden &&
-        (!terminalRef.current || opening.current.stage === 'home')
+        (!terminalRef.current ||
+          (opening.current.stage === 'home' &&
+            !opening.current.race &&
+            !opening.current.season))
       ) {
         accumulator += dt;
         while (accumulator >= STEP) {
@@ -190,6 +223,7 @@ export function useOpeningController() {
           const next = stepOpeningDialogue(
             before,
             {
+              interact: keys.current.has('KeyE'),
               x:
                 Number(
                   keys.current.has('KeyD') || keys.current.has('ArrowRight'),
@@ -217,9 +251,23 @@ export function useOpeningController() {
           if (next.afterlight.tracesSeen && !before.afterlight.tracesSeen)
             audio.current?.growl();
           if (
+            next.race?.scene !== before.race?.scene &&
+            next.race?.scene &&
+            next.race.scene !== 'live'
+          ) {
+            changeTerminal(false);
+            audio.current?.programme(next.race.scene);
+          }
+          if (
+            next.race?.events.at(-1)?.id !== before.race?.events.at(-1)?.id &&
+            next.race?.events.at(-1)?.kind === 'passes'
+          )
+            audio.current?.programme('passes');
+          if (
             next.stage === 'home' &&
             before.stage !== 'home' &&
-            next.afterlight.phase === 'report'
+            next.afterlight.phase === 'report' &&
+            !racePaused(next.race)
           ) {
             setConsoleTab('tasks');
             changeTerminal(true);
@@ -256,10 +304,22 @@ export function useOpeningController() {
   }, [ready, changeTerminal]);
   useEffect(() => {
     const down = (e: KeyboardEvent) => {
+      if (
+        opening.current.season?.phase === 'victory' ||
+        opening.current.season?.phase === 'defeat'
+      )
+        return;
       if ((e.target as HTMLElement).closest('input, textarea, select')) return;
       if ((e.target as HTMLElement).closest('.f9-design-system, .gm-panel'))
         return;
       if (terminalRef.current) return;
+      if (racePaused(opening.current.race)) {
+        if (e.code === 'Escape' && !e.repeat) {
+          e.preventDefault();
+          setPause(!pauseRef.current);
+        }
+        return;
+      }
       if (guidePaused(opening.current.guidance)) {
         if (e.code === 'Escape') e.preventDefault();
         return;
@@ -295,6 +355,7 @@ export function useOpeningController() {
       }
       if (e.code === 'KeyE' && !e.repeat) {
         e.preventDefault();
+        keys.current.add('KeyE');
         if (opening.current.stage === 'equip-light')
           act({ type: 'equip-light' });
         else if (

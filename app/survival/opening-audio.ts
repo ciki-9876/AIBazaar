@@ -90,6 +90,20 @@ export class OpeningAudio {
       this.tone(f, f, 2.4, 'sine', 0.13, 3.8),
     );
   }
+  programme(scene: string) {
+    if (scene === 'passes') {
+      this.tone(660, 660, 0.15, 'triangle', 0.1);
+      this.tone(990, 990, 0.2, 'triangle', 0.08, 0.1);
+    } else if (scene === 'eliminated') {
+      this.tone(150, 35, 1.8, 'sawtooth', 0.13);
+      this.tone(55, 30, 2.5, 'sine', 0.25);
+    } else {
+      this.tone(75, 160, 0.8, 'sine', 0.16);
+      [220, 330, 440].forEach((f, i) =>
+        this.tone(f, f, 0.6, 'triangle', 0.08, i * 0.18),
+      );
+    }
+  }
   growl() {
     const c = this.context;
     if (!c || !this.master || this.muted) return;

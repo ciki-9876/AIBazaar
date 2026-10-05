@@ -103,3 +103,14 @@
 ## 2026-10-05 · 独立项目边界
 
 - [三个正式项目与独立AI实验](decisions/ADR-0034-three-project-boundaries.md)
+
+
+## 2026-10-05 · elevator 项目提交
+
+- [ADR-0026-race-to-floor-100](decisions/ADR-0026-race-to-floor-100.md)
+- [ADR-0027-race-and-pass-prototype](decisions/ADR-0027-race-and-pass-prototype.md)
+- [ADR-0029-elevator-warehouse-and-incremental-feeding](decisions/ADR-0029-elevator-warehouse-and-incremental-feeding.md)
+- [ADR-0031-elevator-action-first-console](decisions/ADR-0031-elevator-action-first-console.md)
+- [ADR-0033-elevator-staging-golden-passes-and-mortality](decisions/ADR-0033-elevator-staging-golden-passes-and-mortality.md)
+- [ADR-0034-three-project-boundaries](decisions/ADR-0034-three-project-boundaries.md)
+- [ADR-0039-elevator-complete-season-with-finite-rescue](decisions/ADR-0039-elevator-complete-season-with-finite-rescue.md)

@@ -35,6 +35,7 @@ export const ELEVATOR = { x: 48.5, z: 75.5 };
 export const SIGHT = 12;
 export const WORLD_VERSION = 4;
 export type RoomWorld = {
+  seasonLayout?: { kind: 'private' | 'checkpoint' | 'preparation'; area: number; entrances: Point[] };
   theme?: 'wasteland' | 'maintenance' | 'dunes' | 'pavilion';
   garden?: GardenManifest;
   sight?: number;

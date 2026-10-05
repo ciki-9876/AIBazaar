@@ -63,6 +63,7 @@ export const ITEM_PROPERTIES: Record<ItemKind, Definition> = {
     use: { stat: 'hp', gain: 45, automaticBelow: 45 },
   },
   core: { traits: ['valuable'] },
+  golden: { traits: ['key'] },
 };
 export const hasTrait = (kind: ItemKind, trait: ItemTrait) =>
   ITEM_PROPERTIES[kind].traits.includes(trait);
