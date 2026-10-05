@@ -1,0 +1,77 @@
+@import 'tailwindcss';
+@import 'tw-animate-css';
+@import 'shadcn/tailwind.css';
+@custom-variant dark (&:is(.dark *));
+/* Use installed book faces; Chinese text falls back to a smooth local font. */
+@font-face {
+  font-family: 'Ace Editorial';
+  src: local('Georgia');
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'Ace Editorial';
+  src: local('Georgia Bold');
+  font-weight: 700 900;
+  font-style: normal;
+  font-display: swap;
+}
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: #fff0d4;
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--foreground);
+  --color-destructive: #aa5545;
+  --color-border: var(--border);
+  --color-input: var(--border);
+  --color-ring: var(--primary);
+  --radius-lg: 5px;
+  --radius-md: 4px;
+  --radius-sm: 3px;
+}
+:root,
+.dark {
+  --font-ace-editorial:
+    'Ace Editorial', Georgia, 'Microsoft YaHei', 'PingFang SC', sans-serif;
+  --background: #f4e2c1;
+  --foreground: #343c3b;
+  --card: #fbe9cb;
+  --popover: #fff0d8;
+  --primary: #496f62;
+  --secondary: #e5d3b0;
+  --muted: #e9ddbf;
+  --muted-foreground: #7c786a;
+  --accent: #c89b43;
+  --border: #aaa28a;
+  --radius: 4px;
+}
+* {
+  box-sizing: border-box;
+}
+body {
+  margin: 0;
+  background: var(--background);
+  color: var(--foreground);
+  font: 14px var(--font-ace-editorial);
+  -webkit-font-smoothing: antialiased;
+}
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}

@@ -4,9 +4,9 @@ import { preview } from 'vite';
 import { ROOT } from './module-graph.mjs';
 
 const [product, portArg] = process.argv.slice(2);
-const ports = { elevator: 4175, cards: 4176, experiments: 4177 };
+const ports = { elevator: 4175, resonance: 4176, throw: 4177, 'elevator-ai': 4178 };
 if (!Object.hasOwn(ports, product))
-  throw new Error('Choose elevator, cards or experiments');
+  throw new Error('Choose elevator, resonance, throw or elevator-ai');
 const root = path.join(ROOT, 'apps', product);
 const manifest = JSON.parse(
   fs.readFileSync(path.join(root, 'dist/client/f9-release.json'), 'utf8'),

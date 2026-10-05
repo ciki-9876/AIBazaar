@@ -1,0 +1,20 @@
+{
+  "name": "@f9/resonance",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "scripts": {
+    "dev": "node ../../scripts/product.mjs resonance dev",
+    "build": "node ../../scripts/product.mjs resonance build",
+    "typecheck": "node ../../scripts/product.mjs resonance typecheck",
+    "lint": "node ../../scripts/product.mjs resonance lint",
+    "test": "node ../../scripts/test.mjs resonance",
+    "start": "node ../../scripts/preview-product.mjs resonance"
+  },
+  "dependencies": {
+    "react": "19.2.6",
+    "react-dom": "19.2.6",
+    "vinext": "1.0.0-beta.5",
+    "react-server-dom-webpack": "19.2.6"
+  }
+}

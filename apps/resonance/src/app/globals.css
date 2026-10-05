@@ -1,0 +1,10 @@
+@import 'tailwindcss';
+@import 'tw-animate-css';
+@import 'shadcn/tailwind.css';
+@custom-variant dark (&:is(.dark *));
+@theme inline {--color-background:var(--background);--color-foreground:var(--foreground);--color-card:var(--card);--color-card-foreground:var(--foreground);--color-popover:var(--popover);--color-popover-foreground:var(--foreground);--color-primary:var(--primary);--color-primary-foreground:#101918;--color-secondary:var(--secondary);--color-secondary-foreground:var(--foreground);--color-muted:var(--muted);--color-muted-foreground:var(--muted-foreground);--color-accent:var(--accent);--color-accent-foreground:var(--foreground);--color-destructive:#f18469;--color-border:var(--border);--color-input:var(--border);--color-ring:var(--primary);--radius-lg:8px;--radius-md:6px;--radius-sm:4px}
+:root,.dark{--background:#101918;--foreground:#e9e5d5;--card:#19231f;--popover:#1b2521;--primary:#e6ad68;--secondary:#26332c;--muted:#26322c;--muted-foreground:#9aab9f;--accent:#34433a;--border:#394337;--radius:6px}
+/* Shared reset only. Product interaction and typography belong to each application. */
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--background); color: var(--foreground); font: 14px 'Microsoft YaHei', sans-serif; }
+@media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation-duration: .01ms !important; transition-duration: .01ms !important; scroll-behavior: auto !important; } }

@@ -18,17 +18,18 @@ function fixture() {
 test('discovery covers nested apps, components, hooks, shared and legacy tests while excluding generated output', () => {
   const f = fixture();
   try {
-    const tests = ['apps/cards/app/deep/card.test.mjs', 'apps/elevator/app/lift.test.mjs', 'components/button.test.mjs', 'hooks/save.test.mjs', 'packages/core/core.test.mjs', 'scripts/check.test.mjs', 'lib/demo-engine.test.mjs'];
+    const tests = ['apps/resonance/app/deep/card.test.mjs', 'apps/elevator/app/lift.test.mjs', 'components/button.test.mjs', 'hooks/save.test.mjs', 'packages/core/core.test.mjs', 'scripts/check.test.mjs', 'lib/demo-engine.test.mjs'];
     tests.forEach((file) => f.write(file));
-    f.write('apps/cards/dist/bundled.test.mjs');
-    f.write('apps/cards/.public/bundled.test.mjs');
-    f.write('apps/cards/node_modules/dependency.test.mjs');
+    f.write('apps/resonance/dist/bundled.test.mjs');
+    f.write('apps/resonance/.public/bundled.test.mjs');
+    f.write('apps/resonance/node_modules/dependency.test.mjs');
     assert.deepEqual(discoverTests('all', f.directory), [...tests].sort((a, b) => a < b ? -1 : a > b ? 1 : 0));
-    for (const product of ['elevator', 'cards']) {
+    for (const product of ['elevator', 'resonance', 'throw']) {
       const selected = discoverTests(product, f.directory);
       assert.ok(selected.includes('packages/core/core.test.mjs'));
       assert.ok(selected.includes('scripts/check.test.mjs'));
-      assert.ok(!selected.includes(`apps/${product === 'cards' ? 'elevator' : 'cards'}/app/${product === 'cards' ? 'lift' : 'deep/card'}.test.mjs`));
+      const other = product === 'elevator' ? 'resonance' : 'elevator';
+      assert.ok(!selected.includes(`apps/${other}/app/${product === 'elevator' ? 'deep/card' : 'lift'}.test.mjs`));
     }
   } finally { f.cleanup(); }
 });
@@ -41,9 +42,9 @@ test('module parser detects workspace package imports, type imports and require;
   const f = fixture();
   const file = path.relative(ROOT, path.join(f.directory, 'source.ts')).replaceAll('\\', '/');
   try {
-    f.write('source.ts', "import type T from '@f9/cards/app/page'; export { type X } from '@/lib/wandeng-game'; const x = require('@/lib/survival-room');");
+    f.write('source.ts', "import type T from '@f9/resonance/app/page'; export { type X } from '@/lib/wandeng-game'; const x = require('@/lib/survival-room');");
     const edges = dependencies(file);
-    assert.deepEqual(edges.map((e) => e.to), ['apps/cards/app/page.tsx', 'lib/wandeng-game.ts', 'lib/survival-room.ts']);
+    assert.deepEqual(edges.map((e) => e.to), ['apps/resonance/app/page.tsx', 'lib/wandeng-game.ts', 'lib/survival-room.ts']);
     assert.equal(edges[0].typeOnly, true);
     assert.equal(edges[1].typeOnly, true);
     assert.equal(boundaryViolations(edges.map((e) => ({ ...e, from: 'lib/survival-room.ts' })), 'elevator').length, 2);

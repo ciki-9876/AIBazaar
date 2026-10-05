@@ -4,7 +4,17 @@ import { walk } from './module-graph.mjs';
 
 // v1 replay compatibility: these existing comparisons keep an explicit English
 // collation. New simulation code must use numeric or code-unit ordering.
-const legacyCollation = new Map([['lib/arena-engine.ts', 3], ['lib/arena-challenge.ts', 1], ['lib/arena-presentation.ts', 1], ['lib/survival-room.ts', 1], ['lib/demo-engine.ts', 1], ['lib/card-framework/runtime.ts', 3], ['lib/card-framework/selectors.ts', 1]]);
+const legacyCollation = new Map([
+  ['lib/arena-engine.ts', 3],
+  ['apps/resonance/src/lib/arena-engine.ts', 3],
+  ['apps/throw/src/lib/arena-engine.ts', 3],
+  ['lib/arena-challenge.ts', 1],
+  ['lib/arena-presentation.ts', 1],
+  ['lib/survival-room.ts', 1],
+  ['lib/demo-engine.ts', 1],
+  ['lib/card-framework/runtime.ts', 3],
+  ['lib/card-framework/selectors.ts', 1],
+]);
 const metadataTime = new Map([['lib/arena-archive.ts', 'createdAt'], ['lib/design-review.ts', 'exportedAt'], ['lib/card-framework/validation.ts', 'generatedAt']]);
 const forbidden = new Map([['Math', new Set(['random'])], ['Date', new Set(['now'])], ['performance', new Set(['now'])], ['crypto', new Set(['randomUUID', 'getRandomValues', 'randomBytes'])]]);
 export function determinismViolations(text, file = 'simulation.ts') {
@@ -41,7 +51,12 @@ export function determinismViolations(text, file = 'simulation.ts') {
   return failures;
 }
 export function checkDeterminism() {
-  const files = [...walk('lib'), ...walk('packages/core')].filter((file) => file.endsWith('.ts') && !file.includes('.test.'));
+  const files = [
+    ...walk('lib'),
+    ...walk('packages/core'),
+    ...walk('apps/resonance/src/lib'),
+    ...walk('apps/throw/src/lib'),
+  ].filter((file) => file.endsWith('.ts') && !file.includes('.test.'));
   const violations = files.flatMap((file) => determinismViolations(fs.readFileSync(file, 'utf8'), file));
   if (violations.length) throw new Error(JSON.stringify(violations, null, 2));
   return files.length;

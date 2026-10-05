@@ -1,0 +1,19 @@
+{
+  "name": "@f9/elevator-ai-experiment",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "scripts": {
+    "dev": "node ../../scripts/product.mjs elevator-ai dev",
+    "build": "node ../../scripts/product.mjs elevator-ai build",
+    "typecheck": "node ../../scripts/product.mjs elevator-ai typecheck",
+    "lint": "node ../../scripts/product.mjs elevator-ai lint",
+    "start": "node ../../scripts/preview-product.mjs elevator-ai"
+  },
+  "dependencies": {
+    "react": "19.2.6",
+    "react-dom": "19.2.6",
+    "vinext": "1.0.0-beta.5",
+    "react-server-dom-webpack": "19.2.6"
+  }
+}

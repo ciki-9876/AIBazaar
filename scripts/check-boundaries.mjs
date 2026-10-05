@@ -6,10 +6,11 @@ import {
   productSources,
   SOURCE_ROOTS,
 } from './module-graph.mjs';
+import { PROJECTS } from './products.mjs';
 
-const targets = process.argv[2] ? [process.argv[2]] : ['elevator', 'cards'];
+const targets = process.argv[2] ? [process.argv[2]] : PROJECTS;
 for (const target of targets) {
-  if (!['elevator', 'cards'].includes(target))
+  if (!PROJECTS.includes(target))
     throw new Error(`Unknown product ${target}`);
   const entries = walk(`apps/${target}/app`).filter((file) =>
     /\/(page|layout)\.tsx$/.test(file),

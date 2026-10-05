@@ -6,7 +6,7 @@
     "node": ">=22.13.0"
   },
   "scripts": {
-    "dev": "vinext dev",
+    "dev": "npm run dev:elevator",
     "build": "node scripts/build-products.mjs",
     "start": "node scripts/preview-product.mjs elevator",
     "lint": "oxlint app lib components hooks packages scripts apps experiments vite.config.ts next.config.ts",
@@ -14,25 +14,33 @@
     "test": "node scripts/test.mjs",
     "build:pages": "node scripts/build-pages.mjs",
     "test:elevator": "node scripts/test.mjs elevator",
-    "test:cards": "node scripts/test.mjs cards",
+    "test:resonance:cards": "node scripts/test.mjs resonance",
+    "test:throw:cards": "node scripts/test.mjs throw",
     "test:experiments": "node scripts/test.mjs experiments",
     "typecheck": "tsc --noEmit --incremental false",
     "build:elevator": "node scripts/product.mjs elevator build",
-    "build:cards": "node scripts/product.mjs cards build",
-    "build:experiments": "node scripts/product.mjs experiments build",
+    "build:resonance:cards": "node scripts/product.mjs resonance build",
+    "build:throw:cards": "node scripts/product.mjs throw build",
+    "build:elevator-ai": "node scripts/product.mjs elevator-ai build",
     "dev:elevator": "node scripts/product.mjs elevator dev",
-    "dev:cards": "node scripts/product.mjs cards dev",
-    "dev:experiments": "node scripts/product.mjs experiments dev",
+    "dev:resonance:cards": "node scripts/product.mjs resonance dev",
+    "dev:throw:cards": "node scripts/product.mjs throw dev",
+    "dev:elevator-ai": "node scripts/product.mjs elevator-ai dev",
     "check:boundaries": "node scripts/check-boundaries.mjs",
     "check:determinism": "node scripts/check-determinism.mjs",
     "check:dependencies": "knip --dependencies --no-config-hints",
     "typecheck:elevator": "node scripts/product.mjs elevator typecheck",
-    "typecheck:cards": "node scripts/product.mjs cards typecheck",
+    "typecheck:resonance:cards": "node scripts/product.mjs resonance typecheck",
+    "typecheck:throw:cards": "node scripts/product.mjs throw typecheck",
+    "typecheck:elevator-ai": "node scripts/product.mjs elevator-ai typecheck",
     "publish:elevator": "node scripts/publish-product.mjs elevator",
-    "publish:cards": "node scripts/publish-product.mjs cards",
+    "publish:resonance:cards": "node scripts/publish-product.mjs resonance",
+    "publish:throw:cards": "node scripts/publish-product.mjs throw",
     "preview:elevator": "node scripts/preview-product.mjs elevator",
-    "preview:cards": "node scripts/preview-product.mjs cards",
-    "preview:experiments": "node scripts/preview-product.mjs experiments"
+    "preview:resonance:cards": "node scripts/preview-product.mjs resonance",
+    "preview:throw:cards": "node scripts/preview-product.mjs throw",
+    "preview:elevator-ai": "node scripts/preview-product.mjs elevator-ai",
+    "test:elevator-ai": "node scripts/test.mjs elevator-ai"
   },
   "dependencies": {
     "@base-ui/react": "1.7.0",
@@ -68,6 +76,9 @@
   },
   "type": "module",
   "workspaces": [
-    "apps/*"
+    "apps/elevator",
+    "apps/resonance",
+    "apps/throw",
+    "apps/elevator-ai"
   ]
 }

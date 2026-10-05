@@ -40,6 +40,8 @@ export function workspacePackages() {
   return packages;
 }
 export function resolveImport(from, specifier, packages = workspacePackages()) {
+  // Vite worker wrappers remain dependencies of the underlying source and its product owner.
+  specifier = specifier.replace(/\?worker$/, '');
   const packageName = [...packages.keys()].find((name) => specifier === name || specifier.startsWith(`${name}/`));
   if (!specifier.startsWith('.') && !specifier.startsWith('@/') && !packageName) return null;
   let packagePath;
@@ -53,7 +55,12 @@ export function resolveImport(from, specifier, packages = workspacePackages()) {
   const base = slash(
     path.normalize(
       packageName ? packagePath : specifier.startsWith('@/')
-        ? specifier.slice(2)
+        ? (() => {
+            const project = from.match(/^apps\/(resonance|throw)\//)?.[1];
+            return project
+              ? path.join('apps', project, 'src', specifier.slice(2))
+              : specifier.slice(2);
+          })()
         : path.join(path.dirname(from), specifier),
     ),
   );
@@ -159,6 +166,10 @@ export function closure(entries) {
 
 export function owner(file) {
   if (file === 'app/survival/waterworks/page.tsx') return 'experiments';
+  const sourceProject = file.match(/^apps\/(resonance|throw)\/src\//)?.[1];
+  if (sourceProject) return sourceProject;
+  const appProject = file.match(/^apps\/(elevator|resonance|throw|elevator-ai)\//)?.[1];
+  if (appProject) return appProject;
   if (
     /^(packages\/|lib\/(site-path|utils)\.ts$|app\/(globals\.css|layout\.tsx)$|components\/|hooks\/|scripts\/product-config\.ts$)/.test(
       file,
@@ -167,12 +178,8 @@ export function owner(file) {
     return 'shared';
   if (/^(apps\/elevator\/|app\/survival\/|lib\/survival-)/.test(file))
     return 'elevator';
-  if (
-    /^(apps\/cards\/|app\/(arena|wandeng)\/|lib\/(cards\/|arena-|wandeng-|training-|card-framework|card-types|card-illustrations|hero-cards|heroes|battle-slice-(fx|visual)|flat-battle-geometry))/.test(
-      file,
-    )
-  )
-    return 'cards';
+  if (/^(app\/(arena|wandeng)\/|lib\/(cards\/|arena-|wandeng-|training-|card-framework|card-types|card-illustrations|hero-cards|heroes|battle-slice-(fx|visual)|flat-battle-geometry))/.test(file))
+    return 'experiments';
   return 'experiments';
 }
 export function productSources(files, product) {
@@ -186,7 +193,7 @@ export function boundaryViolations(edges, product) {
       ? b !== 'shared'
       : product
         ? !['shared', product].includes(b)
-        : ['elevator', 'cards'].includes(a) && !['shared', a].includes(b);
+        : ['elevator', 'resonance', 'throw', 'elevator-ai'].includes(a) && !['shared', a].includes(b);
   });
 }
 export function runtimeCycles(edges) {

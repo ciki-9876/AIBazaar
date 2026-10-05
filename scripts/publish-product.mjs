@@ -2,10 +2,11 @@ import path from 'node:path';
 import { spawnSync } from 'node:child_process';
 import fs from 'node:fs';
 import { ROOT } from './module-graph.mjs';
+import { PRODUCTION_PRODUCTS } from './products.mjs';
 
 const target = process.argv[2];
-if (!['elevator', 'cards'].includes(target))
-  throw new Error('Choose elevator or cards');
+if (!PRODUCTION_PRODUCTS.includes(target))
+  throw new Error(`Choose a production project: ${PRODUCTION_PRODUCTS.join(', ')}`);
 const project = process.env[`F9_${target.toUpperCase()}_PAGES_PROJECT`];
 if (!project || !/^[a-z0-9-]+$/.test(project))
   throw new Error(

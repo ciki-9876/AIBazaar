@@ -1,28 +1,31 @@
-/** Explicit release manifests. Experiments never enter either production route tree. */
+/** Production products. Experiments have a separate manifest and never enter release builds. */
 export const PRODUCTS = {
   elevator: {
     title: '安泊 · 电梯求生',
     home: 'app/survival/page.tsx',
-    routes: { survival: 'app/survival/page.tsx' },
     assets: ['fonts', 'art-assets/survival', 'art-assets/showcase'],
   },
-  cards: {
-    title: '万灯城 · 归物师',
-    home: 'app/wandeng/page.tsx',
-    routes: {
-      wandeng: 'app/wandeng/page.tsx',
-      'wandeng/training': 'app/wandeng/training/page.tsx',
-      arena: 'app/arena/page.tsx',
-      'arena/2d': 'app/arena/2d/page.tsx',
-      'arena/2d/sticker': 'app/arena/2d/sticker/page.tsx',
-      'arena/2d/storybook': 'app/arena/2d/storybook/page.tsx',
-    },
-    assets: [
-      'fonts',
-      'art-assets/wandeng',
-      'art-assets/arena-2d',
-      'art-assets/battle-slice',
-      'art-assets/material-study',
-    ],
+  resonance: {
+    title: '万灯城 · 共鸣卡牌',
+    home: 'app/page.tsx',
+    assets: ['fonts', 'art-assets/wandeng'],
+  },
+  throw: {
+    title: '万灯城 · 甩牌对决',
+    home: 'app/page.tsx',
+    assets: ['fonts', 'art-assets/wandeng'],
   },
 };
+
+/** Research builds are runnable, but are never included in production deployment. */
+export const EXPERIMENTS = {
+  'elevator-ai': {
+    title: '电梯 AI · 实验区',
+    home: 'app/page.tsx',
+    assets: ['fonts', 'art-assets/survival'],
+  },
+};
+
+export const PRODUCTION_PRODUCTS = Object.keys(PRODUCTS);
+export const EXPERIMENTAL_PROJECTS = Object.keys(EXPERIMENTS);
+export const PROJECTS = [...PRODUCTION_PRODUCTS, ...EXPERIMENTAL_PROJECTS];
