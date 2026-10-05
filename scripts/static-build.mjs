@@ -8,7 +8,7 @@ import { finalizeStatic } from './static-output.mjs';
 process.env.NODE_ENV = 'production';
 process.env.__VINEXT_SHARED_BUILD_ID = randomUUID();
 const root = process.cwd();
-if (!/[/\\]apps[/\\](elevator|cards|experiments)$/.test(root))
+if (!/[/\\]apps[/\\](elevator|resonance|throw|elevator-ai)$/.test(root))
   throw new Error('Build root must be a product app');
 const output = path.resolve(root, 'dist');
 if (path.dirname(output) !== root) throw new Error('Invalid output path');

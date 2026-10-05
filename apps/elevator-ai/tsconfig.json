@@ -1,0 +1,13 @@
+{
+  "extends": "../../tsconfig.json",
+  "include": [
+    "app/**/*.ts",
+    "app/**/*.tsx",
+    "src/**/*.ts",
+    "src/**/*.tsx",
+    "ai-lab/**/*.ts",
+    "vite.config.ts",
+    "../../next-env.d.ts"
+  ],
+  "exclude": ["dist", ".public", ".vinext"]
+}

@@ -4,15 +4,17 @@ import { boundaryViolations, runtimeCycles } from './module-graph.mjs';
 
 test('product boundaries reject direct, type-only and shared backdoor imports', () => {
   const edges = [
-    { from: 'lib/survival-room.ts', to: 'lib/cards/combat.ts', typeOnly: true },
-    { from: 'packages/render-kit/atelier.ts', to: 'lib/survival-world.ts' },
-    { from: 'app/arena/arena-table.tsx', to: 'app/art/slice/page.tsx' },
+    { from: 'apps/elevator/app/page.tsx', to: 'apps/resonance/src/lib/cards/rhythm.ts', typeOnly: true },
+    { from: 'packages/render-kit/atelier.ts', to: 'apps/elevator/app/page.tsx' },
+    { from: 'apps/resonance/src/app/page.tsx', to: 'apps/throw/src/app/page.tsx' },
+    { from: 'apps/elevator-ai/app/page.tsx', to: 'apps/elevator/app/page.tsx' },
   ];
   assert.equal(boundaryViolations(edges.slice(0, 1), 'elevator').length, 1);
-  assert.equal(boundaryViolations(edges.slice(1), 'cards').length, 2);
+  assert.equal(boundaryViolations(edges.slice(1, 3), 'resonance').length, 2);
+  assert.equal(boundaryViolations(edges.slice(3), 'elevator-ai').length, 1);
   assert.equal(
     boundaryViolations(
-      [{ from: 'lib/survival-room.ts', to: 'lib/site-path.ts' }],
+      [{ from: 'apps/elevator/app/page.tsx', to: 'lib/site-path.ts' }],
       'elevator',
     ).length,
     0,

@@ -40,7 +40,18 @@ next-env.d.ts
 
 # Independent app build and generated asset directories
 /apps/*/dist/
+/apps/*/node_modules/
 /apps/*/.public/
 /apps/*/.vinext/
 /apps/*/.vite/
 /apps/*/.next/
+/apps/resonance/src/outline/.outline-history/
+/apps/resonance/src/outline/*.pending
+
+# Archived workbench source is retained; local builds and caches are not.
+/experiments/legacy-workbench/dist/
+/experiments/legacy-workbench/.public/
+/experiments/legacy-workbench/.next/
+/experiments/legacy-workbench/.vinext/
+/experiments/legacy-workbench/.vite/
+/experiments/legacy-workbench/node_modules/

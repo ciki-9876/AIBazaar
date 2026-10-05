@@ -1,0 +1,20 @@
+{
+  "name": "@f9/throw",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "scripts": {
+    "dev": "node ../../scripts/product.mjs throw dev",
+    "build": "node ../../scripts/product.mjs throw build",
+    "typecheck": "node ../../scripts/product.mjs throw typecheck",
+    "lint": "node ../../scripts/product.mjs throw lint",
+    "test": "node ../../scripts/test.mjs throw",
+    "start": "node ../../scripts/preview-product.mjs throw"
+  },
+  "dependencies": {
+    "react": "19.2.6",
+    "react-dom": "19.2.6",
+    "vinext": "1.0.0-beta.5",
+    "react-server-dom-webpack": "19.2.6"
+  }
+}

@@ -68,3 +68,8 @@
 [DECISION.md](../templates/DECISION.md)
 
 - [ADR-0018：像素终端与第二次自主出勤](./ADR-0018-pixel-terminal-and-second-expedition.md)
+
+
+## 2026-10-05 · 独立项目边界
+
+- [三个正式项目与独立AI实验](ADR-0034-three-project-boundaries.md)

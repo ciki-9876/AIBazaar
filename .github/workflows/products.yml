@@ -11,7 +11,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        product: [elevator, cards]
+        product: [elevator, resonance, throw]
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6

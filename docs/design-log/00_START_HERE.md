@@ -98,3 +98,8 @@
 - [战斗机制组合](./01_DESIGN_DNA.md#mc-01-战斗机制组合)
 - [卡牌机制组合](./01_DESIGN_DNA.md#mc-02-卡牌机制组合)
 - [电梯楼层机制组合](./01_DESIGN_DNA.md#mc-03-电梯楼层机制组合)
+
+
+## 2026-10-05 · 独立项目边界
+
+- [三个正式项目与独立AI实验](decisions/ADR-0034-three-project-boundaries.md)

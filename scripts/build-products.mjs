@@ -1,6 +1,7 @@
 import { spawnSync } from 'node:child_process';
 import { ROOT } from './module-graph.mjs';
-for (const target of ['elevator', 'cards']) {
+import { PRODUCTION_PRODUCTS } from './products.mjs';
+for (const target of PRODUCTION_PRODUCTS) {
   const result = spawnSync(
     process.execPath,
     ['scripts/product.mjs', target, 'build'],
