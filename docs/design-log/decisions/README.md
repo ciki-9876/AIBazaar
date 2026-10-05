@@ -1,5 +1,49 @@
 # 设计决策记录
 
+- [ADR-0047：共鸣夏日像素与手绘叙事试演](./ADR-0047-resonance-presentation-comparison.md)：两种可操作故事样本与对应战斗美术，独立复用横向控制方法；当前规则、大纲保持，最终画风未选定。
+
+- [ADR-0046：报刊插画与左右舞台对战](./ADR-0046-throw-editorial-illustration.md)：用户录屏为广义美术参考，接替像素表现但保留原子资产、尺度、帧动画和动态光；正常渲染与真实练习已测，CPU回退和长期观感待验证。
+
+- [ADR-0044：共鸣先完成故事大纲](./ADR-0044-resonance-outline-authoring.md)：用户与助手通过网站共同维护世界、章节与问题；表现形式留待大纲完成后决定，本地项目保存与静态浏览器草稿明确区分。
+
+- [ADR-0045：原子像素场景、共同尺度与实时光照](./ADR-0045-throw-atomic-pixel-scenes.md)：甩牌场景与人物美术 V2，复用资产、整数倍率、合理家具尺度与帧动画；剧情／规则保持，主要视口和动作已有实测证据，软件回退待测。
+
+- [ADR-0043：现代西方奇幻与横版魔术师RPG](./ADR-0043-throw-western-pixel-rpg-opening.md)：街区行动、原创像素人物、建筑／NPC、真实甩牌结果与资格推进已接通；新版剧本保留个人夺冠，后续城市未开发。
+
+- [ADR-0042 音乐治愈师与非对称心魔战斗](./ADR-0042-resonance-healing-monsters.md)：用户新世界与敌群模型已实装，保留玩家编排与歌曲；六场剧本切片、新v3与旧回放隔离。
+
+- [ADR-0041 甩牌魔术师个人夺冠主线](./ADR-0041-throw-magician-personal-championship.md)：用户选择落寞魔术之乡到世界冠军的个人英雄故事；详细剧本、人物和赛制为草案，未实装新剧情。
+
+- [ADR-0040：装备歌曲的节拍与核心能力](./ADR-0040-resonance-song-heroes.md)：原创曲、双方独立节拍、只播放我方音乐、音符与重拍能力已实装；新版本保留旧回放，速度预算和听觉体验待验证。
+
+- [ADR-0039：完整非AI赛季、金票守恒与真实库存救援](./ADR-0039-elevator-complete-season-with-finite-rescue.md)：用户按SPEC开发授权已落实至100F，新规则9与旧季兼容；浏览器及全流程自动化证据单列，AI竞争和平衡待验证。
+
+- [ADR-0038：甩牌布阵界面与世界观候选](./ADR-0038-throw-workbench-and-world-candidates.md)：全宽拖放、遗物草稿／装备提交、红黑花色和少文本已实装；新叙事五选未定，实际界面验收待完成。
+
+- [ADR-0034：三个正式项目与电梯 AI 实验区](./ADR-0034-three-project-boundaries.md)：共鸣与甩牌独立拆分；AI 独立实验，完成验证后再并回电梯；历史混合工作台归档。
+
+- [ADR-0035：甩牌对决独立规则基线](./ADR-0035-throw-card-duel-baseline.md)：主动发射、扑克牌型和本体命中保持为独立玩法。
+- [ADR-0036：甩牌选牌与单遗物槽](./ADR-0036-throw-duel-selection-and-relic.md)：单击单选、一次连续框选、整理按钮、遗物槽与反馈边界。
+- [ADR-0037：甩牌节奏、十格构筑与连续选区](./ADR-0037-throw-duel-rhythm-and-loadouts.md)：每三秒抽牌、十格位置构筑和对手可执行选区。
+
+- [ADR-0033：准备层与金票资源淘汰流程](./ADR-0033-elevator-staging-golden-passes-and-mortality.md)：用户流程明确；完整SPEC区分资格和死亡、阻断反复搬票与免费恢复，有限救援和异步名册为待选择建议，新规则未实装。
+
+- [ADR-0032：上下阵地与心灯命中反馈](./ADR-0032-wandeng-rhythm-combat-visuals.md)：用户要求更清晰的共鸣对战；固定核心／生命、弹道和治疗承伤反馈已实装，规则不变，观看体验待试玩。
+
+- [ADR-0031：电梯出发决策与少文本首页](./ADR-0031-elevator-action-first-console.md)：用户批准一轮优化，路线与直接出发、暂停和审查状态、选择后的投喂消耗；玩法规则保持，理解效率待试玩。
+
+- [ADR-0030：首扫保底与共鸣线demo](./ADR-0030-wandeng-rhythm-first-entry-demo.md)：用户批准每圈首扫立即触发、重置线冷却；独立九格／两心灯demo已接11卡和回放，数值与观看体验待验收。
+
+- [ADR-0029：电梯仓库与分次投喂](./ADR-0029-elevator-warehouse-and-incremental-feeding.md)：用户要求已实装，24格起始、累计升级材料、确认永久销毁；每级4格等首版细则待试玩。
+
+- [ADR-0028：深入探索归物师节奏线对决](./ADR-0028-wandeng-rhythm-scan-direction.md)：用户指定连续扫描、按线的间隔发动当前卡牌；允许移除三路和屏障。细则待讨论，未实装、未迁移旧对局。
+
+- [ADR-0027：百层竞速与通行证首版](./ADR-0027-race-and-pass-prototype.md)：已实现共享签发、跨层成本、升级跨度、公开审查时间与结果演出；数字待试玩，AI独立分支。
+
+- [ADR-0026：与AI竞争抢先抵达100层](./ADR-0026-race-to-floor-100.md)：用户长期目标明确；升级开层与通行证跨层仍待选择，未实装新规则。
+
+- [ADR-0025：大模型竞争者与晋级／淘汰体验](./ADR-0025-llm-contestants-and-elimination-experience.md)：综艺候选的用户核心要求已明确；具体执行架构与赛事仍为提案。
+
 - [ADR-0024：采纳被取代的归途方向](./ADR-0024-replacement-mystery-direction.md)：确认题材及动机、自洽性、人物与玩法联动要求；具体系统仍待讨论。
 
 - [ADR-0023：死亡背包、脑浆与怪物视野](./ADR-0023-survival-sight-brains-and-recovery.md)：可追回背包、品质经验、堆叠、领地／突袭脱战、双高度视野，局部取代0020与0022。
@@ -68,42 +112,3 @@
 [DECISION.md](../templates/DECISION.md)
 
 - [ADR-0018：像素终端与第二次自主出勤](./ADR-0018-pixel-terminal-and-second-expedition.md)
-
-
-## 2026-10-05 · 独立项目边界
-
-- [三个正式项目与独立AI实验](ADR-0034-three-project-boundaries.md)
-
-
-## 2026-10-05 · elevator 项目提交
-
-- [ADR-0026-race-to-floor-100](ADR-0026-race-to-floor-100.md)
-- [ADR-0027-race-and-pass-prototype](ADR-0027-race-and-pass-prototype.md)
-- [ADR-0029-elevator-warehouse-and-incremental-feeding](ADR-0029-elevator-warehouse-and-incremental-feeding.md)
-- [ADR-0031-elevator-action-first-console](ADR-0031-elevator-action-first-console.md)
-- [ADR-0033-elevator-staging-golden-passes-and-mortality](ADR-0033-elevator-staging-golden-passes-and-mortality.md)
-- [ADR-0034-three-project-boundaries](ADR-0034-three-project-boundaries.md)
-- [ADR-0039-elevator-complete-season-with-finite-rescue](ADR-0039-elevator-complete-season-with-finite-rescue.md)
-
-
-## 2026-10-05 · resonance 项目提交
-
-- [ADR-0028-wandeng-rhythm-scan-direction](ADR-0028-wandeng-rhythm-scan-direction.md)
-- [ADR-0030-wandeng-rhythm-first-entry-demo](ADR-0030-wandeng-rhythm-first-entry-demo.md)
-- [ADR-0032-wandeng-rhythm-combat-visuals](ADR-0032-wandeng-rhythm-combat-visuals.md)
-- [ADR-0037-throw-duel-rhythm-and-loadouts](ADR-0037-throw-duel-rhythm-and-loadouts.md)
-- [ADR-0040-resonance-song-heroes](ADR-0040-resonance-song-heroes.md)
-- [ADR-0042-resonance-healing-monsters](ADR-0042-resonance-healing-monsters.md)
-- [ADR-0044-resonance-outline-authoring](ADR-0044-resonance-outline-authoring.md)
-- [ADR-0047-resonance-presentation-comparison](ADR-0047-resonance-presentation-comparison.md)
-
-
-## 2026-10-05 · throw 项目提交
-
-- [ADR-0035-throw-card-duel-baseline](ADR-0035-throw-card-duel-baseline.md)
-- [ADR-0036-throw-duel-selection-and-relic](ADR-0036-throw-duel-selection-and-relic.md)
-- [ADR-0038-throw-workbench-and-world-candidates](ADR-0038-throw-workbench-and-world-candidates.md)
-- [ADR-0041-throw-magician-personal-championship](ADR-0041-throw-magician-personal-championship.md)
-- [ADR-0043-throw-western-pixel-rpg-opening](ADR-0043-throw-western-pixel-rpg-opening.md)
-- [ADR-0045-throw-atomic-pixel-scenes](ADR-0045-throw-atomic-pixel-scenes.md)
-- [ADR-0046-throw-editorial-illustration](ADR-0046-throw-editorial-illustration.md)

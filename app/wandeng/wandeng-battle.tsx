@@ -322,12 +322,16 @@ export function BattlePlayback({
   onFinish,
   replay = false,
   training = false,
+  embedded = false,
+  actions,
 }: {
   battle: Battle;
   previous?: Battle;
   onFinish?: () => void;
   replay?: boolean;
   training?: boolean;
+  embedded?: boolean;
+  actions?: ReactNode;
 }) {
   const result = useMemo(() => simulateArenaDuel(battle.duel), [battle.duel]);
   const review = useMemo(() => {
@@ -368,10 +372,19 @@ export function BattlePlayback({
   const [reduced, setReduced] = useState(false),
     [detailed, setDetailed] = useState(true);
   const [inspected, setInspected] = useState<Inspection | null>(null);
+  const [reviewOpen, setReviewOpen] = useState(false);
   const resume = useRef(false),
     clock = useRef(0),
     root = useRef<HTMLElement>(null);
   const [fullError, setFullError] = useState('');
+  useEffect(() => {
+    if (embedded) return;
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    return () => {
+      document.body.style.overflow = previousOverflow;
+    };
+  }, [embedded]);
   useEffect(() => {
     const query = matchMedia('(prefers-reduced-motion: reduce)');
     const task = requestAnimationFrame(() => setReduced(query.matches));
@@ -424,7 +437,7 @@ export function BattlePlayback({
   }
   return (
     <section
-      className={`wd-tactical wd-battle-playback ${reduced ? 'wd-reduced' : ''}`}
+      className={`wd-tactical wd-battle-playback ${embedded ? 'wd-battle-embedded' : ''} ${reduced ? 'wd-reduced' : ''}`}
       ref={root}
     >
       <div className="wd-section-heading">
@@ -436,6 +449,7 @@ export function BattlePlayback({
           <h1>{battle.duel.name}</h1>
         </div>
         <div className="wd-playback">
+          {actions}
           <button
             onClick={() => {
               if (over) {
@@ -472,6 +486,15 @@ export function BattlePlayback({
           减少动态
         </label>
         <button
+          onClick={() => {
+            resume.current = playing && !over;
+            setPlaying(false);
+            setReviewOpen(true);
+          }}
+        >
+          对战复盘
+        </button>
+        <button
           onClick={async () => {
             try {
               if (document.fullscreenElement) await document.exitFullscreen();
@@ -487,7 +510,9 @@ export function BattlePlayback({
           {frame.time.toFixed(2)} / {result.duration.toFixed(2)}s
         </strong>
       </div>
-      {fullError && <output>{fullError}</output>}
+      {fullError && (
+        <output className="wd-fullscreen-error">{fullError}</output>
+      )}
       <FlatTable
         duel={battle.duel}
         frames={result.frames}
@@ -543,59 +568,71 @@ export function BattlePlayback({
           })
         }
       />
-      <label className="wd-timeline">
-        对战时间轴
-        <input
-          aria-label="对战时间轴"
-          type="range"
-          min={0}
-          max={result.duration}
-          step={0.25}
-          value={frame.time}
-          onChange={(e) => seek(Number(e.target.value))}
-        />
-      </label>
-      <p className="wd-live-event" aria-live="off">
-        {review.events
-          .filter((e) => e.time <= frame.time && frame.time - e.time < 1)
-          .slice(-2)
-          .map((e) => e.text)
-          .join(' / ') ||
-          '每件物品按自己的冷却行动。点击物品或增幅器，暂停查看细则。'}
-      </p>
-      {over && (
-        <div className="wd-combat-finish">
-          <h2>
-            {result.winner === 0
-              ? '它们回应了你的信任。'
-              : result.winner === 1
-                ? '这一场，我们先认输。'
-                : '双方仍在彼此回应。'}
-          </h2>
-          {onFinish && (
-            <button className="wd-primary" onClick={onFinish}>
-              查看对决结果 →
-            </button>
-          )}
-          {training ? (
-            <p>训练对局已结束，可逐帧回看或返回换装重试。</p>
-          ) : (
-            replay && <p>这是一份已结算的回放，路费和物品保持原样。</p>
+      <footer className="wd-battle-footer">
+        <label className="wd-timeline">
+          对战时间轴
+          <input
+            aria-label="对战时间轴"
+            type="range"
+            min={0}
+            max={result.duration}
+            step={0.25}
+            value={frame.time}
+            onChange={(e) => seek(Number(e.target.value))}
+          />
+        </label>
+        <div className="wd-battle-summary">
+          <p className="wd-live-event" aria-live="off">
+            {review.events
+              .filter((e) => e.time <= frame.time && frame.time - e.time < 1)
+              .slice(-2)
+              .map((e) => e.text)
+              .join(' / ') ||
+              '每件物品按自己的冷却行动。点击物品或增幅器，暂停查看细则。'}
+          </p>
+          {over && (
+            <div className="wd-combat-finish">
+              <h2>
+                {result.winner === 0
+                  ? '它们回应了你的信任。'
+                  : result.winner === 1
+                    ? '这一场，我们先认输。'
+                    : '双方仍在彼此回应。'}
+              </h2>
+              {onFinish && (
+                <button className="wd-primary" onClick={onFinish}>
+                  查看对决结果 →
+                </button>
+              )}
+            </div>
           )}
         </div>
+      </footer>
+      {reviewOpen && (
+        <Dialog
+          title="对战复盘"
+          wide
+          className="wd-review-dialog"
+          close={() => {
+            setReviewOpen(false);
+            setPlaying(resume.current);
+          }}
+        >
+          <ArenaReview
+            review={review}
+            duel={battle.duel}
+            time={frame.time}
+            onSeek={(t) => {
+              seek(t);
+              resume.current = false;
+              setReviewOpen(false);
+            }}
+            current={current}
+            previous={prior}
+            cardName={soulName}
+          />
+        </Dialog>
       )}
-      <ArenaReview
-        review={review}
-        duel={battle.duel}
-        time={frame.time}
-        onSeek={(t) => {
-          seek(t);
-          root.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-        }}
-        current={current}
-        previous={prior}
-        cardName={soulName}
-      />
       {inspected && (
         <InspectionDialog
           value={inspected}
@@ -862,6 +899,39 @@ export function HistoryDialog({
       setError(err instanceof Error ? err.message : '回放读取失败。');
     }
   }
+  if (selected) {
+    return (
+      <Dialog
+        title="对决手记"
+        close={close}
+        wide
+        className="wd-history-playback"
+      >
+        <BattlePlayback
+          key={selected.id + JSON.stringify(selected.duel)}
+          battle={selected}
+          previous={index > 0 ? state.history[index - 1] : undefined}
+          replay
+          embedded
+          actions={
+            <>
+              <button onClick={close}>关闭手记</button>
+              <button onClick={() => setSelected(null)}>← 回放列表</button>
+              <button onClick={download}>导出本场</button>
+              <button
+                onClick={() => {
+                  setReplayText(serializeWandengReplay(selected));
+                  setSelected(null);
+                }}
+              >
+                回放文本
+              </button>
+            </>
+          }
+        />
+      </Dialog>
+    );
+  }
   return (
     <Dialog title="对决手记" close={close} wide>
       <div className="wd-history-actions">
@@ -885,19 +955,10 @@ export function HistoryDialog({
             }}
           />
         </label>
-        {selected && <button onClick={download}>导出本场</button>}
       </div>
-      <details className="wd-replay-text">
+      <details className="wd-replay-text" open={!!replayText}>
         <summary>回放文本 · 下载不可用时也能保存</summary>
         <p>导出文本可复制保存。载入仅用于回看，不会覆盖旅途或发放奖励。</p>
-        <button
-          disabled={!selected}
-          onClick={() =>
-            selected && setReplayText(serializeWandengReplay(selected))
-          }
-        >
-          生成本场文本
-        </button>
         <textarea
           aria-label="回放文本"
           value={replayText}
@@ -913,7 +974,6 @@ export function HistoryDialog({
         {[...state.history].reverse().map((b) => (
           <button
             key={b.id}
-            aria-pressed={selected?.id === b.id}
             onClick={() => setSelected(b)}
           >
             {b.duel.name}
@@ -921,16 +981,7 @@ export function HistoryDialog({
           </button>
         ))}
       </nav>
-      {selected ? (
-        <BattlePlayback
-          key={selected.id + JSON.stringify(selected.duel)}
-          battle={selected}
-          previous={index > 0 ? state.history[index - 1] : undefined}
-          replay
-        />
-      ) : (
-        <p>选一场对决，重新看见它们一起行动的时刻。</p>
-      )}
+      <p>选一场对决，重新看见它们一起行动的时刻。</p>
     </Dialog>
   );
 }

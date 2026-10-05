@@ -1,5 +1,81 @@
 # AIBazaar 游戏设计迭代日志
 
+2026-10-05 AI第五轮：[搜索训练实测](../F9_AI_TRAINING_ROUND5_SEARCH_REPORT_2026-10-05.md)冻结旧战斗并训练新搜索头；相同72局清场66→72、遮挡6→12/12，局部通过但未接网页。[里程碑与规则刷新](../F9_AI_MILESTONES_AND_RULE_REFRESH_2026-10-05.md)区分专项人工反馈、统一选手、三场景与双端验证、首版合入和后续补训，按正式有限赛季更新目标。见[本轮记录](./iterations/F9/2026-10-05-ai-training-search-and-milestones.md)，未覆盖项和教师对照保留。
+
+2026-10-05 AI第四轮：[战斗智能实测](../F9_AI_TRAINING_ROUND4_COMBAT_REPORT_2026-10-05.md)新增独立战斗训练模块，72局清场60局、零死亡、安全移动诱聚48/60，但遮挡清场1/12和失踪目标循环阻止晋升。[记录](./iterations/F9/2026-10-05-ai-training-combat-round.md)追加用户自由创造实验内容、独立战斗指标和token要求，网页模型保持。
+
+2026-10-05 甩牌画风已选定／SVG试验：用户接受0046的报刊插画；[SVG与量产报告](../F9_THROW_VECTOR_PRODUCTION_TRIAL_2026-10-05.md)提供独立对照和可玩切片，8道具＋主角分部件母版／两配色／16姿势。混合生产链为助手建议，未全量替换；[迭代证据](./iterations/F9/2026-10-05-throw-vector-art-trial.md)区分已实装与未测效率、FPS和骨骼方案。
+
+2026-10-05 电梯战斗扩展：[环境元素怪物与杀戮模式草案](../F9_COMBAT_ENVIRONMENT_ELEMENTS_MONSTERS_AND_KILLING_MODE_DESIGN_2026-10-05.md)承接用户环境续航、原创元素反应、状态属性、怪物行为与默认绿灯快捷开红灯要求。提出四元素六反应、八环境、十四怪物和来源可追溯的杀戮许可，修订此前工作草案的PvP方向。见[范围记录](./iterations/F9/2026-10-05-elevator-combat-atomic-extension.md)；参数与机制待验证，现行v9、AI隔离和历史记录保持。
+
+2026-10-04 共鸣双美术试演：[ADR-0047](./decisions/ADR-0047-resonance-presentation-comparison.md)实现用户的 SUMMERHOUSE 像素行走与火山的女儿手绘对话方案，两版都有完整战斗换装；[素材、调研与验收](../F9_RESONANCE_ART_DEMOS_2026-10-04.md)。属于比较原型，最终表现形式未选定，大纲仍独立维护。
+
+2026-10-04 AI第三轮：[训练前后对照](../F9_AI_TRAINING_ROUND3_CONTEXT_REPORT_2026-10-04.md)解释1152／1472参数并记录每轮报告要求；60组死亡2→0、搜获121→53，健康空包退出阻止晋升。见[记录](./iterations/F9/2026-10-04-ai-training-context-round.md)，邮件／离屏未训练或重测。
+
+2026-10-04 甩牌报刊插画：[ADR-0046](./decisions/ADR-0046-throw-editorial-illustration.md)参考用户News Tower录屏，统一平滑人物、建筑、道具、纸张界面和左右舞台；接替0045像素表现，保留原子资产、成人尺度和动态光。四种战斗视口、实际飞牌命中及真实练习失败返回见[本轮证据](./iterations/F9/2026-10-04-throw-editorial-illustration.md)；[严格验收](../F9_THROW_EDITORIAL_ART_ACCEPTANCE_2026-10-04.md)保留CPU强制回退、FPS和长期体验未验证项，剧情／规则保持。
+
+2026-10-04 电梯持续内容：[挑战环境与道具经济草案](../F9_CHALLENGE_ENVIRONMENT_AND_ITEM_ECONOMY_DESIGN_2026-10-04.md)承接用户自动技能割草、道具配装与商店为主的养成、五类探索物资要求；提出14项挑战原子、条件耗电强化与有限商店闭环。[本轮范围](./iterations/F9/2026-10-04-elevator-challenges-and-shop-economy.md)区分官方调研、用户约束与候选细则；未改规则、未实装或验证平衡。
+
+2026-10-04 AI第二轮：[Sol裁判实测](../F9_AI_TRAINING_ROUND2_SOL_REVIEW_2026-10-04.md)完成30状态偏好标注、真实权重更新和48组配对；数值通过，追击中换目标问题阻止替换现用模型。邮件／离屏12条纠错语料已存，Qwen未微调；[记录](./iterations/F9/2026-10-04-ai-training-sol-judge-round.md)注明非独立盲评。
+
+2026-10-04 AI已启动：[首轮实测](../F9_AI_TRAINING_ROUND1_REPORT_2026-10-04.md)完成战术权重更新、独立种子评测与token统计；候选未过晋升，旧模型保持。邮件／离场仍为未微调基线，见[范围记录](./iterations/F9/2026-10-04-ai-training-first-round.md)，接替下方提案时的未训练状态。
+
+2026-10-04 共鸣故事共创：[ADR-0044](./decisions/ADR-0044-resonance-outline-authoring.md)落实用户「先写完大纲，再选表现形式」的顺序；网站新增 `/outline`，七章草稿、情节点排序、待讨论问题、通读与本地项目保存。共同维护的数据源和验证见[本轮记录](./iterations/F9/2026-10-04-resonance-outline-authoring.md)，表现形式未选定。
+
+2026-10-04 甩牌像素 V2：[ADR-0045](./decisions/ADR-0045-throw-atomic-pixel-scenes.md)将当前场景改为原子资产、统一成人／家具尺度、整数像素倍率、共同实时光照与人物帧动画；剧情和 `throw-duel-v3` 保持。[本轮证据](./iterations/F9/2026-10-04-throw-pixel-atomic-lighting.md)区分资产检查、实机截图与操作结果；[严格标准](../F9_THROW_PIXEL_V2_ACCEPTANCE_2026-10-04.md)保留软件回退等未验证项。
+
+2026-10-04 AI训练补充：[内容开发期间的训练与补训建议](./iterations/F9/2026-10-04-ai-incremental-training-proposal.md)区分基础能力先训练、同机制内容先评测、新机制补执行和输入、核心改版重新训练；未启动训练。
+
+2026-10-04 AI训练提案：[三场景训练闭环方案](../F9_AI_TRAINING_LOOP_PLAN_2026-10-04.md)参考「f9-电梯方向v2」现行正式票制与有限救援，提出统一选手、真实后果训练、封存评测、自动晋升与用户试玩门槛；[范围与证据](./iterations/F9/2026-10-04-ai-training-loop-proposal.md)明确未训练、未改变规则。
+
+2026-10-04 甩牌现代西方 RPG 开场：[ADR-0043](./decisions/ADR-0043-throw-western-pixel-rpg-opening.md)落实用户指定的西方现代奇幻、像素横版、无跳跃行走、建筑与NPC交互。[新版剧本](../F9_THROW_WESTERN_MAGICIAN_RPG_V1_2026-10-04.md)保留个人夺冠目标；旧剧院街、导师练习、资格赛与启程已接通，后四幕仍为设计。五张生成资产、真实战斗返回、测试和浏览器证据见[本轮记录](./iterations/F9/2026-10-04-throw-western-rpg-opening.md)。
+
+2026-10-04 AI实验：[完整邮件、目标保持与离屏成长](./iterations/F9/2026-10-04-ai-mail-and-offscreen.md)移除模板正文和旁白，新增本地模型离屏探索／建设／升层；记录真实推理、确定性重放、小模型失误与未集成边界。
+
+最新共鸣方向：[ADR-0042 音乐治愈师与多心魔](./decisions/ADR-0042-resonance-healing-monsters.md)、[主线剧本](../F9_RESONANCE_HEALER_STORY_2026-10-04.md)。新版只保留玩家演奏，敌群独立行动；旧双歌曲对决保留历史入口。
+
+2026-10-04 甩牌主线已选：[ADR-0041](./decisions/ADR-0041-throw-magician-personal-championship.md)记录用户选择流浪魔术师个人英雄主义：落寞魔术之乡出身、开场受嘲讽、乡村到世界冠军。[详细剧本](../F9_THROW_MAGICIAN_HERO_STORY_V0_2026-10-04.md)含四部作品调研、六格开场、17个关键场景与冠军返乡；人物、对白和赛事组织为草案，尚未实装。接替0038的世界观未选择状态，旧候选保留。
+
+2026-10-04 共鸣歌曲实验：[ADR-0040](./decisions/ADR-0040-resonance-song-heroes.md)落实双方装备歌曲、歌曲能力与独立节拍、只播放我方音乐、发动音符。原创器乐《归途的小灯》及100 BPM变奏已接入独立共鸣首页；每格两拍与能力数字是助手首版细则，新版回放独立，旧版结果保持。[实现与操作证据](./iterations/F9/2026-10-04-resonance-song-heroes.md)区分已验证同步与待试听／平衡体验。
+
+2026-10-04 电梯完整非AI赛季已实现：[ADR-0039](./decisions/ADR-0039-elevator-complete-season-with-finite-rescue.md)承接用户按SPEC全量开发授权，落实三层首票、四层集结广播、五层开赛、有限私人资源、十层共享金票、扔下、真实仓库救援与永久死亡，覆盖100层终局。[执行规格](../F9_ELEVATOR_FULL_FLOW_IMPLEMENTATION_2026-10-04.md)和[验收证据](./iterations/F9/2026-10-04-elevator-complete-season-acceptance.md)区分浏览器操作、全百层路线测试与待试玩平衡；AI自主决策未接入，旧版本兼容。下面0033为形成提案时的历史状态。
+
+2026-10-04 甩牌整备优化：[ADR-0038](./decisions/ADR-0038-throw-workbench-and-world-candidates.md)落实全宽十格拖放、单遗物弹窗确认装备、红黑花色与少文本；规则保持。[五个世界观候选](../F9_THROW_WORLD_DIRECTIONS_2026-10-04.md)尚未选择，新主线未实装；[验证记录](./iterations/F9/2026-10-04-throw-workbench-and-worlds.md)明确浏览器验收被策略阻挡。
+
+2026-10-04 项目边界调整：[ADR-0034](./decisions/ADR-0034-three-project-boundaries.md)确立三个独立正式项目（电梯、共鸣卡牌、甩牌）和一个本地电梯 AI 实验区。AI 完成前不进入电梯主项目或正式发布；旧混合工作台移入归档。详见[当前状态](./03_CURRENT_DESIGN.md)。
+
+2026-10-04 甩牌规则承接：[ADR-0035](./decisions/ADR-0035-throw-card-duel-baseline.md)、[ADR-0036](./decisions/ADR-0036-throw-duel-selection-and-relic.md)、[ADR-0037](./decisions/ADR-0037-throw-duel-rhythm-and-loadouts.md)承接主动甩牌、单选／连续框选、遗物和十格行囊规则；分支原始记录完整保存在[归档目录](./archives/throw-card-duel-branch/)。
+
+2026-10-04 卡牌玩法脑暴：[十套共鸣线套路候选](./iterations/F9/2026-10-04-wandeng-ten-rhythm-archetypes.md)回应用户允许创造机制的要求，含完整九格道具组、胜法、观看高潮和弱点。全部为未实装提案；没有把设计探索写成规则批准或平衡结论。
+
+2026-10-04 电梯完整流程：[SPEC草案](../F9_ELEVATOR_FULL_FLOW_SPEC_2026-10-04.md)梳理三层引导、四层安全集结、五层开赛、私人楼层与共享据点、N减X金票和资源死亡。[ADR-0033](./decisions/ADR-0033-elevator-staging-golden-passes-and-mortality.md)区分用户流程约束与助手的有限救援、单人兑换、异步名册建议；新规则未实装，死亡和配额方案待选，历史竞速记录保留。[分析与证据](./iterations/F9/2026-10-04-elevator-full-flow-spec.md)。
+
+2026-10-04 卡牌战斗呈现：[ADR-0032](./decisions/ADR-0032-wandeng-rhythm-combat-visuals.md)落实上下阵地、固定心灯与长血条、清晰弹道及伤害／治疗反馈；参考官方画面层级，演出参数自行设计。[证据与边界](./iterations/F9/2026-10-04-wandeng-rhythm-combat-visuals.md)区分可见性检查与待试玩体验，共鸣规则和回放不变。
+
+2026-10-04 电梯首页优化：[ADR-0031](./decisions/ADR-0031-elevator-action-first-console.md)落实用户“少文本”约束，首页直接选层、缺票返回找票、显示暂停与审查条件；升级改为材料进度与选中后的消耗预览。[实际操作与检查](./iterations/F9/2026-10-04-elevator-console-clarity.md)区分可操作证据和待验证理解效率，玩法规则保持。
+
+2026-10-03 卡牌最新修订：[首扫保底与独立共鸣线demo](./decisions/ADR-0030-wandeng-rhythm-first-entry-demo.md)已获用户批准并实装：每圈首次扫到卡立即发动、重置线冷却，速度与间隔分别调整；11卡、四套预设、排位与回放位于 `/wandeng/rhythm`。[执行与验证记录](./iterations/F9/2026-10-03-wandeng-rhythm-demo.md)区分规则事实与待校准数字；旧对局保留，观看体验待试玩。下方0028为历史提案状态。
+
+2026-10-03 电梯最新修订：[仓库、分次投喂与销毁](./decisions/ADR-0029-elevator-warehouse-and-incremental-feeding.md)已接入。初始4×6格，首版每级增加4格；复用黑孔累计材料，齐备后升级；永久删除需明确确认。[迭代证据](./iterations/F9/2026-10-03-warehouse-and-interaction-polish.md)包含拖动、任务、视野、结算与节目广告优化。数值和平衡待试玩，既有配方、通行规则和历史回放保留。
+
+2026-10-03 卡牌候选推进：用户指定深入细化双方节奏线，允许移除三路和屏障，见[ADR-0028](./decisions/ADR-0028-wandeng-rhythm-scan-direction.md)。[规则提案](./iterations/F9/2026-10-03-wandeng-rhythm-scan-proposal.md)讨论扫格、尺寸、拍点与有限联动；九格同步1秒等细则为助手建议，未批准、未实装，旧对局保持原版本。
+
+2026-10-03 最新电梯实现：[百层竞速与通行证](../F9_RACE_AND_PASSES_IMPLEMENTATION_2026-10-03.md)已接入节目揭晓、共享签发、跨层支付、十层审查、晋级／淘汰及GM。见[ADR-0027](./decisions/ADR-0027-race-and-pass-prototype.md)。AI仍在独立分支，数字与竞争体验待试玩；下方“具体规则待选”是此前快照。
+
+2026-10-03 本地模型后续：[Laya与F9专用模型方案](../F9_LOCAL_DECISION_MODEL_PROPOSAL_2026-10-03.md)核对开放权重和领域微调，建议先验证再蒸馏；用户明确Windows客户端与浏览器均须支持。双端约束已明确，模型、训练及完全离线范围未定，无模型下载／训练或玩法变更。见[记录](./iterations/F9/2026-10-03-local-decision-model.md)。
+
+2026-10-03 Jev 调研：[可行性与预算](../F9_JEV_FEASIBILITY_2026-10-03.md)核实 TypeSafe 官方能力与弱项，建议优先验证为主要实时战术模型，并保留生成式策略层。用户尚未选择，1–2Hz 为实验起点，国内延迟与博弈能力未测，无 API 接入。见 [本轮记录](./iterations/F9/2026-10-03-jev-feasibility.md)。
+
+2026-10-03 百层竞速：用户明确与AI竞争、抢先抵达100层的大目标，见[ADR-0026](./decisions/ADR-0026-race-to-floor-100.md)。[上升规则比较](../F9_ASCENT_RACE_RULES_PROPOSAL_2026-10-03.md)建议通行资源决定跨层、电梯升级负责长期能力、必经节点承载竞争；两种用户脑洞和具体规则尚未选定，未实装。见[记录](./iterations/F9/2026-10-03-ascent-race-rules.md)。
+
+2026-10-03 内容开发承接：用户明确AI在另一个分支，本会话继续电梯内容。[现状评估与开发建议](../F9_GAME_CONTENT_ASSESSMENT_2026-10-03.md)核对教学／探索已有实现、成长止于居所2与听雨庭目标缺口；建议先完成正式三层及返程成长，再补构筑与生成。顺序未定、未实装；本轮107项电梯相关测试及边界／确定性检查通过。见[记录](./iterations/F9/2026-10-03-game-content-assessment.md)。
+
+2026-10-03 实时落地讨论：用户认可大模型选手与晋级／淘汰的整体方向，具体规则继续展开。[房间行动、实时性与费用](../F9_REALTIME_LLM_CONTROL_AND_COST_2026-10-03.md)提出短战术与30Hz本地动作、离屏抽象模拟和官方API预算；架构未批准、未接入，延迟未实测。见 [本轮记录](./iterations/F9/2026-10-03-realtime-llm-control-and-cost.md)。
+
+2026-10-03 后续：用户明确综艺候选必须以真正的大模型竞争者博弈与残酷晋级／淘汰为核心。见 [ADR-0025](./decisions/ADR-0025-llm-contestants-and-elimination-experience.md) 与 [深化方案](../F9_LLM_CONTESTANTS_AND_ELIMINATION_PROPOSAL_2026-10-03.md)。体验要求已明确；分层架构、有限名额、审查仪式等仍为未实装提案，整体主线尚未正式替换。
+
+2026-10-03：用户要求探索“综艺大逃杀”候选，尚未选择替换主线。[八部作品调研与方案](../F9_DEATH_GAME_SHOW_PROPOSAL_2026-10-03.md)建议电梯休息室、主题赛场、公开晋级与倒下／淘汰分离；外勤额度、AI 选手和合同均待验证、未实装。见 [本轮记录](./iterations/F9/2026-10-03-death-game-show-proposal.md)。下方已接受题材保留历史状态，当前进入候选比较。
+
 2026-09-30：用户接受电梯主线“我被取代了”的方向，要求持续攀爬动力、自洽替身原理、真实关系冲突与玩法联动。见 [ADR-0024](./decisions/ADR-0024-replacement-mystery-direction.md)。[底层框架推演](../F9_REPLACEMENT_FRAMEWORK_PROPOSAL_2026-09-30.md)中的现实修复设施、章节行动窗口和人物例子仍为提案，未实装。
 
 2026-09-28 生存最新修订：[ADR-0023](./decisions/ADR-0023-survival-sight-brains-and-recovery.md) 实装死亡背包追回、四品质脑浆／20堆叠、怪物视野与脱战、双高度遮挡、16格背包和升级演出。取代旧的永久销毁背包、角色跟随灯和净水自动使用。
@@ -98,42 +174,3 @@
 - [战斗机制组合](./01_DESIGN_DNA.md#mc-01-战斗机制组合)
 - [卡牌机制组合](./01_DESIGN_DNA.md#mc-02-卡牌机制组合)
 - [电梯楼层机制组合](./01_DESIGN_DNA.md#mc-03-电梯楼层机制组合)
-
-
-## 2026-10-05 · 独立项目边界
-
-- [三个正式项目与独立AI实验](decisions/ADR-0034-three-project-boundaries.md)
-
-
-## 2026-10-05 · elevator 项目提交
-
-- [ADR-0026-race-to-floor-100](decisions/ADR-0026-race-to-floor-100.md)
-- [ADR-0027-race-and-pass-prototype](decisions/ADR-0027-race-and-pass-prototype.md)
-- [ADR-0029-elevator-warehouse-and-incremental-feeding](decisions/ADR-0029-elevator-warehouse-and-incremental-feeding.md)
-- [ADR-0031-elevator-action-first-console](decisions/ADR-0031-elevator-action-first-console.md)
-- [ADR-0033-elevator-staging-golden-passes-and-mortality](decisions/ADR-0033-elevator-staging-golden-passes-and-mortality.md)
-- [ADR-0034-three-project-boundaries](decisions/ADR-0034-three-project-boundaries.md)
-- [ADR-0039-elevator-complete-season-with-finite-rescue](decisions/ADR-0039-elevator-complete-season-with-finite-rescue.md)
-
-
-## 2026-10-05 · resonance 项目提交
-
-- [ADR-0028-wandeng-rhythm-scan-direction](decisions/ADR-0028-wandeng-rhythm-scan-direction.md)
-- [ADR-0030-wandeng-rhythm-first-entry-demo](decisions/ADR-0030-wandeng-rhythm-first-entry-demo.md)
-- [ADR-0032-wandeng-rhythm-combat-visuals](decisions/ADR-0032-wandeng-rhythm-combat-visuals.md)
-- [ADR-0037-throw-duel-rhythm-and-loadouts](decisions/ADR-0037-throw-duel-rhythm-and-loadouts.md)
-- [ADR-0040-resonance-song-heroes](decisions/ADR-0040-resonance-song-heroes.md)
-- [ADR-0042-resonance-healing-monsters](decisions/ADR-0042-resonance-healing-monsters.md)
-- [ADR-0044-resonance-outline-authoring](decisions/ADR-0044-resonance-outline-authoring.md)
-- [ADR-0047-resonance-presentation-comparison](decisions/ADR-0047-resonance-presentation-comparison.md)
-
-
-## 2026-10-05 · throw 项目提交
-
-- [ADR-0035-throw-card-duel-baseline](decisions/ADR-0035-throw-card-duel-baseline.md)
-- [ADR-0036-throw-duel-selection-and-relic](decisions/ADR-0036-throw-duel-selection-and-relic.md)
-- [ADR-0038-throw-workbench-and-world-candidates](decisions/ADR-0038-throw-workbench-and-world-candidates.md)
-- [ADR-0041-throw-magician-personal-championship](decisions/ADR-0041-throw-magician-personal-championship.md)
-- [ADR-0043-throw-western-pixel-rpg-opening](decisions/ADR-0043-throw-western-pixel-rpg-opening.md)
-- [ADR-0045-throw-atomic-pixel-scenes](decisions/ADR-0045-throw-atomic-pixel-scenes.md)
-- [ADR-0046-throw-editorial-illustration](decisions/ADR-0046-throw-editorial-illustration.md)

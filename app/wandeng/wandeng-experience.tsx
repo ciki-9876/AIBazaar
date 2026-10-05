@@ -867,6 +867,9 @@ export default function WandengExperience() {
             </div>
           </button>
           <div>
+            <a className="wd-text-button" href={sitePath('/wandeng/rhythm')}>
+              共鸣线试演 ↗
+            </a>
             <a className="wd-text-button" href={sitePath('/wandeng/training')}>
               对战训练场 ↗
             </a>
