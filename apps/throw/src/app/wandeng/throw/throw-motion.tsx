@@ -58,15 +58,21 @@ export function makeVisualShot(
   };
 }
 export function PokerFace({ card }: { card: PlayingCard }) {
+  const suitColor = card.suit % 2 ? 'tp-suit-red' : 'tp-suit-black';
   return (
     <>
       <span className="tp-corner">
         <b>{rankText(card.rank)}</b>
-        <i>{SUITS[card.suit]}</i>
+        <i className={suitColor}>{SUITS[card.suit]}</i>
       </span>
-      <span className="tp-suit">{SUITS[card.suit]}</span>
-      <span className="tp-points">{card.rank}</span>
-      <span className="tp-card-seal">万灯</span>
+      <span className="tp-corner tp-corner-bottom" aria-hidden="true">
+        <b>{rankText(card.rank)}</b>
+        <i className={suitColor}>{SUITS[card.suit]}</i>
+      </span>
+      <span className={`tp-suit ${suitColor}`}>{SUITS[card.suit]}</span>
+      <span className="tp-points" aria-hidden="true">
+        {card.rank}
+      </span>
     </>
   );
 }
@@ -94,6 +100,7 @@ function FlyingCard({
       '(prefers-reduced-motion: reduce)',
     ).matches;
     const drift = (index - (flight.shot.cards.length - 1) / 2) * 9;
+    const direction = Math.sign(dx) || (flight.shot.side === 0 ? 1 : -1);
     const tilt = reduced ? 0 : drift * 1.2;
     const delay = reduced ? 0 : index * 5;
     animation.current = node.animate(
@@ -104,7 +111,7 @@ function FlyingCard({
           offset: 0,
         },
         {
-          transform: `translate(${dx * 0.17 + drift}px,${dy * 0.22}px) rotate(${tilt}deg) scale(.92)`,
+          transform: `translate(${dx * 0.2}px,${dy * 0.24 - 38 - Math.abs(drift) * 0.5}px) rotate(${direction * 22 + tilt}deg) scale(.92)`,
           opacity: 1,
           offset: 0.2,
         },
@@ -139,6 +146,7 @@ function FlyingCard({
       data-shot={flight.shot.id}
       data-origin={`${origin.x},${origin.y}`}
       data-target={`${flight.target.x + flight.target.width / 2},${flight.target.y + flight.target.height / 2}`}
+      data-flight-direction={flight.shot.side === 0 ? 'right' : 'left'}
       style={{
         left: origin.x,
         top: origin.y,
@@ -211,15 +219,14 @@ export function ThrowSpectacle({ duel }: { duel: ThrowDuel }) {
       aria-hidden="true"
       className={`tp-spectacle tp-spectacle-${tone} ${epic ? 'tp-spectacle-epic' : ''}`}
       data-spectacle-id={event.id}
+      data-side={event.side}
     >
       <div className="tp-spectacle-wave" />
       <div className="tp-spectacle-wave tp-wave-second" />
       <div className="tp-spectacle-streak" />
       <div className="tp-spectacle-streak tp-streak-second" />
       <div className="tp-spectacle-body">
-        <small>
-          {event.side === 0 ? '你的记忆 · 共鸣' : '师傅的记忆 · 共鸣'}
-        </small>
+        <small>{event.side === 0 ? '你的连击' : '对手连击'}</small>
         <strong>
           {(event.combo ?? 0) > 0
             ? event.text.split(' · ')[0]
