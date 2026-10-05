@@ -25,3 +25,5 @@ After the experiment is complete, move only validated implementation into `apps/
 第五轮保留第四轮战斗模块，新增 `combat-search.ts` 与1152参数搜索头；工具为 `ai-lab/search-round.mjs`，阶段顺序同上，默认独立证据目录为 `work/ai-training/round-2026-10-05-search`。搜索教师使用公共地图覆盖与自己曾见敌人的线索，不是第四轮分支教师；所有墙体几何仍公共，未验证迷雾中的未知地图。新种子同局清场66→72/72、遮挡6→12/12；仅工程未训练65/72，规则教师也72/72，未证明网络胜过规则搜索。详见[第五轮报告](../../docs/F9_AI_TRAINING_ROUND5_SEARCH_REPORT_2026-10-05.md)。
 
 现有三个入口可做旧基线的人工实验，最新搜索候选**尚未桥接网页**；不能把第五轮离线通过写成网页升级。[里程碑与规则刷新](../../docs/F9_AI_MILESTONES_AND_RULE_REFRESH_2026-10-05.md)要求下一步候选专项试玩、统一选手5–20F票／救援、三场景和双端验收，最后才考虑主游戏合入。现有离屏模型等待冻结单选手代谢是实验限制，正式赛季统一状态时须修正。
+
+旧工作区独有的独立决策烟雾管线已迁入本项目 `src/lib/survival-ai/`；`ai-lab/run.mjs`、`serve.mjs`、`fixtures.ts`、`worker.ts` 和初版 encounter 训练工具保留其原有用途。运行 `node apps/elevator-ai/ai-lab/run.mjs` 生成忽略目录内的烟雾训练与浏览器基准包；它不代表当前三个试玩入口已切换模型。
