@@ -17,3 +17,13 @@
 离屏为6层的宏观因果模拟，并非后台跑三维战斗；物资预先按种子生成、探索后才揭示。模型等待期间该选手生活值冻结。现场和离屏是不同的实验样本，持久状态交接、正式百层赛事和长期联盟尚未接入。设计与观察见[迭代记录](../../docs/design-log/iterations/F9/2026-10-04-ai-mail-and-offscreen.md)。
 
 After the experiment is complete, move only validated implementation into `apps/elevator` through an explicit integration change.
+
+第四轮增加独立的离线战斗训练环境 `combat-lab.ts`：走位、自动范围攻击、快怪、远程预警与遮挡地形。新的1152参数战斗模块实际完成一轮训练；72局清场60局，但遮挡地形仅1/12，复核未通过，网页仍使用原模型。详见[训练报告](../../docs/F9_AI_TRAINING_ROUND4_COMBAT_REPORT_2026-10-05.md)。它没有接入上述三个试玩入口，不能将报告中的离线成绩当作网页AI已升级。
+
+训练工具为 `ai-lab/combat-round.mjs`，依次执行 `prepare`、填写有证据的 `session-review.json`、`train`、`evaluate`、`audit`、填写复核与检查记录、`finalize`。各阶段接受一个新输出目录作为第二个参数，拒绝覆盖已有证据；回放输入含显式种子、动作和步数。当前课程的数值教师只有1.2秒分支观察，裁判复核在当前Sol会话完成，不伪装成付费API或独立盲评。
+
+第五轮保留第四轮战斗模块，新增 `combat-search.ts` 与1152参数搜索头；工具为 `ai-lab/search-round.mjs`，阶段顺序同上，默认独立证据目录为 `work/ai-training/round-2026-10-05-search`。搜索教师使用公共地图覆盖与自己曾见敌人的线索，不是第四轮分支教师；所有墙体几何仍公共，未验证迷雾中的未知地图。新种子同局清场66→72/72、遮挡6→12/12；仅工程未训练65/72，规则教师也72/72，未证明网络胜过规则搜索。详见[第五轮报告](../../docs/F9_AI_TRAINING_ROUND5_SEARCH_REPORT_2026-10-05.md)。
+
+现有三个入口可做旧基线的人工实验，最新搜索候选**尚未桥接网页**；不能把第五轮离线通过写成网页升级。[里程碑与规则刷新](../../docs/F9_AI_MILESTONES_AND_RULE_REFRESH_2026-10-05.md)要求下一步候选专项试玩、统一选手5–20F票／救援、三场景和双端验收，最后才考虑主游戏合入。现有离屏模型等待冻结单选手代谢是实验限制，正式赛季统一状态时须修正。
+
+旧工作区独有的独立决策烟雾管线已迁入本项目 `src/lib/survival-ai/`；`ai-lab/run.mjs`、`serve.mjs`、`fixtures.ts`、`worker.ts` 和初版 encounter 训练工具保留其原有用途。运行 `node apps/elevator-ai/ai-lab/run.mjs` 生成忽略目录内的烟雾训练与浏览器基准包；它不代表当前三个试玩入口已切换模型。

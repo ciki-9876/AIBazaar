@@ -1,0 +1,179 @@
+<!doctype html>
+<html lang="zh-CN">
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width" />
+  <title>F9 本地决策实验</title>
+  <style>
+    :root {
+      color-scheme: dark;
+      font: 16px/1.65 system-ui;
+      background: #101b20;
+      color: #d5d8cf;
+    }
+    body {
+      max-width: 900px;
+      margin: 7vh auto;
+      padding: 24px;
+    }
+    small {
+      color: #9fada8;
+      letter-spacing: 2px;
+    }
+    h1 {
+      font-weight: 500;
+      font-size: 32px;
+    }
+    h2 {
+      font-size: 18px;
+      color: #dbc88c;
+    }
+    section {
+      border: 1px solid #3a5055;
+      padding: 24px;
+      margin: 24px 0;
+    }
+    button {
+      background: #d6c188;
+      color: #182428;
+      border: 0;
+      padding: 12px 20px;
+      font: inherit;
+      cursor: pointer;
+    }
+    button:disabled {
+      opacity: 0.5;
+      cursor: wait;
+    }
+    pre {
+      white-space: pre-wrap;
+      overflow-wrap: anywhere;
+      color: #c4d6c8;
+    }
+    .note {
+      color: #adb7b5;
+    }
+    .result {
+      font-variant-numeric: tabular-nums;
+    }
+  </style>
+  <small>F9 / LOCAL DECISION LAB · PIPELINE SMOKE</small>
+  <h1>模型选择，世界执行。</h1>
+  <p class="note">
+    这是实验底座：一具测试角色身体、固定遭遇、60条合成情境。没有接入正式竞争者、Laya或自由谈判。
+  </p>
+  <section>
+    <h2>浏览器独立线程验证</h2>
+    <p>
+      载入小型训练权重，覆盖60种局面，在 Web Worker
+      内测量200次决策，比较是否与本地一致。
+    </p>
+    <button id="run">验证浏览器推理</button>
+    <pre id="worker" class="result">尚未运行</pre>
+  </section>
+  <section>
+    <h2>训练和回放报告</h2>
+    <pre id="report">载入中…</pre>
+    <p class="note">
+      合成数据成绩不代表实战、博弈或泛化能力。这里的耗时也不是Laya速度，未与游戏渲染同时测试。
+    </p>
+  </section>
+  <script type="module">
+    const report = await fetch('./report.json').then((r) => r.json());
+    const reportView = {
+      样本: report.dataset.counts,
+      参数量: report.parameterCount,
+      模型JSON字节: report.modelJsonBytes,
+      固定遭遇回放一致: report.replayMatches,
+      静态合成情境: report.staticEvaluation.map((row) => ({
+        分区: row.partition,
+        符合示范: row.correct,
+        数量: row.count,
+      })),
+      本地CPU热启动推理: report.inference,
+    };
+    document.querySelector('#report').textContent = JSON.stringify(
+      reportView,
+      null,
+      2,
+    );
+    document.querySelector('#run').addEventListener('click', async () => {
+      const button = document.querySelector('#run'),
+        output = document.querySelector('#worker');
+      button.disabled = true;
+      output.textContent = '正在载入Worker…';
+      let worker = null,
+        timer = null;
+      try {
+        const [model, packets] = await Promise.all([
+          fetch('./model.json').then((r) => r.json()),
+          fetch('./benchmark-requests.json').then((r) => r.json()),
+        ]);
+        worker = new Worker('./worker/decision-worker.js', { type: 'module' });
+        function message(payload) {
+          return new Promise((resolve, reject) => {
+            timer = setTimeout(() => reject(new Error('Worker超时')), 10000);
+            worker.onmessage = (event) => {
+              clearTimeout(timer);
+              event.data.type === 'error'
+                ? reject(new Error(event.data.message))
+                : resolve(event.data);
+            };
+            worker.onerror = (event) => {
+              clearTimeout(timer);
+              reject(new Error(event.message));
+            };
+            worker.postMessage(payload);
+          });
+        }
+        const cold = performance.now();
+        const ready = await message({ type: 'load', model });
+        const loadMs = performance.now() - cold,
+          times = [],
+          inferenceTimes = [],
+          choices = new Map();
+        let mismatches = 0,
+          unstable = 0;
+        for (let i = 0; i < 220; i++) {
+          const packet = packets[i % packets.length],
+            request = packet.request;
+          const start = performance.now(),
+            response = await message({ type: 'decide', request });
+          const choice = request.candidates.find(
+            (candidate) => candidate.id === response.reply.candidateId,
+          )?.key;
+          if (choice !== packet.expected) mismatches++;
+          if (choices.has(request.id) && choices.get(request.id) !== choice)
+            unstable++;
+          choices.set(request.id, choice);
+          if (i >= 20) {
+            times.push(performance.now() - start);
+            inferenceTimes.push(response.inferenceMs);
+          }
+        }
+        const p95 = (values) =>
+          [...values].sort((a, b) => a - b)[
+            Math.floor((values.length - 1) * 0.95)
+          ];
+        const result = {
+          状态: mismatches === 0 && unstable === 0 ? '通过' : '需要排查',
+          模型: ready.modelVersion,
+          覆盖局面: choices.size,
+          与本地一致: mismatches === 0,
+          重复决定一致: unstable === 0,
+          不一致数: mismatches,
+          样本数: times.length,
+          Worker载入毫秒: +loadMs.toFixed(2),
+          Worker往返P95毫秒: +p95(times).toFixed(3),
+          推理P95毫秒: +p95(inferenceTimes).toFixed(3),
+          条件: '浏览器CPU、热启动、小实验网络；不含游戏渲染，不代表Laya',
+        };
+        output.textContent = JSON.stringify(result, null, 2);
+      } catch (error) {
+        output.textContent = '验证失败：' + error.message;
+      } finally {
+        clearTimeout(timer);
+        worker?.terminate();
+        button.disabled = false;
+      }
+    });
+  </script>
+</html>

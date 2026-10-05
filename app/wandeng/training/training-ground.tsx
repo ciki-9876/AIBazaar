@@ -70,6 +70,9 @@ export default function TrainingGround() {
               万灯城<small>许师傅的后院</small>
             </div>
           </a>
+          <a className="wt-back" href={sitePath('/wandeng/rhythm')}>
+            共鸣线试演 ↗
+          </a>
           <a className="wt-back" href={sitePath('/wandeng')}>
             ← 回到旅途
           </a>
@@ -92,26 +95,24 @@ export default function TrainingGround() {
         <div ref={stage} className="wt-stage">
           {battle ? (
             <>
-              <div className="wt-toolbar">
-                <span>
-                  {TRAINING_RULESETS[battle.duel.arena!.training!].title} ·
-                  已固定本场输入
-                </span>
-                <button
-                  onClick={() => {
-                    setBattle(null);
-                    setError('');
-                  }}
-                >
-                  ← 返回整备
-                </button>
-                <button onClick={download}>导出这场回放</button>
-              </div>
               <BattlePlayback
                 key={battle.id}
                 battle={battle}
                 replay={replaying}
                 training
+                actions={
+                  <>
+                    <button
+                      onClick={() => {
+                        setBattle(null);
+                        setError('');
+                      }}
+                    >
+                      ← 返回整备
+                    </button>
+                    <button onClick={download}>导出回放</button>
+                  </>
+                }
               />
             </>
           ) : (

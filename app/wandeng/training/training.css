@@ -323,9 +323,6 @@
   color: #a08b61;
   font-size: 16px;
 }
-.wd-training .wd-battle-playback {
-  margin-top: 16px;
-}
 @media (max-width: 1000px) {
   .wt-intro {
     align-items: flex-start;
