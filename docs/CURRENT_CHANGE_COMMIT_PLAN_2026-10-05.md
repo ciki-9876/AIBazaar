@@ -19,3 +19,19 @@ Healing and magician adventure are prototypes. Art routes are candidates. The la
 ## Validation
 
 Per-PR and final check results are recorded separately after execution; a prior chat's successful checks are not evidence for this snapshot.
+
+## Executed validation
+
+Local runtime: Node.js 24.14.0, npm 11.9.0; dependencies installed with npm ci. Every review branch passed the full test suite, lint, repository typecheck, four project typechecks, boundaries, determinism, dependency checks, all three production builds, the separate AI build, and the prefixed Pages export. Golden replay fixtures were unchanged.
+
+| Review branch | Tested code commit | Tests | Checks |
+| --- | --- | ---: | --- |
+| `codex/project-baseline-20261005` | `ec4366f` | 393 | 13/13 passed |
+| `codex/elevator-season-20261005` | `e81c8de` | 446 | 13/13 passed |
+| `codex/resonance-healing-20261005` | `77fa4b2` | 472 | 13/13 passed |
+| `codex/throw-adventure-20261005` | `c510697` | 490 | 13/13 passed |
+| `codex/elevator-ai-training-20261005` | `66c2724` | 517 | 13/13 passed |
+
+The throw Pages export initially exposed missing product prefixes in adventure links and pixel/vector resource requests. These were corrected, a nested-base regression test was added, and the full throw/AI validation was rerun. Earlier transient installation errors are not counted as passing evidence. The source-path/credential audit found no generated directories, model weights, environment files, detected credential patterns or changed files over 50 MB.
+
+This final record is a documentation-only commit on top of the tested code revision. Review the five draft PRs in order; no main merge or deployment was performed by this task.
