@@ -302,3 +302,15 @@
 - [ADR-0033-elevator-staging-golden-passes-and-mortality](decisions/ADR-0033-elevator-staging-golden-passes-and-mortality.md)
 - [ADR-0034-three-project-boundaries](decisions/ADR-0034-three-project-boundaries.md)
 - [ADR-0039-elevator-complete-season-with-finite-rescue](decisions/ADR-0039-elevator-complete-season-with-finite-rescue.md)
+
+
+## 2026-10-05 · resonance 项目提交
+
+- [ADR-0028-wandeng-rhythm-scan-direction](decisions/ADR-0028-wandeng-rhythm-scan-direction.md)
+- [ADR-0030-wandeng-rhythm-first-entry-demo](decisions/ADR-0030-wandeng-rhythm-first-entry-demo.md)
+- [ADR-0032-wandeng-rhythm-combat-visuals](decisions/ADR-0032-wandeng-rhythm-combat-visuals.md)
+- [ADR-0037-throw-duel-rhythm-and-loadouts](decisions/ADR-0037-throw-duel-rhythm-and-loadouts.md)
+- [ADR-0040-resonance-song-heroes](decisions/ADR-0040-resonance-song-heroes.md)
+- [ADR-0042-resonance-healing-monsters](decisions/ADR-0042-resonance-healing-monsters.md)
+- [ADR-0044-resonance-outline-authoring](decisions/ADR-0044-resonance-outline-authoring.md)
+- [ADR-0047-resonance-presentation-comparison](decisions/ADR-0047-resonance-presentation-comparison.md)
