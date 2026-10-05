@@ -20,6 +20,7 @@ import {
   cargoFits,
   footprint,
   putInBag,
+  warehouseRows,
 } from '@/lib/survival-cargo';
 import {
   capacity,
@@ -37,6 +38,8 @@ import {
   itemUseDescription,
 } from '@/lib/survival-item-traits';
 import { GearIcon, gearDescription } from './equipment';
+import DestroyItem from './destroy-item';
+import { firstTransferTarget } from '@/lib/survival-transfer';
 
 const describe = (item: Item) =>
   gearDescription[item.kind] ||
@@ -51,6 +54,7 @@ const describe = (item: Item) =>
     } as Record<string, string>
   )[item.kind];
 const brief: Partial<Record<Item['kind'], string>> = {
+  golden: '只能带回一张 · 自动兑换本点资格',
   bread: '饱食 +45',
   water: '主动饮用 · 饮水 +45',
   food: '饱食 ≤35 自动使用 · +45',
@@ -68,11 +72,15 @@ export default function CargoGrid({
   delivery,
   minimal = false,
   focusBread = false,
+  zone = 'bag',
+  allowStorage = false,
 }: {
   state: SurvivalState;
   act: (action: SurvivalAction) => void;
   minimal?: boolean;
   focusBread?: boolean;
+  zone?: 'bag' | 'warehouse';
+  allowStorage?: boolean;
   delivery?: {
     drag: (item: Item | null, point: { x: number; y: number }) => void;
     drop: (item: Item, point: { x: number; y: number }) => boolean;
@@ -109,9 +117,12 @@ export default function CargoGrid({
     return () => window.removeEventListener('blur', cancel);
   }, [delivery]);
   const suppressClick = useRef(false);
-  const layout = cargoLayout(state.bag),
+  const storage = zone === 'warehouse',
+    rows = storage ? warehouseRows(state.liftLevel) : BAG_ROWS;
+  const items = storage ? state.warehouse || [] : state.bag;
+  const layout = cargoLayout(items, rows),
     placement = layout.find((p) => p.item.uid === selected),
-    safeItem = state.safe.find((i) => i.uid === selected),
+    safeItem = !storage && state.safe.find((i) => i.uid === selected),
     chosen = placement?.item || safeItem;
   const select = (item: Item, rotation = false) => {
     setSelected((current) => (current === item.uid ? null : item.uid));
@@ -120,10 +131,21 @@ export default function CargoGrid({
   };
   const allowed = (slot: number) =>
     !!placement &&
-    cargoFits(layout, placement.item.size, slot, rotated, placement.item.uid);
+    cargoFits(
+      layout,
+      placement.item.size,
+      slot,
+      rotated,
+      placement.item.uid,
+      rows,
+    );
   const place = (slot: number) => {
     if (placement && allowed(slot))
-      act({ type: 'cargo-move', uid: placement.item.uid, slot, rotated });
+      act(
+        storage
+          ? { type: 'transfer', uid: placement.item.uid, zone, slot, rotated }
+          : { type: 'cargo-move', uid: placement.item.uid, slot, rotated },
+      );
     setDragging(false);
     setHover(null);
   };
@@ -133,23 +155,23 @@ export default function CargoGrid({
       : null;
   return (
     <section
-      className={`cargo-management ${delivery ? 'delivery' : ''} ${minimal ? 'cargo-minimal' : ''}`}
-      aria-label="背包格子管理"
+      className={`cargo-management ${delivery ? 'delivery' : ''} ${minimal ? 'cargo-minimal' : ''} ${storage ? 'warehouse-grid-panel' : ''}`}
+      aria-label={storage ? '仓库格子管理' : '背包格子管理'}
     >
       <div className="cargo-grid-header">
         <span>
           <Backpack size={17} />
-          {delivery || minimal ? '背包' : '普通背包'}{' '}
+          {storage ? '仓库' : delivery || minimal ? '背包' : '普通背包'}{' '}
           <b>
-            {capacity(state.bag)} / {BAG_COLS * BAG_ROWS}
+            {capacity(items)} / {BAG_COLS * rows}
           </b>
         </span>
         <button
           onClick={() => {
-            act({ type: 'cargo-pack' });
+            act({ type: storage ? 'warehouse-pack' : 'cargo-pack' });
             setSelected(null);
           }}
-          disabled={!state.bag.length}
+          disabled={!items.length}
         >
           <LayoutGrid size={13} />
           整理
@@ -164,18 +186,20 @@ export default function CargoGrid({
         <div className="cargo-grid-viewport">
           <div
             className={`cargo-grid ${dragging ? 'dragging' : ''}`}
-            aria-label="4 列 4 行背包"
-            data-drop-zone="bag"
+            aria-label={`4 列 ${rows} 行${storage ? '仓库' : '背包'}`}
+            data-drop-zone={zone}
+            style={{ gridTemplateRows: `repeat(${rows}, var(--cargo-cell))` }}
           >
-            {Array.from({ length: BAG_COLS * BAG_ROWS }, (_, slot) => (
+            {Array.from({ length: BAG_COLS * rows }, (_, slot) => (
               <button
                 key={slot}
-                className={`cargo-cell ${selected && allowed(slot) ? 'available' : ''}`}
+                className={`cargo-cell ${selected && allowed(slot) ? 'available' : ''} ${dragging && hover === slot ? 'drop-target' : ''}`}
+                data-drop-slot={slot}
                 style={{
                   gridColumn: (slot % BAG_COLS) + 1,
                   gridRow: Math.floor(slot / BAG_COLS) + 1,
                 }}
-                aria-label={`背包第 ${slot + 1} 格`}
+                aria-label={`${storage ? '仓库' : '背包'}第 ${slot + 1} 格`}
                 onClick={() => place(slot)}
               >
                 {!delivery && !minimal && (
@@ -196,7 +220,7 @@ export default function CargoGrid({
                     gridColumn: `${(p.slot % BAG_COLS) + 1} / span ${shape.w}`,
                     gridRow: `${Math.floor(p.slot / BAG_COLS) + 1} / span ${shape.h}`,
                   }}
-                  aria-label={`背包中的${itemName(p.item)}，${p.item.size} 格，第 ${p.slot + 1} 格，${p.rotated ? '纵向' : '横向'}`}
+                  aria-label={`${storage ? '仓库' : '背包'}中的${itemName(p.item)}，${p.item.size} 格，第 ${p.slot + 1} 格，${p.rotated ? '纵向' : '横向'}`}
                   onClick={(e) => {
                     if (suppressClick.current) {
                       suppressClick.current = false;
@@ -284,10 +308,12 @@ export default function CargoGrid({
                           drag.slot,
                           p.rotated,
                           p.item.uid,
+                          rows,
                         )
                       )
                         act({
-                          type: 'cargo-move',
+                          type: 'transfer',
+                          zone,
                           uid: p.item.uid,
                           slot: drag.slot,
                           rotated: p.rotated,
@@ -307,6 +333,9 @@ export default function CargoGrid({
                   }}
                 >
                   <GearIcon kind={p.item.kind} size={30} />
+                  {state.rescueReserved?.includes(p.item.uid) && (
+                    <em className="stack-count">锁</em>
+                  )}
                   {p.item.kind === 'lift-material' && (
                     <em className="stack-count">{itemCount(p.item)}</em>
                   )}
@@ -327,7 +356,7 @@ export default function CargoGrid({
               placement &&
               hover !== null &&
               (hover % BAG_COLS) + ghost.w <= BAG_COLS &&
-              Math.floor(hover / BAG_COLS) + ghost.h <= BAG_ROWS && (
+              Math.floor(hover / BAG_COLS) + ghost.h <= rows && (
                 <span
                   className={`cargo-ghost ${allowed(hover) ? 'valid' : 'invalid'}`}
                   style={{
@@ -338,7 +367,7 @@ export default function CargoGrid({
               )}
           </div>
         </div>
-        {!delivery && (
+        {!delivery && !storage && (
           <div className="safe-pocket" data-drop-zone="safe">
             <span>
               <ShieldCheck size={15} />
@@ -351,6 +380,7 @@ export default function CargoGrid({
                   data-drag-uid={i.uid}
                   data-item-uid={i.uid}
                   className={`cargo-safe-piece ${selected === i.uid ? 'selected' : ''}`}
+                  data-drop-slot={0}
                   onClick={() => select(i)}
                   aria-label={`安全容器中的${itemName(i)}`}
                 >
@@ -359,11 +389,13 @@ export default function CargoGrid({
                   {i.kind === 'lift-material' && (
                     <em className="stack-count">{itemCount(i)}</em>
                   )}
-                  {!minimal && <small>失败保留</small>}
+                  {!minimal && (
+                    <small>{state.seasonRules ? '救援保留' : '失败保留'}</small>
+                  )}
                 </button>
               ))
             ) : (
-              <div className="cargo-safe-empty">
+              <div className="cargo-safe-empty" data-drop-slot={0}>
                 <ShieldCheck size={22} />
                 {!minimal && <small>可保护一格物品</small>}
               </div>
@@ -386,7 +418,7 @@ export default function CargoGrid({
                 <p>
                   {safeItem
                     ? minimal
-                      ? '失败保留 · 暂停生效'
+                      ? `${state.seasonRules ? '救援保留' : '失败保留'} · 暂停生效`
                       : '安全保管中。取出后放回普通背包。'
                     : chosen.kind === 'lift-material'
                       ? `${BRAIN_DESCRIPTION} · 每份 ${BRAIN_QUALITY[chosen.quality || 'low'].xp} 经验`
@@ -411,7 +443,7 @@ export default function CargoGrid({
                 )}
               </div>
               <div className="cargo-buttons">
-                {hasTrait(chosen.kind, 'usable') && placement && (
+                {!storage && hasTrait(chosen.kind, 'usable') && placement && (
                   <button
                     className="eat-bread"
                     disabled={
@@ -431,7 +463,7 @@ export default function CargoGrid({
                 {placement && (
                   <button
                     disabled={
-                      chosen.size === 1 || (chosen.size > BAG_ROWS && !rotated)
+                      chosen.size === 1 || (chosen.size > rows && !rotated)
                     }
                     onClick={() => setRotated(!rotated)}
                   >
@@ -439,7 +471,7 @@ export default function CargoGrid({
                     旋转
                   </button>
                 )}
-                {!delivery && placement && isEquipment(chosen) && (
+                {!delivery && !storage && placement && isEquipment(chosen) && (
                   <button
                     disabled={firstFit(state.equipment, chosen.size) < 0}
                     onClick={() =>
@@ -453,7 +485,7 @@ export default function CargoGrid({
                     装备
                   </button>
                 )}
-                {!delivery && (
+                {!delivery && !storage && chosen.kind !== 'golden' && (
                   <button
                     disabled={
                       safeItem
@@ -470,19 +502,77 @@ export default function CargoGrid({
                     {safeItem ? '取回背包' : '保护'}
                   </button>
                 )}
-                {placement && state.status === 'running' && (
+                {allowStorage && placement && chosen.kind !== 'golden' && (
                   <button
-                    onClick={() => act({ type: 'discard', uid: chosen.uid })}
+                    disabled={
+                      state.rescueReserved?.includes(chosen.uid) ||
+                      !firstTransferTarget(
+                        state,
+                        chosen,
+                        storage ? 'bag' : 'warehouse',
+                      )
+                    }
+                    onClick={() => {
+                      const target = firstTransferTarget(
+                        state,
+                        chosen,
+                        storage ? 'bag' : 'warehouse',
+                      );
+                      if (target) act(target);
+                    }}
                   >
-                    放下
+                    {storage ? '取回行囊' : '存入仓库'}
                   </button>
                 )}
+                {!delivery &&
+                  chosen.kind !== 'golden' &&
+                  !state.rescueReserved?.includes(chosen.uid) && (
+                    <DestroyItem
+                      key={chosen.uid}
+                      item={chosen}
+                      act={act}
+                      disabled={
+                        focusBread && chosen.uid === 'anbo-welcome-bread'
+                      }
+                    />
+                  )}
+                {!storage && placement && state.status === 'running' && (
+                  <button
+                    onClick={() =>
+                      act({
+                        type: state.seasonRules ? 'drop' : 'discard',
+                        uid: chosen.uid,
+                      })
+                    }
+                  >
+                    {state.seasonRules ? '扔下 1 件' : '放下'}
+                  </button>
+                )}
+                {!storage &&
+                  placement &&
+                  state.seasonRules &&
+                  state.status === 'running' &&
+                  itemCount(chosen) > 1 && (
+                    <button
+                      onClick={() =>
+                        act({
+                          type: 'drop',
+                          uid: chosen.uid,
+                          quantity: itemCount(chosen),
+                        })
+                      }
+                    >
+                      整叠扔下 ×{itemCount(chosen)}
+                    </button>
+                  )}
               </div>
             </>
           ) : (
             <p>
               <PackageOpen size={17} />
-              选择一件物品查看用途或调整位置。失败时普通背包与装备一起丢失。
+              {state.seasonRules
+                ? '选择物品查看或扔下'
+                : '选择一件物品查看用途或调整位置。'}
             </p>
           )}
         </div>

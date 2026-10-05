@@ -2,6 +2,7 @@ import { itemIds, sameStack, stackLimit, withIds } from './survival-stacks.ts';
 import type { Item } from './survival-room.ts';
 export const BAG_COLS = 4;
 export const BAG_ROWS = 4;
+export const warehouseRows = (level = 1) => 6 + Math.max(0, level - 1);
 export type CargoPlacement = { item: Item; slot: number; rotated: boolean };
 export const footprint = (size: number, rotated = false) => ({
   w: rotated ? 1 : size,
@@ -13,13 +14,14 @@ export function cargoFits(
   slot: number,
   rotated = false,
   omit = '',
+  rows = BAG_ROWS,
 ) {
-  if (!Number.isInteger(slot) || slot < 0 || slot >= BAG_COLS * BAG_ROWS)
+  if (!Number.isInteger(slot) || slot < 0 || slot >= BAG_COLS * rows)
     return false;
   const { w, h } = footprint(size, rotated),
     x = slot % BAG_COLS,
     y = Math.floor(slot / BAG_COLS);
-  if (x + w > BAG_COLS || y + h > BAG_ROWS) return false;
+  if (x + w > BAG_COLS || y + h > rows) return false;
   return !layout.some((p) => {
     if (p.item.uid === omit) return false;
     const other = footprint(p.item.size, p.rotated),
@@ -32,19 +34,20 @@ export function cargoFirstFit(
   layout: CargoPlacement[],
   size: number,
   rotated = false,
+  rows = BAG_ROWS,
 ) {
-  for (let slot = 0; slot < BAG_COLS * BAG_ROWS; slot++)
-    if (cargoFits(layout, size, slot, rotated)) return slot;
+  for (let slot = 0; slot < BAG_COLS * rows; slot++)
+    if (cargoFits(layout, size, slot, rotated, '', rows)) return slot;
   return -1;
 }
 // Missing placements from an older in-memory prototype are interpreted in a
 // deterministic first-fit order. Explicit placements are never repacked here.
-export function cargoLayout(items: Item[]): CargoPlacement[] {
+export function cargoLayout(items: Item[], rows = BAG_ROWS): CargoPlacement[] {
   const layout: CargoPlacement[] = items
     .filter((i) => i.slot !== undefined)
     .map((item) => ({ item, slot: item.slot!, rotated: !!item.rotated }));
   for (const item of items.filter((i) => i.slot === undefined)) {
-    const slot = cargoFirstFit(layout, item.size);
+    const slot = cargoFirstFit(layout, item.size, false, rows);
     if (slot >= 0) layout.push({ item, slot, rotated: false });
   }
   return layout;
@@ -58,6 +61,7 @@ export function putInBag(
   item: Item,
   slot?: number,
   rotated = false,
+  rows = BAG_ROWS,
 ): Item[] | null {
   // An existing stack is being moved; new arrivals can fill matching stacks.
   if (
@@ -83,8 +87,8 @@ export function putInBag(
     let result = merged;
     while (ids.length) {
       const unit = withIds(item, ids.slice(0, stackLimit(item)));
-      const layout = cargoLayout(result);
-      const at = cargoFirstFit(layout, unit.size);
+      const layout = cargoLayout(result, rows);
+      const at = cargoFirstFit(layout, unit.size, false, rows);
       if (at < 0) return null;
       result = [...result, { ...unit, slot: at, rotated: false }];
       ids = ids.slice(stackLimit(item));
@@ -92,20 +96,20 @@ export function putInBag(
     return result;
   }
   const others = items.filter((i) => i.uid !== item.uid),
-    layout = cargoLayout(others);
+    layout = cargoLayout(others, rows);
   if (layout.length !== others.length) return null;
-  let target = slot ?? cargoFirstFit(layout, item.size, rotated);
-  if (slot === undefined && target < 0 && !rotated && item.size <= BAG_ROWS) {
+  let target = slot ?? cargoFirstFit(layout, item.size, rotated, rows);
+  if (slot === undefined && target < 0 && !rotated && item.size <= rows) {
     rotated = true;
-    target = cargoFirstFit(layout, item.size, rotated);
+    target = cargoFirstFit(layout, item.size, rotated, rows);
   }
-  if (!cargoFits(layout, item.size, target, rotated)) return null;
+  if (!cargoFits(layout, item.size, target, rotated, '', rows)) return null;
   return [
     ...layout.map((p) => ({ ...p.item, slot: p.slot, rotated: p.rotated })),
     { ...item, slot: target, rotated },
   ];
 }
-export function packBag(items: Item[]): Item[] | null {
+export function packBag(items: Item[], rows = BAG_ROWS): Item[] | null {
   const merged: Item[] = [];
   for (const item of items) {
     let ids = itemIds(item);
@@ -129,11 +133,11 @@ export function packBag(items: Item[]): Item[] | null {
   const solve = (index: number, placed: Item[]): Item[] | null => {
     if (index === sorted.length) return placed;
     const item = sorted[index];
-    for (const rotated of item.size > 1 && item.size <= BAG_ROWS
+    for (const rotated of item.size > 1 && item.size <= rows
       ? [false, true]
       : [false])
-      for (let slot = 0; slot < BAG_COLS * BAG_ROWS; slot++) {
-        const next = putInBag(placed, unplaced(item), slot, rotated);
+      for (let slot = 0; slot < BAG_COLS * rows; slot++) {
+        const next = putInBag(placed, unplaced(item), slot, rotated, rows);
         if (next) {
           const result = solve(index + 1, next);
           if (result) return result;
@@ -141,6 +145,6 @@ export function packBag(items: Item[]): Item[] | null {
       }
     return null;
   };
-  if (merged.reduce((n, i) => n + i.size, 0) > BAG_COLS * BAG_ROWS) return null;
+  if (merged.reduce((n, i) => n + i.size, 0) > BAG_COLS * rows) return null;
   return solve(0, []);
 }

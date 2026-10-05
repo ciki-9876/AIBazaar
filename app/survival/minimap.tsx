@@ -8,14 +8,43 @@ import {
   type SurvivalState,
 } from '@/lib/survival-room';
 import { walkMask } from '@/lib/survival-world';
+import type { RaceState } from '@/lib/survival-race';
+import type { SeasonState } from '@/lib/survival-season';
 
-export default function Minimap({ state }: { state: SurvivalState }) {
+export default function Minimap({
+  state,
+  race,
+  season,
+}: {
+  state: SurvivalState;
+  race?: RaceState;
+  season?: SeasonState;
+}) {
   const ref = useRef<HTMLCanvasElement>(null);
-  const explored = Math.round(
-    (state.fog.explored.reduce((n, v) => n + v, 0) /
-      state.fog.explored.length) *
-      100,
-  );
+  const b = state.world.bounds,
+    mask = state.world.seasonLayout ? walkMask(state.world) : null;
+  const seasonCells =
+    mask && b
+      ? Array.from(mask).flatMap((value, i) =>
+          value &&
+          i % ROOM.width >= b.minX &&
+          i % ROOM.width < b.maxX &&
+          Math.floor(i / ROOM.width) >= b.minZ &&
+          Math.floor(i / ROOM.width) < 74
+            ? [i]
+            : [],
+        )
+      : [];
+  const explored = seasonCells.length
+    ? Math.round(
+        (100 * seasonCells.filter((i) => state.fog.explored[i]).length) /
+          seasonCells.length,
+      )
+    : Math.round(
+        (state.fog.explored.reduce((n, v) => n + v, 0) /
+          state.fog.explored.length) *
+          100,
+      );
   useEffect(() => {
     const canvas = ref.current!,
       c = canvas.getContext('2d')!;
@@ -57,6 +86,23 @@ export default function Minimap({ state }: { state: SurvivalState }) {
         c.fillStyle = '#edc56e';
         c.fillRect(cache.x - 0.7, cache.z - 0.7, 1.4, 1.4);
       }
+    for (const source of season
+      ? season.sources
+          .filter((q) => q.actor === 'player')
+          .map((q) => ({ ...q, exhausted: q.taken }))
+      : race?.sources || [])
+      if (
+        source.floor === state.floor &&
+        !source.exhausted &&
+        state.fog.explored[
+          Math.floor(source.z) * ROOM.width + Math.floor(source.x)
+        ]
+      ) {
+        c.fillStyle = '#e6c57d';
+        c.strokeStyle = '#432f1c';
+        c.fillRect(source.x - 1, source.z - 0.6, 2, 1.2);
+        c.strokeRect(source.x - 1, source.z - 0.6, 2, 1.2);
+      }
     for (const enemy of state.enemies)
       if (isVisible(state, enemy)) {
         c.fillStyle = enemy.kind === 'boss' ? '#f09cca' : '#fa776b';
@@ -81,7 +127,7 @@ export default function Minimap({ state }: { state: SurvivalState }) {
     c.arc(p.x, p.z, 1, 0, Math.PI * 2);
     c.fill();
     c.restore();
-  }, [state]);
+  }, [state, race, season]);
   return (
     <aside
       className="survival-minimap"
@@ -89,15 +135,21 @@ export default function Minimap({ state }: { state: SurvivalState }) {
     >
       <div>
         <span>
-          {state.world.theme === 'pavilion'
-            ? '听雨庭'
-            : state.world.theme === 'dunes'
-              ? '风蚀遗庭'
-              : state.seed === 92621
-                ? '维保廊'
-                : state.seed === 92620
-                  ? '荒原'
-                  : '水处理站'}{' '}
+          {state.world.seasonLayout
+            ? state.floor === 4
+              ? '准备房间'
+              : state.floor! % 10 === 0
+                ? '共享据点'
+                : '私人楼层'
+            : state.world.theme === 'pavilion'
+              ? '听雨庭'
+              : state.world.theme === 'dunes'
+                ? '风蚀遗庭'
+                : state.world.theme === 'maintenance' || state.seed === 92621
+                  ? '维保廊'
+                  : state.seed === 92620
+                    ? '荒原'
+                    : '水处理站'}{' '}
           / 北 ↑
         </span>
         <b>{explored}%</b>

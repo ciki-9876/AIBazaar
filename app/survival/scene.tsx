@@ -31,6 +31,8 @@ import { ShaderPass } from 'three/examples/jsm/postprocessing/ShaderPass.js';
 import { UnrealBloomPass } from 'three/examples/jsm/postprocessing/UnrealBloomPass.js';
 import { Atelier } from '../../packages/render-kit/atelier';
 import { createCacheLayer } from './cache-layer';
+import { createRaceStations } from './race-stations';
+import { createSeasonActors } from './season-actors';
 import { createActors } from './creatures';
 import { buildDunes } from './dunes';
 import { combatEffect } from './effects';
@@ -157,6 +159,11 @@ export default function SurvivalScene(props: Props) {
     );
     fogTexture.minFilter = fogTexture.magFilter = T.LinearFilter;
     fogTexture.needsUpdate = true;
+    const fogUniforms = {
+      roomFog: { value: fogTexture },
+      fogBounds: { value: new T.Vector4(0, ROOM.width, 0, ROOM.depth) },
+      visionReveal: { value: 0 },
+    };
     const fogged = new WeakSet<T.Material>();
     function fogMaterial(mat: T.Material) {
       if (
@@ -170,35 +177,34 @@ export default function SurvivalScene(props: Props) {
         priorKey = mat.customProgramCacheKey();
       mat.onBeforeCompile = (shader, r) => {
         prior.call(mat, shader, r);
-        shader.uniforms.roomFog = { value: fogTexture };
-        const bounds = latest.current.state.current.world.bounds;
-        shader.uniforms.fogBounds = {
-          value: bounds
-            ? new T.Vector4(bounds.minX, bounds.maxX, bounds.minZ, bounds.maxZ)
-            : new T.Vector4(0, ROOM.width, 0, ROOM.depth),
-        };
+        Object.assign(shader.uniforms, fogUniforms);
         shader.vertexShader = 'varying vec2 vFogWorld;\n' + shader.vertexShader;
         shader.vertexShader = shader.vertexShader.replace(
           '#include <project_vertex>',
           'vFogWorld = (modelMatrix * vec4(transformed, 1.0)).xz;\n#include <project_vertex>',
         );
         shader.fragmentShader =
-          'uniform sampler2D roomFog; uniform vec4 fogBounds; varying vec2 vFogWorld;\n' +
+          'uniform sampler2D roomFog; uniform vec4 fogBounds; uniform float visionReveal; varying vec2 vFogWorld;\n' +
           shader.fragmentShader;
         shader.fragmentShader = shader.fragmentShader.replace(
           '#include <opaque_fragment>',
           `vec2 vision = texture2D(roomFog, vFogWorld / vec2(96.,80.)).rg;
 float memory = vision.r * .14;
-float visibility = max(memory, smoothstep(.1,.9,vision.g));
+float currentSight = smoothstep(.1,.9,vision.g);
+float visibility = max(memory, currentSight);
 vec2 edge = min(vFogWorld - fogBounds.xz, fogBounds.yw - vFogWorld);
 float fringe = min(edge.x, edge.y);
 float wisps = sin(vFogWorld.x * 1.9 + sin(vFogWorld.y * .8)) * .22 + sin(vFogWorld.y * 2.3) * .13;
-visibility *= smoothstep(.55, 3.5, fringe + wisps);
+float boundary = smoothstep(.55, 3.5, fringe + wisps);
+visibility *= boundary;
+// A visibility treatment, not a physical light: reveal surface colour only in
+// current line of sight, retaining occlusion, remembered darkness and black edges.
+${mat.side === T.BackSide ? '' : 'outgoingLight += (diffuseColor.rgb * .45 + vec3(.014,.018,.02)) * currentSight * visionReveal;'}
 outgoingLight = mix(vec3(.0035,.009,.012), outgoingLight, visibility);
 #include <opaque_fragment>`,
         );
       };
-      mat.customProgramCacheKey = () => priorKey + '-room-fog-v2';
+      mat.customProgramCacheKey = () => priorKey + '-room-fog-v3-' + mat.side;
       mat.needsUpdate = true;
     }
     const actors = createActors(
@@ -208,6 +214,8 @@ outgoingLight = mix(vec3(.0035,.009,.012), outgoingLight, visibility);
       player = actors.human(isOpening);
     const enemies = new Map<string, ReturnType<typeof actors.enemy>>();
     const cacheLayer = createCacheLayer(actors.cache);
+    const raceStations = createRaceStations(scene);
+    const seasonActors = createSeasonActors(scene, actorsKit);
     const fx = new Map<number, ReturnType<typeof combatEffect>>();
     const warnings = new Map<string, T.Mesh>();
     const warningGeo = new T.RingGeometry(0.87, 1, 64);
@@ -627,12 +635,24 @@ outgoingLight = mix(vec3(.0035,.009,.012), outgoingLight, visibility);
       // Cabin light comes from its fixtures; room values rise smoothly with the camera.
       hemi.intensity = T.MathUtils.lerp(
         s.liftLightOn ? 0.12 : 0,
-        gardenLight ? 0.65 : s.world.theme === 'maintenance' ? 0.38 : 0.66,
+        s.floor === 4 && s.seasonRules
+          ? 0.85
+          : gardenLight
+            ? 0.65
+            : s.world.theme === 'maintenance'
+              ? 0.38
+              : 0.66,
         overhead,
       );
       sun.intensity = T.MathUtils.lerp(
         0,
-        gardenLight ? 1.3 : s.world.theme === 'maintenance' ? 0.85 : 1.35,
+        s.floor === 4 && s.seasonRules
+          ? 1.55
+          : gardenLight
+            ? 1.3
+            : s.world.theme === 'maintenance'
+              ? 0.85
+              : 1.35,
         overhead,
       );
       sun.color.set(
@@ -640,6 +660,18 @@ outgoingLight = mix(vec3(.0035,.009,.012), outgoingLight, visibility);
           (s.world.theme === 'maintenance' ? '#bdc8bd' : '#ffe0a6'),
       );
       hemi.color.set(gardenLight?.moon ?? '#d3e9d8');
+      fogUniforms.visionReveal.value = T.MathUtils.smoothstep(
+        overhead,
+        0.65,
+        1,
+      );
+      const bounds = s.world.bounds;
+      fogUniforms.fogBounds.value.set(
+        bounds?.minX ?? 0,
+        bounds?.maxX ?? ROOM.width,
+        bounds?.minZ ?? 0,
+        bounds?.maxZ ?? ROOM.depth,
+      );
       distortion.uniforms.amount.value =
         isOpening && s.status === 'running'
           ? Math.max(0, (50 - s.player.water) / 50) * overhead
@@ -746,6 +778,8 @@ outgoingLight = mix(vec3(.0035,.009,.012), outgoingLight, visibility);
           });
         }
         cacheLayer.update(s, opening?.stage || '', overhead);
+        raceStations.update(s, opening?.race, overhead, opening?.season);
+        seasonActors.update(s, opening?.season, opening?.hostileTarget);
         const activeWarnings = new Set<string>();
         const warn = (id: string, p: Point, radius: number) => {
           if (!isVisible(s, p)) return;
@@ -861,7 +895,8 @@ outgoingLight = mix(vec3(.0035,.009,.012), outgoingLight, visibility);
         latest.current.onReady();
         raf = requestAnimationFrame(render);
       })
-      .catch(() => {
+      .catch((error: unknown) => {
+        console.error('Elevator scene assets failed to load', error);
         if (!disposed) {
           setError(true);
           setLoading(false);
@@ -886,6 +921,8 @@ outgoingLight = mix(vec3(.0035,.009,.012), outgoingLight, visibility);
       haloMat.dispose();
       fogTexture.dispose();
       cacheLayer.clear();
+      raceStations.dispose();
+      seasonActors.dispose();
       kit.dispose();
       actorsKit.dispose();
       distortion.dispose();

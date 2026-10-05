@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { putInBag } from '@/lib/survival-cargo';
 import { ArrowDownToLine, ShieldCheck } from 'lucide-react';
 import { PixelGear } from './pixel-gear';
+import DestroyItem from './destroy-item';
 import {
   EQUIPMENT_SIZE,
   SAFE_SIZE,
@@ -115,6 +116,7 @@ export default function EquipmentBoard({
           <span
             key={slot}
             className="equipment-empty"
+            data-drop-slot={editing ? slot : undefined}
             style={{ gridColumn: slot + 1, gridRow: 2 }}
           >
             ·
@@ -153,7 +155,6 @@ export default function EquipmentBoard({
                     )
                   : onOpen?.()
               }
-              title={`${e.item.name} · ${e.item.size} 格\n${gearDescription[e.item.kind]}`}
               aria-label={`选择${e.item.name}，${e.item.size} 格，起始第 ${e.slot + 1} 格`}
             >
               <GearIcon kind={e.item.kind} size={editing ? 31 : 23} />
@@ -208,6 +209,9 @@ export default function EquipmentBoard({
                 )}
               </div>
               <div className="equipment-actions">
+                {act && (
+                  <DestroyItem key={gear.item.uid} item={gear.item} act={act} />
+                )}
                 <button
                   onClick={() => act?.({ type: 'unequip', uid: gear.item.uid })}
                   disabled={!putInBag(state.bag, gear.item)}
@@ -215,6 +219,13 @@ export default function EquipmentBoard({
                   <ArrowDownToLine size={14} />
                   卸下
                 </button>
+                {state.seasonRules && state.status === 'running' && (
+                  <button
+                    onClick={() => act?.({ type: 'drop', uid: gear.item.uid })}
+                  >
+                    扔下
+                  </button>
+                )}
                 <button
                   onClick={() => act?.({ type: 'protect', uid: gear.item.uid })}
                   disabled={capacity(state.safe) + gear.item.size > SAFE_SIZE}

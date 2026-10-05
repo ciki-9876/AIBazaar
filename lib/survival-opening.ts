@@ -1,5 +1,13 @@
 import { countKind } from './survival-stacks.ts';
 import {
+  seasonOpeningAction,
+  stepSeasonSession,
+} from './survival-season-session.ts';
+import type { SeasonState } from './survival-season.ts';
+import { feedLift, liftFed } from './survival-lift-feed.ts';
+import { raceOpeningAction, stepRaceSession } from './survival-race-session.ts';
+import { racePaused, type RaceState } from './survival-race.ts';
+import {
   createGuidance,
   guidePaused,
   advanceGuidance,
@@ -66,7 +74,11 @@ export type OpeningStage =
   | 'expedition'
   | 'collapse';
 export type OpeningState = {
-  version: 6;
+  version: 6 | 7 | 9;
+  season?: SeasonState;
+  hostileTarget?: string;
+  interacting?: string;
+  race?: RaceState;
   lastRobotLine?: string;
   dialogueAuto?: boolean;
   guidance: Guidance;
@@ -214,6 +226,7 @@ export type DialogueCue = {
   speaker: 'player' | 'robot';
 };
 export function dialogueCue(s: OpeningState): DialogueCue | null {
+  if (s.race || s.season) return null;
   const thought = openingThought(s);
   const robot =
     s.stage === 'home'
@@ -333,6 +346,10 @@ const cache = (
   available: 0,
   ...(kind === 'lift-material' ? { pickup: 'touch' as const } : {}),
 });
+export const createSeasonOpening = (): OpeningState => ({
+  ...createOpening(),
+  version: 9,
+});
 export function createOpening(): OpeningState {
   const room = createSurvival(92620);
   const world: RoomWorld = {
@@ -374,6 +391,8 @@ export function createOpening(): OpeningState {
     dropped: [],
     room: {
       ...room,
+      warehouse: [],
+      liftParts: 0,
       floor: 1,
       world,
       fog: revealFog(
@@ -400,6 +419,10 @@ const change = (s: OpeningState, stage: OpeningStage): OpeningState => ({
   beat: 0,
 });
 export type OpeningAction =
+  | { type: 'interact-world'; id: string | null }
+  | { type: 'reserve-rescue'; enabled: boolean }
+  | { type: 'rest'; enabled: boolean }
+  | { type: 'target-contestant'; id: string | null }
   | {
       type:
         | 'enter'
@@ -414,14 +437,39 @@ export type OpeningAction =
         | 'finish-tutorial'
         | 'ack-guide'
         | 'confirm-report'
-        | 'upgrade-lift';
+        | 'upgrade-lift'
+        | 'ack-race'
+        | 'review-race'
+        | 'submit-review'
+        | 'upgrade-race';
     }
   | { type: 'choose-floor'; floor: number }
   | { type: 'feed-core'; uid: string }
+  | { type: 'feed-lift'; uid: string }
   | { type: 'inventory'; action: SurvivalAction }
   | { type: 'move'; to: Point }
   | { type: 'edge-spawns'; points: Point[] };
 export function openingAction(s: OpeningState, a: OpeningAction): OpeningState {
+  if (guidePaused(s.guidance) && a.type !== 'ack-guide') return s;
+  const seasonResult = seasonOpeningAction(s, a);
+  if (seasonResult) return seasonResult;
+  if (a.type === 'feed-lift') {
+    if (
+      s.stage !== 'home' ||
+      s.homecoming.scene !== 'complete' ||
+      s.afterlight.phase === 'report' ||
+      (s.race && racePaused(s.race))
+    )
+      return s;
+    const room = feedLift(s.room, a.uid);
+    if (room === s.room) return s;
+    const next = { ...s, room };
+    return liftFed(room)
+      ? openingAction(next, { type: s.race ? 'upgrade-race' : 'upgrade-lift' })
+      : next;
+  }
+  const raceResult = s.version === 9 ? null : raceOpeningAction(s, a);
+  if (raceResult) return raceResult;
   if (a.type === 'ack-guide') {
     if (!s.guidance.active) return s;
     const ascent = s.guidance.active.id === 'ascent';
@@ -567,8 +615,25 @@ export function openingAction(s: OpeningState, a: OpeningAction): OpeningState {
             'discard',
             'consume',
             'transfer',
+            'destroy',
+            'warehouse-pack',
           ];
     if (!allowed.includes(a.action.type)) return s;
+    if (
+      a.action.type === 'destroy' &&
+      a.action.uid === 'anbo-welcome-bread' &&
+      !s.afterlight.breadEaten
+    )
+      return s;
+    const actionUid = 'uid' in a.action ? a.action.uid : null;
+    const warehouseUid = s.room.warehouse?.some((i) => i.uid === actionUid);
+    if (
+      s.stage !== 'home' &&
+      ((a.action.type === 'transfer' && a.action.zone === 'warehouse') ||
+        warehouseUid ||
+        a.action.type === 'warehouse-pack')
+    )
+      return s;
     const room = survivalAction(s.room, a.action);
     if (room === s.room) return s;
     const consumedUid = a.action.type === 'consume' ? a.action.uid : null;
@@ -640,6 +705,8 @@ export function openingAction(s: OpeningState, a: OpeningAction): OpeningState {
       liftLightOn: true,
       bag: s.room.bag,
       liftExperience: s.room.liftExperience || 0,
+      liftParts: s.room.liftParts || 0,
+      warehouse: s.room.warehouse || [],
       safe: s.room.safe,
       equipment: s.room.equipment,
       status: 'ready' as const,
@@ -893,7 +960,8 @@ function simulateOpening(
       s.stage === 'returning' || ambushCue(s.stage) ? {} : input,
       {
         waves:
-          s.stage === 'expedition' && (s.room.floor === 3 || s.room.wave >= 2),
+          s.stage === 'expedition' &&
+          ((s.room.floor || 1) >= 3 || s.room.wave >= 2),
         needs: s.stage === 'expedition',
         combat:
           s.stage === 'fight' ||
@@ -990,6 +1058,14 @@ function simulateOpening(
 
 /** Guidance is part of the deterministic simulation: strong panels stop all ticks. */
 export function stepOpening(
+  state: OpeningState,
+  input: SurvivalInput = {},
+): OpeningState {
+  if (state.season) return stepSeasonSession(state, input);
+  if (racePaused(state.race)) return state;
+  return stepRaceSession(state, stepOpeningBase(state, input), input);
+}
+function stepOpeningBase(
   state: OpeningState,
   input: SurvivalInput = {},
 ): OpeningState {

@@ -1,5 +1,5 @@
 'use client';
-import { useEffect, useState, type RefObject } from 'react';
+import { useCallback, useEffect, useState, type RefObject } from 'react';
 import {
   OPENING_SAVE_KEY,
   readOpeningCheckpoint,
@@ -9,6 +9,14 @@ import type { OpeningState } from '@/lib/survival-opening';
 
 export function useOpeningCheckpoint(opening: RefObject<OpeningState>) {
   const [saved, setSaved] = useState<OpeningState | null>(null);
+  const replaceCheckpoint = useCallback((next: OpeningState) => {
+    setSaved(null);
+    try {
+      localStorage.setItem(OPENING_SAVE_KEY, serializeOpeningCheckpoint(next));
+    } catch {
+      /* The new live season remains playable if storage is unavailable. */
+    }
+  }, []);
   useEffect(() => {
     let lastSaved: OpeningState | null = null;
     const checkSave = requestAnimationFrame(() => {
@@ -23,7 +31,10 @@ export function useOpeningCheckpoint(opening: RefObject<OpeningState>) {
       const current = opening.current;
       if (current.stage === 'waiting' || current === lastSaved) return;
       try {
-        localStorage.setItem(OPENING_SAVE_KEY, serializeOpeningCheckpoint(current));
+        localStorage.setItem(
+          OPENING_SAVE_KEY,
+          serializeOpeningCheckpoint(current),
+        );
         lastSaved = current;
       } catch {
         /* Retry on the next checkpoint if storage becomes available. */
@@ -37,5 +48,5 @@ export function useOpeningCheckpoint(opening: RefObject<OpeningState>) {
       window.removeEventListener('pagehide', persist);
     };
   }, [opening]);
-  return [saved, setSaved] as const;
+  return [saved, setSaved, replaceCheckpoint] as const;
 }

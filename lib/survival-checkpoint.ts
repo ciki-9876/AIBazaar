@@ -2,14 +2,27 @@ import { itemIds, stackLimit, BRAIN_QUALITY } from './survival-stacks.ts';
 import { createGuidance, GUIDE_COPY } from './survival-guidance.ts';
 import type { OpeningState } from './survival-opening.ts';
 import { ITEMS, fits, capacity } from './survival-room.ts';
-import { cargoLayout, cargoFits } from './survival-cargo.ts';
+import { cargoLayout, cargoFits, warehouseRows } from './survival-cargo.ts';
 import { ROOM } from './survival-world.ts';
 import { decodeSave, encodeSave } from '../packages/core/save-envelope.ts';
+import { validRace, racePlayer, raceFloorSeed } from './survival-race.ts';
+import { validSeason } from './survival-season-validation.ts';
+import { seasonRoomSeed } from './survival-season.ts';
 
 export const OPENING_SAVE_KEY = 'f9-survival-opening-v4';
+// The room simulator retains its v6 replay contract; the race envelope is additive.
 export const SURVIVAL_RULES_VERSION = 'f9-survival/6';
+export const SURVIVAL_RACE_RULES_VERSION = 'f9-survival/7';
+export const SURVIVAL_STORAGE_RULES_VERSION = 'f9-survival/8';
+export const SURVIVAL_SEASON_RULES_VERSION = 'f9-survival/9';
 export function serializeOpeningCheckpoint(state: OpeningState): string {
-  return encodeSave('elevator', SURVIVAL_RULES_VERSION, state);
+  return encodeSave(
+    'elevator',
+    state.version === 9
+      ? SURVIVAL_SEASON_RULES_VERSION
+      : SURVIVAL_STORAGE_RULES_VERSION,
+    state,
+  );
 }
 const stages =
   'waiting eyes where phone put-away door-thought door departing find-light equip-light find-box rustle sound-thought edge reveal fight aftermath return returning home second-departing expedition collapse'.split(
@@ -26,9 +39,48 @@ const phases =
 /** Versioned local prototype checkpoint, separate from card-game saves. */
 export function readOpeningCheckpoint(text: string): OpeningState | null {
   try {
-    const s = decodeSave(text, 'elevator', SURVIVAL_RULES_VERSION) as OpeningState,
+    let payload: unknown;
+    try {
+      payload = decodeSave(text, 'elevator', SURVIVAL_SEASON_RULES_VERSION);
+    } catch {
+      try {
+        payload = decodeSave(text, 'elevator', SURVIVAL_STORAGE_RULES_VERSION);
+      } catch {
+        try {
+          payload = decodeSave(text, 'elevator', SURVIVAL_RACE_RULES_VERSION);
+        } catch {
+          payload = decodeSave(text, 'elevator', SURVIVAL_RULES_VERSION);
+        }
+      }
+    }
+    const envelope = JSON.parse(text) as Record<string, unknown>;
+    const s = payload as OpeningState,
       r = s.room,
       a = s.afterlight;
+    if (
+      envelope.rulesVersion &&
+      envelope.rulesVersion !== SURVIVAL_SEASON_RULES_VERSION &&
+      envelope.rulesVersion !== SURVIVAL_STORAGE_RULES_VERSION &&
+      (s.version === 7) !==
+        (envelope.rulesVersion === SURVIVAL_RACE_RULES_VERSION)
+    )
+      return null;
+    if (
+      (s.version === 9) !==
+      (envelope.rulesVersion === SURVIVAL_SEASON_RULES_VERSION)
+    )
+      return null;
+    // v6/v7 lack these optional banks: interpret absence as empty, preserving UIDs.
+    if (
+      (r.warehouse !== undefined && !Array.isArray(r.warehouse)) ||
+      (r.liftParts !== undefined &&
+        (!Number.isInteger(r.liftParts) ||
+          r.liftParts < 0 ||
+          r.liftParts > 2)) ||
+      (r.liftLevel !== undefined &&
+        (!Number.isInteger(r.liftLevel) || r.liftLevel < 0 || r.liftLevel > 5))
+    )
+      return null;
     // Keep the same storage slot and migrate the previous playable chapter.
     if ((s as { version: number }).version === 4) {
       (s as { version: number }).version = 5;
@@ -59,7 +111,11 @@ export function readOpeningCheckpoint(text: string): OpeningState | null {
       s.guidance.startWater = r.player.water;
     }
     if (
-      s.version !== 6 ||
+      ![6, 7, 9].includes(s.version) ||
+      (s.version === 7 ? !validRace(s.race) : s.race !== undefined) ||
+      (s.version === 9
+        ? s.season && !validSeason(s.season, r)
+        : s.season !== undefined) ||
       !stages.includes(s.stage) ||
       !scenes.includes(s.homecoming.scene) ||
       !phases.includes(a.phase)
@@ -76,7 +132,11 @@ export function readOpeningCheckpoint(text: string): OpeningState | null {
       !finite(r.tick) ||
       !finite(r.rng) ||
       !finite(r.serial) ||
-      ![92620, 92621, 92622, 92623].includes(r.seed) ||
+      !(
+        [92620, 92621, 92622, 92623].includes(r.seed) ||
+        (s.race && r.seed === raceFloorSeed(r.floor || 1)) ||
+        (s.season && r.seed === seasonRoomSeed(s.season.seed, r.floor || 1))
+      ) ||
       r.world.seed !== r.seed
     )
       return null;
@@ -117,8 +177,17 @@ export function readOpeningCheckpoint(text: string): OpeningState | null {
     if (
       typeof s.lift.repaired !== 'boolean' ||
       typeof s.lift.choosingFloor !== 'boolean' ||
-      ![1, 2, 3].includes(r.floor || 1) ||
-      ![1, 2, 3].includes(s.lift.highestFloor) ||
+      !(s.season
+        ? Number.isInteger(r.floor) && r.floor! >= 3 && r.floor! <= 100
+        : s.race
+          ? Number.isInteger(r.floor) &&
+            (r.floor || 0) >= 3 &&
+            (r.floor || 0) <= 100 &&
+            racePlayer(s.race).floor === r.floor
+          : [1, 2, 3].includes(r.floor || 1)) ||
+      !(s.race || s.season
+        ? s.lift.highestFloor === r.floor
+        : [1, 2, 3].includes(s.lift.highestFloor)) ||
       !finite(s.lift.trips) ||
       !Array.isArray(s.dropped)
     )
@@ -209,10 +278,12 @@ export function readOpeningCheckpoint(text: string): OpeningState | null {
       ...r.bag,
       ...r.safe,
       ...r.equipment.map((e) => e.item),
+      ...(r.warehouse || []),
       ...r.caches.flatMap((c) => c.contents),
     ];
     if (
       !all.every(validItem) ||
+      (!s.season && all.some((i) => i.kind === 'golden')) ||
       new Set(all.flatMap(itemIds)).size !== all.flatMap(itemIds).length ||
       ![...a.collected, ...a.used, ...r.lost].every(validItem)
     )
@@ -220,12 +291,31 @@ export function readOpeningCheckpoint(text: string): OpeningState | null {
     if (
       capacity(r.bag) > 16 ||
       capacity(r.safe) > 1 ||
+      capacity(r.warehouse || []) > 4 * warehouseRows(r.liftLevel) ||
       !r.equipment.every((e) =>
         fits(r.equipment, e.item.size, e.slot, e.item.uid),
       )
     )
       return null;
     const layout = cargoLayout(r.bag);
+    const storageLayout = cargoLayout(
+      r.warehouse || [],
+      warehouseRows(r.liftLevel),
+    );
+    if (
+      storageLayout.length !== (r.warehouse || []).length ||
+      !storageLayout.every((p) =>
+        cargoFits(
+          storageLayout,
+          p.item.size,
+          p.slot,
+          p.rotated,
+          p.item.uid,
+          warehouseRows(r.liftLevel),
+        ),
+      )
+    )
+      return null;
     if (
       !layout.every((p) =>
         cargoFits(layout, p.item.size, p.slot, p.rotated, p.item.uid),

@@ -1,6 +1,8 @@
 'use client';
 import { useEffect, useRef, useState } from 'react';
 import { ArrowUp, Lightbulb, DoorOpen } from 'lucide-react';
+import { raceSpan } from '@/lib/survival-race';
+import { warehouseRows } from '@/lib/survival-cargo';
 /** Presentation only: payment has already succeeded atomically before mounting. */
 export default function UpgradeSequence({
   level,
@@ -8,7 +10,7 @@ export default function UpgradeSequence({
   paused,
   done,
 }: {
-  level: 1 | 2;
+  level: number;
   reduced: boolean;
   paused: boolean;
   done: () => void;
@@ -76,13 +78,20 @@ export default function UpgradeSequence({
         {level === 1 ? <Lightbulb size={28} /> : <DoorOpen size={28} />}
         <div>
           <strong>
-            {level === 1 ? '照明恢复 · 二层接通' : '第三层 · 听雨庭'}
+            {level === 1
+              ? '照明恢复 · 二层接通'
+              : level === 2
+                ? '第三层 · 听雨庭'
+                : `最大跨度 · ${raceSpan(level)}层`}
           </strong>
           <p>
             {level === 1
               ? '黑暗里，有了一处属于你的光。'
-              : '门的另一边，雨声正在靠近。'}
+              : level === 2
+                ? '门的另一边，雨声正在靠近。'
+                : '一次跃迁，可以抵达更远的世界。'}
           </p>
+          {level >= 2 && <p>仓库扩容 · {4 * warehouseRows(level)} 格</p>}
         </div>
       </div>
       <button disabled={!revealed} onClick={done}>

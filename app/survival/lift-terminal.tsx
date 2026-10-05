@@ -27,6 +27,7 @@ export default function LiftTerminal({
           minimal
           act={inventory}
           focusBread={state.afterlight.phase === 'eat-food'}
+          allowStorage={state.stage === 'home'}
         />
       </InventoryDrag>
     </div>

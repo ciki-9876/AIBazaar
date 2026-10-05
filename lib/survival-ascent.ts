@@ -10,7 +10,7 @@ export const ascentReady = (r: SurvivalState) =>
     (c) =>
       (c.kind === 'lift-material'
         ? brainExperience(r.bag) + (r.liftExperience || 0)
-        : countKind(r.bag, c.kind)) >= c.count,
+        : countKind(r.bag, c.kind) + (r.liftParts || 0)) >= c.count,
   );
 export function payAscent(r: SurvivalState): SurvivalState | null {
   if (!ascentReady(r) || (r.liftLevel || 1) >= 2) return null;
@@ -22,13 +22,14 @@ export function payAscent(r: SurvivalState): SurvivalState | null {
       c.kind,
       c.kind === 'lift-material'
         ? Math.max(0, c.count - (r.liftExperience || 0))
-        : c.count,
+        : Math.max(0, c.count - (r.liftParts || 0)),
       c.kind === 'lift-material',
     );
   return {
     ...r,
     bag,
     liftLevel: 2,
+    liftParts: 0,
     liftExperience: beforeXP - brainExperience(bag) - ASCENT_COST[0].count,
   };
 }

@@ -1,4 +1,5 @@
 import { showGuide } from './survival-guidance.ts';
+import { SEASON_GM_STAGES, createSeasonRehearsal } from './survival-season-rehearsal.ts';
 import {
   createOpening,
   openingAction,
@@ -6,9 +7,17 @@ import {
   type OpeningState,
 } from './survival-opening.ts';
 import { createHomecomingRehearsal } from './survival-rehearsal.ts';
-import { ELEVATOR } from './survival-room.ts';
+import { ELEVATOR, ITEMS } from './survival-room.ts';
 import { revealFog, visionRange } from './survival-world.ts';
 import { MAINTENANCE_POINTS } from './survival-afterlight.ts';
+import { createRaceRoom } from './survival-race-session.ts';
+import {
+  createRace,
+  acknowledgeRace,
+  ascendRace,
+  racePlayer,
+  tickRace,
+} from './survival-race.ts';
 
 const opening = [
   ['waiting', '进入游戏', '开始画面，尚未睁眼。'],
@@ -96,6 +105,42 @@ const field = [
   ['returning', '第二次返程', '携带维保廊物资返回电梯。'],
 ] as const;
 export const GM_STAGES = [
+  ...SEASON_GM_STAGES,
+  ...[
+    [
+      'warehouse',
+      '仓库与销毁',
+      '一级电梯的4×6仓库；练习存取、拖拽、交换与销毁确认。',
+    ],
+    [
+      'feeding',
+      '分次投喂',
+      '升级进度已有15脑浆经验、1零件；材料在行囊与仓库中，可逐件投入黑孔。',
+    ],
+  ].map(([id, title, description]) => ({
+    id: `storage:${id}`,
+    group: '电梯仓库与投喂',
+    title,
+    description,
+  })),
+  ...[
+    ['briefing', '节目揭晓', '第三层首次返程后，安泊宣布百层竞速规则。'],
+    [
+      'terminal',
+      '赛事与电梯主页',
+      '已登记参赛，持有4张通行证；可查赛事、升级和选层。',
+    ],
+    ['passes', '通行终端', '第三层登记箱附近；按住E签发，移动或受伤中断。'],
+    ['review', '十层审查', '驻守者已击败，带着4张通行证回到电梯。'],
+    ['promotion', '晋级演出', '提交资格后余票转经验，下一赛段开放。'],
+    ['eliminated', '资格注销', '审查时限到期的淘汰结果，不等同于普通死亡。'],
+    ['victory', '百层优胜', '真实规则支付最后一层通行费，触发100层胜利。'],
+  ].map(([id, title, description]) => ({
+    id: `race:${id}`,
+    group: '百层竞速与通行证',
+    title,
+    description,
+  })),
   ...[
     ['spirit', '首次精神力下降', '强引导暂停：精神力与失败损失。'],
     ['needs', '探索消耗饥渴', '持续十秒的机器人弱提示，不暂停战斗。'],
@@ -317,11 +362,123 @@ function buildCheckpoints() {
   aid.guidance.active = null;
   observe(stepOpening(aid));
   until(points.get('opening:aftermath')!, (s) => s.stage === 'return');
+  // Authored deterministic debug states; pending competitors never receive fabricated progress.
+  const raceHome = structuredClone(points.get('guide:floor3')!);
+  raceHome.stage = 'home';
+  raceHome.room.status = 'extracted';
+  raceHome.room.player = {
+    ...raceHome.room.player,
+    ...ELEVATOR,
+    hp: 100,
+    food: 90,
+    water: 80,
+  };
+  raceHome.room.path = [];
+  raceHome.guidance.active = null;
+  raceHome.homecoming.scene = 'complete';
+  raceHome.afterlight.phase = 'report';
+  let contest = openingAction(raceHome, { type: 'confirm-report' });
+  save('race:briefing', contest);
+  contest = openingAction(contest, { type: 'ack-race' });
+  const fieldRace = structuredClone(contest);
+  fieldRace.stage = 'expedition';
+  fieldRace.room.status = 'running';
+  fieldRace.room.leftLift = true;
+  const source = fieldRace.race!.sources[0];
+  fieldRace.room.player = {
+    ...fieldRace.room.player,
+    x: source.x,
+    z: source.z + 1,
+  };
+  fieldRace.room.fog = revealFog(
+    fieldRace.room.player,
+    fieldRace.room.fog,
+    fieldRace.room.world,
+    visionRange(fieldRace.room),
+  );
+  save('race:passes', fieldRace);
+  racePlayer(contest.race!).passes = [0, 1, 2, 3].map((i) => ({
+    id: `gm-ticket-${i}`,
+    segment: 1,
+    source: 'gm',
+  }));
+  save('race:terminal', contest);
+  const review = structuredClone(contest);
+  review.room = {
+    ...createRaceRoom(10),
+    status: 'extracted',
+    equipment: review.room.equipment,
+    bag: review.room.bag,
+    safe: review.room.safe,
+    liftLevel: 2,
+  };
+  review.room.enemies = [];
+  review.lift.highestFloor = 10;
+  review.race = acknowledgeRace(createRace(review.room.seed, 10));
+  racePlayer(review.race).passes = structuredClone(
+    racePlayer(contest.race!).passes,
+  );
+  review.race.scene = 'review';
+  save('race:review', review);
+  save('race:promotion', openingAction(review, { type: 'submit-review' }));
+  const eliminated = structuredClone(contest);
+  eliminated.race = tickRace({
+    ...eliminated.race!,
+    tick: racePlayer(eliminated.race!).deadline - 1,
+  });
+  save('race:eliminated', eliminated);
+  const victory = structuredClone(contest);
+  victory.room = {
+    ...createRaceRoom(100),
+    status: 'extracted',
+    equipment: contest.room.equipment,
+    bag: contest.room.bag,
+    safe: contest.room.safe,
+    liftLevel: 5,
+  };
+  victory.lift.highestFloor = 100;
+  victory.race = acknowledgeRace(createRace(victory.room.seed, 99));
+  racePlayer(victory.race).qualified = [10, 20, 30, 40, 50, 60, 70, 80, 90];
+  racePlayer(victory.race).passes = [
+    { id: 'gm-finish-pass', segment: 10, source: 'gm' },
+  ];
+  victory.race = ascendRace(victory.race, 'player', 100, 5);
+  save('race:victory', victory);
+  const storage = structuredClone(points.get('after:upgrade-goal')!);
+  storage.room.warehouse = [
+    { ...ITEMS.water, uid: 'gm-storage-water', slot: 0 },
+  ];
+  storage.room.bag = [
+    {
+      ...ITEMS['lift-material'],
+      uid: 'gm-storage-brain',
+      quality: 'normal',
+      stack: ['gm-storage-brain-2', 'gm-storage-brain-3'],
+      slot: 0,
+    },
+    { ...ITEMS.scrap, uid: 'gm-storage-part', slot: 1 },
+    { ...ITEMS.scrap, uid: 'gm-storage-part-2', slot: 2 },
+  ];
+  save('storage:warehouse', storage);
+  const feeding = structuredClone(storage);
+  feeding.room.liftExperience = 15;
+  feeding.room.liftParts = 1;
+  feeding.room.warehouse = [
+    ...(feeding.room.warehouse || []),
+    {
+      ...ITEMS['lift-material'],
+      uid: 'gm-feed-brain',
+      quality: 'normal',
+      slot: 1,
+    },
+  ];
+  save('storage:feeding', feeding);
   for (const stage of GM_STAGES)
-    if (!points.has(stage.id)) throw new Error(`Missing GM stage ${stage.id}`);
+    if (!stage.id.startsWith('season:') && !points.has(stage.id)) throw new Error(`Missing GM stage ${stage.id}`);
   return points;
 }
 export function createGMCheckpoint(id: string): OpeningState {
+  if (id.startsWith('season:') && SEASON_GM_STAGES.some(s=>s.id===id)) return createSeasonRehearsal(id.slice(7));
   if (!GM_STAGES.some((s) => s.id === id))
     throw new Error('Unknown tutorial checkpoint');
   checkpoints ??= buildCheckpoints();
