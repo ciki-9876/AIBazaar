@@ -151,7 +151,7 @@ test('complete opening route connects training, qualifying duel, departure, and 
   assert.equal(town.flags.ticket, true);
 });
 
-test('adventure battles reuse real v4 combat and deterministic seeds, including repeat practice', () => {
+test('adventure battles reuse real v5 combat and deterministic seeds, including repeat practice', () => {
   const battle = chooseDialogue(meetMentor(1337), 'practice');
   const run = () => {
     let duel = createThrowDuel(
@@ -174,7 +174,7 @@ test('adventure battles reuse real v4 combat and deterministic seeds, including 
       finishAdventureBattle(battle, battle.battle.id, duel.winner),
     );
   };
-  assert.equal(RULES_VERSION, 'throw-duel-v4');
+  assert.equal(RULES_VERSION, 'throw-duel-v5');
   assert.equal(battle.battle.enemyStyle, 'lesson');
   assert.equal(battle.battle.coach, 'lesson');
   const result = run();

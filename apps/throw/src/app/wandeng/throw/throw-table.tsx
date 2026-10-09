@@ -32,6 +32,8 @@ import {
   arrangeThrow,
   stepThrowDuel,
   TICK_MS,
+  CURTAIN_MS,
+  curtainDamage,
   type ItemId,
   type RelicId,
   type Style,
@@ -40,6 +42,8 @@ import {
   type TriggerEffect,
 } from '../../../lib/cards/throw-duel';
 import { clickThrowSelection } from '../../../lib/cards/throw-selection';
+import { enchantOf, RARITY_NAMES, type DeckBook } from '../../../lib/cards/throw-enchant';
+import { bookCounts, DeckCase } from './throw-deckcase';
 import {
   captureTableGeometry,
   FlightLayer,
@@ -119,12 +123,14 @@ function PokerCard({
   enemy?: boolean;
   onClick?: () => void;
 }) {
+  const variant = enemy ? undefined : enchantOf(card.ench);
   return (
     <button
       type="button"
       className={`tp-card ${card.suit % 2 ? 'tp-red' : ''} ${selected ? 'tp-selected' : ''}`}
       data-card-id={card.uid}
-      aria-label={`${SUITS[card.suit]}${rankText(card.rank)}`}
+      aria-label={`${SUITS[card.suit]}${rankText(card.rank)}${variant ? ` · ${variant.name}` : ''}`}
+      title={variant ? `${RARITY_NAMES[variant.rarity]} · ${variant.name}：${variant.text}` : undefined}
       aria-pressed={selected}
       disabled={enemy}
       onClick={onClick}
@@ -345,6 +351,8 @@ export type PreparedThrowLoadout = {
   style: Style;
   layout: ItemPlacement[];
   relic: RelicId | null;
+  /** Variant chosen for each card slot; absent means plain white cards. */
+  book?: DeckBook;
 };
 type ThrowTableProps = {
   challenge?: { enemyStyle: Style; seed: number; title: string };
@@ -383,6 +391,8 @@ export default function ThrowTable({
     challenge?.enemyStyle ?? 'guard',
   );
   const [seed, setSeed] = useState(String(challenge?.seed ?? 1024));
+  const [book, setBook] = useState<DeckBook>(() => ({ ...(initialLoadout?.book ?? {}) }));
+  const [deckOpen, setDeckOpen] = useState(false);
   const [paused, setPaused] = useState(false);
   const [rules, setRules] = useState(false);
   const [soundEnabled, setSoundEnabled] = useState(true);
@@ -586,6 +596,7 @@ export default function ThrowTable({
       relic,
       PRESETS[enemyStyle].relic,
       layout,
+      { player: book },
     );
     soundCursor.current = next.nextId - 1;
     resultSound.current = false;
@@ -670,6 +681,10 @@ export default function ThrowTable({
     gesture.current = null;
     setBox(null);
   };
+  // Curtain call (presentation): countdown, live rate, and how far the drop has fallen.
+  const curtainIn = Math.max(0, (CURTAIN_MS - duel.tick * TICK_MS) / 1000);
+  const curtainNow = curtainDamage(duel.tick);
+  const curtainFall = Math.min(1, Math.max(0, (duel.tick * TICK_MS - CURTAIN_MS) / 30000));
   const lastHits = duel.events.filter(
     (event) =>
       (event.type === 'hit' || event.type === 'dot') &&
@@ -688,6 +703,7 @@ export default function ThrowTable({
       style,
       relic,
       layout: layout.map((entry) => ({ ...entry })),
+      book: { ...book },
     });
   return (
     <main
@@ -780,6 +796,32 @@ export default function ThrowTable({
                   </label>
                 </div>
               )}
+              {!available && (
+                <button
+                  className="tp-deckcase-open"
+                  onClick={() => {
+                    unlockSound().tap();
+                    setDeckOpen(true);
+                  }}
+                >
+                  牌匣
+                  <small>
+                    {(() => {
+                      const counts = bookCounts(book);
+                      const total = counts.rare + counts.epic + counts.legendary;
+                      return total ? `${total} 张变种` : '全白牌';
+                    })()}
+                  </small>
+                </button>
+              )}
+              {deckOpen && (
+                <DeckCase
+                  book={book}
+                  onBook={setBook}
+                  onClose={() => setDeckOpen(false)}
+                  tap={() => unlockSound().tap()}
+                />
+              )}
               <button
                 className="tp-primary tp-start"
                 onClick={start}
@@ -824,7 +866,12 @@ export default function ThrowTable({
             </div>
           </div>
           <div className="tp-arena">
-            <div className="tp-stage-wall" aria-hidden="true">
+            <div
+              className="tp-stage-wall"
+              aria-hidden="true"
+              style={{ '--fall': curtainFall } as CSSProperties}
+            >
+              <span className="tp-stage-fall" />
               <span className="tp-stage-arch" />
               <span className="tp-stage-curtain tp-stage-curtain-left" />
               <span className="tp-stage-curtain tp-stage-curtain-right" />
@@ -840,6 +887,17 @@ export default function ThrowTable({
               <div className="tp-clock">
                 <strong>VS</strong>
                 <span>{((duel.tick * TICK_MS) / 1000).toFixed(1)}s</span>
+                {curtainNow > 0 ? (
+                  <em className="tp-curtain-live" title="落幕：双方每秒受到递增伤害，护盾可挡，治疗可抵">
+                    落幕 · 每秒 {curtainNow}
+                  </em>
+                ) : (
+                  curtainIn <= 15 && (
+                    <em className="tp-curtain-soon" title="落幕：双方每秒受到递增伤害，护盾可挡，治疗可抵">
+                      {Math.ceil(curtainIn)} 秒后落幕
+                    </em>
+                  )
+                )}
                 <button
                   onClick={() => setPaused((old) => !old)}
                   disabled={duel.status === 'ended'}
@@ -1141,8 +1199,9 @@ export default function ThrowTable({
               <li><b>灼烧克治疗</b>：着火时治疗只剩六成；灼烧 ≥3 层时每次出手烫手，扣 2 血。</li>
               <li><b>单张削盾</b>：单张牌被护盾挡下时多耗 10% 护盾，也不会被铜镜反射。</li>
               <li><b>压轴</b>：顺子及以上命中会造成重创（5 秒内治疗六成）；一次出 5 张以上会吹灭自身灼烧，6 秒内不被点燃。</li>
+              <li><b>落幕</b>：第 60 秒起剧院开始关门，双方每秒受到 1、2、3……递增的伤害。护盾照挡，治疗照抵——活得久，本身就是一种赢法。</li>
             </ul>
-            <p>道具占 1–3 格，相邻指边缘贴合，增幅向下取整；遗物只能带 1 件。120 秒后比较生命。对手出手前 1 秒会亮牌预告——这是他的礼貌，不是他的失误。</p>
+            <p>道具占 1–3 格，相邻指边缘贴合，增幅向下取整；遗物只能带 1 件。万一撑到 120 秒还没分出胜负，比较剩余生命。对手出手前 1 秒会亮牌预告——这是他的礼貌，不是他的失误。</p>
             <button className="tp-primary" onClick={() => setRules(false)}>
               知道了
             </button>

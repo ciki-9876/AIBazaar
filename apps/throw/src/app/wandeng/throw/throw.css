@@ -1429,3 +1429,48 @@ button:disabled {
 .tp-counter-rules b {
   color: var(--bone);
 }
+
+/* Curtain call (落幕): the house curtain lowers as the curtain damage ramps. */
+.tp-stage-fall {
+  position: absolute;
+  inset: 0 0 auto;
+  height: calc(var(--fall, 0) * 38%);
+  background:
+    linear-gradient(transparent calc(100% - 8px), var(--brass-dark) calc(100% - 8px), var(--brass) calc(100% - 4px), var(--brass-dark)),
+    repeating-linear-gradient(90deg, var(--lacquer-dark) 0 10px, var(--lacquer) 22px 34px, #8e1a2c 40px 46px);
+  box-shadow: 0 10px 26px rgba(0, 0, 0, 0.5);
+  transition: height 1s linear;
+}
+.tp-clock em {
+  font-style: normal;
+  font-size: 12px;
+  letter-spacing: 0.06em;
+  white-space: nowrap;
+}
+.tp-curtain-soon {
+  color: var(--brass);
+  animation: tp-curtain-pulse 1s ease-in-out infinite alternate;
+}
+.tp-curtain-live {
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: var(--lacquer);
+  color: var(--bone);
+}
+@keyframes tp-curtain-pulse {
+  to {
+    opacity: 0.45;
+  }
+}
+.tp-impact-curtain b {
+  color: #f0c9cf;
+  font-size: 30px;
+}
+@media (prefers-reduced-motion: reduce) {
+  .tp-stage-fall {
+    transition: none;
+  }
+  .tp-curtain-soon {
+    animation: none;
+  }
+}

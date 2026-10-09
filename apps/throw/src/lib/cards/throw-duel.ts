@@ -1,6 +1,13 @@
 import { randomStream } from '../../packages/core/random.ts';
 import { scorePoker, type PlayingCard, type Suit } from './throw-poker.ts';
 import {
+  cardKey,
+  enchantEffects,
+  suitWeight,
+  validDeckBook,
+  type DeckBook,
+} from './throw-enchant.ts';
+import {
   ITEMS,
   RELICS,
   PRESETS,
@@ -27,7 +34,18 @@ export const TICK_MS = 50,
  * burn halves healing. Direct-damage builds add shred (single cards) and
  * wounds (straights and better). Deck streams are unchanged from v3.
  */
-export const RULES_VERSION = 'throw-duel-v4';
+export const RULES_VERSION = 'throw-duel-v5';
+/**
+ * v5 curtain call (落幕): from one minute in, the theatre starts closing on
+ * both magicians. Every second each side takes damage that rises by
+ * CURTAIN_RAMP per second (1, 2, 3 …). It is ordinary damage, so shields
+ * absorb it and healing outlasts it: surviving is itself a way to win.
+ */
+export const CURTAIN_MS = 60000;
+export const CURTAIN_RAMP = 1;
+/** Curtain damage dealt at the given tick (0 before the curtain falls). */
+export const curtainDamage = (tick: number) =>
+  tick < ticks(CURTAIN_MS) ? 0 : (Math.floor((tick - ticks(CURTAIN_MS)) / ticks(1000)) + 1) * CURTAIN_RAMP;
 export const SCORCH_PER_THROW = 2;
 export const SCORCH_THRESHOLD = 3;
 export const SMOTHER_EXTRA_DECAY = 2;
@@ -56,7 +74,10 @@ export type EffectKind =
   | 'pierce'
   | 'link'
   | 'leech'
-  | 'wound';
+  | 'wound'
+  | 'curtain'
+  | 'antidote'
+  | 'douse';
 export type TriggerEffect = {
   source: string;
   name: string;
@@ -112,6 +133,8 @@ export type ThrowFighter = {
   pile: PlayingCard[];
   cycle: number;
   relic: RelicId | null;
+  /** Which variant sits in each of the 52 card slots; absent keys are plain. */
+  book: DeckBook;
   nextReorder: number;
   throws: number;
   hits: number;
@@ -148,16 +171,24 @@ export const AI_THINK_MS: Record<Style, number> = {
 };
 export const aiThinkMs = (style: Style) => AI_THINK_MS[style];
 
-function deck(seed: number, side: Side, cycle: number): PlayingCard[] {
+/**
+ * One standard 52-card deck, shuffled from its own stream and drawn in order;
+ * when it runs out the whole deck is reshuffled as the next cycle. Variants
+ * only decorate cards, so the shuffle order is independent of the deck book.
+ */
+function deck(seed: number, side: Side, cycle: number, book: DeckBook = {}): PlayingCard[] {
   const rng = randomStream(seed, `throw-duel/${side}/deck/${cycle}`),
     cards: PlayingCard[] = [];
   for (let suit = 0; suit < 4; suit++)
-    for (let rank = 2; rank <= 14; rank++)
+    for (let rank = 2; rank <= 14; rank++) {
+      const ench = book[cardKey(suit, rank)];
       cards.push({
         uid: `${side}:${cycle}:${suit}:${rank}`,
         suit: suit as Suit,
         rank,
+        ...(ench ? { ench } : {}),
       });
+    }
   for (let i = cards.length - 1; i > 0; i--) {
     const j = Math.floor(rng() * (i + 1));
     [cards[i], cards[j]] = [cards[j], cards[i]];
@@ -230,7 +261,7 @@ function draw(state: ThrowDuel, side: Side) {
   const fighter = state.fighters[side];
   if (fighter.hand.length >= handLimit(fighter.relic)) return;
   if (!fighter.pile.length)
-    fighter.pile = deck(state.seed, side, ++fighter.cycle);
+    fighter.pile = deck(state.seed, side, ++fighter.cycle, fighter.book);
   const card = fighter.pile.pop()!;
   fighter.hand.push(card);
   fighter.drawn++;
@@ -243,6 +274,7 @@ export function createThrowDuel(
   relic: RelicId | null = null,
   enemyRelic: RelicId | null = PRESETS[aiStyle]?.relic ?? null,
   playerLayout?: ItemPlacement[],
+  books: { player?: DeckBook; enemy?: DeckBook } = {},
 ): ThrowDuel {
   if (!Number.isSafeInteger(seed) || seed < 0 || seed > 0xffffffff)
     throw new Error('Seed must be uint32');
@@ -261,10 +293,15 @@ export function createThrowDuel(
     )
   )
     throw new Error('Invalid relic');
+  const playerBook = books.player ?? {},
+    enemyBook = books.enemy ?? {};
+  if (!validDeckBook(playerBook) || !validDeckBook(enemyBook))
+    throw new Error('Invalid deck book');
   const make = (
     side: Side,
     bag: ItemPlacement[],
     equippedRelic: RelicId | null,
+    book: DeckBook,
   ): ThrowFighter => ({
     hp: MAX_HP,
     shield: 0,
@@ -280,9 +317,10 @@ export function createThrowDuel(
     items: bag.map((entry) => entry.id),
     drawClock: 0,
     drawn: 0,
-    pile: deck(seed, side, 0),
+    pile: deck(seed, side, 0, book),
     cycle: 0,
     relic: equippedRelic,
+    book: { ...book },
     nextReorder: 0,
     throws: 0,
     hits: 0,
@@ -293,8 +331,8 @@ export function createThrowDuel(
     seed,
     tick: 0,
     fighters: [
-      make(0, layout, relic),
-      make(1, packThrowItems(PRESETS[aiStyle].items), enemyRelic),
+      make(0, layout, relic, playerBook),
+      make(1, packThrowItems(PRESETS[aiStyle].items), enemyRelic, enemyBook),
     ],
     shots: [],
     events: [],
@@ -320,8 +358,9 @@ type PreviewContext = Partial<ThrowFighter> & {
   target?: Partial<ThrowFighter>;
 };
 type Raw = { name: string; kind: EffectKind; value: number };
+/** Cards of a suit, counting resonant variants (共鸣) as several. */
 const count = (cards: PlayingCard[], suit: Suit) =>
-  cards.filter((card) => card.suit === suit).length;
+  cards.reduce((sum, card) => sum + (card.suit === suit ? suitWeight(card) : 0), 0);
 const PAIRISH = [1, 2, 6];
 /** The whole item rulebook. Mechanical text in throw-loadout.ts mirrors this. */
 function itemEffects(
@@ -460,6 +499,31 @@ export function previewThrow(
         if (id === 'thorns') continue;
         effects.push({ source: `item:${id}`, name: raw.name, value: amount, kind: raw.kind });
       }
+  // Card variants: enchantments on the thrown cards themselves.
+  if (cards.length)
+    for (const raw of enchantEffects(
+      cards,
+      {
+        cards,
+        kind: poker.kind,
+        hp: context.hp ?? MAX_HP,
+        maxHp: MAX_HP,
+        shield: context.shield ?? 0,
+        poison: context.poison ?? 0,
+        burn: context.burn ?? 0,
+        hand: context.hand?.length ?? cards.length,
+        throws: context.throws ?? 0,
+        curtain: curtainDamage(context.tick ?? 0) > 0,
+        target: {
+          burn: context.target?.burn ?? 0,
+          poison: context.target?.poison ?? 0,
+          shield: context.target?.shield ?? 0,
+          hand: context.target?.hand?.length ?? 0,
+        },
+      },
+      poker.comboIds,
+    ))
+      effects.push({ source: raw.source, name: raw.name, value: raw.value, kind: raw.kind });
   for (const [id, gain] of links)
     effects.push({
       source: `item:${id}`,
@@ -506,15 +570,21 @@ export function previewThrow(
       .filter((effect) => effect.kind === 'damage' && effect.source.startsWith(prefix))
       .reduce((sum, effect) => sum + effect.value, 0);
   const itemBonus = damageFrom('item:'),
-    relicBonus = damageFrom('relic:');
+    relicBonus = damageFrom('relic:'),
+    cardBonus = damageFrom('card:');
   const cleanse = (name: string) =>
     effects.find((effect) => effect.kind === 'cleanse' && effect.name === name)?.value ?? 0;
   return {
     ...poker,
     itemBonus,
     relicBonus,
+    cardBonus,
     damage:
-      poker.damage + itemBonus + relicBonus + (cards.length ? (context.power ?? 0) : 0),
+      poker.damage +
+      itemBonus +
+      relicBonus +
+      cardBonus +
+      (cards.length ? (context.power ?? 0) : 0),
     heal: total('heal'),
     shield: total('shield'),
     burn: total('burn'),
@@ -525,8 +595,8 @@ export function previewThrow(
     draw: total('draw'),
     leech: total('leech') / 100,
     wound: poker.kind >= 4,
-    cleansePoison: cleanse('抖擞抖毒') + cleanse('清露净化'),
-    cleanseBurn: cleanse('压轴灭火') + cleanse('清露净化'),
+    cleansePoison: cleanse('抖擞抖毒') + cleanse('清露净化') + total('antidote'),
+    cleanseBurn: cleanse('压轴灭火') + cleanse('清露净化') + total('douse'),
     currentSuit: pureSuit,
     effects,
   };
@@ -957,6 +1027,20 @@ export function stepThrowDuelInPlace(next: ThrowDuel) {
           shieldDamage: 0,
         });
       }
+    }
+  // Curtain call: both sides at once, after statuses, so a simultaneous
+  // knockout is a draw rather than a seat advantage.
+  const curtain = curtainDamage(next.tick);
+  if (curtain && next.tick % ticks(1000) === 0)
+    for (const side of [0, 1] as const) {
+      const fighter = next.fighters[side];
+      if (!fighter.hp) continue;
+      const { health, blocked } = loseHealth(fighter, curtain);
+      addEvent(next, side === 0 ? 1 : 0, 'dot', '落幕', curtain, {
+        kind: 'curtain',
+        hpDamage: health,
+        shieldDamage: blocked,
+      });
     }
   if (finish(next)) return;
   for (const side of [0, 1] as const) {

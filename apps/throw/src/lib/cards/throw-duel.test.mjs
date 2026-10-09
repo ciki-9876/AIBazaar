@@ -246,6 +246,8 @@ test('seed, actions and ticks replay identically; decks keep stable unique ident
   state.fighters[0].relic = 'relay';
   const ids = new Set(state.fighters[0].hand.map((card) => card.uid));
   for (let i = 0; i < 100; i++) {
+    // Keep both alive through the curtain call so the deck cycles.
+    state.fighters[0].hp = MAX_HP;
     state.fighters[1].hp = MAX_HP;
     state = launchThrow(
       state,

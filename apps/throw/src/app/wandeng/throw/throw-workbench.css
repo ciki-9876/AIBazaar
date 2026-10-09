@@ -652,3 +652,213 @@
 .tp-presets[hidden] {
   display: none;
 }
+
+/* 牌匣 — 52-slot deck editor */
+.tp-deckcase {
+  width: min(1180px, calc(100% - 24px));
+  max-height: calc(100vh - 24px);
+  padding: 20px 22px;
+  border: 0;
+  border-radius: 10px;
+  background: linear-gradient(var(--peacock), var(--ink));
+  color: var(--bone);
+  box-shadow:
+    inset 0 0 0 1px var(--brass),
+    0 30px 80px rgba(0, 0, 0, 0.6);
+}
+.tp-deckcase[open] {
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr) auto;
+  gap: 14px;
+  animation: tp-pop 0.35s var(--ease-out);
+}
+.tp-deckcase::backdrop {
+  background: rgba(5, 14, 19, 0.72);
+  backdrop-filter: blur(3px);
+}
+.tp-deckcase header {
+  display: flex;
+  align-items: flex-start;
+  gap: 16px;
+}
+.tp-deckcase header > div {
+  flex: 1;
+}
+.tp-deckcase h2 {
+  margin: 0;
+  font: 600 22px var(--font-cjk-serif);
+  letter-spacing: 0.1em;
+}
+.tp-deckcase header p {
+  margin: 4px 0 0;
+  color: rgba(239, 231, 214, 0.7);
+  font-size: 13px;
+}
+.tp-deckcase .tp-close {
+  position: static;
+}
+.tp-deckcase-limits {
+  display: flex;
+  gap: 6px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.tp-deckcase-limits li {
+  padding: 4px 10px;
+  border-radius: 999px;
+  font-size: 12px;
+  background: rgba(239, 231, 214, 0.06);
+  box-shadow: inset 0 0 0 1px var(--rarity, var(--brass));
+}
+.tp-rarity-common {
+  --rarity: rgba(239, 231, 214, 0.4);
+}
+.tp-rarity-rare {
+  --rarity: #4fa39a;
+}
+.tp-rarity-epic {
+  --rarity: #9a7fd1;
+}
+.tp-rarity-legendary {
+  --rarity: #e2bd6a;
+}
+.tp-deckcase-body {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 340px;
+  gap: 16px;
+  min-height: 0;
+}
+.tp-deckcase-grid {
+  display: grid;
+  align-content: start;
+  gap: 8px;
+  overflow: auto;
+}
+.tp-deckcase-row {
+  display: grid;
+  grid-template-columns: repeat(13, minmax(36px, 1fr));
+  gap: 5px;
+}
+.tp-deckcase-slot {
+  padding: 0;
+  border: 0;
+  border-radius: 6px;
+  background: none;
+  aspect-ratio: 100 / 140;
+  transition: transform 0.2s var(--ease-spring);
+}
+.tp-deckcase-slot .card-art {
+  display: block;
+  width: 100%;
+  height: 100%;
+  border-radius: 6px;
+}
+.tp-deckcase-slot:hover {
+  transform: translateY(-3px);
+}
+.tp-deckcase-slot.tp-picked {
+  outline: 2px solid var(--limelight);
+  outline-offset: 2px;
+}
+.tp-deckcase-detail {
+  min-height: 0;
+  overflow: auto;
+  padding-right: 4px;
+}
+.tp-deckcase-detail h3 {
+  margin: 0 0 8px;
+  font: 600 16px var(--font-cjk-serif);
+}
+.tp-deckcase-detail ul {
+  display: grid;
+  gap: 6px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.tp-variant {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 2px 8px;
+  width: 100%;
+  padding: 8px 10px;
+  border: 0;
+  border-radius: 8px;
+  background: rgba(239, 231, 214, 0.04);
+  box-shadow: inset 3px 0 0 var(--rarity);
+  color: var(--bone);
+  text-align: left;
+}
+.tp-variant:hover:not(:disabled) {
+  background: rgba(239, 231, 214, 0.08);
+}
+.tp-variant.tp-active {
+  background: rgba(247, 230, 176, 0.12);
+  box-shadow:
+    inset 3px 0 0 var(--rarity),
+    inset 0 0 0 1px var(--limelight);
+}
+.tp-variant-chip {
+  grid-row: span 3;
+  align-self: start;
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-size: 11px;
+  background: var(--rarity);
+  color: var(--ink);
+}
+.tp-variant strong {
+  font-size: 14px;
+}
+.tp-variant > span:not(.tp-variant-chip) {
+  font-size: 13px;
+  color: rgba(239, 231, 214, 0.86);
+}
+.tp-variant em {
+  font-size: 12px;
+  color: rgba(239, 231, 214, 0.55);
+}
+.tp-variant small {
+  grid-column: 2;
+  color: var(--brass);
+  font-size: 11px;
+}
+.tp-deckcase footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+}
+.tp-deckcase-open small {
+  margin-left: 6px;
+  color: var(--brass);
+}
+@media (max-width: 760px) {
+  .tp-deckcase-body {
+    grid-template-columns: 1fr;
+  }
+  .tp-deckcase-row {
+    grid-template-columns: repeat(13, 32px);
+  }
+}
+.tp-deckcase-open {
+  height: 44px;
+  padding: 0 18px;
+  border: 1px solid var(--brass);
+  border-radius: 999px;
+  background: rgba(201, 162, 90, 0.08);
+  color: var(--bone);
+  font-size: 14px;
+  letter-spacing: 0.06em;
+}
+.tp-deckcase-open:hover {
+  background: rgba(201, 162, 90, 0.16);
+}
+.tp-deckcase footer button {
+  height: 40px;
+  padding: 0 20px;
+  border: 1px solid rgba(239, 231, 214, 0.25);
+  border-radius: 999px;
+  background: rgba(239, 231, 214, 0.04);
+  color: var(--bone);
+}

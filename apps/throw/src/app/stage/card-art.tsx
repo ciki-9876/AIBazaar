@@ -1,6 +1,20 @@
 import type { PlayingCard } from '../../lib/cards/throw-poker';
 import { rankText } from '../../lib/cards/throw-poker';
-import { BONE, BRASS, BRASS_DARK, INK, LACQUER, PEACOCK, PEACOCK_MID } from './palette';
+import { enchantOf } from '../../lib/cards/throw-enchant';
+import {
+  AMETHYST,
+  BONE,
+  BRASS,
+  BRASS_DARK,
+  GILT,
+  INK,
+  LACQUER,
+  LIMELIGHT,
+  PEACOCK,
+  PEACOCK_MID,
+  SILVER,
+  VERDIGRIS,
+} from './palette';
 
 const SUIT_PATH = [
   // spade
@@ -110,14 +124,58 @@ function Ace({ card }: { card: PlayingCard }) {
   );
 }
 
+const RARITY_STROKE = { rare: VERDIGRIS, epic: AMETHYST, legendary: 'url(#card-foil)' } as const;
+/** Variant dressing: paper tint, rarity frame and a one-character seal. */
+function VariantFrame({ card }: { card: PlayingCard }) {
+  const enchant = enchantOf(card.ench);
+  if (!enchant) return null;
+  const legend = enchant.rarity === 'legendary';
+  return (
+    <g className={`card-variant card-variant-${enchant.rarity}`}>
+      <rect
+        x="2.6"
+        y="2.6"
+        width="94.8"
+        height="134.8"
+        rx="5.8"
+        fill="none"
+        stroke={RARITY_STROKE[enchant.rarity]}
+        strokeWidth={legend ? 4.4 : 3.2}
+      />
+      {legend && (
+        <path d="M50 2.5L52.6 7.4L58 8.2L54 11.9L55 17.2L50 14.6L45 17.2L46 11.9L42 8.2L47.4 7.4Z" fill={LIMELIGHT} stroke={BRASS_DARK} strokeWidth=".6" />
+      )}
+      <g transform="translate(50 129)">
+        <rect x="-9" y="-6" width="18" height="11" rx="5.5" fill={legend ? BRASS_DARK : enchant.rarity === 'epic' ? AMETHYST : VERDIGRIS} />
+        <text y="2.6" textAnchor="middle" fontSize="8" fontWeight="700" fill={BONE}>
+          {legend ? '传' : enchant.name[0]}
+        </text>
+      </g>
+    </g>
+  );
+}
+
 /** Full playing-card face in a 100×140 box. */
 export function CardFace({ card, compact = false }: { card: PlayingCard; compact?: boolean }) {
   const ink = suitInk(card.suit);
   const label = rankText(card.rank);
   const pips = PIPS[card.rank];
+  const enchant = enchantOf(card.ench);
+  const paper = enchant?.points ? GILT : enchant?.plus ? SILVER : BONE;
   return (
     <svg viewBox="0 0 100 140" className="card-art" aria-hidden="true">
-      <rect x=".5" y=".5" width="99" height="139" rx="7" fill={BONE} />
+      {enchant?.rarity === 'legendary' && (
+        <defs>
+          <linearGradient id="card-foil" x1="0" y1="0" x2="1" y2="1">
+            <stop offset="0" stopColor={BRASS_DARK} />
+            <stop offset=".35" stopColor={LIMELIGHT} />
+            <stop offset=".55" stopColor={BRASS} />
+            <stop offset=".8" stopColor={LIMELIGHT} />
+            <stop offset="1" stopColor={BRASS_DARK} />
+          </linearGradient>
+        </defs>
+      )}
+      <rect x=".5" y=".5" width="99" height="139" rx="7" fill={paper} />
       <rect x="4.5" y="4.5" width="91" height="131" rx="4.5" fill="none" stroke={BRASS} strokeOpacity=".55" strokeWidth=".6" />
       {[0, 1].map((corner) => (
         <g key={corner} transform={corner ? 'rotate(180 50 70)' : undefined}>
@@ -147,6 +205,7 @@ export function CardFace({ card, compact = false }: { card: PlayingCard; compact
       ) : (
         <Court card={card} />
       )}
+      <VariantFrame card={card} />
     </svg>
   );
 }
