@@ -1,5 +1,17 @@
 # 当前设计状态
 
+## 2026-10-09：甩牌 v4 克制环、第一章引导与英式文案
+
+**用户任务授权／已实装／真人试玩待验证**：
+- 四花色锁定四状态（♠盾 ♥疗 ♣毒 ♦火），闷火、净化、焦灼、烫手、毒发组成克制环，削盾与压轴接入快甩和蓄爆两套节奏打法。
+- 六套竞技卡组的 11 条声明克制在 200 种子自动对局中全部成立，各套均值 42–54%。
+- 第一章改为按剧情解锁道具：8 步第一课，资格赛需要读米娅情报、摆护盾道具来破火。
+- 全部文案改为英式幽默。
+
+见 [ADR-0049](./decisions/ADR-0049-throw-counter-wheel-and-chapter-one.md)、[卡组评估](../F9_THROW_DECK_BALANCE_V4_2026-10-09.md)、[第一章流程](../F9_THROW_CHAPTER1_ONBOARDING_2026-10-09.md)、[文案指南](../F9_THROW_VOICE_GUIDE_2026-10-09.md)。
+
+[30 小时故事大纲](../F9_THROW_STORY_OUTLINE_30H_2026-10-09.md)为提案，其中的新系统未实装。
+
 ## 2026-09-30：被取代的归途
 
 **题材已接受／具体框架待讨论／未实装**：用户认同“我被取代了”，要求持续动机、内部自洽、关系与人物弧光、实际玩法联动。见 [ADR-0024](./decisions/ADR-0024-replacement-mystery-direction.md) 和 [框架提案](../F9_REPLACEMENT_FRAMEWORK_PROPOSAL_2026-09-30.md)。本条仅推进旧探索动机提案的题材采纳状态，不代表批准行动时钟、家庭角色或恢复系统设定。
@@ -326,3 +338,4 @@
 - [ADR-0045-throw-atomic-pixel-scenes](decisions/ADR-0045-throw-atomic-pixel-scenes.md)
 - [ADR-0046-throw-editorial-illustration](decisions/ADR-0046-throw-editorial-illustration.md)（表现部分已由 ADR-0048 取代）
 - [ADR-0048-throw-limelight-vector-art](decisions/ADR-0048-throw-limelight-vector-art.md)：抛弃旧美术，全矢量「聚光与丝绒」舞台、骨骼角色与弧线飞牌
+- [ADR-0049-throw-counter-wheel-and-chapter-one](decisions/ADR-0049-throw-counter-wheel-and-chapter-one.md)：v4 花色状态克制环、第一章逐步引导、英式幽默文案（取代 ADR-0035／0037 的数值与预设，以及 ADR-0038 关于花色不锁定的建议）

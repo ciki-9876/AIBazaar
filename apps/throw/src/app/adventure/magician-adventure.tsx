@@ -23,6 +23,8 @@ import {
   keepExploring,
   MAPS,
   nearbyHotspot,
+  STARTER_ITEMS,
+  unlockedKit,
   walkAdventure,
   WALK_TICK_MS,
   type AdventureState,
@@ -31,6 +33,13 @@ import {
 import ThrowTable, {
   type PreparedThrowLoadout,
 } from '../wandeng/throw/throw-table';
+import { packThrowItems } from '../../lib/cards/throw-loadout';
+
+const STARTER_LOADOUT: PreparedThrowLoadout = {
+  style: 'quick',
+  layout: packThrowItems(STARTER_ITEMS),
+  relic: 'order',
+};
 import { Figure, type RigId } from '../stage/rig';
 import { StageScene } from '../stage/stage-scene';
 import { SuitMark } from '../stage/card-art';
@@ -308,8 +317,10 @@ export default function MagicianAdventure() {
                 : '抒情剧院 · 资格挑战',
           }}
           hostNames={['伊莱', CHARACTERS[opponent].name]}
-          initialLoadout={loadout}
+          initialLoadout={loadout ?? STARTER_LOADOUT}
           hosts={['eli', opponent]}
+          available={unlockedKit(state)}
+          coach={battle.coach}
           onReturn={(winner, nextLoadout) => {
             setLoadout(nextLoadout);
             dispatch(
@@ -426,6 +437,34 @@ export default function MagicianAdventure() {
               <strong>{objective.title}</strong>
               <span>{objective.detail}</span>
             </div>
+          </div>
+        )}
+        {state.mode === 'explore' && !mapOpen && !state.flags.trained && (
+          <div className="rg-coach" role="status">
+            {state.player.walkTicks === 0 ? (
+              <>
+                <span>
+                  <kbd>A</kbd>
+                  <kbd>D</kbd> 或 <kbd>←</kbd>
+                  <kbd>→</kbd> 行走；也可以直接点地点名字。
+                </span>
+                <small>别着急，格雷维克没什么好赶的。</small>
+              </>
+            ) : state.map === 'street' ? (
+              <>
+                <span>
+                  走到发光的门前，按 <kbd>E</kbd> 进去。
+                </span>
+                <small>里德的工作室：橱窗里有兔子的那家。</small>
+              </>
+            ) : (
+              <>
+                <span>
+                  靠近里德，按 <kbd>E</kbd> 打招呼。
+                </span>
+                <small>他假装在修东西，其实在等你。</small>
+              </>
+            )}
           </div>
         )}
         {state.flags.ticket && state.mode === 'explore' && (
@@ -570,7 +609,7 @@ export default function MagicianAdventure() {
                   <span>{number}</span>
                   <strong>{name}</strong>
                   <small>{event}</small>
-                  {index > 0 && <em>后续章节</em>}
+                  {index > 0 && <em>尚未开放 · 司机说快了</em>}
                 </div>
               ))}
             </div>
@@ -606,7 +645,7 @@ export default function MagicianAdventure() {
               <span>下一站 · 布里奇波特公开赛</span>
               <i>♠ ♦ ♣ ♥</i>
             </div>
-            <small>首个街区体验结束，后续城市章节尚未开放。</small>
+            <small>第一幕到此为止。第二幕正在排练——演员还在找自己的帽子。</small>
             <div>
               <button
                 className="rg-secondary"

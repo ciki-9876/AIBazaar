@@ -17,6 +17,7 @@ import {
   type RelicId,
   type Style,
   type Family,
+  COMPETITIVE_STYLES,
 } from '../../../lib/cards/throw-loadout';
 
 type Props = {
@@ -26,6 +27,9 @@ type Props = {
   onLayout: (layout: ItemPlacement[]) => void;
   onRelic: (id: RelicId | null) => void;
   onStyle: (style: Style) => void;
+  /** Story-limited kit; omitted in the practice room, where everything is out. */
+  available?: { items: readonly ItemId[]; relics: readonly RelicId[] };
+  tip?: string;
   tap: () => void;
 };
 const families: { id: Family | 'all'; name: string }[] = [
@@ -43,13 +47,15 @@ function RelicPicker({
   onEquip,
   onClose,
   tap,
+  relics,
 }: {
   equipped: RelicId | null;
   onEquip: (id: RelicId | null) => void;
   onClose: () => void;
   tap: () => void;
+  relics: readonly (typeof RELICS)[number][];
 }) {
-  const [draft, setDraft] = useState<RelicId>(equipped ?? RELICS[0].id);
+  const [draft, setDraft] = useState<RelicId>(equipped ?? relics[0].id);
   const dialog = useRef<HTMLDialogElement>(null);
   const selected = RELICS.find((entry) => entry.id === draft)!;
   useEffect(() => {
@@ -84,7 +90,7 @@ function RelicPicker({
         </button>
       </header>
       <div className="tp-relic-choices">
-        {RELICS.map((entry) => (
+        {relics.map((entry) => (
           <button
             key={entry.id}
             aria-pressed={draft === entry.id}
@@ -105,6 +111,7 @@ function RelicPicker({
         <div>
           <h3>{selected.name}</h3>
           <p>{selected.text}</p>
+          <p className="tp-quip">{selected.quip}</p>
         </div>
       </div>
       <footer>
@@ -140,8 +147,12 @@ export default function ThrowWorkbench({
   onLayout,
   onRelic,
   onStyle,
+  available,
+  tip,
   tap,
 }: Props) {
+  const catalog = ITEMS.filter((item) => !available || available.items.includes(item.id));
+  const relicCatalog = RELICS.filter((entry) => !available || available.relics.includes(entry.id));
   const [chosen, setChosen] = useState<ItemId | null>(null),
     [filter, setFilter] = useState<Family | 'all'>('all'),
     [error, setError] = useState(''),
@@ -220,8 +231,9 @@ export default function ThrowWorkbench({
           {used}/{BAG_CELLS}格
         </b>
       </div>
-      <div className="tp-presets tp-strategy-presets">
-        {(Object.keys(PRESETS) as Style[]).map((value) => {
+      {tip && <p className="tp-workbench-tip">{tip}</p>}
+      <div className="tp-presets tp-strategy-presets" hidden={Boolean(available)}>
+        {COMPETITIVE_STYLES.map((value) => {
           const preset = PRESETS[value],
             active =
               style === value &&
@@ -234,7 +246,7 @@ export default function ThrowWorkbench({
             <button
               key={value}
               aria-pressed={active}
-              title={preset.hint}
+              title={`${preset.hint}　克制：${preset.beats.map((id) => PRESETS[id].name).join('、')}`}
               className={active ? 'is-active' : ''}
               onClick={() => {
                 tap();
@@ -246,6 +258,7 @@ export default function ThrowWorkbench({
               }}
             >
               {preset.name}
+              <small>克 {preset.beats.map((id) => PRESETS[id].name.slice(0, 2)).join('·')}</small>
             </button>
           );
         })}
@@ -327,6 +340,7 @@ export default function ThrowWorkbench({
             <>
               <strong>{selectedItem.name}</strong>
               <p>{selectedItem.text}</p>
+              <p className="tp-quip">{selectedItem.quip}</p>
             </>
           )}
           {error && <output>{error}</output>}
@@ -372,14 +386,11 @@ export default function ThrowWorkbench({
           ))}
         </div>
         <span>
-          {
-            ITEMS.filter((item) => filter === 'all' || item.family === filter)
-              .length
-          }
+          {catalog.filter((item) => filter === 'all' || item.family === filter).length}
         </span>
       </div>
       <div className="tp-items tp-strategy-catalog">
-        {ITEMS.filter((item) => filter === 'all' || item.family === filter).map(
+        {catalog.filter((item) => filter === 'all' || item.family === filter).map(
           (item) => {
             const equipped = layout.some((entry) => entry.id === item.id);
             return (
@@ -404,6 +415,7 @@ export default function ThrowWorkbench({
                   </small>
                   <strong>{item.name}</strong>
                   <p>{item.text}</p>
+                  <em>{item.quip}</em>
                 </span>
                 <b>{equipped ? '✓' : '+'}</b>
               </button>
@@ -413,6 +425,7 @@ export default function ThrowWorkbench({
       </div>
       {picker && (
         <RelicPicker
+          relics={relicCatalog}
           equipped={relic}
           onEquip={onRelic}
           onClose={() => setPicker(false)}
