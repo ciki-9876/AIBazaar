@@ -1,5 +1,6 @@
-/* Limelight & Velvet — shared tokens for the whole throw project. */
+/* Limelight & Velvet — shared tokens for the whole throw project. A single, deliberate night look. */
 :root {
+  color-scheme: dark;
   --ink: #0b1e26;
   --peacock: #123543;
   --peacock-mid: #1d4b58;

@@ -2,6 +2,8 @@
 .tp-root {
   position: fixed;
   inset: 0;
+  padding-top: env(safe-area-inset-top, 0px);
+  padding-bottom: env(safe-area-inset-bottom, 0px);
   display: grid;
   grid-template-rows: 54px minmax(0, 1fr);
   background: var(--ink);
