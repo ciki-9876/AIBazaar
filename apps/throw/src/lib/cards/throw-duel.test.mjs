@@ -40,20 +40,20 @@ test('clicking replaces any previous selection and cannot accumulate non-adjacen
   assert.deepEqual(clickThrowSelection(['c'], 'c'), []);
 });
 test('the single capacity relic raises capacity to twelve without overdraw', () => {
-  let state = createThrowDuel(33, [], 'pair', 'capacity');
+  let state = createThrowDuel(33, [], 'guard', 'capacity');
   state.ai.thinkTick = 99999;
   state = run(state, 480);
   assert.equal(handLimit(state.fighters[0].relic), 12);
   assert.equal(state.fighters[0].hand.length, 12);
   assert.equal(state.fighters[0].drawn, 12);
   assert.equal(handLimit(null), 10);
-  assert.throws(() => createThrowDuel(33, [], 'pair', ['order', 'capacity']));
+  assert.throws(() => createThrowDuel(33, [], 'guard', ['order', 'capacity']));
 });
 test('reordering requires its relic, preserves card identity, and spends exactly three seconds on success', () => {
   const baseline = idle(),
     uid = baseline.fighters[0].hand[0].uid;
   assert.equal(reorderThrow(baseline, 0, uid, 4), baseline);
-  let state = createThrowDuel(1024, [], 'pair', 'order');
+  let state = createThrowDuel(1024, [], 'guard', 'order');
   state.ai.thinkTick = 99999;
   const initial = state.fighters[0].hand.map((card) => card.uid);
   for (const target of [-1, 5, 1.5, 0])
@@ -74,7 +74,7 @@ test('reordering requires its relic, preserves card identity, and spends exactly
   assert.equal(reordered.fighters[0].hand[0].uid, initial[0]);
 });
 test('relay draws once on the third successful batch without resetting the regular timer', () => {
-  let state = createThrowDuel(7, [], 'pair', 'relay');
+  let state = createThrowDuel(7, [], 'guard', 'relay');
   state.ai.thinkTick = 99999;
   for (let index = 0; index < 2; index++) {
     state = launchThrow(state, 0, [state.fighters[0].hand[0].uid]);
@@ -101,7 +101,7 @@ test('relay draws once on the third successful batch without resetting the regul
   );
 });
 test('echo gains three per impact up to twelve and is consumed only by a valid throw', () => {
-  let state = createThrowDuel(9, [], 'pair', 'echo');
+  let state = createThrowDuel(9, [], 'guard', 'echo');
   state.ai.thinkTick = 99999;
   for (let index = 0; index < 5; index++) {
     state.fighters[1].hand = [{ uid: `attack${index}`, rank: 2, suit: 0 }];
@@ -115,49 +115,23 @@ test('echo gains three per impact up to twelve and is consumed only by a valid t
   assert.equal(state.shots.at(-1).damage, expected);
   assert.equal(state.fighters[0].echo, 0);
 });
-test('heart relic heals only on a real heart draw and respects maximum health', () => {
-  let state = createThrowDuel(11, [], 'pair', 'heart');
-  state.ai.thinkTick = 99999;
-  state.fighters[0].hp = MAX_HP - 2;
-  state.fighters[0].pile = [{ uid: 'heart-proof', rank: 2, suit: 1 }];
-  state = run(state, 60);
-  assert.equal(state.fighters[0].hp, MAX_HP);
-  assert.ok(
-    state.events.some(
-      (event) =>
-        event.type === 'heal' &&
-        event.source === 'relic:heart' &&
-        event.value === 2,
-    ),
-  );
-});
 test('all simultaneous item effects are named and attributed in both preview and actual launch', () => {
-  const hand = cards([10, 11, 12, 13, 14], [2, 2, 2, 2, 2]);
+  const hand = cards([10, 11, 12, 13, 14], [1, 1, 1, 1, 1]);
   const state = createThrowDuel(12, ['sequence', 'suit', 'mend']);
   state.fighters[0].hand = hand;
   state.fighters[0].hp = MAX_HP - 8;
-  const preview = previewThrow(
-    hand,
-    state.fighters[0].items,
-    state.fighters[0],
-  );
+  const preview = previewThrow(hand, state.fighters[0].items, state.fighters[0]);
   assert.deepEqual(
     preview.effects.map((effect) => effect.name),
-    ['织序连击', '四色辉光', '灯火回暖'],
+    ['织序连击', '四色辉光', '灯火回暖', '压轴重创'],
   );
-  const next = launchThrow(
-    state,
-    0,
-    hand.map((card) => card.uid),
-  );
+  const next = launchThrow(state, 0, hand.map((card) => card.uid));
   assert.deepEqual(
-    next.events
-      .filter((event) => event.type === 'effect')
-      .map((event) => event.text),
-    preview.effects.map((effect) => effect.name),
+    next.events.filter((event) => event.type === 'effect').map((event) => event.text),
+    preview.effects.filter((effect) => effect.kind !== 'wound').map((effect) => effect.name),
   );
   assert.equal(next.shots[0].cards.length, 5);
-  assert.equal(next.shots[0].effects.length, 3);
+  assert.equal(next.shots[0].effects.length, 4);
   assert.equal(next.fighters[0].hp, MAX_HP);
 });
 test('recognizes every poker combination, including the Ace-low straight', () => {
@@ -186,7 +160,7 @@ test('items affect actual preview, use ten cells and cannot stack', () => {
   assert.equal(previewThrow(cards([2, 2]), ['pair']).damage, 16);
   assert.equal(
     previewThrow(cards([2, 3, 4, 5, 6]), ['sequence', 'mend']).damage,
-    68,
+    80,
   );
   assert.equal(drawInterval(['draw']), 60);
   assert.throws(() => createThrowDuel(1, ['quick', 'quick']));
@@ -229,6 +203,8 @@ test('cards deal direct core damage at impact, not when queued', () => {
 });
 test('same-tick lethal hits produce a draw; terminal state rejects new actions', () => {
   let state = idle();
+  state.fighters[1].items = [];
+  state.fighters[1].layout = [];
   state.fighters.forEach((fighter) => {
     fighter.hp = 2;
     fighter.hand = cards([2]);
@@ -240,20 +216,19 @@ test('same-tick lethal hits produce a draw; terminal state rejects new actions',
   assert.equal(stepThrowDuel(state), state);
   assert.equal(launchThrow(state, 0, ['c0']), state);
 });
-test('healing is clamped and tied to a successful five-card throw', () => {
+test('healing is clamped and tied to hearts in a successful throw', () => {
   const state = createThrowDuel(12, ['mend']);
   state.fighters[0].hp = MAX_HP - 3;
-  const next = launchThrow(
-    state,
-    0,
-    state.fighters[0].hand.map((card) => card.uid),
-  );
+  state.fighters[0].hand = cards([2, 3], [1, 1]);
+  const next = launchThrow(state, 0, ['c0', 'c1']);
   assert.equal(next.fighters[0].hp, MAX_HP);
   assert.equal(next.events.at(-1).value, 3);
+  state.fighters[0].hand = cards([2, 3], [0, 2]);
+  assert.equal(launchThrow(state, 0, ['c0', 'c1']).fighters[0].hp, MAX_HP - 3);
 });
 test('seed, actions and ticks replay identically; decks keep stable unique identities across cycles', () => {
   const replay = () => {
-    let state = createThrowDuel(41, PRESETS.pair.items);
+    let state = createThrowDuel(41, PRESETS.guard.items);
     for (let i = 0; i < 500; i++) {
       if (i % 40 === 0)
         state = launchThrow(
@@ -271,6 +246,8 @@ test('seed, actions and ticks replay identically; decks keep stable unique ident
   state.fighters[0].relic = 'relay';
   const ids = new Set(state.fighters[0].hand.map((card) => card.uid));
   for (let i = 0; i < 100; i++) {
+    // Keep both alive through the curtain call so the deck cycles.
+    state.fighters[0].hp = MAX_HP;
     state.fighters[1].hp = MAX_HP;
     state = launchThrow(
       state,

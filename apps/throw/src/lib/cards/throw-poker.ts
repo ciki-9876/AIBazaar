@@ -1,5 +1,13 @@
+import { cardPoints, isWild } from './throw-enchant.ts';
+
 export type Suit = 0 | 1 | 2 | 3;
-export type PlayingCard = { uid: string; rank: number; suit: Suit };
+export type PlayingCard = {
+  uid: string;
+  rank: number;
+  suit: Suit;
+  /** Variant enchantment id (see throw-enchant.ts); absent for a plain white card. */
+  ench?: string;
+};
 export const SUITS = ["♠", "♥", "♣", "♦"] as const;
 export const rankText = (rank: number) =>
   ({ 11: "J", 12: "Q", 13: "K", 14: "A" })[rank] ?? String(rank);
@@ -40,8 +48,10 @@ function classify(cards: PlayingCard[]) {
     cards.length === 5 &&
     values.length === 5 &&
     (values[4] - values[0] === 4 || values.join(",") === "2,3,4,5,14");
+  // Wild cards (百搭) take whichever suit the rest of the flush needs.
+  const fixed = cards.filter((card) => !isWild(card));
   const flush =
-    cards.length === 5 && cards.every((card) => card.suit === cards[0].suit);
+    cards.length === 5 && fixed.every((card) => card.suit === (fixed[0] ?? cards[0]).suit);
   let kind = 0;
   let members: PlayingCard[] = [];
   if (straight && flush) {
@@ -70,7 +80,7 @@ function classify(cards: PlayingCard[]) {
     members = ranked[0];
   }
   const bonus = Math.floor(
-    (members.reduce((sum, card) => sum + card.rank, 0) *
+    (members.reduce((sum, card) => sum + cardPoints(card), 0) *
       (MULTIPLIERS[kind] - 100)) /
       100,
   );
@@ -79,7 +89,7 @@ function classify(cards: PlayingCard[]) {
 
 /** A hand batch (10 normally, 12 with a relic); strongest <=5-card combo gains a bonus once. */
 export function scorePoker(cards: PlayingCard[]): PokerScore {
-  const base = cards.reduce((sum, card) => sum + card.rank, 0);
+  const base = cards.reduce((sum, card) => sum + cardPoints(card), 0);
   let best = classify([]);
   const visit = (start: number, subset: PlayingCard[]) => {
     if (subset.length) {

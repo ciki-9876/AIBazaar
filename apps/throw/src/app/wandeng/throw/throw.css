@@ -1321,3 +1321,174 @@ button:disabled {
     margin-left: 6px;
   }
 }
+
+/* ── Coaching: one card at a time, pointing at the thing to touch ── */
+.tp-coach {
+  position: fixed;
+  z-index: 70;
+  left: 50%;
+  bottom: calc(var(--coach-bottom, 228px) + env(safe-area-inset-bottom, 0px));
+  transform: translateX(-50%);
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 4px 14px;
+  width: min(560px, calc(100% - 32px));
+  padding: 16px 18px 14px;
+  border-radius: 10px;
+  background: linear-gradient(var(--peacock), #0e2a35);
+  color: var(--bone);
+  box-shadow:
+    inset 0 0 0 1px var(--limelight),
+    0 18px 50px rgba(0, 0, 0, 0.55);
+  animation: tp-coach-in 0.4s var(--ease-spring);
+}
+.tp-coach[data-coach-target='enemy'] {
+  top: calc(140px + env(safe-area-inset-top, 0px));
+  bottom: auto;
+}
+.tp-coach[data-coach-target='stage'] {
+  --coach-bottom: 46%;
+}
+@keyframes tp-coach-in {
+  from {
+    opacity: 0;
+    transform: translate(-50%, 10px) scale(0.97);
+  }
+}
+.tp-coach-mark {
+  grid-row: span 2;
+  align-self: start;
+  font: italic 600 26px/1 var(--font-display);
+  color: var(--limelight);
+}
+.tp-coach-mark small {
+  font-size: 13px;
+  color: var(--bone-dim);
+}
+.tp-coach p {
+  margin: 0;
+  font: 16px/1.65 var(--font-cjk-serif);
+}
+.tp-coach > div {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 10px;
+}
+.tp-coach button {
+  height: 32px;
+  padding: 0 16px;
+  border-radius: 999px;
+  font-size: 13px;
+}
+.tp-coach-skip {
+  border: 0;
+  background: none;
+  color: var(--bone-dim);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+.tp-root[data-coach-target='hand'] .tp-hand,
+.tp-root[data-coach-target='fire'] .tp-fire,
+.tp-root[data-coach-target='sort'] .tp-sort-actions,
+.tp-root[data-coach-target='enemy'] .tp-opponent {
+  position: relative;
+  z-index: 60;
+  border-radius: 12px;
+  box-shadow:
+    0 0 0 3px var(--limelight),
+    0 0 0 9999px rgba(5, 14, 19, 0.55);
+  animation: tp-spot 1.6s ease-in-out infinite;
+}
+@keyframes tp-spot {
+  50% {
+    box-shadow:
+      0 0 0 6px rgba(247, 230, 176, 0.55),
+      0 0 0 9999px rgba(5, 14, 19, 0.55);
+  }
+}
+.tp-result-quip {
+  font: italic 16px var(--font-cjk-serif);
+  color: var(--bone) !important;
+}
+.tp-rules h3 {
+  margin: 16px 0 6px;
+  font: 600 17px var(--font-cjk-serif);
+  color: var(--limelight);
+}
+.tp-counter-rules {
+  display: grid;
+  gap: 6px;
+  margin: 0 0 12px;
+  padding: 0;
+  list-style: none;
+  font-size: 14px;
+  line-height: 1.6;
+  color: #d8d0bf;
+}
+.tp-counter-rules b {
+  color: var(--bone);
+}
+
+/* Curtain call (落幕): the house curtain lowers as the curtain damage ramps. */
+.tp-stage-fall {
+  position: absolute;
+  inset: 0 0 auto;
+  height: calc(var(--fall, 0) * 30%);
+  background:
+    linear-gradient(transparent calc(100% - 8px), var(--brass-dark) calc(100% - 8px), var(--brass) calc(100% - 4px), var(--brass-dark)),
+    repeating-linear-gradient(90deg, var(--lacquer-dark) 0 10px, var(--lacquer) 22px 34px, #8e1a2c 40px 46px);
+  box-shadow: 0 10px 26px rgba(0, 0, 0, 0.5);
+  transition: height 1s linear;
+}
+.tp-clock em {
+  font-style: normal;
+  font-size: 12px;
+  letter-spacing: 0.06em;
+  white-space: nowrap;
+}
+.tp-curtain-soon {
+  color: var(--brass);
+  animation: tp-curtain-pulse 1s ease-in-out infinite alternate;
+}
+.tp-curtain-live {
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: var(--lacquer);
+  color: var(--bone);
+}
+@keyframes tp-curtain-pulse {
+  to {
+    opacity: 0.45;
+  }
+}
+.tp-impact-curtain b {
+  color: #f0c9cf;
+  font-size: 30px;
+}
+@media (prefers-reduced-motion: reduce) {
+  .tp-stage-fall {
+    transition: none;
+  }
+  .tp-curtain-soon {
+    animation: none;
+  }
+}
+
+/* Street-show house rules */
+.tp-house-rule {
+  display: block;
+  margin: 4px 0 0;
+  font-style: normal;
+  font-size: 12px;
+  color: var(--brass);
+  letter-spacing: 0.04em;
+}
+.tp-house-rule.tp-warning {
+  color: #ff8f7e;
+}
+.tp-deckcase-empty {
+  margin: 10px 0 0;
+  font-size: 12px;
+  color: var(--bone-dim);
+}

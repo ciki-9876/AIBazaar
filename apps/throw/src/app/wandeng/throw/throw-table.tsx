@@ -32,6 +32,11 @@ import {
   arrangeThrow,
   stepThrowDuel,
   TICK_MS,
+  CURTAIN_MS,
+  curtainDamage,
+  termsAllow,
+  type DuelTerms,
+  type ItemId,
   type RelicId,
   type Style,
   type ThrowDuel,
@@ -39,6 +44,8 @@ import {
   type TriggerEffect,
 } from '../../../lib/cards/throw-duel';
 import { clickThrowSelection } from '../../../lib/cards/throw-selection';
+import { enchantOf, RARITY_NAMES, type DeckBook } from '../../../lib/cards/throw-enchant';
+import { bookCounts, DeckCase } from './throw-deckcase';
 import {
   captureTableGeometry,
   FlightLayer,
@@ -53,6 +60,9 @@ import {
   type ItemPlacement,
 } from '../../../lib/cards/throw-loadout';
 import { ThrowSpectacle } from './throw-motion';
+import { CoachCard, useCoach } from './throw-coach';
+import type { CoachScript } from '../../../lib/adventure/magician-world';
+import { COMPETITIVE_STYLES } from '../../../lib/cards/throw-loadout';
 
 type Session = { duel: ThrowDuel; selected: string[]; flights: VisualShot[] };
 type Action =
@@ -115,12 +125,14 @@ function PokerCard({
   enemy?: boolean;
   onClick?: () => void;
 }) {
+  const variant = enemy ? undefined : enchantOf(card.ench);
   return (
     <button
       type="button"
       className={`tp-card ${card.suit % 2 ? 'tp-red' : ''} ${selected ? 'tp-selected' : ''}`}
       data-card-id={card.uid}
-      aria-label={`${SUITS[card.suit]}${rankText(card.rank)}`}
+      aria-label={`${SUITS[card.suit]}${rankText(card.rank)}${variant ? ` · ${variant.name}` : ''}`}
+      title={variant ? `${RARITY_NAMES[variant.rarity]} · ${variant.name}：${variant.text}` : undefined}
       aria-pressed={selected}
       disabled={enemy}
       onClick={onClick}
@@ -290,17 +302,17 @@ function FighterLife({
       </div>
       <div className="tp-host-status">
         {fighter.shield > 0 && (
-          <span className="tp-stat-shield" title="护盾挡直伤与灼烧">
+          <span className="tp-stat-shield" title="护盾挡直伤，也把灼烧闷成小火；剧毒照样穿过去">
             ◇ {fighter.shield}
           </span>
         )}
         {fighter.burn > 0 && (
-          <span className="tp-stat-burn" title="灼烧每秒扣当前层数并减1">
+          <span className="tp-stat-burn" title="灼烧每秒扣当前层数的生命并减 1 层；有盾时改为烧盾、熄得更快">
             火 {fighter.burn}
           </span>
         )}
         {fighter.poison > 0 && (
-          <span className="tp-stat-poison" title="剧毒每秒绕盾扣血，直到净化">
+          <span className="tp-stat-poison" title="剧毒每秒绕过护盾扣血，手牌越多毒发越重；每 2 秒退 1 层，治疗可净化">
             毒 {fighter.poison}
           </span>
         )}
@@ -319,7 +331,12 @@ function FighterLife({
     </section>
   );
 }
-const styles = Object.keys(PRESETS) as Style[];
+const styles = COMPETITIVE_STYLES as readonly Style[];
+const RESULT_QUIPS = {
+  win: ['掌声稀稀拉拉，但每一下都是真心的。', '观众起立了。好吧，是有人去续茶。', '对手表示今天风向不对。'],
+  loss: ['观众很有礼貌地假装没看见。', '输得体面，也是一门手艺。', '没关系，巡演箱可以重新摆。'],
+  draw: ['双方都认为自己才是赢家。', '平局：英国人最擅长的结局。'],
+} as const;
 type Gesture = {
   x: number;
   y: number;
@@ -336,15 +353,40 @@ export type PreparedThrowLoadout = {
   style: Style;
   layout: ItemPlacement[];
   relic: RelicId | null;
+  /** Variant chosen for each card slot; absent means plain white cards. */
+  book?: DeckBook;
 };
 type ThrowTableProps = {
-  challenge?: { enemyStyle: Style; seed: number; title: string };
+  challenge?: {
+    enemyStyle: Style;
+    seed: number;
+    title: string;
+    /** Story opponents may carry their own kit, relic and card variants. */
+    enemyItems?: ItemId[];
+    enemyRelic?: RelicId | null;
+    enemyBook?: DeckBook;
+    /** House rules for street shows; `rule` is their plain-language line. */
+    terms?: DuelTerms;
+    rule?: string;
+  };
   initialLoadout?: PreparedThrowLoadout;
   hostNames?: readonly [string, string];
   hosts?: readonly [RigId, RigId];
+  /** Items and relics the story has handed over so far; omitted means everything. */
+  available?: {
+    items: readonly ItemId[];
+    relics: readonly RelicId[];
+    /** Owned card variants (`${suit}-${rank}:${enchant}`); enables the deck case. */
+    variants?: readonly string[];
+  };
+  coach?: CoachScript | null;
+  /** Advice shown above the workbench; overrides the coach's default line. */
+  tip?: string;
   onReturn?: (
     winner: ThrowDuel['winner'],
     loadout: PreparedThrowLoadout,
+    /** What the opponent actually threw, for the dossier. */
+    report?: { suits: number[]; kinds: number[] },
   ) => void;
 };
 export default function ThrowTable({
@@ -352,23 +394,28 @@ export default function ThrowTable({
   initialLoadout,
   hostNames,
   hosts = ['eli', 'felix'],
+  available,
+  coach: coachScript = null,
+  tip: tipOverride,
   onReturn,
 }: ThrowTableProps = {}) {
   const [phase, setPhase] = useState<'prepare' | 'battle'>('prepare');
-  const [style, setStyle] = useState<Style>(initialLoadout?.style ?? 'pair');
+  const [style, setStyle] = useState<Style>(initialLoadout?.style ?? 'quick');
   const [layout, setLayout] = useState<ItemPlacement[]>(() =>
     initialLoadout
       ? initialLoadout.layout.map((entry) => ({ ...entry }))
-      : packThrowItems(PRESETS.pair.items),
+      : packThrowItems(PRESETS.quick.items),
   );
   const equipped = layout.map((entry) => entry.id);
   const [relic, setRelic] = useState<RelicId | null>(
-    initialLoadout ? initialLoadout.relic : 'order',
+    initialLoadout ? initialLoadout.relic : PRESETS.quick.relic,
   );
   const [enemyStyle, setEnemyStyle] = useState<Style>(
-    challenge?.enemyStyle ?? 'pair',
+    challenge?.enemyStyle ?? 'guard',
   );
   const [seed, setSeed] = useState(String(challenge?.seed ?? 1024));
+  const [book, setBook] = useState<DeckBook>(() => ({ ...(initialLoadout?.book ?? {}) }));
+  const [deckOpen, setDeckOpen] = useState(false);
   const [paused, setPaused] = useState(false);
   const [rules, setRules] = useState(false);
   const [soundEnabled, setSoundEnabled] = useState(true);
@@ -377,7 +424,7 @@ export default function ThrowTable({
   const soundCursor = useRef(0);
   const resultSound = useRef(false);
   const [session, dispatch] = useReducer(reducer, undefined, () => ({
-    duel: createThrowDuel(1024, [...PRESETS.pair.items]),
+    duel: createThrowDuel(1024, [...PRESETS.quick.items]),
     selected: [],
     flights: [],
   }));
@@ -414,12 +461,16 @@ export default function ThrowTable({
     0,
     ((player.nextReorder - duel.tick) * TICK_MS) / 1000,
   );
+  const coach = useCoach(coachScript, duel, picked, phase === 'battle' && duel.status === 'playing');
+  const clockStopped = paused || rules || coach.holding;
+  const termsOk = termsAllow(duel.terms, picked);
   const launchReady =
     phase === 'battle' &&
     !paused &&
     !rules &&
     duel.status === 'playing' &&
     picked.length > 0 &&
+    termsOk &&
     duel.tick >= duel.nextLaunch[0];
   const orderKey = player.hand.map((card) => card.uid).join('|');
   const selectionKey = selected.join('|');
@@ -454,7 +505,7 @@ export default function ThrowTable({
     }
   }, [duel.events, duel.nextId, duel.status, duel.winner, phase]);
   useEffect(() => {
-    if (phase !== 'battle' || paused || rules || duel.status !== 'playing')
+    if (phase !== 'battle' || clockStopped || duel.status !== 'playing')
       return;
     let frame = 0,
       last = performance.now(),
@@ -477,7 +528,7 @@ export default function ThrowTable({
     };
     frame = requestAnimationFrame(loop);
     return () => cancelAnimationFrame(frame);
-  }, [phase, paused, rules, duel.status]);
+  }, [phase, clockStopped, duel.status]);
   useEffect(() => {
     const handle = (event: KeyboardEvent) => {
       if (
@@ -563,13 +614,20 @@ export default function ThrowTable({
   const start = () => {
     const value = Number(seed);
     if (!Number.isSafeInteger(value) || value < 0 || value > 0xffffffff) return;
+    // In the story, only variants the hero owns go into the deck.
+    const owned = available?.variants ? new Set(available.variants) : null;
+    const playerBook = owned
+      ? Object.fromEntries(Object.entries(book).filter(([key, id]) => owned.has(`${key}:${id}`)))
+      : book;
     const next = createThrowDuel(
       value,
       equipped,
       enemyStyle,
       relic,
-      PRESETS[enemyStyle].relic,
+      challenge?.enemyRelic !== undefined ? challenge.enemyRelic : PRESETS[enemyStyle].relic,
       layout,
+      { player: playerBook, enemy: challenge?.enemyBook },
+      { enemyItems: challenge?.enemyItems, terms: challenge?.terms },
     );
     soundCursor.current = next.nextId - 1;
     resultSound.current = false;
@@ -654,6 +712,10 @@ export default function ThrowTable({
     gesture.current = null;
     setBox(null);
   };
+  // Curtain call (presentation): countdown, live rate, and how far the drop has fallen.
+  const curtainIn = Math.max(0, (CURTAIN_MS - duel.tick * TICK_MS) / 1000);
+  const curtainNow = curtainDamage(duel.tick);
+  const curtainFall = Math.min(1, Math.max(0, (duel.tick * TICK_MS - CURTAIN_MS) / 30000));
   const lastHits = duel.events.filter(
     (event) =>
       (event.type === 'hit' || event.type === 'dot') &&
@@ -668,15 +730,21 @@ export default function ThrowTable({
       1000
     ).toFixed(1);
   const returnToScene = () =>
-    onReturn?.(duel.status === 'ended' ? duel.winner : null, {
-      style,
-      relic,
-      layout: layout.map((entry) => ({ ...entry })),
-    });
+    onReturn?.(
+      duel.status === 'ended' ? duel.winner : null,
+      {
+        style,
+        relic,
+        layout: layout.map((entry) => ({ ...entry })),
+        book: { ...book },
+      },
+      duel.status === 'ended' ? { suits: [...enemy.tally.suits], kinds: [...enemy.tally.kinds] } : undefined,
+    );
   return (
     <main
       className="tp-root"
-      data-paused={paused || rules}
+      data-paused={clockStopped}
+      data-coach-target={coach.step?.target ?? undefined}
       data-audio-active={audioReady && soundEnabled}
     >
       <header className="tp-header">
@@ -719,12 +787,22 @@ export default function ThrowTable({
               onLayout={setLayout}
               onRelic={setRelic}
               onStyle={setStyle}
+              available={available}
+              tip={
+                tipOverride ??
+                (coachScript === 'qualifier'
+                  ? '米娅的建议：菲利克斯打火。把补丁旧伞、守灯小毯放进巡演箱（拖进格子，或点道具自动放入），开打后多出对子和黑桃。'
+                  : coachScript === 'lesson'
+                    ? '第一课只用入门三件：双响茶壶、飞牌修缮箱、催信闹钟。直接点「开始对战」就好。'
+                    : undefined)
+              }
               tap={() => unlockSound().tap()}
             />
             <div className="tp-preparation-footer">
               {challenge ? (
                 <div className="tp-start-options">
                   {hostNames?.[1]} · {PRESETS[enemyStyle].name}
+                  {challenge.rule && <em className="tp-house-rule">规矩：{challenge.rule}</em>}
                 </div>
               ) : (
                 <div className="tp-start-options">
@@ -754,6 +832,33 @@ export default function ThrowTable({
                     />
                   </label>
                 </div>
+              )}
+              {(!available || Boolean(available.variants?.length)) && (
+                <button
+                  className="tp-deckcase-open"
+                  onClick={() => {
+                    unlockSound().tap();
+                    setDeckOpen(true);
+                  }}
+                >
+                  牌匣
+                  <small>
+                    {(() => {
+                      const counts = bookCounts(book);
+                      const total = counts.rare + counts.epic + counts.legendary;
+                      return total ? `${total} 张变种` : '全白牌';
+                    })()}
+                  </small>
+                </button>
+              )}
+              {deckOpen && (
+                <DeckCase
+                  book={book}
+                  owned={available?.variants}
+                  onBook={setBook}
+                  onClose={() => setDeckOpen(false)}
+                  tap={() => unlockSound().tap()}
+                />
               )}
               <button
                 className="tp-primary tp-start"
@@ -799,7 +904,12 @@ export default function ThrowTable({
             </div>
           </div>
           <div className="tp-arena">
-            <div className="tp-stage-wall" aria-hidden="true">
+            <div
+              className="tp-stage-wall"
+              aria-hidden="true"
+              style={{ '--fall': curtainFall } as CSSProperties}
+            >
+              <span className="tp-stage-fall" />
               <span className="tp-stage-arch" />
               <span className="tp-stage-curtain tp-stage-curtain-left" />
               <span className="tp-stage-curtain tp-stage-curtain-right" />
@@ -815,6 +925,17 @@ export default function ThrowTable({
               <div className="tp-clock">
                 <strong>VS</strong>
                 <span>{((duel.tick * TICK_MS) / 1000).toFixed(1)}s</span>
+                {curtainNow > 0 ? (
+                  <em className="tp-curtain-live" title="落幕：双方每秒受到递增伤害，护盾可挡，治疗可抵">
+                    落幕 · 每秒 {curtainNow}
+                  </em>
+                ) : (
+                  curtainIn <= 15 && (
+                    <em className="tp-curtain-soon" title="落幕：双方每秒受到递增伤害，护盾可挡，治疗可抵">
+                      {Math.ceil(curtainIn)} 秒后落幕
+                    </em>
+                  )
+                )}
                 <button
                   onClick={() => setPaused((old) => !old)}
                   disabled={duel.status === 'ended'}
@@ -873,9 +994,17 @@ export default function ThrowTable({
                       ? '平局'
                       : '失败'}
                 </h2>
+                <p className="tp-result-quip">
+                  {
+                    RESULT_QUIPS[duel.winner === 0 ? 'win' : duel.winner === 'draw' ? 'draw' : 'loss'][
+                      duel.seed % RESULT_QUIPS[duel.winner === 0 ? 'win' : duel.winner === 'draw' ? 'draw' : 'loss'].length
+                    ]
+                  }
+                </p>
+                {duel.endReason === 'deadline' && <p className="tp-house-rule">时间到：没能在规定时间内获胜。</p>}
+                {duel.endReason === 'floor' && <p className="tp-house-rule">生命跌破了规矩定的底线。</p>}
                 <p>
-                  命中 {player.hits} 次 ·{' '}
-                  {((duel.tick * TICK_MS) / 1000).toFixed(1)}秒
+                  命中 {player.hits} 次 · 用时 {((duel.tick * TICK_MS) / 1000).toFixed(1)} 秒
                 </p>
                 <div>
                   {onReturn && (
@@ -883,12 +1012,12 @@ export default function ThrowTable({
                       返回场景
                     </button>
                   )}
-                  <button onClick={start}>同牌序再试</button>
+                  <button onClick={start}>原样再来一局</button>
                   <button
                     className="tp-primary"
                     onClick={() => setPhase('prepare')}
                   >
-                    调整装备
+                    重新整理巡演箱
                   </button>
                 </div>
               </div>
@@ -920,7 +1049,7 @@ export default function ThrowTable({
                         : player.relic === 'capacity'
                           ? '夹层 +2'
                           : player.relic === 'heart'
-                            ? '红心恢复 +3'
+                            ? '单张命中回 2'
                             : ''}
                 </span>
                 {player.relic === 'order' && (
@@ -1046,6 +1175,12 @@ export default function ThrowTable({
                     : ''}
                 </p>
               </div>
+              {duel.terms && (
+                <p className={`tp-house-rule ${picked.length && !termsOk ? 'tp-warning' : ''}`}>
+                  {picked.length && !termsOk ? '这手牌不合今天的规矩。' : '规矩：'}
+                  {challenge?.rule}
+                </p>
+              )}
               <button
                 className="tp-primary tp-fire"
                 disabled={!launchReady}
@@ -1069,7 +1204,8 @@ export default function ThrowTable({
               {RELICS.find((entry) => entry.id === player.relic)?.name ?? '无'}
             </span>
           </footer>
-          <FlightLayer flights={flights} paused={paused || rules} />
+          <FlightLayer flights={flights} paused={clockStopped} />
+          <CoachCard coach={coach} />
         </section>
       )}
       {rules && (
@@ -1089,10 +1225,8 @@ export default function ThrowTable({
             </button>
 
             <h2>玩法规则</h2>
-            <p>开局各5张，每3秒抽1张；手牌上限10，满手停抽。</p>
-            <p>
-              点击单选，拖框多选；按钮或空格甩牌。电脑也只能单张或连续选牌。
-            </p>
+            <p>开局各 5 张牌，每 3 秒抽 1 张；手牌上限 10 张，满了就不再抽——不会替你攒着。</p>
+            <p>点击选一张，按住拖动可框选一段连续的牌；按空格或「甩出去」出手。电脑也守同样的规矩，它不会作弊，只是不会累。</p>
             <div className="tp-rank-table">
               {HAND_NAMES.map((name, index) => (
                 <div key={name}>
@@ -1101,19 +1235,19 @@ export default function ThrowTable({
                 </div>
               ))}
             </div>
-            <p>
-              J=11、Q=12、K=13、A=14，A也可接2–5。最强五牌组合享受倍率，其余按点数；一对2造成6伤害。
-            </p>
-            <p>
-              布阵10格，道具占1–3格；相邻指边缘贴合，增幅向下取整。遗物仅能装备1件。
-            </p>
-            <p>
-              护盾挡直伤与灼烧。灼烧每秒扣当前层数，随后减1；剧毒每秒绕盾扣血，不衰减。迟缓暂停抽牌，重复刷新。
-            </p>
-            <p>
-              力量增加后续每批直伤。上限：护盾160／灼烧60／剧毒40／力量40。吸血按实际生命损失结算，反击不连锁。
-            </p>
-            <p>对手提前1秒预告；120秒后比较生命。暂停或离开页面暂停对局。</p>
+            <p>J=11、Q=12、K=13、A=14，A 也能接 2–5。最强的五张组合吃倍率，其余牌按点数算；一对 2 打 6 点。</p>
+            <h3>四种花色，四种状态</h3>
+            <p>♠ 护盾 · ♥ 治疗 · ♣ 剧毒 · ♦ 灼烧——具体由你巡演箱里的道具决定。</p>
+            <ul className="tp-counter-rules">
+              <li><b>治疗克剧毒</b>：每次治疗顺带净化一半数值的剧毒，满血也有效。</li>
+              <li><b>剧毒克护盾</b>：剧毒无视护盾；对手手里每攒 5 张牌，毒发 +1。剧毒每 2 秒退 1 层。</li>
+              <li><b>护盾克灼烧</b>：火落在盾上只点一半；有盾时，灼烧只烧盾、不伤血，熄得更快。</li>
+              <li><b>灼烧克治疗</b>：着火时治疗只剩六成；灼烧 ≥3 层时每次出手烫手，扣 2 血。</li>
+              <li><b>单张削盾</b>：单张牌被护盾挡下时多耗 10% 护盾，也不会被铜镜反射。</li>
+              <li><b>压轴</b>：顺子及以上命中会造成重创（5 秒内治疗六成）；一次出 5 张以上会吹灭自身灼烧，6 秒内不被点燃。</li>
+              <li><b>落幕</b>：第 60 秒起剧院开始关门，双方每秒受到 1、2、3……递增的伤害。护盾照挡，治疗照抵——活得久，本身就是一种赢法。</li>
+            </ul>
+            <p>道具占 1–3 格，相邻指边缘贴合，增幅向下取整；遗物只能带 1 件。万一撑到 120 秒还没分出胜负，比较剩余生命。对手出手前 1 秒会亮牌预告——这是他的礼貌，不是他的失误。</p>
             <button className="tp-primary" onClick={() => setRules(false)}>
               知道了
             </button>

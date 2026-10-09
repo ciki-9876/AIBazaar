@@ -12,3 +12,7 @@ export const BRASS_DARK = '#86662f';
 export const LACQUER = '#b3263a';
 export const LACQUER_DARK = '#741525';
 export const PLUM = '#2b2133';
+/** Rarity accents for card variants. */
+export const AMETHYST = '#9a7fd1';
+export const SILVER = '#c9d3d6';
+export const GILT = '#f1d892';

@@ -1,389 +1,159 @@
-import type { Style } from '../cards/throw-duel';
+import { ITEMS, RELICS, type ItemId, type RelicId, type Style } from '../cards/throw-loadout.ts';
+import { ENCHANTS, validDeckBook, type DeckBook } from '../cards/throw-enchant.ts';
+import type { DuelTerms } from '../cards/throw-duel';
+import {
+  ADVENTURE_VERSION,
+  FLAGS,
+  type AdventureState,
+  type BattleDefinition,
+  type BattleId,
+  type CharacterId,
+  type Choice,
+  type Dialogue,
+  type DossierEntry,
+  type FlagId,
+  type Hotspot,
+  type MapDefinition,
+  type MapId,
+  type Objective,
+  type OwnedVariant,
+  type PanelId,
+  type Reward,
+  type ShowId,
+} from './adventure-types.ts';
+import {
+  GRAYWICK_BATTLES,
+  GRAYWICK_CAST,
+  GRAYWICK_DIALOGUES,
+  GRAYWICK_MAPS,
+  graywickKit,
+  graywickObjective,
+  graywickTalk,
+} from './graywick.ts';
+import {
+  BRIDGEPORT_BATTLES,
+  BRIDGEPORT_CAST,
+  BRIDGEPORT_DIALOGUES,
+  BRIDGEPORT_MAPS,
+  bridgeportObjective,
+  bridgeportTalk,
+  HOBBS_THINGS,
+  SHOP,
+  SHOWS,
+} from './bridgeport.ts';
 
-export const ADVENTURE_VERSION = 'magician-adventure-v1';
+export * from './adventure-types.ts';
+export { STARTER_ITEMS, MENTOR_GIFT, MIA_GIFT } from './graywick.ts';
+export { SHOP, SHOWS, GOSSIP, GROUP, isFinalist, morningDone, showsWon } from './bridgeport.ts';
+
 export const WALK_TICK_MS = 20;
 const WALK_DISTANCE = 5;
-export type MapId = 'street' | 'workshop' | 'theatre';
-export type CharacterId = 'eli' | 'reed' | 'mia' | 'felix' | 'narrator';
-export type BattleKind = 'practice' | 'qualifier';
-export type ChoiceId = 'close' | 'practice' | 'qualifier';
-export type DialogueId =
-  | 'opening'
-  | 'mentor-first'
-  | 'mentor-after'
-  | 'practice-win'
-  | 'practice-loss'
-  | 'practice-draw'
-  | 'rival-locked'
-  | 'rival-first'
-  | 'rival-again'
-  | 'rival-win'
-  | 'rival-loss'
-  | 'rival-draw'
-  | 'mia-first'
-  | 'mia-after'
-  | 'bus-locked'
-  | 'departure';
-export type AdventureState = {
-  version: typeof ADVENTURE_VERSION;
-  seed: number;
-  tick: number;
-  map: MapId;
-  player: { x: number; facing: -1 | 1; walkTicks: number };
-  mode: 'explore' | 'dialogue' | 'battle' | 'complete';
-  dialogue: { id: DialogueId; step: number } | null;
-  battle: {
-    id: number;
-    kind: BattleKind;
-    seed: number;
-    enemyStyle: Style;
-    returnMap: MapId;
-    returnX: number;
-  } | null;
-  nextBattleId: number;
-  flags: {
-    trained: boolean;
-    invitation: boolean;
-    ticket: boolean;
-    miaMet: boolean;
-    departed: boolean;
-  };
-};
-export type Hotspot = {
-  id: string;
-  x: number;
-  label: string;
-  kind: 'door' | 'npc' | 'bus';
-  character?: CharacterId;
-  target?: MapId;
-  spawn?: number;
-};
-type MapDefinition = {
-  name: string;
-  subtitle: string;
-  image: string;
-  width: number;
-  height: number;
-  floor: number;
-  cameraY: number;
-  hotspots: readonly Hotspot[];
-};
-export const MAPS: Record<MapId, MapDefinition> = {
-  street: {
-    name: '格雷维克',
-    subtitle: '旧剧院街 · 黄昏',
-    image: 'graywick-street',
-    width: 1920,
-    height: 1080,
-    floor: 875,
-    cameraY: 250,
-    hotspots: [
-      {
-        id: 'workshop-door',
-        x: 485,
-        label: '里德的工作室',
-        kind: 'door',
-        target: 'workshop',
-        spawn: 210,
-      },
-      { id: 'mia', x: 825, label: '米娅', kind: 'npc', character: 'mia' },
-      {
-        id: 'theatre-door',
-        x: 1340,
-        label: '抒情剧院',
-        kind: 'door',
-        target: 'theatre',
-        spawn: 250,
-      },
-      { id: 'bus', x: 1785, label: '城际巴士', kind: 'bus' },
-    ],
-  },
-  workshop: {
-    name: '里德的工作室',
-    subtitle: '旧道具，也能变出新的戏法',
-    image: 'reed-workshop',
-    width: 1280,
-    height: 720,
-    floor: 604,
-    cameraY: 0,
-    hotspots: [
-      {
-        id: 'workshop-exit',
-        x: 140,
-        label: '返回街道',
-        kind: 'door',
-        target: 'street',
-        spawn: 540,
-      },
-      {
-        id: 'reed',
-        x: 900,
-        label: '文森特·里德',
-        kind: 'npc',
-        character: 'reed',
-      },
-    ],
-  },
-  theatre: {
-    name: '抒情剧院',
-    subtitle: '第一束属于你的聚光灯',
-    image: 'lyric-theatre',
-    width: 1440,
-    height: 810,
-    floor: 638,
-    cameraY: 64,
-    hotspots: [
-      {
-        id: 'theatre-exit',
-        x: 150,
-        label: '返回街道',
-        kind: 'door',
-        target: 'street',
-        spawn: 1395,
-      },
-      {
-        id: 'felix',
-        x: 1030,
-        label: '菲利克斯·克罗',
-        kind: 'npc',
-        character: 'felix',
-      },
-    ],
-  },
-};
-export const CHARACTERS: Record<
-  CharacterId,
-  { name: string; role: string; frame: number | null }
-> = {
-  eli: { name: '伊莱·维尔', role: '尚未登场的魔术师', frame: null },
-  reed: { name: '文森特·里德', role: '退休魔术师 · 道具修复师', frame: 0 },
-  mia: { name: '米娅·芬奇', role: '剧院机械师', frame: 1 },
-  felix: { name: '菲利克斯·克罗', role: '巡演魔术师', frame: 2 },
-  narrator: {
-    name: '格雷维克 · 黄昏',
-    role: '第一幕 / 让他们记住你的名字',
-    frame: null,
-  },
-};
-export type DialogueLine = { speaker: CharacterId; text: string };
-type Dialogue = {
-  lines: readonly DialogueLine[];
-  choices?: readonly { id: ChoiceId; label: string }[];
-};
-const practiceChoices = [
-  { id: 'practice', label: '开始练习对决' },
-  { id: 'close', label: '先去看看' },
-] as const;
-const duelChoices = [
-  { id: 'qualifier', label: '接受挑战' },
-  { id: 'close', label: '稍后再来' },
-] as const;
-export const DIALOGUES: Record<DialogueId, Dialogue> = {
-  opening: {
-    lines: [
-      {
-        speaker: 'narrator',
-        text: '格雷维克，曾经的魔术之乡。如今，巡回赛的巴士只在这里停五分钟。你在这条街练了十一年，名字从未出现在节目单上。',
-      },
-      {
-        speaker: 'felix',
-        text: '你也要参加世界巡回赛？这个镇最后一项成功的魔术，大概就是把观众全变没了。',
-      },
-      {
-        speaker: 'eli',
-        text: '那就从让你记住我的名字开始。里德先生还在等我——今晚，我要拿到自己的第一张参赛证。',
-      },
-    ],
-  },
-  'mentor-first': {
-    lines: [
-      {
-        speaker: 'reed',
-        text: '外头那句话，我听见了。别替旧海报争辩。让你自己的名字挂上去。',
-      },
-      {
-        speaker: 'reed',
-        text: '在决斗里，每三秒凝成一张牌。单张能甩；连在一起的对子、顺子和同花，能把法术放大。你的出手，才是魔术发生的那一刻。',
-      },
-      {
-        speaker: 'reed',
-        text: '点牌只选一张；按住鼠标框起一段牌，空格甩出去。先在巡演箱里摆好道具，再和我练一场。',
-      },
-    ],
-    choices: practiceChoices,
-  },
-  'mentor-after': {
-    lines: [
-      {
-        speaker: 'reed',
-        text: '手法你已经会了。现在要学的是：何时等下一张，何时让对手来不及等。还想练一场吗？',
-      },
-    ],
-    choices: practiceChoices,
-  },
-  'practice-win': {
-    lines: [
-      {
-        speaker: 'reed',
-        text: '漂亮。你没有等一手完美的牌，而是找到了这一手牌最好的时刻。',
-      },
-      {
-        speaker: 'reed',
-        text: '给你。布里奇波特公开赛的邀请函。要坐上明天的巴士，先去抒情剧院，拿到本地资格。',
-      },
-      { speaker: 'eli', text: '下一次，我想让您在全国转播里看见这一招。' },
-    ],
-  },
-  'practice-loss': {
-    lines: [
-      {
-        speaker: 'reed',
-        text: '这一场是我赢了。你已学会凝牌与出手，接下来，把道具和自己的节奏配起来。',
-      },
-      {
-        speaker: 'reed',
-        text: '布里奇波特公开赛的邀请函，拿着。抒情剧院还有一张本地资格。你可以先练，也可以去挑战。',
-      },
-    ],
-  },
-  'practice-draw': {
-    lines: [
-      {
-        speaker: 'reed',
-        text: '平局。基本手法已经过关；正式舞台上，还要学会把机会变成胜势。',
-      },
-      {
-        speaker: 'reed',
-        text: '这是公开赛的邀请函。去抒情剧院，赢下出发的资格吧。',
-      },
-    ],
-  },
-  'rival-locked': {
-    lines: [
-      {
-        speaker: 'felix',
-        text: '连第一场练习都没打完，就要上台？去里德的工作室。我等你学会出手。',
-      },
-    ],
-  },
-  'rival-first': {
-    lines: [
-      { speaker: 'felix', text: '还没放弃？很好，正好缺一位暖场的。' },
-      { speaker: 'eli', text: '暖场就免了。我来赢参赛证。' },
-      {
-        speaker: 'felix',
-        text: '我用的是灼烧构筑。你要是能赢，资格归你——连同你那张节目单。',
-      },
-    ],
-    choices: duelChoices,
-  },
-  'rival-again': {
-    lines: [
-      {
-        speaker: 'felix',
-        text: '伊莱·维尔。我记住了。再来一场？这次只为分个高下。',
-      },
-    ],
-    choices: duelChoices,
-  },
-  'rival-win': {
-    lines: [
-      { speaker: 'felix', text: '……你赢了。伊莱·维尔，对吧？参赛证是你的。' },
-      { speaker: 'eli', text: '对。下次报幕，别念错了。' },
-      {
-        speaker: 'narrator',
-        text: '第一张写着你名字的节目单，贴在了剧院门口。它很小，但从今天起，你不再是“格雷维克来的那个孩子”。',
-      },
-    ],
-  },
-  'rival-loss': {
-    lines: [
-      {
-        speaker: 'felix',
-        text: '这一场，资格还归我。等你想好怎么应付灼烧，再来。',
-      },
-      { speaker: 'eli', text: '我会回来。下一次，换你等我的出手。' },
-    ],
-  },
-  'rival-draw': {
-    lines: [
-      {
-        speaker: 'felix',
-        text: '平局。资格还没分出归属，改好你的巡演箱再来。',
-      },
-    ],
-  },
-  'mia-first': {
-    lines: [
-      {
-        speaker: 'mia',
-        text: '我修过那家伙的聚光灯。他把箱子塞满火焰道具，每次甩牌都想把舞台点着。',
-      },
-      {
-        speaker: 'mia',
-        text: '别照搬他的路数。净化、护盾，或者比他更快地赢——旧道具摆得对，也能演出新花样。',
-      },
-    ],
-  },
-  'mia-after': {
-    lines: [
-      {
-        speaker: 'mia',
-        text: '我把明天的巴士时刻写在你的邀请函背面了。去吧。等你上电视，我就说，你的第一盏追光是我打的。',
-      },
-    ],
-  },
-  'bus-locked': {
-    lines: [
-      {
-        speaker: 'narrator',
-        text: '车票还夹在公开赛邀请函里。先完成里德的练习，再去抒情剧院赢下本地参赛资格。',
-      },
-    ],
-  },
-  departure: {
-    lines: [
-      { speaker: 'mia', text: '布里奇波特的舞台可不会等你。巡演箱扣好了？' },
-      {
-        speaker: 'eli',
-        text: '扣好了。等我带世界冠军的奖杯回来，你帮我把这家剧院重新开起来。',
-      },
-      {
-        speaker: 'narrator',
-        text: '巴士离开旧剧院街。下一站，布里奇波特。世界还不知道你的名字——但第一位对手已经知道了。',
-      },
-    ],
-  },
-};
 
-export function createAdventure(seed: number): AdventureState {
+export const MAPS: Record<MapId, MapDefinition> = { ...GRAYWICK_MAPS, ...BRIDGEPORT_MAPS };
+export const CHARACTERS: Record<CharacterId, { name: string; role: string }> = {
+  ...GRAYWICK_CAST,
+  ...BRIDGEPORT_CAST,
+  narrator: { name: '旁白', role: '' },
+};
+/** The narrator's caption follows the act. */
+export const narratorFor = (act: number) =>
+  act === 2
+    ? { name: '布里奇波特 · 周四', role: '第二幕 · 没人替你买票' }
+    : { name: '格雷维克 · 黄昏', role: '第一幕 · 让他们记住你的名字' };
+export const DIALOGUES: Record<string, Dialogue> = { ...GRAYWICK_DIALOGUES, ...BRIDGEPORT_DIALOGUES };
+export const BATTLES: Record<BattleId, BattleDefinition> = {
+  ...GRAYWICK_BATTLES,
+  ...BRIDGEPORT_BATTLES,
+} as Record<BattleId, BattleDefinition>;
+export const ACTS = [
+  { act: 1, number: '第一幕', title: '让他们记住你的名字', town: '格雷维克', start: 'street' as MapId },
+  { act: 2, number: '第二幕', title: '没人替你买票', town: '布里奇波特', start: 'bridgeport' as MapId },
+] as const;
+const ARRIVAL_X = 260;
+
+const freshFlags = () => Object.fromEntries(FLAGS.map((flag) => [flag, false])) as Record<FlagId, boolean>;
+export function createAdventure(seed: number, act: 1 | 2 = 1): AdventureState {
   if (!Number.isSafeInteger(seed) || seed < 0 || seed > 0xffffffff)
     throw new RangeError('Adventure seed must be an unsigned 32-bit integer');
-  return {
+  const state: AdventureState = {
     version: ADVENTURE_VERSION,
     seed,
     tick: 0,
+    act: 1,
     map: 'street',
     player: { x: 220, facing: 1, walkTicks: 0 },
     mode: 'dialogue',
     dialogue: { id: 'opening', step: 0 },
+    panel: null,
     battle: null,
     nextBattleId: 1,
-    flags: {
-      trained: false,
-      invitation: false,
-      ticket: false,
-      miaMet: false,
-      departed: false,
+    flags: freshFlags(),
+    fee: 0,
+    owned: { items: [], relics: [], variants: [] },
+    won: [],
+    found: [],
+    dossier: {},
+  };
+  if (act === 1) return state;
+  // Starting at act two (chapter select, tests): act one is taken as played and won.
+  for (const flag of ['trained', 'invitation', 'ticket', 'miaMet', 'coachedQualifier', 'departed'] as const)
+    state.flags[flag] = true;
+  state.won = ['practice', 'qualifier'];
+  return beginActTwo(state);
+}
+function beginActTwo(state: AdventureState): AdventureState {
+  return {
+    ...state,
+    act: 2,
+    map: 'bridgeport',
+    player: { x: ARRIVAL_X, facing: 1, walkTicks: 0 },
+    mode: 'dialogue',
+    dialogue: { id: 'bp-arrival', step: 0 },
+    panel: null,
+    battle: null,
+  };
+}
+/** From the act-complete card: board the bus to the next town. */
+export function travelOn(state: AdventureState): AdventureState {
+  if (state.mode !== 'complete') return state;
+  if (state.act === 1 && state.flags.departed) return beginActTwo(state);
+  return state;
+}
+export function keepExploring(state: AdventureState): AdventureState {
+  return state.mode === 'complete' ? { ...state, mode: 'explore' } : state;
+}
+
+/* ───────────────────────── Kit and collection ───────────────────────── */
+const unique = <T,>(list: T[]) => [...new Set(list)];
+export function unlockedKit(state: AdventureState): { items: ItemId[]; relics: RelicId[] } {
+  const base = graywickKit(state);
+  return {
+    items: unique([...base.items, ...state.owned.items]),
+    relics: unique([...base.relics, ...state.owned.relics]),
+  };
+}
+export const ownedVariants = (state: AdventureState) => state.owned.variants;
+/** The deck book entries this hero is allowed to use: owned variants only. */
+export function filterBook(state: AdventureState, book: DeckBook): DeckBook {
+  const owned = new Set(state.owned.variants);
+  const kept = Object.fromEntries(Object.entries(book).filter(([key, id]) => owned.has(`${key}:${id}`)));
+  return validDeckBook(kept) ? kept : {};
+}
+function grant(state: AdventureState, reward: Reward | undefined): AdventureState {
+  if (!reward) return state;
+  return {
+    ...state,
+    fee: state.fee + (reward.fee ?? 0),
+    owned: {
+      items: unique([...state.owned.items, ...(reward.items ?? [])]),
+      relics: unique([...state.owned.relics, ...(reward.relics ?? [])]),
+      variants: unique([...state.owned.variants, ...(reward.variants ?? [])]),
     },
   };
 }
 
-export function walkAdventure(
-  state: AdventureState,
-  direction: -1 | 0 | 1,
-  ticks: number,
-): AdventureState {
+/* ───────────────────────── Walking and meeting ───────────────────────── */
+export function walkAdventure(state: AdventureState, direction: -1 | 0 | 1, ticks: number): AdventureState {
   if (
     state.mode !== 'explore' ||
     ![-1, 0, 1].includes(direction) ||
@@ -393,176 +163,273 @@ export function walkAdventure(
     direction === 0
   )
     return state;
-  const x = Math.max(
-    48,
-    Math.min(
-      MAPS[state.map].width - 48,
-      state.player.x + direction * WALK_DISTANCE * ticks,
-    ),
-  );
+  const x = Math.max(48, Math.min(MAPS[state.map].width - 48, state.player.x + direction * WALK_DISTANCE * ticks));
   return {
     ...state,
     tick: state.tick + ticks,
-    player: {
-      x,
-      facing: direction,
-      walkTicks: state.player.walkTicks + (x !== state.player.x ? ticks : 0),
-    },
+    player: { x, facing: direction, walkTicks: state.player.walkTicks + (x !== state.player.x ? ticks : 0) },
   };
 }
-
+/** People and things on this map right now. */
+export function visibleHotspots(state: AdventureState): Hotspot[] {
+  return MAPS[state.map].hotspots.filter((spot) => !spot.when || spot.when(state));
+}
+const reach = (spot: Hotspot) => (spot.kind === 'npc' ? 130 : 95);
 export function nearbyHotspot(state: AdventureState): Hotspot | null {
   if (state.mode !== 'explore') return null;
   return (
-    [...MAPS[state.map].hotspots]
-      .filter(
-        (spot) =>
-          Math.abs(spot.x - state.player.x) <= (spot.kind === 'npc' ? 130 : 95),
-      )
+    visibleHotspots(state)
+      .filter((spot) => Math.abs(spot.x - state.player.x) <= reach(spot))
       .sort(
         (a, b) =>
-          Math.abs(a.x - state.player.x) - Math.abs(b.x - state.player.x) ||
-          (a.id < b.id ? -1 : a.id > b.id ? 1 : 0),
+          Math.abs(a.x - state.player.x) - Math.abs(b.x - state.player.x) || (a.id < b.id ? -1 : a.id > b.id ? 1 : 0),
       )[0] ?? null
   );
 }
-function openDialogue(state: AdventureState, id: DialogueId): AdventureState {
-  return { ...state, mode: 'dialogue', dialogue: { id, step: 0 } };
+function openDialogue(state: AdventureState, id: string): AdventureState {
+  return { ...state, mode: 'dialogue', dialogue: { id, step: 0 }, panel: null };
 }
-export function interactAdventure(
-  state: AdventureState,
-  id?: string,
-): AdventureState {
+function openPanel(state: AdventureState, panel: PanelId): AdventureState {
+  return { ...state, mode: 'panel', panel, dialogue: null };
+}
+export function interactAdventure(state: AdventureState, id?: string): AdventureState {
   if (state.mode !== 'explore') return state;
-  const spot = id
-    ? MAPS[state.map].hotspots.find((entry) => entry.id === id)
-    : nearbyHotspot(state);
-  if (
-    !spot ||
-    Math.abs(spot.x - state.player.x) > (spot.kind === 'npc' ? 130 : 95)
-  )
-    return state;
+  const spot = id ? visibleHotspots(state).find((entry) => entry.id === id) : nearbyHotspot(state);
+  if (!spot || Math.abs(spot.x - state.player.x) > reach(spot)) return state;
   if (spot.target && spot.spawn !== undefined)
-    return {
-      ...state,
-      map: spot.target,
-      player: { ...state.player, x: spot.spawn, walkTicks: 0 },
-    };
-  if (spot.id === 'reed')
-    return openDialogue(
-      state,
-      state.flags.trained ? 'mentor-after' : 'mentor-first',
-    );
-  if (spot.id === 'mia')
-    return openDialogue(state, state.flags.ticket ? 'mia-after' : 'mia-first');
-  if (spot.id === 'felix')
-    return openDialogue(
-      state,
-      !state.flags.invitation
-        ? 'rival-locked'
-        : state.flags.ticket
-          ? 'rival-again'
-          : 'rival-first',
-    );
-  if (spot.id === 'bus')
-    return openDialogue(state, state.flags.ticket ? 'departure' : 'bus-locked');
-  return state;
+    return { ...state, map: spot.target, player: { ...state.player, x: spot.spawn, walkTicks: 0 } };
+  const talk = MAPS[state.map].act === 1 ? graywickTalk(state, spot.id) : bridgeportTalk(state, spot.id);
+  if (!talk) return state;
+  if (talk.startsWith('panel:')) return openPanel(state, talk.slice(6) as PanelId);
+  return openDialogue(state, talk);
 }
 
+/* ───────────────────────── Dialogue ───────────────────────── */
 export function advanceDialogue(state: AdventureState): AdventureState {
   if (state.mode !== 'dialogue' || !state.dialogue) return state;
   const { id, step } = state.dialogue;
   const script = DIALOGUES[id];
-  if (step < script.lines.length - 1)
-    return { ...state, dialogue: { id, step: step + 1 } };
+  if (step < script.lines.length - 1) return { ...state, dialogue: { id, step: step + 1 } };
   if (script.choices) return state;
   return closeDialogue(state);
 }
-function closeDialogue(state: AdventureState): AdventureState {
-  const id = state.dialogue?.id;
-  const receivedLetter =
-    id === 'practice-win' || id === 'practice-loss' || id === 'practice-draw';
-  return {
-    ...state,
-    mode: id === 'departure' ? 'complete' : 'explore',
-    dialogue: null,
-    flags: {
-      ...state.flags,
-      invitation: state.flags.invitation || receivedLetter,
-      miaMet: state.flags.miaMet || id === 'mia-first',
-      departed: state.flags.departed || id === 'departure',
-    },
-  };
+function applyEffect(state: AdventureState, script: Dialogue): AdventureState {
+  const effect = script.effect;
+  if (!effect) return state;
+  let next = state;
+  if (effect.reward && !(effect.once && state.flags[effect.once])) next = grant(next, effect.reward);
+  const set = [...(effect.set ?? []), ...(effect.once ? [effect.once] : [])];
+  if (set.length) next = { ...next, flags: { ...next.flags, ...Object.fromEntries(set.map((flag) => [flag, true])) } };
+  if (effect.find && !next.found.includes(effect.find)) next = { ...next, found: [...next.found, effect.find] };
+  return next;
 }
-export function chooseDialogue(
-  state: AdventureState,
-  choice: ChoiceId,
-): AdventureState {
+function closeDialogue(state: AdventureState): AdventureState {
+  const script = state.dialogue ? DIALOGUES[state.dialogue.id] : undefined;
+  const next = script ? applyEffect(state, script) : state;
+  return { ...next, mode: script?.effect?.complete ? 'complete' : 'explore', dialogue: null };
+}
+/** Choices only exist on a dialogue's last line. Unknown or early choices change nothing. */
+export function chooseDialogue(state: AdventureState, choiceId: string): AdventureState {
   if (state.mode !== 'dialogue' || !state.dialogue) return state;
   const script = DIALOGUES[state.dialogue.id];
+  const choice: Choice | undefined = script.choices?.find((entry) => entry.id === choiceId);
+  if (state.dialogue.step !== script.lines.length - 1 || !choice) return state;
+  const action = choice.action;
+  if (action.type === 'close') return closeDialogue(state);
+  // Every other choice also counts as having heard the conversation out.
+  const heard = applyEffect(state, script);
+  if (action.type === 'panel') return openPanel(heard, action.panel);
+  if (action.type === 'pay') {
+    if (heard.fee < action.price) return openDialogue(heard, action.poor);
+    return openDialogue({ ...heard, fee: heard.fee - action.price, flags: { ...heard.flags, [action.flag]: true } }, action.then);
+  }
+  return startBattle(heard, action.battle);
+}
+
+/* ───────────────────────── Panels: shop, shows, dossier ───────────────────────── */
+export function closePanel(state: AdventureState): AdventureState {
+  return state.mode === 'panel' ? { ...state, mode: 'explore', panel: null } : state;
+}
+export const offerStocked = (state: AdventureState, offerId: string) => {
+  const offer = SHOP.find((entry) => entry.id === offerId);
+  return Boolean(offer && (!offer.stocked || offer.stocked(state)));
+};
+export function offerOwned(state: AdventureState, offerId: string) {
+  const offer = SHOP.find((entry) => entry.id === offerId);
+  if (!offer) return false;
+  if (offer.kind === 'item') return unlockedKit(state).items.includes(offer.ref as ItemId);
+  if (offer.kind === 'relic') return unlockedKit(state).relics.includes(offer.ref as RelicId);
+  return state.owned.variants.includes(offer.ref);
+}
+/** Atomic: pays and hands over, or changes nothing. */
+export function buyOffer(state: AdventureState, offerId: string): AdventureState {
+  const offer = SHOP.find((entry) => entry.id === offerId);
   if (
-    state.dialogue.step !== script.lines.length - 1 ||
-    !script.choices?.some((entry) => entry.id === choice)
+    state.mode !== 'panel' ||
+    state.panel !== 'shop' ||
+    !offer ||
+    !offerStocked(state, offerId) ||
+    offerOwned(state, offerId) ||
+    state.fee < offer.price
   )
     return state;
-  if (choice === 'close') return closeDialogue(state);
-  if (choice === 'qualifier' && !state.flags.invitation) return state;
+  const reward: Reward =
+    offer.kind === 'item'
+      ? { items: [offer.ref as ItemId] }
+      : offer.kind === 'relic'
+        ? { relics: [offer.ref as RelicId] }
+        : { variants: [offer.ref] };
+  return grant({ ...state, fee: state.fee - offer.price }, reward);
+}
+export function startShow(state: AdventureState, show: ShowId): AdventureState {
+  if (state.mode !== 'panel' || state.panel !== 'shows' || !SHOWS.some((entry) => entry.id === show)) return state;
+  return startBattle({ ...state, mode: 'explore', panel: null }, `show-${show}`);
+}
+
+/* ───────────────────────── Battles ───────────────────────── */
+function startBattle(state: AdventureState, kind: BattleId): AdventureState {
+  const definition = BATTLES[kind];
+  if (!definition) return state;
+  if (kind === 'qualifier' && !state.flags.invitation) return state;
   const id = state.nextBattleId;
+  const practiceAgain = kind === 'practice' && state.flags.trained;
   return {
     ...state,
     mode: 'battle',
     dialogue: null,
+    panel: null,
     nextBattleId: id + 1,
     battle: {
       id,
-      kind: choice,
+      kind,
       seed: (state.seed + id * 7919) >>> 0,
-      enemyStyle: choice === 'practice' ? 'quick' : 'burn',
+      enemyStyle: practiceAgain ? 'quick' : definition.style,
+      coach:
+        kind === 'practice'
+          ? practiceAgain
+            ? null
+            : 'lesson'
+          : kind === 'qualifier' && !state.flags.ticket && !state.flags.coachedQualifier
+            ? 'qualifier'
+            : null,
       returnMap: state.map,
       returnX: state.player.x,
     },
   };
 }
-
-/** Only an acknowledged finished duel can grant progress. Abandoning is separate. */
+/** Everything the duel table needs for the current battle. */
+export function battleSetup(state: AdventureState): {
+  title: string;
+  opponent: CharacterId;
+  enemyStyle: Style;
+  enemyItems?: ItemId[];
+  enemyRelic?: RelicId | null;
+  enemyBook?: DeckBook;
+  terms?: DuelTerms;
+  available: { items: ItemId[]; relics: RelicId[] };
+  variants: OwnedVariant[];
+  forced?: { items: ItemId[]; relic: RelicId | null };
+  tip?: string;
+  rule?: string;
+} | null {
+  if (!state.battle) return null;
+  const definition = BATTLES[state.battle.kind];
+  const kit = unlockedKit(state);
+  const only = definition.kit?.only;
+  const banned = definition.kit?.banFamilies ?? [];
+  const available = only
+    ? { items: [...only.items], relics: only.relic ? [only.relic] : [] }
+    : {
+        items: kit.items.filter((id) => !banned.includes(ITEMS.find((item) => item.id === id)!.family)),
+        relics: kit.relics,
+      };
+  const practiceAgain = state.battle.kind === 'practice' && state.battle.enemyStyle === 'quick';
+  const show = SHOWS.find((entry) => `show-${entry.id}` === state.battle!.kind);
+  return {
+    title: definition.title,
+    opponent: definition.opponent,
+    enemyStyle: state.battle.enemyStyle,
+    ...(definition.items && !practiceAgain ? { enemyItems: [...definition.items] } : {}),
+    ...(definition.relic !== undefined ? { enemyRelic: definition.relic } : {}),
+    ...(definition.book ? { enemyBook: { ...definition.book } } : {}),
+    ...(definition.terms ? { terms: structuredClone(definition.terms) } : {}),
+    available,
+    variants: [...state.owned.variants],
+    ...(only ? { forced: { items: [...only.items], relic: only.relic } } : {}),
+    ...(definition.tip ? { tip: definition.tip } : {}),
+    ...(show ? { rule: show.rule } : {}),
+  };
+}
+const validTally = (report: unknown): report is { suits: number[]; kinds: number[] } => {
+  const r = report as { suits?: unknown; kinds?: unknown };
+  const counts = (value: unknown, length: number) =>
+    Array.isArray(value) && value.length === length && value.every((n) => Number.isInteger(n) && n >= 0 && n < 10000);
+  return Boolean(r) && counts(r.suits, 4) && counts(r.kinds, 9);
+};
+/**
+ * Only an acknowledged finished duel can grant progress. Abandoning is separate.
+ * `report` is what the opponent actually threw, for the dossier.
+ */
 export function finishAdventureBattle(
   state: AdventureState,
   battleId: number,
   winner: 0 | 1 | 'draw',
+  report?: { suits: number[]; kinds: number[] },
 ): AdventureState {
-  if (
-    state.mode !== 'battle' ||
-    !state.battle ||
-    state.battle.id !== battleId ||
-    ![0, 1, 'draw'].includes(winner)
-  )
+  if (state.mode !== 'battle' || !state.battle || state.battle.id !== battleId || ![0, 1, 'draw'].includes(winner))
     return state;
   const battle = state.battle;
-  const trained = state.flags.trained || battle.kind === 'practice';
-  const ticket =
-    state.flags.ticket || (battle.kind === 'qualifier' && winner === 0);
-  const id: DialogueId =
-    battle.kind === 'practice'
-      ? winner === 0
-        ? 'practice-win'
-        : winner === 1
-          ? 'practice-loss'
-          : 'practice-draw'
-      : winner === 0
-        ? 'rival-win'
-        : winner === 1
-          ? 'rival-loss'
-          : 'rival-draw';
-  return openDialogue(
-    {
-      ...state,
-      map: battle.returnMap,
-      player: { ...state.player, x: battle.returnX },
-      battle: null,
-      flags: { ...state.flags, trained, ticket },
+  const definition = BATTLES[battle.kind];
+  const before = state.won.includes(battle.kind);
+  let next: AdventureState = {
+    ...state,
+    map: battle.returnMap,
+    player: { ...state.player, x: battle.returnX },
+    battle: null,
+    flags: {
+      ...state.flags,
+      ...Object.fromEntries((definition.afterFlags ?? []).map((flag) => [flag, true])),
+      ...(winner === 0 ? Object.fromEntries((definition.winFlags ?? []).map((flag) => [flag, true])) : {}),
     },
-    id,
-  );
+  };
+  if (winner === 0 && !before) next = grant({ ...next, won: [...next.won, battle.kind] }, definition.reward);
+  // Dossier: what this opponent showed you (Reed's lessons are not filed).
+  const opponent = definition.opponent;
+  if (opponent !== 'reed') {
+    const old: DossierEntry = next.dossier[opponent] ?? {
+      duels: 0,
+      wins: 0,
+      losses: 0,
+      suits: [0, 0, 0, 0],
+      kinds: [0, 0, 0, 0, 0, 0, 0, 0, 0],
+    };
+    const tally = validTally(report) ? report : { suits: [0, 0, 0, 0], kinds: [0, 0, 0, 0, 0, 0, 0, 0, 0] };
+    next = {
+      ...next,
+      dossier: {
+        ...next.dossier,
+        [opponent]: {
+          duels: old.duels + 1,
+          wins: old.wins + (winner === 0 ? 1 : 0),
+          losses: old.losses + (winner === 1 ? 1 : 0),
+          suits: old.suits.map((n, i) => n + tally.suits[i]) as DossierEntry['suits'],
+          kinds: old.kinds.map((n, i) => n + tally.kinds[i]),
+        },
+      },
+    };
+  }
+  const rematch = definition.act === 2 && before;
+  const dialogue =
+    winner === 0
+      ? rematch
+        ? 'rematch-win'
+        : definition.win
+      : winner === 1
+        ? rematch
+          ? 'rematch-loss'
+          : definition.loss
+        : (definition.draw ?? (rematch ? 'rematch-loss' : definition.loss));
+  return openDialogue(next, dialogue);
 }
 export function abandonAdventureBattle(state: AdventureState): AdventureState {
   if (state.mode !== 'battle' || !state.battle) return state;
@@ -574,29 +441,66 @@ export function abandonAdventureBattle(state: AdventureState): AdventureState {
     battle: null,
   };
 }
-export function keepExploring(state: AdventureState): AdventureState {
-  return state.mode === 'complete' ? { ...state, mode: 'explore' } : state;
+
+export function adventureObjective(state: AdventureState): Objective {
+  return state.act === 1 ? graywickObjective(state) : bridgeportObjective(state);
 }
-export function adventureObjective(state: AdventureState): {
-  title: string;
-  detail: string;
-  target: string;
-} {
-  if (!state.flags.trained)
-    return {
-      title: '去里德的工作室',
-      detail: '向文森特学习凝牌对决',
-      target: 'workshop-door',
-    };
-  if (!state.flags.ticket)
-    return {
-      title: '赢下第一张参赛证',
-      detail: '在抒情剧院挑战菲利克斯',
-      target: 'theatre-door',
-    };
-  return {
-    title: '乘巴士，去更大的舞台',
-    detail: '从旧剧院街启程',
-    target: 'bus',
-  };
+
+/* ───────────────────────── Saves ───────────────────────── */
+export const SAVE_KEY = 'aibazaar.throw.adventure';
+export const SAVE_PRODUCT = 'throw-adventure';
+/** A save envelope; the adapter adds no clock or randomness. */
+export function serializeAdventure(state: AdventureState, extra: Record<string, unknown> = {}) {
+  return JSON.stringify({ product: SAVE_PRODUCT, version: ADVENTURE_VERSION, state, ...extra });
+}
+const isInt = (value: unknown, min = 0, max = Number.MAX_SAFE_INTEGER) =>
+  Number.isInteger(value) && (value as number) >= min && (value as number) <= max;
+/**
+ * Restores a save, or returns null for anything from another product, another
+ * rules version, or a shape this version cannot vouch for. A battle in
+ * progress is not resumable: the hero is put back where the duel began.
+ */
+export function restoreAdventure(json: string): { state: AdventureState; envelope: Record<string, unknown> } | null {
+  let envelope: Record<string, unknown>;
+  try {
+    envelope = JSON.parse(json);
+  } catch {
+    return null;
+  }
+  if (!envelope || envelope.product !== SAVE_PRODUCT || envelope.version !== ADVENTURE_VERSION) return null;
+  const s = envelope.state as AdventureState;
+  if (!s || s.version !== ADVENTURE_VERSION || !isInt(s.seed, 0, 0xffffffff) || !isInt(s.tick)) return null;
+  if (![1, 2].includes(s.act) || !(s.map in MAPS) || MAPS[s.map].act !== s.act) return null;
+  if (!s.player || !isInt(s.player.x, 0, MAPS[s.map].width) || ![-1, 1].includes(s.player.facing) || !isInt(s.player.walkTicks))
+    return null;
+  if (!['explore', 'dialogue', 'battle', 'panel', 'complete'].includes(s.mode)) return null;
+  if (s.mode === 'dialogue' && !(s.dialogue && s.dialogue.id in DIALOGUES && isInt(s.dialogue.step, 0, DIALOGUES[s.dialogue.id].lines.length - 1)))
+    return null;
+  if (s.mode === 'panel' && !['shop', 'shows', 'dossier'].includes(s.panel as string)) return null;
+  if (s.mode === 'battle' && !(s.battle && s.battle.kind in BATTLES && s.battle.returnMap in MAPS)) return null;
+  if (!isInt(s.nextBattleId, 1) || !isInt(s.fee)) return null;
+  if (!s.flags || FLAGS.some((flag) => typeof s.flags[flag] !== 'boolean') || Object.keys(s.flags).length !== FLAGS.length)
+    return null;
+  const items = new Set(ITEMS.map((item) => item.id)),
+    relics = new Set(RELICS.map((relic) => relic.id)),
+    enchants = new Set(ENCHANTS.map((entry) => entry.id));
+  if (
+    !s.owned ||
+    !Array.isArray(s.owned.items) ||
+    !s.owned.items.every((id) => items.has(id)) ||
+    !Array.isArray(s.owned.relics) ||
+    !s.owned.relics.every((id) => relics.has(id)) ||
+    !Array.isArray(s.owned.variants) ||
+    !s.owned.variants.every((entry) => {
+      const [key, id] = String(entry).split(':');
+      return enchants.has(id) && validDeckBook({ [key]: id });
+    })
+  )
+    return null;
+  if (!Array.isArray(s.won) || !s.won.every((id) => id in BATTLES)) return null;
+  if (!Array.isArray(s.found) || !s.found.every((id) => (HOBBS_THINGS as readonly string[]).includes(id))) return null;
+  if (!s.dossier || typeof s.dossier !== 'object' || !Object.keys(s.dossier).every((id) => id in CHARACTERS)) return null;
+  let state: AdventureState = structuredClone(s);
+  if (state.mode === 'battle') state = abandonAdventureBattle(state);
+  return { state, envelope };
 }

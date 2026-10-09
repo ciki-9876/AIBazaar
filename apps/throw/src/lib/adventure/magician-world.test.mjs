@@ -11,6 +11,8 @@ import {
   keepExploring,
   MAPS,
   nearbyHotspot,
+  unlockedKit,
+  adventureObjective,
   walkAdventure,
 } from './magician-world.ts';
 import {
@@ -149,12 +151,12 @@ test('complete opening route connects training, qualifying duel, departure, and 
   assert.equal(town.flags.ticket, true);
 });
 
-test('adventure battles reuse real v3 combat and deterministic seeds, including repeat practice', () => {
+test('adventure battles reuse real v5 combat and deterministic seeds, including repeat practice', () => {
   const battle = chooseDialogue(meetMentor(1337), 'practice');
   const run = () => {
     let duel = createThrowDuel(
       battle.battle.seed,
-      [...PRESETS.pair.items],
+      ['pair', 'quick', 'draw'],
       battle.battle.enemyStyle,
       'order',
     );
@@ -172,7 +174,9 @@ test('adventure battles reuse real v3 combat and deterministic seeds, including 
       finishAdventureBattle(battle, battle.battle.id, duel.winner),
     );
   };
-  assert.equal(RULES_VERSION, 'throw-duel-v3');
+  assert.equal(RULES_VERSION, 'throw-duel-v5');
+  assert.equal(battle.battle.enemyStyle, 'lesson');
+  assert.equal(battle.battle.coach, 'lesson');
   const result = run();
   assert.deepEqual(result, run());
   assert.equal(result.flags.invitation, true);
@@ -181,7 +185,43 @@ test('adventure battles reuse real v3 combat and deterministic seeds, including 
     'practice',
   );
   assert.notEqual(repeat.battle.seed, battle.battle.seed);
+  assert.equal(repeat.battle.enemyStyle, 'quick');
+  assert.equal(repeat.battle.coach, null);
   assert.equal(repeat.battle.id, battle.battle.id + 1);
   assert.throws(() => createAdventure(-1), RangeError);
   assert.throws(() => createAdventure(0x100000000), RangeError);
+});
+
+test('chapter one hands out the trunk in story order: starter kit, Reed\'s lamp, then Mia\'s shields', () => {
+  let state = readToEnd(createAdventure(77));
+  assert.deepEqual(unlockedKit(state), { items: ['pair', 'quick', 'draw'], relics: ['order'] });
+  assert.equal(adventureObjective(state).target, 'workshop-door');
+  state = readToEnd(interactAdventure(walkTo(state, 825), 'mia'));
+  assert.equal(state.flags.miaMet, false, 'Mia sends you to Reed first');
+  state = trained();
+  assert.deepEqual(unlockedKit(state).items, ['pair', 'quick', 'draw', 'mend', 'wash']);
+  assert.equal(adventureObjective(state).target, 'mia');
+  state = interactAdventure(walkTo(state, 140), 'workshop-exit');
+  state = interactAdventure(walkTo(state, 825), 'mia');
+  assert.equal(state.dialogue.id, 'mia-first');
+  state = readToEnd(state);
+  assert.equal(state.flags.miaMet, true);
+  assert.deepEqual(unlockedKit(state), {
+    items: ['pair', 'quick', 'draw', 'mend', 'wash', 'umbrella', 'ward', 'thorns'],
+    relics: ['order', 'bastion'],
+  });
+  assert.equal(adventureObjective(state).target, 'theatre-door');
+  assert.equal(readToEnd(interactAdventure(state, 'mia')).flags.miaMet, true);
+  assert.equal(interactAdventure(state, 'mia').dialogue.id, 'mia-reminder');
+});
+
+test('the qualifier coaches only the first attempt and Felix always brings fire', () => {
+  const first = chooseDialogue(meetRival(), 'qualifier');
+  assert.equal(first.battle.enemyStyle, 'burn');
+  assert.equal(first.battle.coach, 'qualifier');
+  const lost = readToEnd(finishAdventureBattle(first, first.battle.id, 1));
+  assert.equal(lost.flags.ticket, false);
+  const again = chooseDialogue(readToEnd(interactAdventure(lost, 'felix')), 'qualifier');
+  assert.equal(again.battle.coach, null);
+  assert.equal(again.battle.enemyStyle, 'burn');
 });

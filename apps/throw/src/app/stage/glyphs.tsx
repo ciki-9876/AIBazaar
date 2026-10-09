@@ -65,6 +65,14 @@ const icons = (A: string): Record<ItemId | RelicId, ReactNode> => ({
       <path d="M15 15H33M15 36H33" />
     </g>
   ),
+  stride: (
+    <g>
+      <path d="M14 8Q24 4 34 8L38 38Q30 42 24 38Q18 42 10 38Z" />
+      <path d="M24 8V36" />
+      <path d="M40 16Q45 20 41 24M43 26Q47 31 42 34" stroke={A} />
+      <path d="M8 30Q4 33 8 37" stroke={A} />
+    </g>
+  ),
   draw: (
     <g>
       {clockFace(24, 26, 12)}
@@ -240,20 +248,6 @@ const icons = (A: string): Record<ItemId | RelicId, ReactNode> => ({
       <ellipse cx="24" cy="20" rx="13" ry="15" />
       <path d="M24 35V42M16 43H32" />
       <path d="M18 14Q20 10 25 9M17 21L29 12" stroke={A} />
-    </g>
-  ),
-  seed: (
-    <g>
-      <path d="M12 40H36L33 30H15Z" />
-      <path d="M24 30V16" />
-      <path d="M24 20Q14 20 13 11Q22 10 24 20ZM24 17Q30 9 37 11Q35 19 24 17Z" fill={A} />
-    </g>
-  ),
-  frost: (
-    <g>
-      {clockFace(24, 27, 13)}
-      <path d="M24 14V9M21 7H27" />
-      <path d="M39 8Q43 14 39 17Q35 14 39 8Z" fill={A} />
     </g>
   ),
 });

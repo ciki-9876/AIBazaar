@@ -130,6 +130,8 @@
 
 ## 2026-10-05 · throw 项目提交
 
+新协作者先读 [《最后一张王牌》内容开发手册](../throw-handbook/README.md)。
+
 - [ADR-0035-throw-card-duel-baseline](decisions/ADR-0035-throw-card-duel-baseline.md)
 - [ADR-0036-throw-duel-selection-and-relic](decisions/ADR-0036-throw-duel-selection-and-relic.md)
 - [ADR-0038-throw-workbench-and-world-candidates](decisions/ADR-0038-throw-workbench-and-world-candidates.md)

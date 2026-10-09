@@ -4,7 +4,23 @@ import { useEffect, useId, useRef, type ReactNode } from 'react';
 import { approach, reducedMotion, subscribeFrame } from './ticker';
 import { BONE, BRASS, LACQUER, LACQUER_DARK, INK } from './palette';
 
-export type RigId = 'eli' | 'reed' | 'mia' | 'felix';
+export type RigId =
+  | 'eli'
+  | 'reed'
+  | 'mia'
+  | 'felix'
+  | 'juno'
+  | 'hobbs'
+  | 'ada'
+  | 'bea'
+  | 'stan'
+  | 'dodd'
+  | 'doris'
+  | 'pettigrew'
+  | 'agnes'
+  | 'rosie'
+  | 'basil'
+  | 'pike';
 export type RigAction = { kind: 'throw' | 'hit'; id: number } | null;
 export type Stance = 'stand' | 'duel';
 
@@ -26,7 +42,17 @@ type Look = {
   forearm: string;
   trouser: string;
   boot: string;
-  body: 'frock' | 'vest' | 'overall' | 'tails';
+  body: 'frock' | 'vest' | 'overall' | 'tails' | 'jacket' | 'dress' | 'apron';
+  /** Hair and headwear are separate parts so one skeleton dresses the whole cast. */
+  hairStyle: 'eli' | 'reed' | 'mia' | 'felix' | 'bob' | 'bun' | 'curly' | 'bald' | 'perm' | 'crop';
+  hat?: 'top' | 'cap' | 'peaked' | 'bowler' | 'brim' | 'helmet' | 'kerchief' | 'headscarf';
+  hatColor?: string;
+  glasses?: 'round' | 'cateye';
+  moustache?: boolean;
+  /** Tie, bow, apron or trim colour. */
+  accent?: string;
+  /** Long skirt colour for 'dress'; apron cloth for 'apron'. */
+  skirt?: string;
 };
 export const LOOKS: Record<RigId, Look> = {
   eli: {
@@ -44,6 +70,7 @@ export const LOOKS: Record<RigId, Look> = {
     trouser: '#3a2e2b',
     boot: '#4b2d21',
     body: 'frock',
+    hairStyle: 'eli',
   },
   reed: {
     name: '文森特·里德',
@@ -60,6 +87,8 @@ export const LOOKS: Record<RigId, Look> = {
     trouser: '#4a4440',
     boot: '#33241d',
     body: 'vest',
+    hairStyle: 'reed',
+    glasses: 'round',
   },
   mia: {
     name: '米娅·芬奇',
@@ -76,6 +105,7 @@ export const LOOKS: Record<RigId, Look> = {
     trouser: '#2d6870',
     boot: '#3b2a22',
     body: 'overall',
+    hairStyle: 'mia',
   },
   felix: {
     name: '菲利克斯·克罗',
@@ -92,6 +122,251 @@ export const LOOKS: Record<RigId, Look> = {
     trouser: '#1d1f26',
     boot: '#121215',
     body: 'tails',
+    hairStyle: 'felix',
+    hat: 'top',
+  },
+  // ——— Bridgeport ———
+  juno: {
+    name: '朱诺·贝尔',
+    scale: 0.92,
+    lean: 3,
+    skin: '#c99272',
+    skinShade: '#a8765a',
+    hair: '#24170f',
+    coat: '#c08a2e',
+    coatShade: '#8f6420',
+    coatLight: '#dba64a',
+    sleeve: '#c08a2e',
+    forearm: '#c08a2e',
+    trouser: '#2b2a33',
+    boot: '#1d1b20',
+    body: 'jacket',
+    hairStyle: 'bob',
+    hat: 'cap',
+    hatColor: '#3b3f46',
+    accent: '#2d6870',
+  },
+  hobbs: {
+    name: '老霍布斯',
+    scale: 0.9,
+    lean: 9,
+    skin: '#e0b597',
+    skinShade: '#bb8d70',
+    hair: '#c9c4ba',
+    coat: '#e4dccb',
+    coatShade: '#bdb39f',
+    coatLight: '#f1ebdd',
+    sleeve: '#e4dccb',
+    forearm: '#e0b597',
+    trouser: '#3f3a35',
+    boot: '#2c221c',
+    body: 'apron',
+    hairStyle: 'bald',
+    glasses: 'round',
+    moustache: true,
+    skirt: '#5b4433',
+  },
+  ada: {
+    name: '艾达·普赖斯',
+    scale: 0.93,
+    lean: 0,
+    skin: '#e8c4a6',
+    skinShade: '#c79e80',
+    hair: '#6e5a4c',
+    coat: '#3e5a73',
+    coatShade: '#2a4155',
+    coatLight: '#55758f',
+    sleeve: '#3e5a73',
+    forearm: '#3e5a73',
+    trouser: '#3a3434',
+    boot: '#231d1b',
+    body: 'dress',
+    hairStyle: 'bun',
+    skirt: '#34495c',
+    accent: '#e8dfca',
+  },
+  bea: {
+    name: '比阿·普赖斯',
+    scale: 0.9,
+    lean: -1,
+    skin: '#efcfb5',
+    skinShade: '#cfa98d',
+    hair: '#d9b46a',
+    coat: '#b5646f',
+    coatShade: '#8e4752',
+    coatLight: '#c97f89',
+    sleeve: '#b5646f',
+    forearm: '#b5646f',
+    trouser: '#3a3434',
+    boot: '#3a2722',
+    body: 'dress',
+    hairStyle: 'curly',
+    skirt: '#e3d7bf',
+    accent: '#f1e7d2',
+  },
+  stan: {
+    name: '司机斯坦',
+    scale: 1.02,
+    lean: -2,
+    skin: '#e1b08f',
+    skinShade: '#bc8a6b',
+    hair: '#5a4334',
+    coat: '#24395a',
+    coatShade: '#16263f',
+    coatLight: '#34507a',
+    sleeve: '#24395a',
+    forearm: '#24395a',
+    trouser: '#1d2a40',
+    boot: '#15151a',
+    body: 'frock',
+    hairStyle: 'crop',
+    hat: 'peaked',
+    hatColor: '#1c2c46',
+    moustache: true,
+    accent: '#c9a25a',
+  },
+  dodd: {
+    name: '多德太太',
+    scale: 0.88,
+    lean: 4,
+    skin: '#e6bea0',
+    skinShade: '#c49879',
+    hair: '#a8a29a',
+    coat: '#4f6b4a',
+    coatShade: '#364b33',
+    coatLight: '#678a60',
+    sleeve: '#4f6b4a',
+    forearm: '#4f6b4a',
+    trouser: '#2d2b2b',
+    boot: '#2a1f1a',
+    body: 'dress',
+    hairStyle: 'perm',
+    hat: 'headscarf',
+    hatColor: '#b3263a',
+    glasses: 'round',
+    skirt: '#3f5a3b',
+  },
+  doris: {
+    name: '多丽丝',
+    scale: 0.9,
+    lean: 0,
+    skin: '#ecc9ad',
+    skinShade: '#c9a386',
+    hair: '#8f8a86',
+    coat: '#6e2433',
+    coatShade: '#4d1622',
+    coatLight: '#8a3346',
+    sleeve: '#6e2433',
+    forearm: '#6e2433',
+    trouser: '#2a2626',
+    boot: '#1e1818',
+    body: 'dress',
+    hairStyle: 'perm',
+    glasses: 'cateye',
+    skirt: '#3a2a2e',
+    accent: '#c9a25a',
+  },
+  pettigrew: {
+    name: '佩蒂格鲁先生',
+    scale: 1.01,
+    lean: -3,
+    skin: '#eccbb0',
+    skinShade: '#c8a588',
+    hair: '#2a2420',
+    coat: '#8a6d3b',
+    coatShade: '#66502a',
+    coatLight: '#a78a52',
+    sleeve: '#8a6d3b',
+    forearm: '#8a6d3b',
+    trouser: '#5a4a2e',
+    boot: '#3a2a1a',
+    body: 'frock',
+    hairStyle: 'crop',
+    hat: 'bowler',
+    hatColor: '#1e1b18',
+    moustache: true,
+    accent: '#b3263a',
+  },
+  agnes: {
+    name: '艾格尼丝·莫斯',
+    scale: 0.9,
+    lean: 2,
+    skin: '#e9c7aa',
+    skinShade: '#c7a184',
+    hair: '#c5c0b2',
+    coat: '#55663a',
+    coatShade: '#3b4826',
+    coatLight: '#6e8350',
+    sleeve: '#55663a',
+    forearm: '#55663a',
+    trouser: '#33301f',
+    boot: '#3b2d1f',
+    body: 'dress',
+    hairStyle: 'bun',
+    hat: 'brim',
+    hatColor: '#b39b62',
+    skirt: '#6b5c3c',
+    accent: '#8fb37a',
+  },
+  rosie: {
+    name: '罗茜·费恩',
+    scale: 0.95,
+    lean: 1,
+    skin: '#ecc0a2',
+    skinShade: '#cc9878',
+    hair: '#b8462a',
+    coat: '#f1ebdd',
+    coatShade: '#cfc6b3',
+    coatLight: '#fbf7ee',
+    sleeve: '#f1ebdd',
+    forearm: '#ecc0a2',
+    trouser: '#3a2e2b',
+    boot: '#2a201b',
+    body: 'apron',
+    hairStyle: 'bob',
+    hat: 'kerchief',
+    hatColor: '#b3263a',
+    skirt: '#b3263a',
+  },
+  basil: {
+    name: '巴兹尔·怀特',
+    scale: 0.97,
+    lean: 5,
+    skin: '#e8c2a3',
+    skinShade: '#c49c7e',
+    hair: '#9d958a',
+    coat: '#6b5038',
+    coatShade: '#4b3725',
+    coatLight: '#86684a',
+    sleeve: '#6b5038',
+    forearm: '#6b5038',
+    trouser: '#4a4038',
+    boot: '#2c221c',
+    body: 'frock',
+    hairStyle: 'bald',
+    glasses: 'round',
+    accent: '#2d6870',
+  },
+  pike: {
+    name: '派克警长',
+    scale: 1.06,
+    lean: -2,
+    skin: '#e7bd9c',
+    skinShade: '#c3967a',
+    hair: '#3a2b22',
+    coat: '#1d2738',
+    coatShade: '#111826',
+    coatLight: '#2c3a52',
+    sleeve: '#1d2738',
+    forearm: '#1d2738',
+    trouser: '#161d2a',
+    boot: '#0f0f12',
+    body: 'frock',
+    hairStyle: 'crop',
+    hat: 'helmet',
+    hatColor: '#141b28',
+    moustache: true,
+    accent: '#c9cfd6',
   },
 };
 
@@ -202,7 +477,28 @@ const hand = (look: Look, cards = false) => (
 
 function Torso({ look, gradient }: { look: Look; gradient: string }) {
   const fill = `url(#${gradient})`;
-  if (look.body === 'frock' || look.body === 'tails')
+  if (look.body === 'dress')
+    return (
+      <g>
+        <path d="M-12.5 -153 Q0 -158 11.5 -153 Q14.6 -138 13.4 -121 Q12.6 -110 13 -100 L-14.4 -100 Q-15.6 -121 -13.6 -140 Z" fill={fill} />
+        <path d="M-3 -156 Q4 -150 10 -155 L9.6 -151 Q3.6 -146 -3.4 -152 Z" fill={look.accent ?? BONE} />
+        <path d="M-14 -104 L13.2 -104 L13.2 -99 L-14.4 -99 Z" fill={look.coatShade} />
+        {[-140, -130, -120].map((y) => (
+          <circle key={y} cx="11.4" cy={y} r="1.1" fill={look.accent ?? BRASS} />
+        ))}
+      </g>
+    );
+  if (look.body === 'apron')
+    return (
+      <g>
+        <path d="M-12.5 -153 Q0 -158 11.5 -153 Q14.6 -138 13.4 -121 Q12.6 -110 13 -100 L-14.4 -100 Q-15.6 -121 -13.6 -140 Z" fill={fill} />
+        <path d="M-1 -146 L12.6 -146 L13.6 -100 L-2 -100 Z" fill={look.skirt ?? '#5b4433'} />
+        <path d="M-1 -146 L-6 -156 M12.6 -146 L9 -156" stroke={look.skirt ?? '#5b4433'} strokeWidth="1.6" />
+        <path d="M-14.4 -108 L13.4 -108" stroke={look.skirt ?? '#5b4433'} strokeWidth="2.2" />
+        <rect x="2" y="-128" width="8" height="7" rx="1" fill="#000" opacity=".14" />
+      </g>
+    );
+  if (look.body === 'frock' || look.body === 'tails' || look.body === 'jacket')
     return (
       <g>
         <path
@@ -220,8 +516,14 @@ function Torso({ look, gradient }: { look: Look; gradient: string }) {
           fill="none"
         />
         <path d="M14 -150 Q16.4 -136 14.6 -121" stroke="#fff" strokeOpacity=".12" strokeWidth="1.4" fill="none" />
-        <circle cx="12.4" cy="-118" r="1.2" fill={BRASS} />
-        <circle cx="12.6" cy="-108" r="1.2" fill={BRASS} />
+        <circle cx="12.4" cy="-118" r="1.2" fill={look.body === 'frock' && look.accent && look.hat === 'helmet' ? look.accent : BRASS} />
+        <circle cx="12.6" cy="-108" r="1.2" fill={look.body === 'frock' && look.accent && look.hat === 'helmet' ? look.accent : BRASS} />
+        {look.body === 'jacket' && look.accent && (
+          <path d="M1 -158 L12 -156 L7 -146 Z" fill={look.accent} />
+        )}
+        {look.body === 'frock' && look.accent && look.hairStyle !== 'eli' && look.hat !== 'helmet' && (
+          <path d="M6.6 -156 L9 -155 L8.6 -140 L7 -137 L5.6 -140 Z" fill={look.accent} />
+        )}
       </g>
     );
   if (look.body === 'vest')
@@ -254,6 +556,15 @@ function Torso({ look, gradient }: { look: Look; gradient: string }) {
 }
 
 function Skirt({ look, gradient }: { look: Look; gradient: string }) {
+  if (look.body === 'dress')
+    return (
+      <g>
+        <path d="M-14.6 -101 L13.4 -101 Q19 -78 22 -50 Q0 -44 -23 -50 Q-20 -78 -14.6 -101 Z" fill={look.skirt ?? look.coatShade} />
+        <path d="M-6 -99 Q-8 -74 -10 -48 M5 -99 Q8 -74 10 -47" stroke="#000" strokeOpacity=".12" strokeWidth="1.2" fill="none" />
+      </g>
+    );
+  if (look.body === 'apron')
+    return <path d="M-2 -101 L13.6 -101 L17 -58 Q6 -55 -4 -57 Z" fill={look.skirt ?? '#5b4433'} />;
   if (look.body === 'frock')
     return (
       <path
@@ -271,6 +582,172 @@ function Skirt({ look, gradient }: { look: Look; gradient: string }) {
   return null;
 }
 
+const TALL_HATS = ['top', 'bowler', 'helmet', 'peaked', 'brim'];
+function Hair({ look }: { look: Look }) {
+  const c = look.hair;
+  switch (look.hairStyle) {
+    case 'eli':
+      return (
+        <path
+          d="M-12.5 -12 Q-16 -27 -6 -32 Q5 -37 12.6 -27.5 Q14.6 -22.5 11.4 -21.2 Q9 -25.6 5 -23.4 Q2.6 -19.4 -.6 -21.4 Q-2.2 -16.6 -5.6 -12 Q-9.2 -7.4 -12.5 -12 Z"
+          fill={c}
+        />
+      );
+    case 'reed':
+      return (
+        <g>
+          <path d="M-10.8 -9 Q-13 -16 -11.6 -22 Q-8.4 -20 -6.6 -16.6 Q-7.6 -11.6 -10.8 -9 Z" fill={c} />
+          <path d="M-6 -27.6 Q2 -31 9 -26" stroke={c} strokeOpacity=".55" strokeWidth="1.4" fill="none" />
+          <path d="M3.2 -.6 Q8.8 2.6 12.4 -3.6 Q13 -7.8 10.8 -10 Q9.4 -6.4 5 -6.2 Q1.2 -6.4 .2 -9 Q-1.6 -4 3.2 -.6 Z" fill={c} />
+        </g>
+      );
+    case 'mia':
+      return (
+        <g>
+          <circle cx="-9.6" cy="-26" r="6.2" fill={c} />
+          <path d="M-12 -11 Q-15 -26 -5 -31.6 Q6 -35 12 -25.4 Q8 -26.4 4 -24 Q-1 -22 -4.4 -17.4 Q-7.4 -11.6 -12 -11 Z" fill={c} />
+          <path d="M-10.6 -25.6 Q1 -30.6 11.6 -25.8" stroke="#3b2a22" strokeWidth="2.4" fill="none" />
+          <circle cx="7.2" cy="-27.6" r="3.2" fill="#7fb8bd" stroke={BRASS} strokeWidth="1.4" />
+        </g>
+      );
+    case 'felix':
+    case 'crop':
+      return <path d="M-12 -12 Q-14 -26 -5 -29.6 Q6 -32 12 -24.6 Q4 -26.6 -2 -23.6 Q-7 -20 -12 -12 Z" fill={c} />;
+    case 'bob':
+      return (
+        <path
+          d="M-13 -5 Q-16.5 -25 -6 -31.4 Q5.4 -35.6 12.8 -26 Q14.4 -21.6 12.2 -20.4 Q9 -24.8 3.6 -24 Q1.8 -20.6 -1.6 -22.6 Q-4.4 -20 -5.4 -14 Q-5.6 -8 -4.6 -4.2 Q-9.6 -2.6 -13 -5 Z"
+          fill={c}
+        />
+      );
+    case 'bun':
+      return (
+        <g>
+          <circle cx="-12.6" cy="-22" r="5.8" fill={c} />
+          <path d="M-12 -11 Q-14.6 -26 -5 -31 Q6 -34.6 12 -25 Q7.6 -27.4 2 -25.6 Q-3.6 -23 -6.4 -17 Q-8.4 -12 -12 -11 Z" fill={c} />
+          <path d="M-15 -24 Q-12 -20 -9 -23" stroke="#000" strokeOpacity=".2" strokeWidth=".8" fill="none" />
+        </g>
+      );
+    case 'curly':
+      return (
+        <g fill={c}>
+          {[
+            [-11, -9, 4.2],
+            [-13, -16, 4.6],
+            [-12, -24, 4.8],
+            [-6, -30, 4.8],
+            [1.6, -32, 4.4],
+            [8.4, -29, 3.8],
+            [11.6, -24, 3],
+            [-8, -18, 4],
+          ].map(([x, y, r], i) => (
+            <circle key={i} cx={x} cy={y} r={r} />
+          ))}
+        </g>
+      );
+    case 'perm':
+      return (
+        <g fill={c}>
+          {[
+            [-11.6, -12, 3.4],
+            [-13, -18.6, 3.6],
+            [-11.6, -25, 3.6],
+            [-6.6, -29.6, 3.6],
+            [-.6, -31.6, 3.4],
+            [5.4, -30.6, 3.2],
+            [10, -27, 2.8],
+            [-7.6, -21.6, 3.4],
+            [-2, -26, 3],
+          ].map(([x, y, r], i) => (
+            <circle key={i} cx={x} cy={y} r={r} />
+          ))}
+        </g>
+      );
+    case 'bald':
+      return (
+        <g>
+          <path d="M-11.8 -9 Q-14 -16 -12 -21.6 Q-8.6 -19.6 -7 -15.6 Q-8 -11 -11.8 -9 Z" fill={c} />
+          <path d="M-4 -30.6 Q2 -32.4 7 -30" stroke="#fff" strokeOpacity=".35" strokeWidth="1.6" fill="none" strokeLinecap="round" />
+        </g>
+      );
+  }
+}
+function Hat({ look }: { look: Look }) {
+  const c = look.hatColor ?? '#141519';
+  switch (look.hat) {
+    case 'top':
+      return (
+        <g>
+          <path d="M-13.5 -28.8 L14.6 -28.8 L13.4 -26.2 L-12.6 -26.2 Z" fill="#0c0c0f" />
+          <path d="M-9.6 -28.6 L-8.6 -54 L10 -54 L10.6 -28.6 Z" fill="#141519" />
+          <path d="M-9.4 -34 L10.4 -34 L10.5 -30.4 L-9.5 -30.4 Z" fill={LACQUER} />
+          <path d="M8.6 -52 L9.4 -31" stroke="#fff" strokeOpacity=".12" strokeWidth="1.2" />
+        </g>
+      );
+    case 'cap':
+      return (
+        <g>
+          <path d="M-13.4 -22 Q-12 -33 -1 -34.4 Q10 -35 14 -27.6 L20 -25.4 Q19 -23.2 13.6 -23.4 Q0 -24.6 -13.4 -22 Z" fill={c} />
+          <path d="M-6 -33.6 L4 -24.6" stroke="#000" strokeOpacity=".25" strokeWidth=".9" />
+          <circle cx="-.6" cy="-34" r="1.2" fill={c} />
+        </g>
+      );
+    case 'peaked':
+      return (
+        <g>
+          <path d="M-11.6 -26 L-12.4 -36 Q1 -40.6 14 -36.4 L13.4 -26 Z" fill={c} />
+          <path d="M-11.6 -28.4 L13.4 -28.4 L13.4 -26 L-11.6 -26 Z" fill="#000" opacity=".35" />
+          <path d="M4 -26.4 L20.4 -24.4 Q19 -21.8 13 -22.6 L4 -24 Z" fill="#0b0f18" />
+          <rect x="4" y="-34.4" width="5.4" height="4.4" rx="1" fill={look.accent ?? BRASS} />
+        </g>
+      );
+    case 'bowler':
+      return (
+        <g>
+          <path d="M-10.6 -27 Q-11 -42 1.6 -42.4 Q13.4 -42 12.6 -27 Z" fill={c} />
+          <path d="M-15 -26.4 Q1 -30.4 17 -26.6 Q16 -24.2 1 -24.6 Q-14 -24 -15 -26.4 Z" fill={c} />
+          <path d="M-10.4 -30.4 L12.6 -30.4" stroke={look.accent ?? LACQUER} strokeWidth="2" />
+        </g>
+      );
+    case 'brim':
+      return (
+        <g>
+          <path d="M-9.6 -28 Q-9 -40 2 -40 Q12.6 -40 12.4 -28 Z" fill={c} />
+          <ellipse cx="1.6" cy="-27.6" rx="21" ry="3.4" fill={c} />
+          <path d="M-9.4 -31.6 L12.4 -31.6" stroke={look.accent ?? LACQUER} strokeWidth="2.2" />
+          <circle cx="-8" cy="-32" r="2.6" fill={look.accent ?? LACQUER} />
+        </g>
+      );
+    case 'helmet':
+      return (
+        <g>
+          <path d="M-11 -24.6 Q-12 -48 1.4 -52 Q13.6 -48 13.2 -24.6 Z" fill={c} />
+          <path d="M-12.6 -25.6 L15 -25.6 L14.4 -23 L-12 -23 Z" fill="#0a0e16" />
+          <path d="M1.6 -52 L1.6 -55.4" stroke={look.accent ?? BRASS} strokeWidth="2.4" strokeLinecap="round" />
+          <path d="M5.4 -40 L7 -36.4 L10.6 -36 L8 -33.4 L8.8 -29.8 L5.4 -31.6 L2 -29.8 L2.8 -33.4 L.2 -36 L3.8 -36.4 Z" fill={look.accent ?? BRASS} />
+        </g>
+      );
+    case 'kerchief':
+      return (
+        <g>
+          <path d="M-13.4 -16 Q-15 -30 -5 -33.4 Q7 -36 13 -26 L11 -23.6 Q-1 -27.4 -13.4 -16 Z" fill={c} />
+          <path d="M-13 -19 L-19 -15 L-15.6 -22 Z" fill={c} />
+          <circle cx="-4" cy="-29" r="1" fill={BONE} opacity=".7" />
+          <circle cx="4" cy="-31" r="1" fill={BONE} opacity=".7" />
+        </g>
+      );
+    case 'headscarf':
+      return (
+        <g>
+          <path d="M-14 -8 Q-17 -28 -5 -33.6 Q8 -37 13.4 -25 L11.6 -22 Q2 -26 -4 -22 Q-9 -16 -9.6 -6 Q-12 -5 -14 -8 Z" fill={c} />
+          <path d="M-9.6 -6 Q-6 -1 -1 1.6 L-4 4.6 Q-9 2 -11 -3 Z" fill={c} />
+          <path d="M-12 -18 Q-6 -24 4 -27" stroke="#000" strokeOpacity=".18" strokeWidth="1" fill="none" />
+        </g>
+      );
+    default:
+      return null;
+  }
+}
 function Head({ look, eye }: { look: Look; eye: React.RefObject<SVGGElement | null> }) {
   return (
     <g>
@@ -284,40 +761,34 @@ function Head({ look, eye }: { look: Look; eye: React.RefObject<SVGGElement | nu
       <g ref={eye}>
         <ellipse cx="8.2" cy="-16.4" rx="1.35" ry="1.9" fill={INK} />
       </g>
-      <path d="M6 -20.6 Q8.4 -21.8 10.8 -20.8" stroke={look.hair === '#d9d6cf' ? '#b8b3a8' : look.hair} strokeWidth="1.3" fill="none" strokeLinecap="round" />
-      {look.body === 'frock' && (
-        <path
-          d="M-12.5 -12 Q-16 -27 -6 -32 Q5 -37 12.6 -27.5 Q14.6 -22.5 11.4 -21.2 Q9 -25.6 5 -23.4 Q2.6 -19.4 -.6 -21.4 Q-2.2 -16.6 -5.6 -12 Q-9.2 -7.4 -12.5 -12 Z"
-          fill={look.hair}
-        />
-      )}
-      {look.body === 'vest' && (
+      <path
+        d="M6 -20.6 Q8.4 -21.8 10.8 -20.8"
+        stroke={look.hairStyle === 'reed' || look.hairStyle === 'bald' ? '#b8b3a8' : look.hair}
+        strokeWidth={look.hairStyle === 'bald' ? 1.8 : 1.3}
+        fill="none"
+        strokeLinecap="round"
+      />
+      {look.hat !== 'headscarf' && <Hair look={look} />}
+      {look.hat === 'headscarf' && <Hair look={{ ...look, hairStyle: 'crop' }} />}
+      {look.glasses === 'round' && (
         <g>
-          <path d="M-10.8 -9 Q-13 -16 -11.6 -22 Q-8.4 -20 -6.6 -16.6 Q-7.6 -11.6 -10.8 -9 Z" fill={look.hair} />
-          <path d="M-6 -27.6 Q2 -31 9 -26" stroke={look.hair} strokeOpacity=".55" strokeWidth="1.4" fill="none" />
-          <path d="M3.2 -.6 Q8.8 2.6 12.4 -3.6 Q13 -7.8 10.8 -10 Q9.4 -6.4 5 -6.2 Q1.2 -6.4 .2 -9 Q-1.6 -4 3.2 -.6 Z" fill={look.hair} />
           <circle cx="8.6" cy="-16.2" r="3.4" fill="none" stroke={BRASS} strokeWidth="1" />
           <path d="M5.2 -16.6 L-1.8 -15.4" stroke={BRASS} strokeWidth=".9" />
         </g>
       )}
-      {look.body === 'overall' && (
+      {look.glasses === 'cateye' && (
         <g>
-          <circle cx="-9.6" cy="-26" r="6.2" fill={look.hair} />
-          <path d="M-12 -11 Q-15 -26 -5 -31.6 Q6 -35 12 -25.4 Q8 -26.4 4 -24 Q-1 -22 -4.4 -17.4 Q-7.4 -11.6 -12 -11 Z" fill={look.hair} />
-          <path d="M-10.6 -25.6 Q1 -30.6 11.6 -25.8" stroke="#3b2a22" strokeWidth="2.4" fill="none" />
-          <circle cx="7.2" cy="-27.6" r="3.2" fill="#7fb8bd" stroke={BRASS} strokeWidth="1.4" />
+          <path d="M5 -17.6 Q8 -20.6 12.6 -19.6 Q12.4 -14.6 8.6 -13.6 Q5.4 -14 5 -17.6 Z" fill="none" stroke="#2a1a1e" strokeWidth="1.1" />
+          <path d="M5 -17 L-1.8 -15.4" stroke="#2a1a1e" strokeWidth=".9" />
         </g>
+      )}
+      {look.moustache && (
+        <path d="M7.4 -9.6 Q10.6 -11.6 13.6 -9.6 Q14.6 -8 13 -8.2 Q10.6 -9.4 8 -8.2 Q6.6 -8.2 7.4 -9.6 Z" fill={look.hairStyle === 'bald' ? '#b8b3a8' : look.hair} />
       )}
       {look.body === 'tails' && (
-        <g>
-          <path d="M-12 -12 Q-14 -26 -5 -29.6 Q6 -32 12 -24.6 Q4 -26.6 -2 -23.6 Q-7 -20 -12 -12 Z" fill={look.hair} />
-          <path d="M-13.5 -28.8 L14.6 -28.8 L13.4 -26.2 L-12.6 -26.2 Z" fill="#0c0c0f" />
-          <path d="M-9.6 -28.6 L-8.6 -54 L10 -54 L10.6 -28.6 Z" fill="#141519" />
-          <path d="M-9.4 -34 L10.4 -34 L10.5 -30.4 L-9.5 -30.4 Z" fill={LACQUER} />
-          <path d="M8.6 -52 L9.4 -31" stroke="#fff" strokeOpacity=".12" strokeWidth="1.2" />
-          <path d="M8.6 -6.8 Q11.4 -8.6 13.4 -6" stroke="#2a1a14" strokeWidth=".9" fill="none" />
-        </g>
+        <path d="M8.6 -6.8 Q11.4 -8.6 13.4 -6" stroke="#2a1a14" strokeWidth=".9" fill="none" />
       )}
+      <Hat look={look} />
     </g>
   );
 }
@@ -562,8 +1033,8 @@ export function Figure({
   const scale = LOOKS[character].scale;
   const box =
     crop === 'head'
-      ? character === 'felix'
-        ? '-34 -232 68 84'
+      ? TALL_HATS.includes(LOOKS[character].hat ?? '')
+        ? `-34 ${(-176 * scale - 54).toFixed(0)} 68 84`
         : `-26 ${(-176 * scale - 32).toFixed(0)} 52 60`
       : crop === 'bust'
         ? '-40 -236 80 112'

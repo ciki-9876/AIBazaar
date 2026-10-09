@@ -1,5 +1,37 @@
 # 当前设计状态
 
+> 甩牌项目的开发规范与上手指南见 [《最后一张王牌》内容开发手册](../throw-handbook/README.md)。
+
+## 2026-10-09：甩牌第二幕「布里奇波特」
+
+**用户要求／已实装／真人试玩待验证**：
+- **内容**：主线四章（早场、街头演出、小组赛、决赛朱诺），三条支线，四个新场景，12 个新角色。
+- **系统**：演出费、霍布斯旧货铺（赢了谁就上架谁的货）、带规矩的街头演出（`DuelTerms`）、只记录实际观察数据的对手档案、冒险存档、章节选择。
+- **已知问题**：护盾 + 回血 + 飞牌的混搭箱子压制六套预设，需要做构筑空间审计。
+
+见 [ADR-0051](./decisions/ADR-0051-throw-act-two-bridgeport.md)、[第二幕开发落地](../F9_THROW_ACT2_BRIDGEPORT_2026-10-09.md)。
+
+## 2026-10-09：甩牌 v5「落幕」与牌的变种
+
+**用户提出规则／已实装／真人试玩待验证**：
+- **落幕**：第 60 秒起，双方每秒受到 1、2、3……递增的普通伤害，护盾挡，治疗抵，让存活流有赢的出口。克制环在 200 种子自动对局中仍全部成立。
+- **抽牌**：维持标准 52 张顺序抽、整副重洗。
+- **牌的变种**：每张牌有普通、稀有、史诗、传奇四档，共 6 种稀有、6 种史诗、52 种传奇，每副牌上限 8／4／3。练习场可用「牌匣」编辑；冒险里的获取方式为提案。
+
+见 [ADR-0050](./decisions/ADR-0050-throw-curtain-call-and-card-variants.md)、[牌的变种](../F9_THROW_CARD_VARIANTS_2026-10-09.md)。
+
+## 2026-10-09：甩牌 v4 克制环、第一章引导与英式文案
+
+**用户任务授权／已实装／真人试玩待验证**：
+- 四花色锁定四状态（♠盾 ♥疗 ♣毒 ♦火），闷火、净化、焦灼、烫手、毒发组成克制环，削盾与压轴接入快甩和蓄爆两套节奏打法。
+- 六套竞技卡组的 11 条声明克制在 200 种子自动对局中全部成立，各套均值 42–54%。
+- 第一章改为按剧情解锁道具：8 步第一课，资格赛需要读米娅情报、摆护盾道具来破火。
+- 全部文案改为英式幽默。
+
+见 [ADR-0049](./decisions/ADR-0049-throw-counter-wheel-and-chapter-one.md)、[卡组评估](../F9_THROW_DECK_BALANCE_V4_2026-10-09.md)、[第一章流程](../F9_THROW_CHAPTER1_ONBOARDING_2026-10-09.md)、[文案指南](../F9_THROW_VOICE_GUIDE_2026-10-09.md)。
+
+[30 小时故事大纲](../F9_THROW_STORY_OUTLINE_30H_2026-10-09.md)为提案，其中的新系统未实装。
+
 ## 2026-09-30：被取代的归途
 
 **题材已接受／具体框架待讨论／未实装**：用户认同“我被取代了”，要求持续动机、内部自洽、关系与人物弧光、实际玩法联动。见 [ADR-0024](./decisions/ADR-0024-replacement-mystery-direction.md) 和 [框架提案](../F9_REPLACEMENT_FRAMEWORK_PROPOSAL_2026-09-30.md)。本条仅推进旧探索动机提案的题材采纳状态，不代表批准行动时钟、家庭角色或恢复系统设定。
@@ -326,3 +358,6 @@
 - [ADR-0045-throw-atomic-pixel-scenes](decisions/ADR-0045-throw-atomic-pixel-scenes.md)
 - [ADR-0046-throw-editorial-illustration](decisions/ADR-0046-throw-editorial-illustration.md)（表现部分已由 ADR-0048 取代）
 - [ADR-0048-throw-limelight-vector-art](decisions/ADR-0048-throw-limelight-vector-art.md)：抛弃旧美术，全矢量「聚光与丝绒」舞台、骨骼角色与弧线飞牌
+- [ADR-0049-throw-counter-wheel-and-chapter-one](decisions/ADR-0049-throw-counter-wheel-and-chapter-one.md)：v4 花色状态克制环、第一章逐步引导、英式幽默文案（取代 ADR-0035／0037 的数值与预设，以及 ADR-0038 关于花色不锁定的建议）
+- [ADR-0050-throw-curtain-call-and-card-variants](decisions/ADR-0050-throw-curtain-call-and-card-variants.md)：v5 落幕（存活收益）、标准牌堆抽牌、四档牌的变种与牌匣
+- [ADR-0051-throw-act-two-bridgeport](decisions/ADR-0051-throw-act-two-bridgeport.md)：第二幕布里奇波特、数据化冒险引擎、演出费／旧货铺／街头演出／对手档案／存档
