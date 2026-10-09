@@ -11,6 +11,9 @@
 | `sim-proxy.mjs` | 共享的代理玩家：用和 AI 一样的函数替玩家出牌，遵守演出规矩 | — |
 | `balance-matrix.mjs [N] [--kits kits.json]` | 六套预设两两对战的胜率矩阵 + 检查每条 `beats` 声明 | N=40 约 10 分钟 |
 | `story-sim.mjs [N] [battleId …]` | 用几种「玩家此时可能带的巡演箱」打剧情对决，看难度曲线 | 每场 N=40 约 1 分钟 |
+| `card-exposure.mjs [N]` | 一张指定的牌每局进手、被甩出、落幕后被甩出的概率 | N=10 约 20 秒 |
+| `enchant-power.mjs [N]` | 每种通用附魔单独装满时对全场的胜率变化 | N=10 约 3 分钟 |
+| `relic-swap.mjs [N]` | 每套卡组换上每件遗物（和不带）对全场的胜率 | N=10 约 3 分钟 |
 
 ```bash
 node apps/throw/tools/balance-matrix.mjs 40
@@ -63,6 +66,14 @@ node apps/throw/tools/story-sim.mjs 40 pike juno show-quick
 
 - 整体优势不应超过 +30 个百分点；
 - 单独只装某一种附魔时，不应比装满混合牌匣还强（否则它就是「唯一正确答案」）。
+
+### 4.1 设计变种和遗物前先看出场率
+
+一张指定的牌每局被甩出的概率约 40%，落幕后才被甩出的概率约 2.7%（`card-exposure.mjs`）。所以：
+
+- 变种是高光，不是引擎：任何时候打出都要有价值；
+- 「落幕期间」只能当加成，不能是唯一条件；
+- 遗物验收用 `relic-swap.mjs`：专属遗物在本流派排前 2，没有遗物是 3 套以上卡组的最佳，没有遗物在所有卡组上都等于不带。
 
 ## 5. 参数扫描
 
