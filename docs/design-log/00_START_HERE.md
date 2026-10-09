@@ -1,5 +1,7 @@
 # AIBazaar 游戏设计迭代日志
 
+2026-10-09 甩牌最新修订：[ADR-0052](./decisions/ADR-0052-throw-v6-vector-stage-and-tempo.md) 统一同伴矢量舞台、归档旧剪纸／像素；对决 v6 接入 30 秒后白热、60 秒落幕加快补牌、三张顺子／同花、默认 20 秒整理与单张入门。策略、观众、商店、对白、任务反馈见 [迭代与验证](./iterations/F9/2026-10-09-throw-v6-stage-and-tempo.md)，新协作者从 [内容手册](../throw-handbook/README.md) 开始。
+
 2026-09-30：用户接受电梯主线“我被取代了”的方向，要求持续攀爬动力、自洽替身原理、真实关系冲突与玩法联动。见 [ADR-0024](./decisions/ADR-0024-replacement-mystery-direction.md)。[底层框架推演](../F9_REPLACEMENT_FRAMEWORK_PROPOSAL_2026-09-30.md)中的现实修复设施、章节行动窗口和人物例子仍为提案，未实装。
 
 2026-09-28 生存最新修订：[ADR-0023](./decisions/ADR-0023-survival-sight-brains-and-recovery.md) 实装死亡背包追回、四品质脑浆／20堆叠、怪物视野与脱战、双高度遮挡、16格背包和升级演出。取代旧的永久销毁背包、角色跟随灯和净水自动使用。

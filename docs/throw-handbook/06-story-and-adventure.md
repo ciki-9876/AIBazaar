@@ -49,6 +49,8 @@ magician-world.ts    ← 引擎：读数据、执行效果，不写任何剧情
 - `when` 只读状态，不能有副作用。
 - 热点 x 之间至少 150 单位（见 04）。
 
+- 普通热点名称只在交互范围内出现；任务图标由当前目标计算，常驻到目标完成。新任务必须同时给出本地图的目标热点或通往目标的可达出口，不能只更新文字任务栏。
+
 ## 4. 对话
 
 ### 4.1 格式
@@ -83,11 +85,13 @@ magician-world.ts    ← 引擎：读数据、执行效果，不写任何剧情
 | `{ type: 'close' }` | 关闭对话 |
 | `{ type: 'battle', battle }` | 进入对决 |
 | `{ type: 'panel', panel }` | 打开面板：`shop` / `shows` / `dossier` |
-| `{ type: 'pay', price, flag, then, poor }` | 付钱 → 设旗标 → 跳到 `then` 对话；钱不够跳到 `poor` 对话。原子操作 |
+| `{ type: 'pay', price, flag, nextDialogue, poor }` | 付钱 → 设旗标 → 跳到 `nextDialogue` 对话；钱不够跳到 `poor` 对话。原子操作 |
 
 `bridgeport.ts` 顶部有现成的选项工厂：`close()`、`fight(battleId)`、`shop`、`dossier`、`shows`。**每组选项都要有一个 `close`**，玩家永远可以走开。
 
 ### 4.4 命名
+
+对白表现固定玩家左头像、NPC 右头像，与本行说话者无关；旁白保留单独样式。人物、地点、任务等关键信息用亮黄色，新增正式名称时要进入关键字来源，长短词重合时优先匹配完整名字。正文不插入 HTML；重点仍由表现层安全渲染。
 
 对话 id 用 `角色-场合`：`stan-first`、`stan-waiting`、`stan-done`、`stan-after`。常用后缀：
 

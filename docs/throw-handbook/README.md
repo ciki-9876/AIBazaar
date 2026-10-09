@@ -1,7 +1,9 @@
 # 《最后一张王牌》内容开发手册
 
 > 适用项目：`apps/throw`（甩牌对决 + 魔术师冒险）
-> 适用版本：对决规则 `throw-duel-v5` · 冒险 `magician-adventure-v3`
+> 适用版本：对决规则 `throw-duel-v6` · 冒险 `magician-adventure-v4`
+
+当前修订见 [ADR-0052](../design-log/decisions/ADR-0052-throw-v6-vector-stage-and-tempo.md)：白热／落幕加快补牌、三张组合、默认 20 秒整理、单张入门，以及舞台／任务／对白反馈。旧剪纸与像素版已 [本机归档](../art/archives/README.md)，正式美术统一采用 SVG + CSS。v5 的历史平衡数据不能直接当作 v6 已验证结果。
 > 维护方式：规范变化时直接改这里；**设计取舍**写进 `docs/design-log/`，这里只链接，不复述。
 
 这份手册写给第一次接手《最后一张王牌》的人：策划、程序、美术、文案都适用。读完前两页就能跑起项目、看懂代码分层；之后按要做的事挑章节读。每一章都以「规则 → 做法 → 例子 → 检查清单」组织，例子取自现有代码，可以直接照抄改。
@@ -58,7 +60,8 @@ npm run test:throw:cards         # 本项目全部测试（规则、冒险、美
 | 道具 / 遗物 | 道具占格子、按出牌触发；遗物每人一件、改变全局规则 | `ITEMS` / `RELICS` |
 | 预设（preset / style） | 六套竞技卡组：快甩、护灯、余烬、回甘、青苔、星光 | `PRESETS` / `COMPETITIVE_STYLES` |
 | 克制环 | 四种状态之间的机制克制：闷火、净化、焦灼、毒发…… | `03-cards-items-variants.md` |
-| 落幕（curtain） | 第 60 秒起双方每秒受递增伤害，存活流的收益来源 | `CURTAIN_MS` |
+| 白热（heated） | 超过第 30 秒，基础补牌变为每 2 秒一次 | `HEATED_MS`、`battlePhase` |
+| 落幕（curtain） | 第 60 秒起双方每秒受递增伤害；基础补牌每 1.5 秒一次 | `CURTAIN_MS`、`battlePhase` |
 | 变种（variant / enchant） | 同一张扑克牌的附魔版本，分稀有/史诗/传奇 | `throw-enchant.ts` |
 | 牌匣（deck book） | 「哪个牌位装哪个变种」的映射 | `DeckBook` |
 | 演出规矩（terms） | 只约束玩家的出牌规则，用于街头演出 | `DuelTerms` |

@@ -54,8 +54,8 @@
 
 | 常量 | 当前值 | 什么时候升 |
 |---|---|---|
-| `RULES_VERSION`（`throw-duel.ts`） | `throw-duel-v5` | 同样的种子和输入会得出**不同结果**时：改数值、改结算顺序、加新机制 |
-| `ADVENTURE_VERSION`（`adventure-types.ts`） | `magician-adventure-v3` | 存档**结构**变化时：新增/删除旗标、新增状态字段、改字段含义 |
+| `RULES_VERSION`（`throw-duel.ts`） | `throw-duel-v6` | 同样的种子和输入会得出**不同结果**时：改数值、改结算顺序、加新机制 |
+| `ADVENTURE_VERSION`（`adventure-types.ts`） | `magician-adventure-v4` | 存档**结构**变化时：新增/删除旗标、新增状态字段、改字段含义 |
 
 升版本时同时：
 
@@ -74,6 +74,8 @@
 - 注意：旗标列表的**长度**也会校验。新增旗标 = 存档结构变化 = 升冒险版本 + 写迁移函数（把旧存档补上新旗标的默认值）。迁移只接受明确支持的旧版本，其余拒绝。
 - 写存档只在表现层（`magician-adventure.tsx` 的 effect 里），规则层不碰 `localStorage`。
 
+v4 支持从 v3 迁移：旧「三息理线盒」的 `order` 遗物引用移为 `null`，恢复后的玩家仍能使用默认整理机制。v3 原来隐式解锁的道具转入拥有列表，保留玩家已取得的历史物品；新建冒险按单张入门的顺序开放道具。对手档案与返场坐标必须完整校验，不能把外部 JSON 的嵌套字段直接当作可信状态。
+
 ## 6. 产品边界
 
 - `npm run check:boundaries` 会扫描 import：本项目不能引用 `apps/elevator`、`apps/resonance`、`apps/elevator-ai`，类型也不行。
@@ -87,7 +89,9 @@
 | 冒险行走 tick | 20 ms，每 tick 5 世界单位 | `WALK_TICK_MS`、`WALK_DISTANCE` |
 | 最大生命 / 护盾 / 力量 | 320 / 160 / 30 | `MAX_HP` / `MAX_SHIELD` / `MAX_POWER` |
 | 手牌上限 | 10（遗物可改） | `handLimit(relic)` |
-| 抽牌间隔 | 3 秒 | `drawInterval` |
+| 基础抽牌间隔 | 开场 3 秒；超过 30 秒 2 秒；60 秒起 1.5 秒 | `drawInterval`、`battlePhase` |
+| 白热开始 | 超过 30 秒，即 tick 601（30.05 秒） | `HEATED_MS`、`battlePhase` |
 | 落幕开始 | 60 秒，每秒伤害 +1 | `CURTAIN_MS`、`CURTAIN_RAMP` |
+| 默认整理冷却 | 20 秒，不需要遗物 | `REORDER_MS`、`arrangeThrow`、`reorderThrow` |
 | 总时限 | 120 秒 | `finish()` |
 | 巡演箱 | 10 格 | `BAG_CELLS` |

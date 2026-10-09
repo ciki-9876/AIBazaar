@@ -14,6 +14,7 @@
 | `lib/adventure/bridgeport.test.mjs` | 第二幕：门槛、奖励只发一次、商店原子性、完整通关 |
 | `lib/adventure/stage-art.test.mjs` | 美术约束：每个道具有图标、每个角色有骨骼、每张地图有场景、没有位图 |
 | `lib/adventure/site-path.test.mjs` | 部署路径 |
+| `app/wandeng/throw/throw-presentation.test.mjs` | 构筑提示与演出规矩；星光放映机五张门槛；实际生命伤害喝彩的严格 20% 边界 |
 
 ## 2. 写测试的规矩
 

@@ -1,0 +1,43 @@
+{
+  "archived_on": "2026-10-10",
+  "archive_path": "D:/CodexGames/backups/throw-art-archived-20261009-014516.zip",
+  "archive_bytes": 150996122,
+  "archive_sha256": "19fcbc1e09f70f1adb74aaba5de223fe9377844e4307f18a4206a0396aaf86b7",
+  "source_files": 1221,
+  "source_bytes": 160335125.0,
+  "entries_including_manifest": 1222,
+  "verified_source_and_zip_files": 1221,
+  "source_preserved": true,
+  "distributed_with_git": false,
+  "source_root": "D:/CodexGames",
+  "manifest_in_archive": "ARCHIVE-MANIFEST.json",
+  "included_roots": [
+    "apps/throw/art-source",
+    "apps/throw/godot",
+    "apps/throw/godot-pixel",
+    "apps/throw/scripts",
+    "public/art-assets/throw",
+    "apps/throw/src/app/adventure",
+    "apps/throw/src/app/art",
+    "apps/throw/src/app/wandeng/throw"
+  ],
+  "additional_contents": "Historical throw ADRs/iterations; art research and acceptance records; throw visual proof artifacts; old browser art bindings.",
+  "exclusions": [
+    ".godot",
+    ".git",
+    "node_modules",
+    "dist",
+    "build",
+    "export",
+    "exports",
+    "cache",
+    "caches",
+    ".wasm",
+    ".pck",
+    ".tmp",
+    ".log",
+    "Godot Web index.* / build-info.json"
+  ],
+  "recovery": "Obtain the archive from this machine; verify archive_sha256; extract into a separate directory; use the internal manifest to verify source files. Re-import Godot assets and rebuild Web exports if needed.",
+  "decision_on": "2026-10-09"
+}
