@@ -8,9 +8,10 @@ import {
   useState,
   type CSSProperties,
   type PointerEvent,
-  type ReactNode,
 } from 'react';
-import { Art } from '../wandeng-cards';
+import { ObjectGlyph } from '../../stage/glyphs';
+import { Figure, type RigAction, type RigId } from '../../stage/rig';
+import { CardFace } from '../../stage/card-art';
 import {
   HAND_NAMES,
   MULTIPLIERS,
@@ -42,7 +43,6 @@ import {
   captureTableGeometry,
   FlightLayer,
   makeVisualShot,
-  PokerFace,
   type TableGeometry,
   type VisualShot,
 } from './throw-motion';
@@ -53,7 +53,6 @@ import {
   type ItemPlacement,
 } from '../../../lib/cards/throw-loadout';
 import { ThrowSpectacle } from './throw-motion';
-import { CharacterSprite } from '../../adventure/character-sprite';
 
 type Session = { duel: ThrowDuel; selected: string[]; flights: VisualShot[] };
 type Action =
@@ -126,7 +125,7 @@ function PokerCard({
       disabled={enemy}
       onClick={onClick}
     >
-      <PokerFace card={card} />
+      <CardFace card={card} compact={enemy} />
     </button>
   );
 }
@@ -145,13 +144,13 @@ function Host({
   duel,
   side,
   name,
-  visual,
+  character,
 }: {
   fighter: ThrowFighter;
   duel: ThrowDuel;
   side: 0 | 1;
   name?: string;
-  visual?: ReactNode;
+  character: RigId;
 }) {
   const relic = RELICS.find((entry) => entry.id === fighter.relic);
   const badges = [
@@ -159,25 +158,36 @@ function Host({
       const item = ITEMS.find((entry) => entry.id === id)!;
       return {
         source: `item:${id}`,
+        id: item.id,
+        family: item.family,
         name: item.name,
-        tile: item.tile,
         text: item.text,
-      };
+      } as const;
     }),
     ...(relic
       ? [
           {
             source: `relic:${relic.id}`,
+            id: relic.id,
+            family: 'relic',
             name: relic.name,
-            tile: relic.tile,
             text: relic.text,
-          },
+          } as const,
         ]
       : []),
   ];
   const hit = duel.events
     .filter((event) => event.type === 'hit' && event.side !== side)
     .at(-1);
+  const launch = duel.events
+    .filter((event) => event.type === 'launch' && event.side === side)
+    .at(-1);
+  const action: RigAction =
+    hit && (!launch || hit.id > launch.id)
+      ? { kind: 'hit', id: hit.id }
+      : launch
+        ? { kind: 'throw', id: launch.id }
+        : null;
   const procs = duel.events
     .filter(
       (event) =>
@@ -195,15 +205,15 @@ function Host({
         data-burning={fighter.burn > 0}
         data-poisoned={fighter.poison > 0}
         aria-label={`${name ?? (side === 0 ? '伊莱·维尔' : '菲利克斯·克罗')}，对决角色`}
-        key={hit?.id ?? `host${side}`}
       >
-        {visual ?? (
-          <CharacterSprite
-            character={side === 0 ? 'eli' : 'felix'}
-            height={200}
-            facing={side === 0 ? 1 : -1}
-          />
-        )}
+        <span className="tp-host-light" aria-hidden="true" />
+        <Figure
+          character={character}
+          height={236}
+          facing={side === 0 ? 1 : -1}
+          stance="duel"
+          action={action}
+        />
       </div>
       <div className="tp-host-kit">
         {badges.map((badge) => {
@@ -219,14 +229,13 @@ function Host({
             <span
               key={`${badge.source}/${event?.id ?? 0}`}
               title={`${badge.name}：${badge.text}`}
-              className={`${badge.source.startsWith('relic:') ? 'tp-relic-badge' : ''} ${event && duel.tick - event.tick < 14 ? 'tp-badge-proc' : ''}`}
+              className={`${badge.family === 'relic' ? 'tp-relic-badge' : ''} ${event && duel.tick - event.tick < 14 ? 'tp-badge-proc' : ''}`}
               data-effect-source={badge.source}
             >
-              <Art tile={badge.tile} />
+              <ObjectGlyph id={badge.id} family={badge.family} />
             </span>
           );
         })}
-        <small>{relic ? relic.name : '未携遗物'}</small>
       </div>
       <div className="tp-proc-row">
         {procs.map((event) => (
@@ -332,7 +341,7 @@ type ThrowTableProps = {
   challenge?: { enemyStyle: Style; seed: number; title: string };
   initialLoadout?: PreparedThrowLoadout;
   hostNames?: readonly [string, string];
-  hostVisuals?: readonly [ReactNode, ReactNode];
+  hosts?: readonly [RigId, RigId];
   onReturn?: (
     winner: ThrowDuel['winner'],
     loadout: PreparedThrowLoadout,
@@ -342,7 +351,7 @@ export default function ThrowTable({
   challenge,
   initialLoadout,
   hostNames,
-  hostVisuals,
+  hosts = ['eli', 'felix'],
   onReturn,
 }: ThrowTableProps = {}) {
   const [phase, setPhase] = useState<'prepare' | 'battle'>('prepare');
@@ -825,14 +834,14 @@ export default function ThrowTable({
               duel={duel}
               side={1}
               name={hostNames?.[1]}
-              visual={hostVisuals?.[1]}
+              character={hosts[1]}
             />
             <Host
               fighter={player}
               duel={duel}
               side={0}
               name={hostNames?.[0]}
-              visual={hostVisuals?.[0]}
+              character={hosts[0]}
             />
             <ThrowSpectacle duel={duel} />
             {lastHits.map((event) => (

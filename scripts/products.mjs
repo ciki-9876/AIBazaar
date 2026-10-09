@@ -13,7 +13,8 @@ export const PRODUCTS = {
   throw: {
     title: '最后一张王牌 · 魔术师之旅',
     home: 'app/page.tsx',
-    assets: ['fonts', 'art-assets/wandeng', 'art-assets/throw'],
+    // All throw art is drawn in code (apps/throw/src/app/stage); no bitmap assets.
+    assets: [],
   },
 };
 

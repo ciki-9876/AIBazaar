@@ -31,10 +31,9 @@ import {
 import ThrowTable, {
   type PreparedThrowLoadout,
 } from '../wandeng/throw/throw-table';
-import { CharacterSprite } from './character-sprite';
-import { EditorialScene } from './editorial-scene';
-import { EditorialIcon } from './editorial-icons';
-import type { EditorialArtMode } from './editorial-scene-renderer';
+import { Figure, type RigId } from '../stage/rig';
+import { StageScene } from '../stage/stage-scene';
+import { SuitMark } from '../stage/card-art';
 
 type Action =
   | { type: 'walk'; direction: -1 | 0 | 1; ticks: number }
@@ -73,17 +72,26 @@ const route = [
   ['05', '世界大剧院', '世界冠军赛'],
 ] as const;
 
-export default function MagicianAdventure({
-  artMode = 'raster',
-}: {
-  artMode?: EditorialArtMode;
-}) {
+const MapIcon = () => (
+  <svg viewBox="0 0 20 20" aria-hidden="true" className="rg-icon">
+    <path d="M2 5l5-2 6 2 5-2v12l-5 2-6-2-5 2z M7 3v12 M13 5v12" />
+  </svg>
+);
+const CardsIcon = () => (
+  <svg viewBox="0 0 20 20" aria-hidden="true" className="rg-icon">
+    <rect x="3" y="4" width="9" height="13" rx="1.5" transform="rotate(-10 7 10)" />
+    <rect x="8" y="3" width="9" height="13" rx="1.5" transform="rotate(8 12 9)" />
+  </svg>
+);
+
+export default function MagicianAdventure() {
   const [state, dispatch] = useReducer(reducer, 1024, createAdventure);
   const [mapOpen, setMapOpen] = useState(false);
   const [loadout, setLoadout] = useState<PreparedThrowLoadout | undefined>();
   const [motion, setMotion] = useState<-1 | 0 | 1>(0);
   const [viewport, setViewport] = useState({ width: 1280, height: 640 });
   const viewportRef = useRef<HTMLDivElement>(null);
+  const worldRef = useRef<HTMLDivElement>(null);
   const modalRef = useRef<HTMLDialogElement>(null);
   const keys = useRef(new Set<string>());
   const touchDirection = useRef<-1 | 0 | 1>(0);
@@ -278,15 +286,6 @@ export default function MagicianAdventure({
     directionRef.current = direction;
     setMotion(direction);
   };
-  // Illustrations scale smoothly; world geometry and deterministic walking remain unchanged.
-  const scale = Math.max(0.4, viewport.height / 720);
-  const visibleWidth = viewport.width / scale;
-  const cameraX = Math.max(
-    0,
-    Math.min(map.width - visibleWidth, state.player.x - visibleWidth * 0.42),
-  );
-  const centerOffset = Math.max(0, (visibleWidth - map.width) / 2);
-  const sceneOffsetY = (viewport.height - 720 * scale) / 2;
   const targetOnMap =
     state.map === 'workshop' && !state.flags.trained
       ? 'reed'
@@ -310,21 +309,7 @@ export default function MagicianAdventure({
           }}
           hostNames={['伊莱', CHARACTERS[opponent].name]}
           initialLoadout={loadout}
-          hostVisuals={[
-            <CharacterSprite
-              key="eli"
-              character="eli"
-              height={200}
-              artMode={artMode}
-            />,
-            <CharacterSprite
-              key={opponent}
-              character={opponent}
-              height={200}
-              facing={-1}
-              artMode={artMode}
-            />,
-          ]}
+          hosts={['eli', opponent]}
           onReturn={(winner, nextLoadout) => {
             setLoadout(nextLoadout);
             dispatch(
@@ -342,10 +327,12 @@ export default function MagicianAdventure({
     <main className="rg-root">
       <header className="rg-header">
         <div className="rg-wordmark">
-          <span className="rg-brand-mark">♠</span>
+          <svg viewBox="0 0 100 100" className="rg-brand-mark" aria-hidden="true">
+            <SuitMark suit={0} size={64} x={50} y={52} color="currentColor" />
+          </svg>
           <div>
-            <span>THE LAST ACE</span>
             <h1>最后一张王牌</h1>
+            <span lang="en">The Last Ace</span>
           </div>
         </div>
         <div className="rg-chapter">
@@ -357,35 +344,27 @@ export default function MagicianAdventure({
             onClick={() => setMapOpen(true)}
             disabled={state.mode !== 'explore'}
           >
-            <EditorialIcon name="map" /> 地图 <kbd>M</kbd>
+            <MapIcon /> 地图 <kbd>M</kbd>
           </button>
           <Link href={sitePath('/wandeng/throw')}>
-            <EditorialIcon name="cards" /> 练习场
+            <CardsIcon /> 练习场
           </Link>
-          {artMode === 'vector' && (
-            <Link href={sitePath('/art/vector')}>SVG 对照</Link>
-          )}
         </nav>
       </header>
 
       <div
         className="rg-viewport"
         ref={viewportRef}
-        data-art-style="editorial"
-        data-art-medium={artMode}
-        data-scene-scale={scale}
+        data-art-style="limelight"
         aria-label={`${map.name}，伊莱所在位置 ${Math.round(state.player.x)}`}
       >
         <div
+          key={state.map}
           className="rg-world"
-          style={{
-            width: map.width,
-            height: map.height,
-            transform: `translate(${(centerOffset - cameraX) * scale}px, ${sceneOffsetY - map.cameraY * scale}px) scale(${scale})`,
-          }}
+          ref={worldRef}
+          style={{ width: map.width, height: map.height }}
         >
-          <EditorialScene
-            artMode={artMode}
+          <StageScene
             mapId={state.map}
             playerX={state.player.x}
             facing={state.player.facing}
@@ -397,7 +376,9 @@ export default function MagicianAdventure({
                 ? state.player.x > 48
                 : state.player.x < map.width - 48)
             }
-            tick={state.tick}
+            viewport={viewport}
+            worldRef={worldRef}
+            spotlight={state.flags.ticket ? 1 : state.flags.trained ? 0.45 : 0.12}
           />
           {map.hotspots.map((spot) => (
             <div
@@ -411,9 +392,7 @@ export default function MagicianAdventure({
                 disabled={state.mode !== 'explore' || mapOpen}
                 aria-label={`${nearby?.id !== spot.id ? '步行至' : spot.kind === 'door' ? '进入' : '交互'}${spot.label}`}
               >
-                {spot.id === targetOnMap && (
-                  <span className="rg-quest-diamond">◆</span>
-                )}
+                {spot.id === targetOnMap && <span className="rg-quest-diamond" />}
                 <span>{spot.label}</span>
                 {nearby?.id === spot.id && <kbd>E</kbd>}
               </button>
@@ -431,8 +410,8 @@ export default function MagicianAdventure({
         {state.mode === 'explore' && (
           <div className="rg-objective">
             <div className="rg-objective-portrait">
-              <CharacterSprite
-                artMode={artMode}
+              <Figure
+                crop="head"
                 character={
                   !state.flags.trained
                     ? 'reed'
@@ -440,7 +419,7 @@ export default function MagicianAdventure({
                       ? 'felix'
                       : 'eli'
                 }
-                height={120}
+                height={84}
               />
             </div>
             <div>
@@ -451,7 +430,10 @@ export default function MagicianAdventure({
         )}
         {state.flags.ticket && state.mode === 'explore' && (
           <div className="rg-pass">
-            <span>♠</span> 格雷维克参赛证
+            <svg viewBox="0 0 100 100" aria-hidden="true">
+              <SuitMark suit={0} size={70} x={50} y={50} color="currentColor" />
+            </svg>
+            格雷维克参赛证
           </div>
         )}
         {state.mode === 'explore' && !mapOpen && nearby && (
@@ -477,15 +459,18 @@ export default function MagicianAdventure({
             aria-modal="true"
             aria-label={CHARACTERS[line.speaker].name}
           >
-            <div className="rg-dialogue-portrait">
-              <span className="rg-portrait-suit">♠</span>
-              {line.speaker !== 'narrator' && (
-                <CharacterSprite
-                  artMode={artMode}
-                  character={line.speaker}
-                  height={300}
-                  facing={1}
+            <div className="rg-dialogue-portrait" data-speaker={line.speaker}>
+              {line.speaker !== 'narrator' ? (
+                <Figure
+                  key={line.speaker}
+                  crop="bust"
+                  character={line.speaker as RigId}
+                  height={188}
                 />
+              ) : (
+                <svg viewBox="0 0 100 100" className="rg-portrait-suit" aria-hidden="true">
+                  <SuitMark suit={0} size={56} x={50} y={50} color="currentColor" />
+                </svg>
               )}
             </div>
             <div className="rg-dialogue-content">
@@ -546,8 +531,8 @@ export default function MagicianAdventure({
           >
             <div className="rg-map-heading">
               <div>
-                <span>THE GRAND TOUR</span>
                 <h2>从这条街，到世界舞台。</h2>
+                <span>巡回赛路线</span>
               </div>
               <button aria-label="关闭地图" onClick={() => setMapOpen(false)}>
                 ×
@@ -606,8 +591,10 @@ export default function MagicianAdventure({
             aria-modal="true"
             aria-label="第一幕完成"
           >
-            <span className="rg-complete-suit">♠</span>
-            <span className="rg-eyebrow">ACT I / COMPLETE</span>
+            <svg viewBox="0 0 100 100" className="rg-complete-suit" aria-hidden="true">
+              <SuitMark suit={0} size={70} x={50} y={50} color="currentColor" />
+            </svg>
+            <span className="rg-eyebrow">第一幕 完</span>
             <h2>
               第一张节目单，
               <br />

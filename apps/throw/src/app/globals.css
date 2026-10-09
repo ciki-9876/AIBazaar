@@ -1,70 +1,49 @@
-@import 'tailwindcss';
-@import 'tw-animate-css';
-@import 'shadcn/tailwind.css';
-@custom-variant dark (&:is(.dark *));
-/* Use installed book faces; Chinese text falls back to a smooth local font. */
-@font-face {
-  font-family: 'Ace Editorial';
-  src: local('Georgia');
-  font-weight: 400;
-  font-style: normal;
-  font-display: swap;
-}
-@font-face {
-  font-family: 'Ace Editorial';
-  src: local('Georgia Bold');
-  font-weight: 700 900;
-  font-style: normal;
-  font-display: swap;
-}
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --color-card: var(--card);
-  --color-card-foreground: var(--foreground);
-  --color-popover: var(--popover);
-  --color-popover-foreground: var(--foreground);
-  --color-primary: var(--primary);
-  --color-primary-foreground: #fff0d4;
-  --color-secondary: var(--secondary);
-  --color-secondary-foreground: var(--foreground);
-  --color-muted: var(--muted);
-  --color-muted-foreground: var(--muted-foreground);
-  --color-accent: var(--accent);
-  --color-accent-foreground: var(--foreground);
-  --color-destructive: #aa5545;
-  --color-border: var(--border);
-  --color-input: var(--border);
-  --color-ring: var(--primary);
-  --radius-lg: 5px;
-  --radius-md: 4px;
-  --radius-sm: 3px;
-}
-:root,
-.dark {
-  --font-ace-editorial:
-    'Ace Editorial', Georgia, 'Microsoft YaHei', 'PingFang SC', sans-serif;
-  --background: #f4e2c1;
-  --foreground: #343c3b;
-  --card: #fbe9cb;
-  --popover: #fff0d8;
-  --primary: #496f62;
-  --secondary: #e5d3b0;
-  --muted: #e9ddbf;
-  --muted-foreground: #7c786a;
-  --accent: #c89b43;
-  --border: #aaa28a;
-  --radius: 4px;
-}
+@import './stage/stage.css';
+
 * {
   box-sizing: border-box;
 }
+html,
 body {
   margin: 0;
-  background: var(--background);
-  color: var(--foreground);
-  font: 14px var(--font-ace-editorial);
+  min-height: 100%;
+}
+body {
+  background: var(--ink);
+  color: var(--bone);
+  font: 15px/1.55 var(--font-ui);
   -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+}
+button,
+input,
+select {
+  font: inherit;
+  color: inherit;
+}
+button {
+  cursor: pointer;
+}
+button:disabled {
+  cursor: default;
+}
+:focus-visible {
+  outline: 2px solid var(--verdigris-light);
+  outline-offset: 2px;
+}
+kbd {
+  display: inline-grid;
+  place-items: center;
+  min-width: 1.6em;
+  height: 1.6em;
+  padding: 0 0.35em;
+  border: 1px solid rgba(239, 231, 214, 0.28);
+  border-bottom-width: 2px;
+  border-radius: 4px;
+  font: 600 0.72em/1 var(--font-ui);
+  color: var(--bone-dim);
+  background: rgba(239, 231, 214, 0.04);
 }
 @media (prefers-reduced-motion: reduce) {
   *,

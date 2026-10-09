@@ -7,7 +7,6 @@ import { walk } from './module-graph.mjs';
 const legacyCollation = new Map([
   ['lib/arena-engine.ts', 3],
   ['apps/resonance/src/lib/arena-engine.ts', 3],
-  ['apps/throw/src/lib/arena-engine.ts', 3],
   ['lib/arena-challenge.ts', 1],
   ['lib/arena-presentation.ts', 1],
   ['lib/survival-room.ts', 1],
