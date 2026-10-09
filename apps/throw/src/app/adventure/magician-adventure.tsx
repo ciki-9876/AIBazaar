@@ -12,33 +12,51 @@ import Link from 'next/link';
 import { sitePath } from '../../lib/site-path';
 import {
   abandonAdventureBattle,
+  ACTS,
   advanceDialogue,
   adventureObjective,
+  battleSetup,
+  buyOffer,
   CHARACTERS,
   chooseDialogue,
+  closePanel,
   createAdventure,
   DIALOGUES,
   finishAdventureBattle,
   interactAdventure,
   keepExploring,
   MAPS,
+  narratorFor,
   nearbyHotspot,
+  restoreAdventure,
+  SAVE_KEY,
+  serializeAdventure,
+  startShow,
   STARTER_ITEMS,
-  unlockedKit,
+  travelOn,
+  visibleHotspots,
   walkAdventure,
   WALK_TICK_MS,
   type AdventureState,
-  type ChoiceId,
+  type CharacterId,
+  type ShowId,
 } from '../../lib/adventure/magician-world';
 import ThrowTable, {
   type PreparedThrowLoadout,
 } from '../wandeng/throw/throw-table';
-import { packThrowItems } from '../../lib/cards/throw-loadout';
+import { packThrowItems, validThrowLayout, type ItemId, type RelicId } from '../../lib/cards/throw-loadout';
+import { DossierPanel, Fee, ShopPanel, ShowsPanel } from './adventure-panels';
 
 const STARTER_LOADOUT: PreparedThrowLoadout = {
   style: 'quick',
   layout: packThrowItems(STARTER_ITEMS),
   relic: 'order',
+};
+/** Arriving in Bridgeport without a remembered trunk: Graywick's full kit, packed sensibly. */
+const BRIDGEPORT_LOADOUT: PreparedThrowLoadout = {
+  style: 'guard',
+  layout: packThrowItems(['pair', 'umbrella', 'ward', 'mend', 'wash', 'quick']),
+  relic: 'bastion',
 };
 import { Figure, type RigId } from '../stage/rig';
 import { StageScene } from '../stage/stage-scene';
@@ -48,11 +66,16 @@ type Action =
   | { type: 'walk'; direction: -1 | 0 | 1; ticks: number }
   | { type: 'interact'; id?: string }
   | { type: 'advance' }
-  | { type: 'choice'; id: ChoiceId }
-  | { type: 'result'; id: number; winner: 0 | 1 | 'draw' }
+  | { type: 'choice'; id: string }
+  | { type: 'result'; id: number; winner: 0 | 1 | 'draw'; report?: { suits: number[]; kinds: number[] } }
   | { type: 'abandon' }
   | { type: 'explore' }
-  | { type: 'restart' };
+  | { type: 'travel' }
+  | { type: 'panel-close' }
+  | { type: 'buy'; id: string }
+  | { type: 'show'; id: ShowId }
+  | { type: 'load'; state: AdventureState }
+  | { type: 'restart'; act?: 1 | 2 };
 function reducer(state: AdventureState, action: Action): AdventureState {
   switch (action.type) {
     case 'walk':
@@ -64,13 +87,23 @@ function reducer(state: AdventureState, action: Action): AdventureState {
     case 'choice':
       return chooseDialogue(state, action.id);
     case 'result':
-      return finishAdventureBattle(state, action.id, action.winner);
+      return finishAdventureBattle(state, action.id, action.winner, action.report);
     case 'abandon':
       return abandonAdventureBattle(state);
     case 'explore':
       return keepExploring(state);
+    case 'travel':
+      return travelOn(state);
+    case 'panel-close':
+      return closePanel(state);
+    case 'buy':
+      return buyOffer(state, action.id);
+    case 'show':
+      return startShow(state, action.id);
+    case 'load':
+      return action.state;
     case 'restart':
-      return createAdventure(state.seed);
+      return createAdventure(state.seed, action.act ?? 1);
   }
 }
 const route = [
@@ -80,6 +113,29 @@ const route = [
   ['04', '奥罗拉', '都会大师赛'],
   ['05', '世界大剧院', '世界冠军赛'],
 ] as const;
+/** Who to show beside the objective: the person the objective points at. */
+function objectivePortrait(state: AdventureState, target: string): RigId {
+  for (const map of Object.values(MAPS)) {
+    const spot = map.hotspots.find((entry) => entry.id === target && entry.character);
+    if (spot?.character) return spot.character as RigId;
+  }
+  if (state.act === 1) return !state.flags.trained ? 'reed' : !state.flags.ticket ? 'felix' : 'eli';
+  return target.startsWith('thursday') ? 'doris' : target === 'busk-stage' ? 'juno' : target === 'bp-bus' ? 'stan' : 'eli';
+}
+/** Fit a remembered trunk to what this duel allows: unknown items and relics drop out. */
+function fitLoadout(
+  loadout: PreparedThrowLoadout,
+  available: { items: ItemId[]; relics: RelicId[] },
+  forced?: { items: ItemId[]; relic: RelicId | null },
+): PreparedThrowLoadout {
+  if (forced) return { style: 'poison', layout: packThrowItems(forced.items), relic: forced.relic, book: loadout.book };
+  const layout = loadout.layout.filter((entry) => available.items.includes(entry.id));
+  return {
+    ...loadout,
+    layout: validThrowLayout(layout) ? layout : packThrowItems(layout.map((entry) => entry.id)),
+    relic: loadout.relic && available.relics.includes(loadout.relic) ? loadout.relic : (available.relics[0] ?? null),
+  };
+}
 
 const MapIcon = () => (
   <svg viewBox="0 0 20 20" aria-hidden="true" className="rg-icon">
@@ -96,6 +152,8 @@ const CardsIcon = () => (
 export default function MagicianAdventure() {
   const [state, dispatch] = useReducer(reducer, 1024, createAdventure);
   const [mapOpen, setMapOpen] = useState(false);
+  const [dossierOpen, setDossierOpen] = useState(false);
+  const loaded = useRef(false);
   const [loadout, setLoadout] = useState<PreparedThrowLoadout | undefined>();
   const [motion, setMotion] = useState<-1 | 0 | 1>(0);
   const [viewport, setViewport] = useState({ width: 1280, height: 640 });
@@ -110,9 +168,35 @@ export default function MagicianAdventure() {
   useLayoutEffect(() => {
     playerXRef.current = state.player.x;
   }, [state.player.x]);
+  // Saves: restore once on mount, then keep the latest state (no clocks in the envelope).
+  useEffect(() => {
+    try {
+      const raw = window.localStorage.getItem(SAVE_KEY);
+      const restored = raw ? restoreAdventure(raw) : null;
+      if (restored) {
+        dispatch({ type: 'load', state: restored.state });
+        const saved = restored.envelope.loadout as PreparedThrowLoadout | undefined;
+        if (saved && Array.isArray(saved.layout) && validThrowLayout(saved.layout)) setLoadout(saved);
+      }
+    } catch {
+      // Storage may be unavailable (private mode); the story simply starts fresh.
+    }
+    loaded.current = true;
+  }, []);
+  useEffect(() => {
+    if (!loaded.current) return;
+    try {
+      window.localStorage.setItem(SAVE_KEY, serializeAdventure(state, loadout ? { loadout } : {}));
+    } catch {
+      // Ignore quota or privacy errors; progress then lasts for this visit only.
+    }
+  }, [state, loadout]);
   const map = MAPS[state.map];
+  const act = ACTS[state.act - 1];
+  const spots = visibleHotspots(state);
   const objective = adventureObjective(state);
   const nearby = nearbyHotspot(state);
+  const speaker = (id: CharacterId) => (id === 'narrator' ? narratorFor(state.act) : CHARACTERS[id]);
   const dialogue = state.dialogue ? DIALOGUES[state.dialogue.id] : null;
   const line =
     state.dialogue && dialogue ? dialogue.lines[state.dialogue.step] : null;
@@ -122,7 +206,7 @@ export default function MagicianAdventure() {
       : null;
   const inBattle = state.mode === 'battle';
   const modalOpen =
-    state.mode === 'dialogue' || state.mode === 'complete' || mapOpen;
+    state.mode === 'dialogue' || state.mode === 'complete' || state.mode === 'panel' || mapOpen || dossierOpen;
 
   const refreshMotion = () => {
     destinationRef.current = null;
@@ -173,7 +257,7 @@ export default function MagicianAdventure() {
       if (previous instanceof HTMLElement && previous.isConnected)
         previous.focus({ preventScroll: true });
     };
-  }, [modalOpen, state.dialogue?.id, state.dialogue?.step, mapOpen]);
+  }, [modalOpen, state.dialogue?.id, state.dialogue?.step, mapOpen, state.panel, dossierOpen]);
   useEffect(() => {
     const stop = () => {
       keys.current.clear();
@@ -204,9 +288,11 @@ export default function MagicianAdventure() {
       }
       if (event.code === 'Escape') {
         setMapOpen(false);
+        setDossierOpen(false);
+        if (state.mode === 'panel') dispatch({ type: 'panel-close' });
         return;
       }
-      if (mapOpen) return;
+      if (mapOpen || dossierOpen || state.mode === 'panel') return;
       // Leave focused buttons to their native Enter action, avoiding two dialogue advances.
       if (
         event.code === 'Enter' &&
@@ -235,7 +321,7 @@ export default function MagicianAdventure() {
       document.removeEventListener('visibilitychange', stop);
       stop();
     };
-  }, [state.mode, state.map, mapOpen]);
+  }, [state.mode, state.map, mapOpen, dossierOpen]);
   useEffect(() => {
     if (state.mode !== 'explore' || mapOpen) return;
     let frame = 0,
@@ -287,7 +373,7 @@ export default function MagicianAdventure() {
       dispatch({ type: 'interact', id });
       return;
     }
-    const spot = map.hotspots.find((candidate) => candidate.id === id);
+    const spot = spots.find((candidate) => candidate.id === id);
     const targetX =
       spot?.kind === 'npc' ? x + (state.player.x < x ? -104 : 104) : x;
     destinationRef.current = Math.max(48, Math.min(map.width - 48, targetX));
@@ -301,9 +387,10 @@ export default function MagicianAdventure() {
       : state.map === 'theatre' && !state.flags.ticket
         ? 'felix'
         : objective.target;
-  if (state.mode === 'battle' && state.battle) {
+  const setup = state.mode === 'battle' ? battleSetup(state) : null;
+  if (state.mode === 'battle' && state.battle && setup) {
     const battle = state.battle;
-    const opponent = battle.kind === 'practice' ? 'reed' : 'felix';
+    const opponent = setup.opponent as RigId;
     return (
       <div className="rg-duel">
         <ThrowTable
@@ -311,22 +398,27 @@ export default function MagicianAdventure() {
           challenge={{
             enemyStyle: battle.enemyStyle,
             seed: battle.seed,
-            title:
-              battle.kind === 'practice'
-                ? '里德的练习对决'
-                : '抒情剧院 · 资格挑战',
+            title: setup.title,
+            enemyItems: setup.enemyItems,
+            enemyRelic: setup.enemyRelic,
+            enemyBook: setup.enemyBook,
+            terms: setup.terms,
+            rule: setup.rule,
           }}
-          hostNames={['伊莱', CHARACTERS[opponent].name]}
-          initialLoadout={loadout ?? STARTER_LOADOUT}
+          hostNames={['伊莱', CHARACTERS[setup.opponent].name]}
+          initialLoadout={fitLoadout(loadout ?? (state.act > 1 ? BRIDGEPORT_LOADOUT : STARTER_LOADOUT), setup.available, setup.forced)}
           hosts={['eli', opponent]}
-          available={unlockedKit(state)}
+          available={{ ...setup.available, ...(state.act > 1 ? { variants: setup.variants } : {}) }}
           coach={battle.coach}
-          onReturn={(winner, nextLoadout) => {
-            setLoadout(nextLoadout);
+          tip={setup.tip && battle.kind !== 'qualifier' ? setup.tip : undefined}
+          onReturn={(winner, nextLoadout, report) => {
+            // A borrowed trunk goes back to its owner; keep your own.
+            if (!setup.forced) setLoadout(nextLoadout);
+            else if (loadout) setLoadout({ ...loadout, book: nextLoadout.book });
             dispatch(
               winner === null
                 ? { type: 'abandon' }
-                : { type: 'result', id: battle.id, winner },
+                : { type: 'result', id: battle.id, winner, report },
             );
           }}
         />
@@ -347,10 +439,16 @@ export default function MagicianAdventure() {
           </div>
         </div>
         <div className="rg-chapter">
-          <span>第一幕</span>
-          <strong>让他们记住你的名字</strong>
+          <span>{act.number}</span>
+          <strong>{act.title}</strong>
         </div>
         <nav aria-label="游戏菜单">
+          {state.act > 1 && <Fee value={state.fee} />}
+          {state.act > 1 && (
+            <button onClick={() => setDossierOpen(true)} disabled={state.mode !== 'explore' || !state.flags.metDodd}>
+              档案
+            </button>
+          )}
           <button
             onClick={() => setMapOpen(true)}
             disabled={state.mode !== 'explore'}
@@ -389,9 +487,10 @@ export default function MagicianAdventure() {
             }
             viewport={viewport}
             worldRef={worldRef}
-            spotlight={state.flags.ticket ? 1 : state.flags.trained ? 0.45 : 0.12}
+            spotlight={state.act > 1 || state.flags.ticket ? 1 : state.flags.trained ? 0.45 : 0.12}
+            hotspots={spots}
           />
-          {map.hotspots.map((spot) => (
+          {spots.map((spot) => (
             <div
               key={spot.id}
               className={`rg-hotspot rg-hotspot-${spot.kind} ${nearby?.id === spot.id ? 'is-near' : ''}`}
@@ -401,7 +500,7 @@ export default function MagicianAdventure() {
                 className="rg-hotspot-label"
                 onClick={() => approach(spot.id, spot.x)}
                 disabled={state.mode !== 'explore' || mapOpen}
-                aria-label={`${nearby?.id !== spot.id ? '步行至' : spot.kind === 'door' ? '进入' : '交互'}${spot.label}`}
+                aria-label={`${nearby?.id !== spot.id ? '步行至' : spot.kind === 'door' ? '进入' : spot.kind === 'pickup' ? '查看' : '交互'}${spot.label}`}
               >
                 {spot.id === targetOnMap && <span className="rg-quest-diamond" />}
                 <span>{spot.label}</span>
@@ -421,17 +520,7 @@ export default function MagicianAdventure() {
         {state.mode === 'explore' && (
           <div className="rg-objective">
             <div className="rg-objective-portrait">
-              <Figure
-                crop="head"
-                character={
-                  !state.flags.trained
-                    ? 'reed'
-                    : !state.flags.ticket
-                      ? 'felix'
-                      : 'eli'
-                }
-                height={84}
-              />
+              <Figure crop="head" character={objectivePortrait(state, objective.target)} height={84} />
             </div>
             <div>
               <strong>{objective.title}</strong>
@@ -467,12 +556,24 @@ export default function MagicianAdventure() {
             )}
           </div>
         )}
+        {state.act === 2 && state.mode === 'explore' && !mapOpen && !state.flags.metDoris && (
+          <div className="rg-coach" role="status">
+            <span>
+              右上角是<b>演出费</b>：赢比赛、街头演出都会进账，在霍布斯旧货铺花掉。
+            </span>
+            <small>进度会自动保存在这台设备上。</small>
+          </div>
+        )}
         {state.flags.ticket && state.mode === 'explore' && (
           <div className="rg-pass">
             <svg viewBox="0 0 100 100" aria-hidden="true">
-              <SuitMark suit={0} size={70} x={50} y={50} color="currentColor" />
+              <SuitMark suit={state.flags.champion ? 1 : 0} size={70} x={50} y={50} color="currentColor" />
             </svg>
-            格雷维克参赛证
+            {state.flags.champion
+              ? '布里奇波特公开赛冠军'
+              : state.act > 1 && state.won.includes('ada') && state.won.includes('bea')
+                ? '布里奇波特公开赛资格'
+                : '格雷维克参赛证'}
           </div>
         )}
         {state.mode === 'explore' && !mapOpen && nearby && (
@@ -485,7 +586,11 @@ export default function MagicianAdventure() {
               ? '进入'
               : nearby.kind === 'npc'
                 ? '交谈'
-                : '启程'}{' '}
+                : nearby.kind === 'pickup'
+                  ? '查看'
+                  : nearby.kind === 'board'
+                    ? '看看'
+                    : '启程'}{' '}
             · {nearby.label}
           </button>
         )}
@@ -494,9 +599,9 @@ export default function MagicianAdventure() {
           <dialog
             ref={modalRef}
             open
-            className={`rg-dialogue ${state.dialogue.id === 'opening' ? 'rg-opening' : ''}`}
+            className={`rg-dialogue ${state.dialogue.id === 'opening' || state.dialogue.id === 'bp-arrival' ? 'rg-opening' : ''}`}
             aria-modal="true"
-            aria-label={CHARACTERS[line.speaker].name}
+            aria-label={speaker(line.speaker).name}
           >
             <div className="rg-dialogue-portrait" data-speaker={line.speaker}>
               {line.speaker !== 'narrator' ? (
@@ -514,8 +619,8 @@ export default function MagicianAdventure() {
             </div>
             <div className="rg-dialogue-content">
               <div className="rg-speaker">
-                <strong>{CHARACTERS[line.speaker].name}</strong>
-                <span>{CHARACTERS[line.speaker].role}</span>
+                <strong>{speaker(line.speaker).name}</strong>
+                <span>{speaker(line.speaker).role}</span>
               </div>
               <p key={`${state.dialogue.id}-${state.dialogue.step}`}>
                 {line.text}
@@ -547,9 +652,11 @@ export default function MagicianAdventure() {
                       {state.dialogue.step === dialogue.lines.length - 1
                         ? state.dialogue.id === 'opening'
                           ? '走进格雷维克'
-                          : state.dialogue.id === 'departure'
-                            ? '启程'
-                            : '继续旅程'
+                          : state.dialogue.id === 'bp-arrival'
+                            ? '走进布里奇波特'
+                            : state.dialogue.id === 'departure' || state.dialogue.id === 'bp-departure'
+                              ? '启程'
+                              : '继续旅程'
                         : '继续'}{' '}
                       <kbd>↵</kbd>
                     </button>
@@ -579,25 +686,18 @@ export default function MagicianAdventure() {
             </div>
             <div className="rg-district-map">
               <div className="rg-map-streetline" />
-              {MAPS.street.hotspots.map((spot) => (
-                <div
-                  key={spot.id}
-                  style={{ left: `${(spot.x / MAPS.street.width) * 100}%` }}
-                >
-                  <span>
-                    {spot.kind === 'door'
-                      ? '▥'
-                      : spot.kind === 'bus'
-                        ? '▰'
-                        : '♦'}
-                  </span>
-                  <strong>{spot.label}</strong>
-                </div>
-              ))}
+              {MAPS[act.start].hotspots
+                .filter((spot) => spot.kind !== 'pickup')
+                .map((spot) => (
+                  <div key={spot.id} style={{ left: `${(spot.x / MAPS[act.start].width) * 100}%` }}>
+                    <span>{spot.kind === 'door' ? '▥' : spot.kind === 'bus' ? '▰' : spot.kind === 'board' ? '★' : '♦'}</span>
+                    <strong>{spot.label}</strong>
+                  </div>
+                ))}
               <i
                 className="rg-map-you"
                 style={{
-                  left: `${((state.map === 'street' ? state.player.x : state.map === 'workshop' ? 485 : 1340) / MAPS.street.width) * 100}%`,
+                  left: `${((state.map === act.start ? state.player.x : (MAPS[act.start].hotspots.find((spot) => spot.target === state.map)?.x ?? 0)) / MAPS[act.start].width) * 100}%`,
                 }}
               >
                 你
@@ -605,11 +705,23 @@ export default function MagicianAdventure() {
             </div>
             <div className="rg-tour-route">
               {route.map(([number, name, event], index) => (
-                <div key={number} className={index === 0 ? 'is-current' : ''}>
+                <div key={number} className={index === state.act - 1 ? 'is-current' : index < state.act - 1 ? 'is-done' : ''}>
                   <span>{number}</span>
                   <strong>{name}</strong>
                   <small>{event}</small>
-                  {index > 0 && <em>尚未开放 · 司机说快了</em>}
+                  {index >= ACTS.length && <em>尚未开放 · 司机说快了</em>}
+                  {index < ACTS.length && index !== state.act - 1 && (
+                    <button
+                      className="rg-chapter-jump"
+                      onClick={() => {
+                        setMapOpen(false);
+                        setLoadout(undefined);
+                        dispatch({ type: 'restart', act: (index + 1) as 1 | 2 });
+                      }}
+                    >
+                      从这一幕重新开始
+                    </button>
+                  )}
                 </div>
               ))}
             </div>
@@ -622,30 +734,66 @@ export default function MagicianAdventure() {
           </dialog>
         )}
 
+        {state.mode === 'panel' && state.panel === 'shop' && (
+          <ShopPanel state={state} modalRef={modalRef} onBuy={(id) => dispatch({ type: 'buy', id })} onClose={() => dispatch({ type: 'panel-close' })} />
+        )}
+        {state.mode === 'panel' && state.panel === 'shows' && (
+          <ShowsPanel state={state} modalRef={modalRef} onStart={(id) => dispatch({ type: 'show', id })} onClose={() => dispatch({ type: 'panel-close' })} />
+        )}
+        {((state.mode === 'panel' && state.panel === 'dossier') || dossierOpen) && (
+          <DossierPanel
+            state={state}
+            modalRef={modalRef}
+            onClose={() => {
+              setDossierOpen(false);
+              dispatch({ type: 'panel-close' });
+            }}
+          />
+        )}
+
         {state.mode === 'complete' && (
           <dialog
             ref={modalRef}
             open
             className="rg-complete"
             aria-modal="true"
-            aria-label="第一幕完成"
+            aria-label={`${act.number}完成`}
           >
             <svg viewBox="0 0 100 100" className="rg-complete-suit" aria-hidden="true">
-              <SuitMark suit={0} size={70} x={50} y={50} color="currentColor" />
+              <SuitMark suit={state.act === 1 ? 0 : 1} size={70} x={50} y={50} color="currentColor" />
             </svg>
-            <span className="rg-eyebrow">第一幕 完</span>
-            <h2>
-              第一张节目单，
-              <br />
-              写着你的名字。
-            </h2>
-            <p>伊莱·维尔 · 格雷维克资格赛优胜</p>
-            <div className="rg-ticket-art">
-              <b>BRIDGEPORT</b>
-              <span>下一站 · 布里奇波特公开赛</span>
-              <i>♠ ♦ ♣ ♥</i>
-            </div>
-            <small>第一幕到此为止。第二幕正在排练——演员还在找自己的帽子。</small>
+            <span className="rg-eyebrow">{act.number} 完</span>
+            {state.act === 1 ? (
+              <>
+                <h2>
+                  第一张节目单，
+                  <br />
+                  写着你的名字。
+                </h2>
+                <p>伊莱·维尔 · 格雷维克资格赛优胜</p>
+                <div className="rg-ticket-art">
+                  <b>BRIDGEPORT</b>
+                  <span>下一站 · 布里奇波特公开赛</span>
+                  <i>♠ ♦ ♣ ♥</i>
+                </div>
+                <small>巴士已经在门口了。司机说他“顺便”想去布里奇波特看看那里的厕所。</small>
+              </>
+            ) : (
+              <>
+                <h2>
+                  这一次，
+                  <br />
+                  观众自己买了票。
+                </h2>
+                <p>伊莱·维尔 · 布里奇波特公开赛冠军 · 演出费 {state.fee}</p>
+                <div className="rg-ticket-art">
+                  <b>WESTPORT</b>
+                  <span>下一站 · 韦斯特港职业赛</span>
+                  <i>♠ ♦ ♣ ♥</i>
+                </div>
+                <small>第二幕到此为止。第三幕正在排练——韦斯特港的海鸥还在跟导演谈片酬。</small>
+              </>
+            )}
             <div>
               <button
                 className="rg-secondary"
@@ -656,12 +804,14 @@ export default function MagicianAdventure() {
               >
                 重新启幕
               </button>
-              <button
-                className="rg-primary"
-                onClick={() => dispatch({ type: 'explore' })}
-              >
+              <button className={state.act === 1 ? 'rg-secondary' : 'rg-primary'} onClick={() => dispatch({ type: 'explore' })}>
                 留在小镇
               </button>
+              {state.act === 1 && (
+                <button className="rg-primary" onClick={() => dispatch({ type: 'travel' })}>
+                  前往布里奇波特 <span>→</span>
+                </button>
+              )}
             </div>
           </dialog>
         )}

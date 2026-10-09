@@ -30,11 +30,14 @@ export const bookCounts = (book: DeckBook) => {
  */
 export function DeckCase({
   book,
+  owned,
   onBook,
   onClose,
   tap,
 }: {
   book: DeckBook;
+  /** Story mode: only these variants (`${suit}-${rank}:${id}`) may be used. */
+  owned?: readonly string[];
   onBook: (book: DeckBook) => void;
   onClose: () => void;
   tap: () => void;
@@ -67,7 +70,11 @@ export function DeckCase({
       <header>
         <div>
           <h2 id="tp-deckcase-title">牌匣</h2>
-          <p>一副 52 张，每个牌位放一个变种。练习场里所有变种都借给你——别告诉里德。</p>
+          <p>
+            {owned
+              ? `一副 52 张，每个牌位放一个变种。你已收集 ${owned.length} 个变种；白牌永远可用。`
+              : '一副 52 张，每个牌位放一个变种。练习场里所有变种都借给你——别告诉里德。'}
+          </p>
         </div>
         <ul className="tp-deckcase-limits" aria-label="附魔上限">
           {LIMITED.map((rarity) => (
@@ -112,7 +119,9 @@ export function DeckCase({
             {rankText(focus.rank)} 的变种
           </h3>
           <ul>
-            {variantsFor(focus.suit, focus.rank).map((enchant) => {
+            {variantsFor(focus.suit, focus.rank)
+              .filter((enchant) => !owned || !enchant || owned.includes(`${key}:${enchant.id}`))
+              .map((enchant) => {
               const id = enchant?.id ?? null;
               const rarity: Rarity = enchant?.rarity ?? 'common';
               const active = (current ?? null) === id;
@@ -135,6 +144,9 @@ export function DeckCase({
               );
             })}
           </ul>
+          {owned && !owned.some((entry) => entry.startsWith(`${key}:`)) && (
+            <p className="tp-deckcase-empty">这张牌还没有收集到变种。街头演出、旧货铺和强敌手里都有。</p>
+          )}
         </aside>
       </div>
       <footer>

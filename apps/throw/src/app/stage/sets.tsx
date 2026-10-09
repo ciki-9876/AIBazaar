@@ -22,7 +22,7 @@ export type ScenePart = { depth: number; node: ReactNode };
  * the fraction of the camera move it follows; each becomes its own GPU layer.
  */
 
-function Skyline({ seed, base, top, color, width, windows, from = 0 }: {
+export function Skyline({ seed, base, top, color, width, windows, from = 0 }: {
   seed: number;
   base: number;
   top: [number, number];

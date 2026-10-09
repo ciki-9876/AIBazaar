@@ -139,7 +139,27 @@ export type ThrowFighter = {
   throws: number;
   hits: number;
   echo: number;
+  /** What this side actually threw: cards per suit and throws per poker kind (dossiers). */
+  tally: { suits: [number, number, number, number]; kinds: number[] };
 };
+/**
+ * Optional house terms for a challenge duel (street shows). They bind the
+ * player (side 0) only: illegal throws are refused whole, and breaking a
+ * deadline or HP floor ends the duel as a loss. Absent terms change nothing.
+ */
+export type DuelTerms = {
+  /** Suits the player may throw. */
+  suits?: Suit[];
+  /** Most cards per throw. */
+  maxCards?: number;
+  /** Fewest cards per throw. */
+  minCards?: number;
+  /** The player must win before this much duel time has passed. */
+  deadlineMs?: number;
+  /** The player loses as soon as their life drops below this. */
+  hpFloor?: number;
+};
+export type EndReason = 'knockout' | 'time' | 'deadline' | 'floor';
 export type ThrowDuel = {
   rules: typeof RULES_VERSION;
   seed: number;
@@ -157,7 +177,17 @@ export type ThrowDuel = {
   };
   status: 'playing' | 'ended';
   winner: Side | 'draw' | null;
+  terms: DuelTerms | null;
+  endReason: EndReason | null;
 };
+/** Whether the player may throw these cards under the duel's terms. */
+export function termsAllow(terms: DuelTerms | null | undefined, cards: readonly PlayingCard[]) {
+  if (!terms) return true;
+  if (terms.maxCards !== undefined && cards.length > terms.maxCards) return false;
+  if (terms.minCards !== undefined && cards.length < terms.minCards) return false;
+  if (terms.suits && cards.some((card) => !terms.suits!.includes(card.suit))) return false;
+  return true;
+}
 
 /** How long each build's AI deliberates between throws. */
 export const AI_THINK_MS: Record<Style, number> = {
@@ -275,6 +305,7 @@ export function createThrowDuel(
   enemyRelic: RelicId | null = PRESETS[aiStyle]?.relic ?? null,
   playerLayout?: ItemPlacement[],
   books: { player?: DeckBook; enemy?: DeckBook } = {},
+  options: { enemyItems?: ItemId[]; terms?: DuelTerms } = {},
 ): ThrowDuel {
   if (!Number.isSafeInteger(seed) || seed < 0 || seed > 0xffffffff)
     throw new Error('Seed must be uint32');
@@ -297,6 +328,29 @@ export function createThrowDuel(
     enemyBook = books.enemy ?? {};
   if (!validDeckBook(playerBook) || !validDeckBook(enemyBook))
     throw new Error('Invalid deck book');
+  const enemyItems = options.enemyItems ?? PRESETS[aiStyle].items;
+  if (
+    new Set(enemyItems).size !== enemyItems.length ||
+    enemyItems.some((id) => !ITEMS.some((item) => item.id === id))
+  )
+    throw new Error('Invalid opponent loadout');
+  const enemyLayout = packThrowItems(enemyItems);
+  if (
+    !validThrowLayout(enemyLayout) ||
+    enemyLayout.length !== enemyItems.length ||
+    new Set(enemyItems).size !== enemyItems.length
+  )
+    throw new Error('Invalid opponent loadout');
+  const terms = options.terms ? structuredClone(options.terms) : null;
+  if (
+    terms &&
+    ((terms.suits && (!terms.suits.length || terms.suits.some((suit) => ![0, 1, 2, 3].includes(suit)))) ||
+      (terms.maxCards !== undefined && !(Number.isInteger(terms.maxCards) && terms.maxCards >= 1)) ||
+      (terms.minCards !== undefined && !(Number.isInteger(terms.minCards) && terms.minCards >= 1 && terms.minCards <= 5)) ||
+      (terms.deadlineMs !== undefined && !(Number.isInteger(terms.deadlineMs) && terms.deadlineMs > 0)) ||
+      (terms.hpFloor !== undefined && !(Number.isInteger(terms.hpFloor) && terms.hpFloor > 0 && terms.hpFloor <= MAX_HP)))
+  )
+    throw new Error('Invalid duel terms');
   const make = (
     side: Side,
     bag: ItemPlacement[],
@@ -325,6 +379,7 @@ export function createThrowDuel(
     throws: 0,
     hits: 0,
     echo: 0,
+    tally: { suits: [0, 0, 0, 0], kinds: [0, 0, 0, 0, 0, 0, 0, 0, 0] },
   });
   const state: ThrowDuel = {
     rules: RULES_VERSION,
@@ -332,7 +387,7 @@ export function createThrowDuel(
     tick: 0,
     fighters: [
       make(0, layout, relic, playerBook),
-      make(1, packThrowItems(PRESETS[aiStyle].items), enemyRelic, enemyBook),
+      make(1, enemyLayout, enemyRelic, enemyBook),
     ],
     shots: [],
     events: [],
@@ -346,6 +401,8 @@ export function createThrowDuel(
     },
     status: 'playing',
     winner: null,
+    terms,
+    endReason: null,
   };
   for (let i = 0; i < 5; i++) {
     draw(state, 0);
@@ -612,8 +669,9 @@ function launchMutable(state: ThrowDuel, side: Side, ids: string[]) {
     ids.some((id) => !fighter.hand.some((card) => card.uid === id))
   )
     return false;
-  const cards = fighter.hand.filter((card) => ids.includes(card.uid)),
-    score = previewThrow(cards, fighter.items, {
+  const cards = fighter.hand.filter((card) => ids.includes(card.uid));
+  if (side === 0 && !termsAllow(state.terms, cards)) return false;
+  const score = previewThrow(cards, fighter.items, {
       ...fighter,
       tick: state.tick,
       target: state.fighters[side === 0 ? 1 : 0],
@@ -657,6 +715,8 @@ function launchMutable(state: ThrowDuel, side: Side, ids: string[]) {
   }
   fighter.throws++;
   fighter.echo = 0;
+  for (const card of cards) fighter.tally.suits[card.suit]++;
+  fighter.tally.kinds[score.kind]++;
   for (const effect of score.effects)
     if (effect.kind !== 'wound') effectEvent(state, side, effect);
   fighter.poison = Math.max(0, fighter.poison - score.cleansePoison);
@@ -866,13 +926,21 @@ function loseHealth(
 }
 function finish(state: ThrowDuel) {
   const [player, enemy] = state.fighters;
-  if (player.hp === 0 || enemy.hp === 0 || state.tick >= ticks(120000)) {
+  const end = (winner: Side | 'draw', reason: EndReason) => {
     state.status = 'ended';
-    state.winner =
-      player.hp === enemy.hp ? 'draw' : player.hp > enemy.hp ? 0 : 1;
+    state.winner = winner;
+    state.endReason = reason;
     state.shots = [];
     return true;
-  }
+  };
+  if (player.hp === 0 || enemy.hp === 0)
+    return end(player.hp === enemy.hp ? 'draw' : player.hp > enemy.hp ? 0 : 1, 'knockout');
+  // House terms (challenge duels only): breaking them is a loss, decided before the clock.
+  const terms = state.terms;
+  if (terms?.hpFloor !== undefined && player.hp < terms.hpFloor) return end(1, 'floor');
+  if (terms?.deadlineMs !== undefined && state.tick >= ticks(terms.deadlineMs)) return end(1, 'deadline');
+  if (state.tick >= ticks(120000))
+    return end(player.hp === enemy.hp ? 'draw' : player.hp > enemy.hp ? 0 : 1, 'time');
   return false;
 }
 /** Advance one tick in place. Simulation tools may call this on their own copy. */

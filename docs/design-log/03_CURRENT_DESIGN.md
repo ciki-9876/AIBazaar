@@ -1,5 +1,14 @@
 # 当前设计状态
 
+## 2026-10-09：甩牌第二幕「布里奇波特」
+
+**用户要求／已实装／真人试玩待验证**：
+- **内容**：主线四章（早场、街头演出、小组赛、决赛朱诺），三条支线，四个新场景，12 个新角色。
+- **系统**：演出费、霍布斯旧货铺（赢了谁就上架谁的货）、带规矩的街头演出（`DuelTerms`）、只记录实际观察数据的对手档案、冒险存档、章节选择。
+- **已知问题**：护盾 + 回血 + 飞牌的混搭箱子压制六套预设，需要做构筑空间审计。
+
+见 [ADR-0051](./decisions/ADR-0051-throw-act-two-bridgeport.md)、[第二幕开发落地](../F9_THROW_ACT2_BRIDGEPORT_2026-10-09.md)。
+
 ## 2026-10-09：甩牌 v5「落幕」与牌的变种
 
 **用户提出规则／已实装／真人试玩待验证**：
@@ -349,3 +358,4 @@
 - [ADR-0048-throw-limelight-vector-art](decisions/ADR-0048-throw-limelight-vector-art.md)：抛弃旧美术，全矢量「聚光与丝绒」舞台、骨骼角色与弧线飞牌
 - [ADR-0049-throw-counter-wheel-and-chapter-one](decisions/ADR-0049-throw-counter-wheel-and-chapter-one.md)：v4 花色状态克制环、第一章逐步引导、英式幽默文案（取代 ADR-0035／0037 的数值与预设，以及 ADR-0038 关于花色不锁定的建议）
 - [ADR-0050-throw-curtain-call-and-card-variants](decisions/ADR-0050-throw-curtain-call-and-card-variants.md)：v5 落幕（存活收益）、标准牌堆抽牌、四档牌的变种与牌匣
+- [ADR-0051-throw-act-two-bridgeport](decisions/ADR-0051-throw-act-two-bridgeport.md)：第二幕布里奇波特、数据化冒险引擎、演出费／旧货铺／街头演出／对手档案／存档

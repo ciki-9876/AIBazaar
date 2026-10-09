@@ -1474,3 +1474,21 @@ button:disabled {
     animation: none;
   }
 }
+
+/* Street-show house rules */
+.tp-house-rule {
+  display: block;
+  margin: 4px 0 0;
+  font-style: normal;
+  font-size: 12px;
+  color: var(--brass);
+  letter-spacing: 0.04em;
+}
+.tp-house-rule.tp-warning {
+  color: #ff8f7e;
+}
+.tp-deckcase-empty {
+  margin: 10px 0 0;
+  font-size: 12px;
+  color: var(--bone-dim);
+}

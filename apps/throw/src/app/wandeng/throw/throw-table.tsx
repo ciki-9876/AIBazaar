@@ -34,6 +34,8 @@ import {
   TICK_MS,
   CURTAIN_MS,
   curtainDamage,
+  termsAllow,
+  type DuelTerms,
   type ItemId,
   type RelicId,
   type Style,
@@ -355,16 +357,36 @@ export type PreparedThrowLoadout = {
   book?: DeckBook;
 };
 type ThrowTableProps = {
-  challenge?: { enemyStyle: Style; seed: number; title: string };
+  challenge?: {
+    enemyStyle: Style;
+    seed: number;
+    title: string;
+    /** Story opponents may carry their own kit, relic and card variants. */
+    enemyItems?: ItemId[];
+    enemyRelic?: RelicId | null;
+    enemyBook?: DeckBook;
+    /** House rules for street shows; `rule` is their plain-language line. */
+    terms?: DuelTerms;
+    rule?: string;
+  };
   initialLoadout?: PreparedThrowLoadout;
   hostNames?: readonly [string, string];
   hosts?: readonly [RigId, RigId];
   /** Items and relics the story has handed over so far; omitted means everything. */
-  available?: { items: readonly ItemId[]; relics: readonly RelicId[] };
+  available?: {
+    items: readonly ItemId[];
+    relics: readonly RelicId[];
+    /** Owned card variants (`${suit}-${rank}:${enchant}`); enables the deck case. */
+    variants?: readonly string[];
+  };
   coach?: CoachScript | null;
+  /** Advice shown above the workbench; overrides the coach's default line. */
+  tip?: string;
   onReturn?: (
     winner: ThrowDuel['winner'],
     loadout: PreparedThrowLoadout,
+    /** What the opponent actually threw, for the dossier. */
+    report?: { suits: number[]; kinds: number[] },
   ) => void;
 };
 export default function ThrowTable({
@@ -374,6 +396,7 @@ export default function ThrowTable({
   hosts = ['eli', 'felix'],
   available,
   coach: coachScript = null,
+  tip: tipOverride,
   onReturn,
 }: ThrowTableProps = {}) {
   const [phase, setPhase] = useState<'prepare' | 'battle'>('prepare');
@@ -440,12 +463,14 @@ export default function ThrowTable({
   );
   const coach = useCoach(coachScript, duel, picked, phase === 'battle' && duel.status === 'playing');
   const clockStopped = paused || rules || coach.holding;
+  const termsOk = termsAllow(duel.terms, picked);
   const launchReady =
     phase === 'battle' &&
     !paused &&
     !rules &&
     duel.status === 'playing' &&
     picked.length > 0 &&
+    termsOk &&
     duel.tick >= duel.nextLaunch[0];
   const orderKey = player.hand.map((card) => card.uid).join('|');
   const selectionKey = selected.join('|');
@@ -589,14 +614,20 @@ export default function ThrowTable({
   const start = () => {
     const value = Number(seed);
     if (!Number.isSafeInteger(value) || value < 0 || value > 0xffffffff) return;
+    // In the story, only variants the hero owns go into the deck.
+    const owned = available?.variants ? new Set(available.variants) : null;
+    const playerBook = owned
+      ? Object.fromEntries(Object.entries(book).filter(([key, id]) => owned.has(`${key}:${id}`)))
+      : book;
     const next = createThrowDuel(
       value,
       equipped,
       enemyStyle,
       relic,
-      PRESETS[enemyStyle].relic,
+      challenge?.enemyRelic !== undefined ? challenge.enemyRelic : PRESETS[enemyStyle].relic,
       layout,
-      { player: book },
+      { player: playerBook, enemy: challenge?.enemyBook },
+      { enemyItems: challenge?.enemyItems, terms: challenge?.terms },
     );
     soundCursor.current = next.nextId - 1;
     resultSound.current = false;
@@ -699,12 +730,16 @@ export default function ThrowTable({
       1000
     ).toFixed(1);
   const returnToScene = () =>
-    onReturn?.(duel.status === 'ended' ? duel.winner : null, {
-      style,
-      relic,
-      layout: layout.map((entry) => ({ ...entry })),
-      book: { ...book },
-    });
+    onReturn?.(
+      duel.status === 'ended' ? duel.winner : null,
+      {
+        style,
+        relic,
+        layout: layout.map((entry) => ({ ...entry })),
+        book: { ...book },
+      },
+      duel.status === 'ended' ? { suits: [...enemy.tally.suits], kinds: [...enemy.tally.kinds] } : undefined,
+    );
   return (
     <main
       className="tp-root"
@@ -754,11 +789,12 @@ export default function ThrowTable({
               onStyle={setStyle}
               available={available}
               tip={
-                coachScript === 'qualifier'
+                tipOverride ??
+                (coachScript === 'qualifier'
                   ? '米娅的建议：菲利克斯打火。把补丁旧伞、守灯小毯放进巡演箱（拖进格子，或点道具自动放入），开打后多出对子和黑桃。'
                   : coachScript === 'lesson'
                     ? '第一课只用入门三件：双响茶壶、飞牌修缮箱、催信闹钟。直接点「开始对战」就好。'
-                    : undefined
+                    : undefined)
               }
               tap={() => unlockSound().tap()}
             />
@@ -766,6 +802,7 @@ export default function ThrowTable({
               {challenge ? (
                 <div className="tp-start-options">
                   {hostNames?.[1]} · {PRESETS[enemyStyle].name}
+                  {challenge.rule && <em className="tp-house-rule">规矩：{challenge.rule}</em>}
                 </div>
               ) : (
                 <div className="tp-start-options">
@@ -796,7 +833,7 @@ export default function ThrowTable({
                   </label>
                 </div>
               )}
-              {!available && (
+              {(!available || Boolean(available.variants?.length)) && (
                 <button
                   className="tp-deckcase-open"
                   onClick={() => {
@@ -817,6 +854,7 @@ export default function ThrowTable({
               {deckOpen && (
                 <DeckCase
                   book={book}
+                  owned={available?.variants}
                   onBook={setBook}
                   onClose={() => setDeckOpen(false)}
                   tap={() => unlockSound().tap()}
@@ -963,6 +1001,8 @@ export default function ThrowTable({
                     ]
                   }
                 </p>
+                {duel.endReason === 'deadline' && <p className="tp-house-rule">时间到：没能在规定时间内获胜。</p>}
+                {duel.endReason === 'floor' && <p className="tp-house-rule">生命跌破了规矩定的底线。</p>}
                 <p>
                   命中 {player.hits} 次 · 用时 {((duel.tick * TICK_MS) / 1000).toFixed(1)} 秒
                 </p>
@@ -1135,6 +1175,12 @@ export default function ThrowTable({
                     : ''}
                 </p>
               </div>
+              {duel.terms && (
+                <p className={`tp-house-rule ${picked.length && !termsOk ? 'tp-warning' : ''}`}>
+                  {picked.length && !termsOk ? '这手牌不合今天的规矩。' : '规矩：'}
+                  {challenge?.rule}
+                </p>
+              )}
               <button
                 className="tp-primary tp-fire"
                 disabled={!launchReady}

@@ -1,16 +1,21 @@
 'use client';
 
 import { useLayoutEffect, useMemo, useRef, type ReactNode, type RefObject } from 'react';
-import { MAPS, type MapId } from '../../lib/adventure/magician-world';
+import { MAPS, type Hotspot, type MapId } from '../../lib/adventure/magician-world';
 import { Rig, type RigId } from './rig';
 import { SharedDefs } from './scene-kit';
 import { StreetSet, TheatreSet, WorkshopSet, type ScenePart } from './sets';
+import { BridgeportSet, CuriosSet, GooseSet, ThursdaySet } from './sets-bridgeport';
 import { approach, subscribeFrame } from './ticker';
 
 const SETS: Record<MapId, () => ScenePart[]> = {
   street: StreetSet,
   workshop: WorkshopSet,
   theatre: TheatreSet,
+  bridgeport: BridgeportSet,
+  goose: GooseSet,
+  curios: CuriosSet,
+  thursday: ThursdaySet,
 };
 export const VIEW_HEIGHT = 720;
 /** Adults stand 154 world units tall in the walkable world: doors read at ~1.35×. */
@@ -29,8 +34,11 @@ export function StageScene({
   viewport,
   worldRef,
   spotlight,
+  hotspots,
 }: {
   mapId: MapId;
+  /** The people present right now; defaults to everyone on the map. */
+  hotspots?: readonly Hotspot[];
   playerX: number;
   facing: -1 | 1;
   walking: boolean;
@@ -83,7 +91,7 @@ export function StageScene({
     return subscribeFrame((_time, delta) => paint(delta));
   }, [map, worldRef]);
 
-  const npcs = map.hotspots.filter((spot) => spot.kind === 'npc' && spot.character);
+  const npcs = (hotspots ?? map.hotspots).filter((spot) => spot.kind === 'npc' && spot.character);
   const plane = (depth: number, children: ReactNode, key: string | number, className = 'st-plane') => (
     <svg
       key={key}
