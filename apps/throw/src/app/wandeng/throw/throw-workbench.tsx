@@ -1,7 +1,7 @@
 'use client';
 import { useEffect, useRef, useState } from 'react';
 import InventoryDrag from '../../../../../../packages/ui/inventory-drag';
-import { Art } from '../wandeng-cards';
+import { ObjectGlyph } from '../../stage/glyphs';
 import {
   ITEMS,
   RELICS,
@@ -94,14 +94,14 @@ function RelicPicker({
               setDraft(entry.id);
             }}
           >
-            <Art tile={entry.tile} />
+            <ObjectGlyph id={entry.id} family="relic" />
             <strong>{entry.name}</strong>
             <small>{equipped === entry.id ? '已装备' : '\u00a0'}</small>
           </button>
         ))}
       </div>
       <div className="tp-relic-preview">
-        <Art tile={selected.tile} />
+        <ObjectGlyph id={selected.id} family="relic" />
         <div>
           <h3>{selected.name}</h3>
           <p>{selected.text}</p>
@@ -207,7 +207,7 @@ export default function ThrowWorkbench({
         const item = itemDefinition(source.id as ItemId);
         return (
           <>
-            <Art tile={item.tile} />
+            <ObjectGlyph id={item.id} family={item.family} />
             <strong>{item.name}</strong>
             <small>{valid ? `${item.size}格` : '无法放置'}</small>
           </>
@@ -296,7 +296,7 @@ export default function ThrowWorkbench({
                   setError('');
                 }}
               >
-                <Art tile={item.tile} />
+                <ObjectGlyph id={item.id} family={item.family} />
                 <small>{item.size}格</small>
                 <b>{item.name}</b>
               </button>
@@ -314,7 +314,7 @@ export default function ThrowWorkbench({
         >
           <small>遗物</small>
           {currentRelic ? (
-            <Art tile={currentRelic.tile} />
+            <ObjectGlyph id={currentRelic.id} family="relic" />
           ) : (
             <span className="tp-relic-empty">＋</span>
           )}
@@ -397,7 +397,7 @@ export default function ThrowWorkbench({
                   } else place(item.id);
                 }}
               >
-                <Art tile={item.tile} />
+                <ObjectGlyph id={item.id} family={item.family} />
                 <span>
                   <small>
                     {item.tag} · {item.size}格

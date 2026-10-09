@@ -1,17 +1,13 @@
 'use client';
 import { useLayoutEffect, useRef, type CSSProperties } from 'react';
 import {
-  rankText,
-  SUITS,
-  type PlayingCard,
-} from '../../../lib/cards/throw-poker';
-import {
   TICK_MS,
   ITEMS,
   type Shot,
   type ThrowDuel,
 } from '../../../lib/cards/throw-duel';
-import { Art } from '../wandeng-cards';
+import { CardFace } from '../../stage/card-art';
+import { ObjectGlyph } from '../../stage/glyphs';
 
 export type CardRect = { x: number; y: number; width: number; height: number };
 export type TableGeometry = {
@@ -57,24 +53,40 @@ export function makeVisualShot(
     target: geometry.hosts[shot.side === 0 ? 1 : 0],
   };
 }
-export function PokerFace({ card }: { card: PlayingCard }) {
-  const suitColor = card.suit % 2 ? 'tp-suit-red' : 'tp-suit-black';
-  return (
-    <>
-      <span className="tp-corner">
-        <b>{rankText(card.rank)}</b>
-        <i className={suitColor}>{SUITS[card.suit]}</i>
-      </span>
-      <span className="tp-corner tp-corner-bottom" aria-hidden="true">
-        <b>{rankText(card.rank)}</b>
-        <i className={suitColor}>{SUITS[card.suit]}</i>
-      </span>
-      <span className={`tp-suit ${suitColor}`}>{SUITS[card.suit]}</span>
-      <span className="tp-points" aria-hidden="true">
-        {card.rank}
-      </span>
-    </>
-  );
+/** Sample a thrown card along a lifted quadratic arc with a flick spin. */
+function flightFrames(
+  from: CardRect,
+  target: CardRect,
+  index: number,
+  count: number,
+  side: 0 | 1,
+  reduced: boolean,
+) {
+  const dx = target.x + target.width / 2 - from.x - from.width / 2;
+  const dy = target.y + target.height * 0.42 - from.y - from.height / 2;
+  const spread = (index - (count - 1) / 2) * 14;
+  const lift = reduced ? 0 : -Math.min(260, 90 + Math.abs(dx) * 0.22) + Math.abs(spread) * 0.6;
+  const cx = dx * 0.45 + spread * 2.2;
+  const cy = Math.min(0, dy) + lift;
+  const direction = Math.sign(dx) || (side === 0 ? 1 : -1);
+  const spin = reduced ? 0 : direction * (300 + (index % 3) * 60);
+  const frames: Keyframe[] = [];
+  const steps = reduced ? 1 : 14;
+  for (let i = 0; i <= steps; i++) {
+    const t = i / steps;
+    const u = 1 - t;
+    const x = 2 * u * t * cx + t * t * dx;
+    const y = 2 * u * t * cy + t * t * dy;
+    // Ease the spin: quick release, settling into the target.
+    const turn = spin * (1 - Math.pow(1 - t, 2.2));
+    const scale = 1 - 0.5 * t + 0.12 * Math.sin(t * Math.PI);
+    frames.push({
+      transform: `translate(${x.toFixed(1)}px, ${y.toFixed(1)}px) rotate(${turn.toFixed(1)}deg) scale(${scale.toFixed(3)})`,
+      opacity: t > 0.94 ? 0.2 : 1,
+      offset: t,
+    });
+  }
+  return frames;
 }
 function FlyingCard({
   flight,
@@ -85,77 +97,75 @@ function FlyingCard({
   index: number;
   paused: boolean;
 }) {
-  const element = useRef<HTMLDivElement>(null);
-  const animation = useRef<Animation | null>(null);
+  const card = useRef<HTMLDivElement>(null);
+  const trail = useRef<HTMLDivElement>(null);
+  const animations = useRef<Animation[]>([]);
   const origin = flight.origins[index],
-    card = flight.shot.cards[index];
+    playing = flight.shot.cards[index];
   useLayoutEffect(() => {
-    const node = element.current;
-    if (!node) return;
-    const from = flight.origins[index],
-      target = flight.target;
-    const dx = target.x + target.width / 2 - from.x - from.width / 2;
-    const dy = target.y + target.height / 2 - from.y - from.height / 2;
-    const reduced = window.matchMedia(
-      '(prefers-reduced-motion: reduce)',
-    ).matches;
-    const drift = (index - (flight.shot.cards.length - 1) / 2) * 9;
-    const direction = Math.sign(dx) || (flight.shot.side === 0 ? 1 : -1);
-    const tilt = reduced ? 0 : drift * 1.2;
-    const delay = reduced ? 0 : index * 5;
-    animation.current = node.animate(
-      [
-        {
-          transform: 'translate(0,0) rotate(0deg) scale(1)',
-          opacity: 1,
-          offset: 0,
-        },
-        {
-          transform: `translate(${dx * 0.2}px,${dy * 0.24 - 38 - Math.abs(drift) * 0.5}px) rotate(${direction * 22 + tilt}deg) scale(.92)`,
-          opacity: 1,
-          offset: 0.2,
-        },
-        {
-          transform: `translate(${dx}px,${dy}px) rotate(${tilt * 0.3}deg) scale(.34)`,
-          opacity: 1,
-          offset: 1,
-        },
-      ],
-      {
-        duration:
-          (flight.shot.hitTick - flight.shot.startTick) * TICK_MS - delay,
-        delay,
-        easing: 'cubic-bezier(.16,.66,.26,1)',
-        fill: 'both',
-      },
+    const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    const frames = flightFrames(
+      flight.origins[index],
+      flight.target,
+      index,
+      flight.shot.cards.length,
+      flight.shot.side,
+      reduced,
     );
-    return () => {
-      animation.current?.cancel();
+    const delay = reduced ? 0 : index * 22;
+    const duration = Math.max(
+      120,
+      (flight.shot.hitTick - flight.shot.startTick) * TICK_MS - delay,
+    );
+    const timing: KeyframeAnimationOptions = {
+      duration,
+      delay,
+      easing: 'cubic-bezier(.3,.05,.45,1)',
+      fill: 'both',
     };
+    animations.current = [
+      card.current!.animate(frames, timing),
+      ...(trail.current && !reduced
+        ? [trail.current.animate(frames, { ...timing, delay: delay + 34 })]
+        : []),
+    ];
+    return () => animations.current.forEach((animation) => animation.cancel());
   }, [flight, index]);
   useLayoutEffect(() => {
-    if (paused) animation.current?.pause();
-    else animation.current?.play();
+    animations.current.forEach((animation) =>
+      paused ? animation.pause() : animation.play(),
+    );
   }, [paused]);
+  const tone = flight.shot.burn
+    ? 'tp-flight-burn'
+    : flight.shot.poison
+      ? 'tp-flight-poison'
+      : flight.shot.kind >= 4
+        ? 'tp-flight-epic'
+        : '';
+  const box = {
+    left: origin.x,
+    top: origin.y,
+    width: origin.width,
+    height: origin.height,
+  };
   return (
-    <div
-      ref={element}
-      aria-hidden="true"
-      className={`tp-flying-card tp-card ${card.suit % 2 ? 'tp-red' : ''} tp-flying-${flight.shot.side} ${flight.shot.burn ? 'tp-flight-burn' : flight.shot.poison ? 'tp-flight-poison' : flight.shot.kind >= 4 ? 'tp-flight-epic' : ''}`}
-      data-flying-uid={card.uid}
-      data-shot={flight.shot.id}
-      data-origin={`${origin.x},${origin.y}`}
-      data-target={`${flight.target.x + flight.target.width / 2},${flight.target.y + flight.target.height / 2}`}
-      data-flight-direction={flight.shot.side === 0 ? 'right' : 'left'}
-      style={{
-        left: origin.x,
-        top: origin.y,
-        width: origin.width,
-        height: origin.height,
-      }}
-    >
-      <PokerFace card={card} />
-    </div>
+    <>
+      <div ref={trail} aria-hidden="true" className={`tp-flying-trail ${tone}`} style={box} />
+      <div
+        ref={card}
+        aria-hidden="true"
+        className={`tp-flying-card ${tone} tp-flying-${flight.shot.side}`}
+        data-flying-uid={playing.uid}
+        data-shot={flight.shot.id}
+        data-origin={`${origin.x},${origin.y}`}
+        data-target={`${flight.target.x + flight.target.width / 2},${flight.target.y + flight.target.height / 2}`}
+        data-flight-direction={flight.shot.side === 0 ? 'right' : 'left'}
+        style={box}
+      >
+        <CardFace card={playing} />
+      </div>
+    </>
   );
 }
 export function FlightLayer({
@@ -203,16 +213,9 @@ export function ThrowSpectacle({ duel }: { duel: ThrowDuel }) {
       : effects.some((entry) => entry.kind === 'shield')
         ? 'shield'
         : 'gold';
-  const tiles = [
-    ...new Set(
-      effects
-        .map(
-          (entry) =>
-            ITEMS.find((item) => entry.source === 'item:' + item.id)?.tile,
-        )
-        .filter((tile) => tile !== undefined),
-    ),
-  ].slice(0, 4);
+  const objects = ITEMS.filter((item) =>
+    effects.some((entry) => entry.source === 'item:' + item.id),
+  ).slice(0, 4);
   return (
     <div
       key={event.id}
@@ -237,8 +240,8 @@ export function ThrowSpectacle({ duel }: { duel: ThrowDuel }) {
           <span>直伤</span>
         </div>
         <div className="tp-spectacle-objects">
-          {tiles.map((tile) => (
-            <Art key={tile} tile={tile} />
+          {objects.map((item) => (
+            <ObjectGlyph key={item.id} id={item.id} family={item.family} />
           ))}
         </div>
         <div className="tp-spectacle-effects">

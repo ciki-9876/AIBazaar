@@ -324,4 +324,5 @@
 - [ADR-0041-throw-magician-personal-championship](decisions/ADR-0041-throw-magician-personal-championship.md)
 - [ADR-0043-throw-western-pixel-rpg-opening](decisions/ADR-0043-throw-western-pixel-rpg-opening.md)
 - [ADR-0045-throw-atomic-pixel-scenes](decisions/ADR-0045-throw-atomic-pixel-scenes.md)
-- [ADR-0046-throw-editorial-illustration](decisions/ADR-0046-throw-editorial-illustration.md)
+- [ADR-0046-throw-editorial-illustration](decisions/ADR-0046-throw-editorial-illustration.md)（表现部分已由 ADR-0048 取代）
+- [ADR-0048-throw-limelight-vector-art](decisions/ADR-0048-throw-limelight-vector-art.md)：抛弃旧美术，全矢量「聚光与丝绒」舞台、骨骼角色与弧线飞牌

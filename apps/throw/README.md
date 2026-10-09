@@ -4,4 +4,6 @@
 
 启动：`npm run dev:throw:cards`；测试：`npm run test:throw:cards`；构建：`npm run build:throw:cards`。输出位于 `apps/throw/dist/client`。
 
-对决使用 `throw-duel-v3`，包含策略选牌、单槽遗物与配置工作台。冒险入口、像素/插画候选及 `/art/vector`、`/art/vector/play` 属于当前原型与美术试验，未代表完整长期成长已完成。相关设计与验收见仓库 `docs/F9_THROW_*` 和 ADR-0035 至 ADR-0046 中的甩牌记录。
+对决使用 `throw-duel-v3`，包含策略选牌、单槽遗物与配置工作台。
+
+美术全部由代码绘制，位于 `src/app/stage/`（色板、骨骼角色、场景、牌面、物件图标），项目不发布位图。方向与取舍见 ADR-0048；规则相关记录见 ADR-0035 至 ADR-0043。
