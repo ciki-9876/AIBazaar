@@ -12,7 +12,9 @@ for (const a of COMPETITIVE_STYLES) {
     for (const b of COMPETITIVE_STYLES) for (let i = 0; i < N; i++) { sc += playDuel({ style: a, items: PRESETS[a].items, relic: r }, { style: b }, seedAt(i)).score; n++; }
     cells.push((sc / n) * 100);
   }
-  const own = cells[RELICS.findIndex((x) => x.id === PRESETS[a].relic)];
+  // A preset may deliberately leave the relic slot empty (v6 combo).
+  const ownIndex = PRESETS[a].relic === null ? RELICS.length : RELICS.findIndex((x) => x.id === PRESETS[a].relic);
+  const own = cells[ownIndex];
   const rank = [...cells].sort((x, y) => y - x).indexOf(own) + 1;
   console.log(a.padEnd(8) + cells.map((v) => v.toFixed(0).padStart(9)).join('') + `   #${rank}`);
 }

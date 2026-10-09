@@ -1,4 +1,75 @@
 /* Duel: two performers on one proscenium stage, the hand as the orchestra pit. */
+.tp-play-advice {
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 6px 12px;
+  padding: 5px 0 8px;
+  color: #f5d979;
+  font-size: 13px;
+  letter-spacing: .04em;
+}
+.tp-play-advice > span { color: var(--bone-dim); font-size: 11px; letter-spacing: .12em; }
+.tp-play-advice > strong { font-weight: 500; }
+.tp-phase-lights { position: absolute; inset: 0; pointer-events: none; z-index: 3; }
+.tp-phase-beam {
+  position: absolute; top: -10%; width: 38%; height: 130%;
+  background: linear-gradient(180deg, rgba(247, 179, 71, .15), rgba(247, 179, 71, .02));
+  clip-path: polygon(48% 0, 54% 0, 100% 100%, 0 100%);
+  transform-origin: 50% 0;
+  animation: tp-heated-beam 5s ease-in-out infinite alternate;
+}
+.tp-phase-beam-left { left: 10%; transform: rotate(-17deg); }
+.tp-phase-beam-right { right: 10%; transform: rotate(17deg); animation-direction: alternate-reverse; }
+.tp-phase-curtain .tp-phase-beam { background: linear-gradient(180deg, rgba(179,38,58,.3), rgba(179,38,58,.015)); }
+.tp-battle[data-battle-phase='heated'] .tp-arena { box-shadow: inset 0 -40px 90px rgba(215,130,32,.13); }
+.tp-battle[data-battle-phase='curtain'] .tp-arena { box-shadow: inset 0 -50px 110px rgba(179,38,58,.25); }
+.tp-phase-callout {
+  position: absolute; top: 29%; left: 50%; transform: translateX(-50%);
+  display: grid; gap: 3px; text-align: center; width: min(350px, 78%);
+  padding: 12px 24px;
+  background: linear-gradient(90deg, transparent, rgba(11,30,38,.95) 18% 82%, transparent);
+  color: #f5d979;
+  animation: tp-phase-announce 3s ease both;
+}
+.tp-phase-callout small { font: 10px var(--font-display); letter-spacing: .18em; }
+.tp-phase-callout strong { font: 600 26px var(--font-cjk-serif); letter-spacing: .25em; }
+.tp-phase-callout span { font-size: 12px; color: var(--bone-dim); }
+.tp-phase-curtain .tp-phase-callout { color: #ffc2a1; }
+@keyframes tp-phase-announce { 0% { opacity: 0; translate: 0 8px; } 12%,70% { opacity: 1; translate: 0 0; } 100% { opacity: 0; translate: 0 -8px; } }
+@keyframes tp-heated-beam { to { rotate: 8deg; opacity: .65; } }
+.tp-root[data-paused='true'] :is(.tp-phase-callout,.tp-phase-beam,.tp-audience-moment) { animation-play-state: paused; }
+.tp-audience-moment {
+  position: absolute; bottom: 9px; left: 50%; translate: -50% 0; z-index: 9;
+  color: #f5d979; font: 500 13px var(--font-cjk-serif); letter-spacing: .12em;
+  white-space: nowrap; padding: 6px 22px;
+  background: linear-gradient(90deg,transparent,rgba(11,30,38,.94) 15% 85%,transparent);
+  animation: tp-audience-note 1.5s ease both; pointer-events: none;
+}
+.tp-audience-moment span { margin-right: 7px; }
+@keyframes tp-audience-note { 0% { opacity: 0; transform: translateY(6px); } 15%,70% { opacity: 1; transform: translateY(0); } 100% { opacity: 0; transform: translateY(-5px); } }
+.tp-victory-confetti { position: fixed; inset: 0; overflow: hidden; pointer-events: none; z-index: 12; }
+.tp-victory-confetti i {
+  position: absolute; left: var(--ribbon-x); bottom: -18px;
+  width: 7px; height: 18px; border-radius: 1px;
+  background: var(--ribbon-color); opacity: 0;
+  animation: tp-ribbon-rise var(--ribbon-duration) cubic-bezier(.12,.65,.3,1) var(--ribbon-delay) both;
+}
+.tp-victory-confetti i:nth-child(3n) { height: 10px; width: 10px; }
+@keyframes tp-ribbon-rise {
+  0% { opacity: 0; transform: translate3d(0,0,0) rotate(0); }
+  5% { opacity: 1; }
+  65% { opacity: .95; }
+  100% { opacity: 0; transform: translate3d(var(--ribbon-drift),-95vh,0) rotate(var(--ribbon-spin)); }
+}
+@media (max-width: 640px) { .tp-play-advice { font-size: 11px; gap: 4px 8px; padding-bottom: 5px; } .tp-phase-callout strong { font-size: 21px; } }
+@media (prefers-reduced-motion: reduce) {
+  .tp-phase-beam { animation: none; }
+  .tp-phase-callout { animation: none; top: 24%; width: auto; padding: 4px 18px; }
+  .tp-phase-callout strong { font-size: 15px; }
+  .tp-phase-callout :is(small,span) { display: none; }
+  .tp-victory-confetti { display: none; }
+}
 .tp-root {
   position: fixed;
   inset: 0;
@@ -1315,7 +1386,9 @@ button:disabled {
     display: none;
   }
   .tp-order-status {
-    display: none;
+    display: inline;
+    width: 100%;
+    font-size: 11px;
   }
   .tp-draw-label {
     margin-left: 6px;

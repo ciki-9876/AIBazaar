@@ -398,7 +398,7 @@ const shows: Choice = { id: 'shows', label: '看看今天的演出单', action: 
 const paper: Choice = {
   id: 'paper',
   label: '买份报纸（2 演出费）',
-  action: { type: 'pay', price: 2, flag: 'stanPaper', then: 'dodd-paper', poor: 'dodd-poor' },
+  action: { type: 'pay', price: 2, flag: 'stanPaper', nextDialogue: 'dodd-paper', poor: 'dodd-poor' },
 };
 
 export const BRIDGEPORT_DIALOGUES: Record<string, Dialogue> = {
@@ -841,7 +841,7 @@ for (const [id, text] of Object.entries(groupLines)) {
 }
 
 /** Which conversation a person (or thing) starts right now. */
-export function bridgeportTalk(state: AdventureState, id: string): string | 'panel:shows' | null {
+export function bridgeportTalk(state: AdventureState, id: string): string | null {
   const f = state.flags,
     won = (battle: BattleId) => state.won.includes(battle);
   switch (id) {
@@ -901,13 +901,13 @@ export function bridgeportTalk(state: AdventureState, id: string): string | 'pan
 export function bridgeportObjective(state: AdventureState): Objective {
   const f = state.flags;
   if (!f.metDoris)
-    return { title: '去周四剧院报名', detail: '海报上写着：公开赛，周四。今天就是周四。巧了。', target: 'thursday-door' };
+    return { title: '去周四剧院报名', detail: '海报上写着：公开赛，周四。今天就是周四。巧了。', target: state.map === 'thursday' ? 'doris' : state.map === 'bridgeport' ? 'thursday-door' : `${state.map}-exit` };
   if (!morningDone(state)) {
     const left = ['ada', 'bea'].filter((id) => !state.won.includes(id as BattleId)).length;
     return {
       title: `赢下早场（还剩 ${left} 场）`,
       detail: '普赖斯姐妹在周四剧院的台上。观众三位，一位在打瞌睡。',
-      target: state.map === 'thursday' ? (state.won.includes('ada') ? 'bea' : 'ada') : 'thursday-door',
+      target: state.map === 'thursday' ? (state.won.includes('ada') ? 'bea' : 'ada') : state.map === 'bridgeport' ? 'thursday-door' : `${state.map}-exit`,
     };
   }
   if (!f.mainHall) {
@@ -921,7 +921,7 @@ export function bridgeportObjective(state: AdventureState): Objective {
     return {
       title: '回剧院找多丽丝',
       detail: '镇上开始有人问你几点上场了。她应该会改主意。',
-      target: state.map === 'thursday' ? 'doris' : 'thursday-door',
+      target: state.map === 'thursday' ? 'doris' : state.map === 'bridgeport' ? 'thursday-door' : `${state.map}-exit`,
     };
   }
   if (!isFinalist(state)) {
@@ -929,14 +929,14 @@ export function bridgeportObjective(state: AdventureState): Objective {
     return {
       title: `公开赛小组赛（${4 - left.length}/4）`,
       detail: '四个对手都在周四剧院的主厅。顺序你挑。多德太太的档案能帮上忙。',
-      target: state.map === 'thursday' ? left[0] : 'thursday-door',
+      target: state.map === 'thursday' ? left[0] : state.map === 'bridgeport' ? 'thursday-door' : `${state.map}-exit`,
     };
   }
   if (!f.champion)
     return {
       title: '决赛：朱诺·贝尔',
       detail: '主厅坐满了。一半来看她，一半来看她赢你。',
-      target: state.map === 'thursday' ? 'juno' : 'thursday-door',
+      target: state.map === 'thursday' ? 'juno' : state.map === 'bridgeport' ? 'thursday-door' : `${state.map}-exit`,
     };
   return {
     title: '乘巴士去韦斯特港',

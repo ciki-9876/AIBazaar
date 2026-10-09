@@ -111,7 +111,6 @@ export function StageScene({
       className="st-scene"
       data-scene={mapId}
       data-renderer="vector"
-      role="img"
       aria-label={`${map.name}，${map.subtitle}`}
       style={{ width: map.width, height: map.height }}
     >

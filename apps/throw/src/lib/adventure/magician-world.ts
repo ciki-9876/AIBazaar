@@ -1,4 +1,4 @@
-import { ITEMS, RELICS, type ItemId, type RelicId, type Style } from '../cards/throw-loadout.ts';
+import { ITEMS, PRESETS, RELICS, type ItemId, type RelicId, type Style } from '../cards/throw-loadout.ts';
 import { ENCHANTS, validDeckBook, type DeckBook } from '../cards/throw-enchant.ts';
 import type { DuelTerms } from '../cards/throw-duel';
 import {
@@ -43,7 +43,7 @@ import {
 } from './bridgeport.ts';
 
 export * from './adventure-types.ts';
-export { STARTER_ITEMS, MENTOR_GIFT, MIA_GIFT } from './graywick.ts';
+export { STARTER_ITEMS, MENTOR_GIFT, MIA_GIFT, POST_QUALIFIER_ITEMS } from './graywick.ts';
 export { SHOP, SHOWS, GOSSIP, GROUP, isFinalist, morningDone, showsWon } from './bridgeport.ts';
 
 export const WALK_TICK_MS = 20;
@@ -175,11 +175,14 @@ export function visibleHotspots(state: AdventureState): Hotspot[] {
   return MAPS[state.map].hotspots.filter((spot) => !spot.when || spot.when(state));
 }
 const reach = (spot: Hotspot) => (spot.kind === 'npc' ? 130 : 95);
+export function hotspotInReach(state: AdventureState, spot: Hotspot): boolean {
+  return state.mode === 'explore' && Math.abs(spot.x - state.player.x) <= reach(spot);
+}
 export function nearbyHotspot(state: AdventureState): Hotspot | null {
   if (state.mode !== 'explore') return null;
   return (
     visibleHotspots(state)
-      .filter((spot) => Math.abs(spot.x - state.player.x) <= reach(spot))
+      .filter((spot) => hotspotInReach(state, spot))
       .sort(
         (a, b) =>
           Math.abs(a.x - state.player.x) - Math.abs(b.x - state.player.x) || (a.id < b.id ? -1 : a.id > b.id ? 1 : 0),
@@ -241,7 +244,7 @@ export function chooseDialogue(state: AdventureState, choiceId: string): Adventu
   if (action.type === 'panel') return openPanel(heard, action.panel);
   if (action.type === 'pay') {
     if (heard.fee < action.price) return openDialogue(heard, action.poor);
-    return openDialogue({ ...heard, fee: heard.fee - action.price, flags: { ...heard.flags, [action.flag]: true } }, action.then);
+    return openDialogue({ ...heard, fee: heard.fee - action.price, flags: { ...heard.flags, [action.flag]: true } }, action.nextDialogue);
   }
   return startBattle(heard, action.battle);
 }
@@ -451,55 +454,95 @@ export const SAVE_KEY = 'aibazaar.throw.adventure';
 export const SAVE_PRODUCT = 'throw-adventure';
 /** A save envelope; the adapter adds no clock or randomness. */
 export function serializeAdventure(state: AdventureState, extra: Record<string, unknown> = {}) {
-  return JSON.stringify({ product: SAVE_PRODUCT, version: ADVENTURE_VERSION, state, ...extra });
+  return JSON.stringify({ ...extra, product: SAVE_PRODUCT, version: ADVENTURE_VERSION, state });
 }
 const isInt = (value: unknown, min = 0, max = Number.MAX_SAFE_INTEGER) =>
   Number.isInteger(value) && (value as number) >= min && (value as number) <= max;
+const isRecord = (value: unknown): value is Record<string, unknown> =>
+  Boolean(value) && typeof value === 'object' && !Array.isArray(value);
+const has = (table: object, key: unknown): key is string => typeof key === 'string' && Object.hasOwn(table, key);
+const LEGACY_ADVENTURE_VERSION = 'magician-adventure-v3';
+/** v3's implicit gifts become owned items; retired sorting relic is safely removed. */
+function migrateAdventure(envelope: Record<string, unknown>): Record<string, unknown> | null {
+  if (envelope.version === ADVENTURE_VERSION) return envelope;
+  if (envelope.version !== LEGACY_ADVENTURE_VERSION || !isRecord(envelope.state)
+    || envelope.state.version !== LEGACY_ADVENTURE_VERSION) return null;
+  const old = envelope.state;
+  if (!isRecord(old.owned) || !Array.isArray(old.owned.items) || !Array.isArray(old.owned.relics) || !isRecord(old.flags)) return null;
+  const earned = ['pair', 'draw', ...(old.flags.trained === true ? ['mend', 'wash'] : []),
+    ...(old.flags.miaMet === true ? ['umbrella', 'thorns'] : [])];
+  const loadout = isRecord(envelope.loadout) && envelope.loadout.relic === 'order'
+    ? { ...envelope.loadout, relic: null } : envelope.loadout;
+  return {
+    ...envelope,
+    version: ADVENTURE_VERSION,
+    state: { ...old, version: ADVENTURE_VERSION, owned: { ...old.owned,
+      items: unique([...old.owned.items, ...earned]), relics: old.owned.relics.filter((id) => id !== 'order') } },
+    ...(loadout !== undefined ? { loadout } : {}),
+  };
+}
+function validDossier(entry: unknown): boolean {
+  if (!isRecord(entry) || !isInt(entry.duels) || !isInt(entry.wins) || !isInt(entry.losses)
+    || (entry.wins as number) + (entry.losses as number) > (entry.duels as number)) return false;
+  const counts = (list: unknown, length: number) => Array.isArray(list)
+    && list.length === length && list.every((value) => isInt(value));
+  return counts(entry.suits, 4) && counts(entry.kinds, 9);
+}
 /**
  * Restores a save, or returns null for anything from another product, another
  * rules version, or a shape this version cannot vouch for. A battle in
  * progress is not resumable: the hero is put back where the duel began.
  */
 export function restoreAdventure(json: string): { state: AdventureState; envelope: Record<string, unknown> } | null {
-  let envelope: Record<string, unknown>;
+  let parsed: unknown;
   try {
-    envelope = JSON.parse(json);
+    parsed = JSON.parse(json);
   } catch {
     return null;
   }
-  if (!envelope || envelope.product !== SAVE_PRODUCT || envelope.version !== ADVENTURE_VERSION) return null;
+  if (!isRecord(parsed) || parsed.product !== SAVE_PRODUCT) return null;
+  const envelope = migrateAdventure(parsed);
+  if (!envelope) return null;
   const s = envelope.state as AdventureState;
-  if (!s || s.version !== ADVENTURE_VERSION || !isInt(s.seed, 0, 0xffffffff) || !isInt(s.tick)) return null;
-  if (![1, 2].includes(s.act) || !(s.map in MAPS) || MAPS[s.map].act !== s.act) return null;
-  if (!s.player || !isInt(s.player.x, 0, MAPS[s.map].width) || ![-1, 1].includes(s.player.facing) || !isInt(s.player.walkTicks))
+  if (!isRecord(s) || s.version !== ADVENTURE_VERSION || !isInt(s.seed, 0, 0xffffffff) || !isInt(s.tick)) return null;
+  if (![1, 2].includes(s.act) || !has(MAPS, s.map) || MAPS[s.map].act !== s.act) return null;
+  if (!isRecord(s.player) || !isInt(s.player.x, 48, MAPS[s.map].width - 48) || ![-1, 1].includes(s.player.facing) || !isInt(s.player.walkTicks))
     return null;
   if (!['explore', 'dialogue', 'battle', 'panel', 'complete'].includes(s.mode)) return null;
-  if (s.mode === 'dialogue' && !(s.dialogue && s.dialogue.id in DIALOGUES && isInt(s.dialogue.step, 0, DIALOGUES[s.dialogue.id].lines.length - 1)))
+  if (s.mode === 'dialogue' && !(isRecord(s.dialogue) && has(DIALOGUES, s.dialogue.id) && isInt(s.dialogue.step, 0, DIALOGUES[s.dialogue.id].lines.length - 1)))
     return null;
+  if (s.mode !== 'dialogue' && s.dialogue !== null) return null;
   if (s.mode === 'panel' && !['shop', 'shows', 'dossier'].includes(s.panel as string)) return null;
-  if (s.mode === 'battle' && !(s.battle && s.battle.kind in BATTLES && s.battle.returnMap in MAPS)) return null;
+  if (s.mode !== 'panel' && s.panel !== null) return null;
+  if (s.mode === 'battle' && !(isRecord(s.battle) && has(BATTLES, s.battle.kind)
+    && BATTLES[s.battle.kind].act === s.act && has(MAPS, s.battle.returnMap) && MAPS[s.battle.returnMap].act === s.act
+    && isInt(s.battle.returnX, 48, MAPS[s.battle.returnMap].width - 48)
+    && isInt(s.battle.id, 1) && s.battle.id < s.nextBattleId && isInt(s.battle.seed, 0, 0xffffffff)
+    && has(PRESETS, s.battle.enemyStyle) && [null, 'lesson', 'qualifier'].includes(s.battle.coach))) return null;
+  if (s.mode !== 'battle' && s.battle !== null) return null;
   if (!isInt(s.nextBattleId, 1) || !isInt(s.fee)) return null;
-  if (!s.flags || FLAGS.some((flag) => typeof s.flags[flag] !== 'boolean') || Object.keys(s.flags).length !== FLAGS.length)
+  if (!isRecord(s.flags) || FLAGS.some((flag) => typeof s.flags[flag] !== 'boolean') || Object.keys(s.flags).length !== FLAGS.length)
     return null;
   const items = new Set(ITEMS.map((item) => item.id)),
     relics = new Set(RELICS.map((relic) => relic.id)),
     enchants = new Set(ENCHANTS.map((entry) => entry.id));
   if (
-    !s.owned ||
+    !isRecord(s.owned) ||
     !Array.isArray(s.owned.items) ||
     !s.owned.items.every((id) => items.has(id)) ||
     !Array.isArray(s.owned.relics) ||
     !s.owned.relics.every((id) => relics.has(id)) ||
     !Array.isArray(s.owned.variants) ||
     !s.owned.variants.every((entry) => {
-      const [key, id] = String(entry).split(':');
+      if (typeof entry !== 'string' || entry.split(':').length !== 2) return false;
+      const [key, id] = entry.split(':');
       return enchants.has(id) && validDeckBook({ [key]: id });
     })
   )
     return null;
-  if (!Array.isArray(s.won) || !s.won.every((id) => id in BATTLES)) return null;
+  if (!Array.isArray(s.won) || !s.won.every((id) => has(BATTLES, id))) return null;
   if (!Array.isArray(s.found) || !s.found.every((id) => (HOBBS_THINGS as readonly string[]).includes(id))) return null;
-  if (!s.dossier || typeof s.dossier !== 'object' || !Object.keys(s.dossier).every((id) => id in CHARACTERS)) return null;
+  if (!isRecord(s.dossier) || !Object.entries(s.dossier).every(([id, entry]) => has(CHARACTERS, id) && validDossier(entry))) return null;
   let state: AdventureState = structuredClone(s);
   if (state.mode === 'battle') state = abandonAdventureBattle(state);
   return { state, envelope };

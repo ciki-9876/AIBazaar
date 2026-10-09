@@ -7,7 +7,7 @@ import type { DuelTerms } from '../cards/throw-duel';
  * describe data; the engine in magician-world.ts applies it. Everything here
  * is deterministic: no clocks, no fresh randomness.
  */
-export const ADVENTURE_VERSION = 'magician-adventure-v3';
+export const ADVENTURE_VERSION = 'magician-adventure-v4';
 export type ActId = 1 | 2;
 export type MapId =
   | 'street'
@@ -154,8 +154,8 @@ export type ChoiceAction =
   | { type: 'close' }
   | { type: 'battle'; battle: BattleId }
   | { type: 'panel'; panel: PanelId }
-  /** Pay `price` and set `flag`, then continue with `then`; without the money, `poor`. */
-  | { type: 'pay'; price: number; flag: FlagId; then: string; poor: string };
+  /** Pay `price` and set `flag`, then continue with `nextDialogue`; without the money, `poor`. */
+  | { type: 'pay'; price: number; flag: FlagId; nextDialogue: string; poor: string };
 export type Choice = { id: string; label: string; action: ChoiceAction };
 export type DialogueEffect = {
   set?: readonly FlagId[];

@@ -1,4 +1,6 @@
 import type { DuelEvent } from '../../../lib/cards/throw-duel';
+import { sitePath } from '../../../lib/site-path';
+import { deservesCheer } from './throw-audience';
 
 /** Browser-only sound adapter. No audio clock or state enters the simulation. */
 export class ThrowSound {
@@ -6,6 +8,11 @@ export class ThrowSound {
   private master: GainNode | null = null;
   private noise: AudioBuffer | null = null;
   private enabled = true;
+  private audienceLoad: Promise<void> | null = null;
+  private audienceBuffers = new Map<'cheer' | 'applause', AudioBuffer>();
+  private audienceSources = new Set<AudioBufferSourceNode>();
+  private effectSources = new Set<AudioScheduledSourceNode>();
+  private audienceGeneration = 0;
   async unlock() {
     if (!this.context) {
       this.context = new AudioContext();
@@ -24,6 +31,18 @@ export class ThrowSound {
         samples[i] = seed / 0x80000000 - 1;
       }
       this.noise = buffer;
+      const context = this.context;
+      this.audienceLoad = Promise.all((['cheer', 'applause'] as const).map(async (kind) => {
+        try {
+          const extension = kind === 'cheer' ? 'ogg' : 'wav';
+          const response = await fetch(sitePath(`/audio/throw/audience-${kind}.${extension}`));
+          if (!response.ok) return;
+          const decoded = await context.decodeAudioData(await response.arrayBuffer());
+          this.audienceBuffers.set(kind, decoded);
+        } catch {
+          // A failed optional recording does not prevent the duel's normal sound effects.
+        }
+      })).then(() => {});
     }
     if (this.context.state === 'suspended') await this.context.resume();
     return this.context.state === 'running';
@@ -36,6 +55,30 @@ export class ThrowSound {
         this.context.currentTime,
         0.025,
       );
+  }
+  private audience(kind: 'cheer' | 'applause') {
+    const generation = this.audienceGeneration;
+    void this.audienceLoad?.then(() => {
+      const buffer = this.audienceBuffers.get(kind);
+      if (!buffer || !this.context || !this.master || !this.enabled ||
+          this.context.state !== 'running' || generation !== this.audienceGeneration) return;
+      const source = this.context.createBufferSource();
+      const gain = this.context.createGain();
+      source.buffer = buffer;
+      gain.gain.value = kind === 'cheer' ? 1.4 : 1.2;
+      source.connect(gain);
+      gain.connect(this.master);
+      this.audienceSources.add(source);
+      source.onended = () => { this.audienceSources.delete(source); source.disconnect(); gain.disconnect(); };
+      source.start();
+    });
+  }
+  private stopAudience() {
+    this.audienceGeneration++;
+    for (const source of this.audienceSources) source.stop();
+    this.audienceSources.clear();
+    for (const source of this.effectSources) source.stop();
+    this.effectSources.clear();
   }
   private tone(
     frequency: number,
@@ -60,6 +103,8 @@ export class ThrowSound {
     gain.gain.exponentialRampToValueAtTime(0.0001, now + duration);
     oscillator.connect(gain);
     gain.connect(this.master);
+    this.effectSources.add(oscillator);
+    oscillator.onended = () => { this.effectSources.delete(oscillator); oscillator.disconnect(); gain.disconnect(); };
     oscillator.start(now);
     oscillator.stop(now + duration + 0.02);
   }
@@ -86,6 +131,8 @@ export class ThrowSound {
     source.connect(filter);
     filter.connect(gain);
     gain.connect(this.master);
+    this.effectSources.add(source);
+    source.onended = () => { this.effectSources.delete(source); source.disconnect(); filter.disconnect(); gain.disconnect(); };
     source.start(now);
     source.stop(now + duration);
   }
@@ -94,6 +141,7 @@ export class ThrowSound {
     this.tone(510, 0.05, 0.08, 0, 390);
   }
   start() {
+    this.stopAudience();
     for (let i = 0; i < 5; i++)
       this.rustle(0.09, 1900 + i * 240, 0.3, i * 0.045);
     this.tone(330, 0.22, 0.14, 0.1, 660);
@@ -121,6 +169,7 @@ export class ThrowSound {
       this.tone(event.value >= 60 ? 98 : 150, 0.22, 0.65, 0, 42, 'triangle');
       this.rustle(0.13, 950, 0.5, 0, 350);
       this.tone(960, 0.11, 0.12, 0.025, 440);
+      if (deservesCheer(event)) this.audience('cheer');
     }
     if (event.type === 'heal' && event.value > 0) {
       this.tone(660, 0.25, 0.17);
@@ -155,17 +204,19 @@ export class ThrowSound {
       }
       const quiet = event.source === 'item:draw';
       this.tone(quiet ? 990 : 780, 0.12, quiet ? 0.035 : 0.11, 0, 1170);
-      if (event.source === 'relic:order') {
+      if (event.source === 'rule:reorder') {
         this.rustle(0.2, 2100, 0.3);
         this.tone(330, 0.2, 0.16, 0.06, 550);
       }
     }
   }
   finish(won: boolean) {
+    if (won) this.audience('applause');
     const notes = won ? [392, 494, 587, 784] : [392, 330, 262];
     notes.forEach((note, index) => this.tone(note, 0.45, 0.2, index * 0.13));
   }
   dispose() {
+    this.stopAudience();
     void this.context?.close().catch(() => {});
   }
 }

@@ -14,7 +14,7 @@ export const PRODUCTS = {
     title: '最后一张王牌 · 魔术师之旅',
     home: 'app/page.tsx',
     // All throw art is drawn in code (apps/throw/src/app/stage); no bitmap assets.
-    assets: [],
+    assets: ['audio/throw'],
   },
 };
 

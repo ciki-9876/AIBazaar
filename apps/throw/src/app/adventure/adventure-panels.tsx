@@ -1,6 +1,6 @@
 'use client';
 
-import type { RefObject } from 'react';
+import { useState, type KeyboardEvent, type RefObject } from 'react';
 import {
   CHARACTERS,
   GOSSIP,
@@ -11,6 +11,7 @@ import {
   type AdventureState,
   type CharacterId,
   type ShowId,
+  type ShopOffer,
 } from '../../lib/adventure/magician-world';
 import { ITEMS, RELICS } from '../../lib/cards/throw-loadout';
 import { enchantOf, RARITY_NAMES } from '../../lib/cards/throw-enchant';
@@ -60,6 +61,22 @@ export function ShopPanel({
   onClose: () => void;
 }) {
   const stocked = SHOP.filter((offer) => offerStocked(state, offer.id));
+  const categories: { kind: ShopOffer['kind']; label: string }[] = [
+    { kind: 'item', label: '道具' },
+    { kind: 'relic', label: '遗物' },
+    { kind: 'variant', label: '牌的变种' },
+  ];
+  const [category, setCategory] = useState<ShopOffer['kind']>('item');
+  const switchTab = (event: KeyboardEvent<HTMLButtonElement>, index: number) => {
+    const next = event.key === 'ArrowRight' ? (index + 1) % categories.length
+      : event.key === 'ArrowLeft' ? (index + categories.length - 1) % categories.length
+        : event.key === 'Home' ? 0 : event.key === 'End' ? categories.length - 1 : -1;
+    if (next < 0) return;
+    event.preventDefault();
+    setCategory(categories[next].kind);
+    event.currentTarget.parentElement?.querySelector<HTMLButtonElement>(`#rg-shop-tab-${categories[next].kind}`)?.focus();
+  };
+  const offers = stocked.filter((offer) => offer.kind === category);
   return (
     <dialog ref={modalRef} open className="rg-map-modal rg-panel rg-shop" aria-modal="true" aria-label="霍布斯旧货铺">
       <PanelHeading title="霍布斯旧货铺" eyebrow="旧货不退 · 你赢了谁，这里就有谁的货" onClose={onClose} />
@@ -68,8 +85,19 @@ export function ShopPanel({
         <Fee value={state.fee} />
         <small>{stocked.length < SHOP.length ? `还有 ${SHOP.length - stocked.length} 件货要等你赢了对应的人才上架。` : '货全上齐了。'}</small>
       </div>
+      <div className="rg-shop-tabs" role="tablist" aria-label="商品类型">
+        {categories.map(({ kind, label }, index) => (
+          <button key={kind} id={`rg-shop-tab-${kind}`} role="tab" aria-selected={category === kind}
+            aria-controls="rg-shop-products" tabIndex={category === kind ? 0 : -1}
+            onClick={() => setCategory(kind)} onKeyDown={(event) => switchTab(event, index)}>
+            {label} <small>{stocked.filter((offer) => offer.kind === kind).length}</small>
+          </button>
+        ))}
+      </div>
+      <div id="rg-shop-products" role="tabpanel" aria-labelledby={`rg-shop-tab-${category}`}>
+      {!offers.length && <p className="rg-shop-empty">这一类货还没上架。赢下对应的对手，再来看看。</p>}
       <ul className="rg-shop-list">
-        {stocked.map((offer) => {
+        {offers.map((offer) => {
           const owned = offerOwned(state, offer.id);
           const poor = state.fee < offer.price;
           const item = offer.kind === 'item' ? ITEMS.find((entry) => entry.id === offer.ref) : undefined;
@@ -96,17 +124,17 @@ export function ShopPanel({
                 <span>{item?.text ?? relic?.text ?? variant!.enchant!.text}</span>
                 <em>{offer.note}</em>
               </div>
-              <button className="rg-primary" disabled={owned || poor} onClick={() => onBuy(offer.id)}>
-                {owned ? '已拥有' : (
-                  <>
-                    买下 <Fee value={offer.price} />
-                  </>
-                )}
-              </button>
+              <div className="rg-shop-purchase">
+                <div className="rg-shop-price" aria-label={`售价 ${offer.price} 演出费`}><Fee value={offer.price} /></div>
+                <button className="rg-primary" disabled={owned || poor} onClick={() => onBuy(offer.id)}>
+                  {owned ? '已拥有' : poor ? '演出费不足' : '买下'}
+                </button>
+              </div>
             </li>
           );
         })}
       </ul>
+      </div>
       <p className="rg-panel-foot">买到的道具会出现在巡演箱里，牌的变种在对战前的「牌匣」里装上。</p>
     </dialog>
   );

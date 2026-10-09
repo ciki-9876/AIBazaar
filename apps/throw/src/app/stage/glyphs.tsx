@@ -197,13 +197,6 @@ const icons = (A: string): Record<ItemId | RelicId, ReactNode> => ({
       <path d="M39 15Q44 26 36 32" stroke={A} />
     </g>
   ),
-  order: (
-    <g>
-      <rect x="8" y="14" width="32" height="24" rx="3" />
-      <path d="M8 21H40" />
-      <path d="M14 27H34M14 32H28" stroke={A} />
-    </g>
-  ),
   capacity: (
     <g>
       <path d="M10 18Q10 9 18 9H30Q38 9 38 18V40H10Z" />

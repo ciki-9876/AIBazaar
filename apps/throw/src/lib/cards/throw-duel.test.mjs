@@ -12,6 +12,11 @@ import {
   stepThrowDuel,
   handLimit,
   reorderThrow,
+  arrangeThrow,
+  battlePhase,
+  REORDER_MS,
+  TICK_MS,
+  RELICS,
 } from './throw-duel.ts';
 import { clickThrowSelection } from './throw-selection.ts';
 
@@ -49,11 +54,10 @@ test('the single capacity relic raises capacity to twelve without overdraw', () 
   assert.equal(handLimit(null), 10);
   assert.throws(() => createThrowDuel(33, [], 'guard', ['order', 'capacity']));
 });
-test('reordering requires its relic, preserves card identity, and spends exactly three seconds on success', () => {
-  const baseline = idle(),
-    uid = baseline.fighters[0].hand[0].uid;
-  assert.equal(reorderThrow(baseline, 0, uid, 4), baseline);
-  let state = createThrowDuel(1024, [], 'guard', 'order');
+test('default reordering preserves card identity and spends exactly twenty seconds on success', () => {
+  assert.ok(!RELICS.some((relic) => relic.id === 'order'));
+  assert.throws(() => createThrowDuel(1024, [], 'guard', 'order'));
+  let state = createThrowDuel(1024, [], 'guard', null);
   state.ai.thinkTick = 99999;
   const initial = state.fighters[0].hand.map((card) => card.uid);
   for (const target of [-1, 5, 1.5, 0])
@@ -64,9 +68,9 @@ test('reordering requires its relic, preserves card identity, and spends exactly
     state.fighters[0].hand.map((card) => card.uid),
     [...initial.slice(1), initial[0]],
   );
-  assert.equal(state.fighters[0].nextReorder, 60);
+  assert.equal(state.fighters[0].nextReorder, REORDER_MS / TICK_MS);
   assert.equal(reorderThrow(state, 0, initial[0], 0), state);
-  state = run(state, 59);
+  state = run(state, REORDER_MS / TICK_MS - 1);
   assert.equal(reorderThrow(state, 0, initial[0], 0), state);
   state = run(state, 1);
   const reordered = reorderThrow(state, 0, initial[0], 0);
@@ -145,7 +149,80 @@ test('recognizes every poker combination, including the Ace-low straight', () =>
     [[10, 11, 12, 13, 14], [2, 2, 2, 2, 2], 8],
   ])
     assert.equal(scorePoker(cards(ranks, suits)).kind, kind);
-  assert.equal(scorePoker(cards([14, 2, 3, 4, 6])).kind, 0);
+  assert.equal(scorePoker(cards([14, 2, 3, 4, 6])).kind, 4);
+});
+test('straights, flushes and straight flushes start at three cards, including Ace-low runs', () => {
+  for (const [ranks, suits, kind, comboLength] of [
+    [[2, 3], [0, 0], 0, 0],
+    [[2, 4], [1, 1], 0, 0],
+    [[2, 3, 4], [0, 1, 2], 4, 3],
+    [[2, 3, 4, 5], [0, 1, 2, 3], 4, 4],
+    [[14, 2, 3], [0, 1, 2], 4, 3],
+    [[14, 2, 3, 4], [0, 1, 2, 3], 4, 4],
+    [[13, 14, 2], [0, 1, 2], 0, 0],
+    [[2, 5, 9], [1, 1, 1], 5, 3],
+    [[3, 7, 9, 12], [2, 2, 2, 2], 5, 4],
+    [[2, 3, 4], [3, 3, 3], 8, 3],
+    [[14, 2, 3], [3, 3, 3], 8, 3],
+  ]) {
+    const score = scorePoker(cards(ranks, suits));
+    assert.equal(score.kind, kind, JSON.stringify([ranks, suits]));
+    assert.equal(score.comboIds.length, comboLength);
+  }
+});
+test('phase boundaries drive draws and carry elapsed progress into the faster interval', () => {
+  assert.equal(RULES_VERSION, 'throw-duel-v6');
+  assert.equal(battlePhase(600), 'opening');
+  assert.equal(battlePhase(601), 'heated');
+  assert.equal(battlePhase(1199), 'heated');
+  assert.equal(battlePhase(1200), 'curtain');
+  assert.equal(drawInterval([], 600), 60);
+  assert.equal(drawInterval([], 601), 40);
+  assert.equal(drawInterval([], 1199), 40);
+  assert.equal(drawInterval([], 1200), 30);
+  for (const [tick, interval] of [[599, 60], [600, 40], [1199, 30]]) {
+    let state = idle();
+    state.tick = tick;
+    state.fighters[0].drawClock = interval - 1;
+    state = run(state, 1);
+    assert.equal(state.fighters[0].drawn, 6);
+    assert.equal(state.fighters[0].drawClock, 0);
+  }
+  for (const [tick, interval] of [[601, 40], [1201, 30]]) {
+    let state = idle();
+    state.tick = tick;
+    state = run(state, interval - 1);
+    assert.equal(state.fighters[0].drawn, 5);
+    state = run(state, 1);
+    assert.equal(state.fighters[0].drawn, 6);
+  }
+});
+test('short combinations earn proportional rewards and loose cards do not inflate item rewards', () => {
+  for (const [ranks, multiplier, damage, itemBonus] of [
+    [[2, 3, 4], 172, 15, 21],
+    [[2, 3, 4, 5], 196, 27, 28],
+    [[2, 3, 4, 5, 6], 220, 44, 36],
+  ]) {
+    const hand = cards(ranks);
+    assert.equal(scorePoker(hand).multiplier, multiplier);
+    assert.equal(scorePoker(hand).damage, damage);
+    assert.equal(previewThrow(hand, ['sequence']).itemBonus, itemBonus);
+  }
+  const mixed = cards([2, 3, 4, 9, 10, 13], [0, 1, 2, 3, 1, 2]);
+  assert.equal(previewThrow(mixed, ['sequence']).itemBonus, 21);
+  assert.equal(previewThrow(cards([2, 5, 9], [1, 1, 1]), ['suit']).itemBonus, 18);
+  assert.equal(previewThrow(cards([2, 5, 9, 13], [1, 1, 1, 1]), ['suit']).itemBonus, 24);
+});
+test('default sort no-ops never consume cooldown or change the seeded draw stream', () => {
+  const state = idle();
+  state.fighters[0].hand = cards([2, 3, 4]);
+  const before = JSON.stringify(state);
+  assert.equal(arrangeThrow(state, 0, 'rank'), state);
+  assert.equal(arrangeThrow(state, 0, 'gather', ['missing']), state);
+  assert.equal(JSON.stringify(state), before);
+  const original = idle();
+  const reordered = reorderThrow(original, 0, original.fighters[0].hand[0].uid, 4);
+  assert.deepEqual(run(original, 60).fighters[0].pile, run(reordered, 60).fighters[0].pile);
 });
 test('ten-card batch awards only its strongest combination; leftovers stay base damage', () => {
   const score = scorePoker(
@@ -156,7 +233,7 @@ test('ten-card batch awards only its strongest combination; leftovers stay base 
   assert.equal(score.damage, score.base + 60);
 });
 test('items affect actual preview, use ten cells and cannot stack', () => {
-  assert.equal(previewThrow(cards([2]), ['quick']).damage, 6);
+  assert.equal(previewThrow(cards([2]), ['quick']).damage, 10);
   assert.equal(previewThrow(cards([2, 2]), ['pair']).damage, 16);
   assert.equal(
     previewThrow(cards([2, 3, 4, 5, 6]), ['sequence', 'mend']).damage,

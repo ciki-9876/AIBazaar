@@ -11,6 +11,7 @@ import {
   keepExploring,
   MAPS,
   nearbyHotspot,
+  hotspotInReach,
   unlockedKit,
   adventureObjective,
   walkAdventure,
@@ -18,7 +19,6 @@ import {
 import {
   createThrowDuel,
   launchThrow,
-  PRESETS,
   RULES_VERSION,
   stepThrowDuel,
 } from '../cards/throw-duel.ts';
@@ -151,21 +151,21 @@ test('complete opening route connects training, qualifying duel, departure, and 
   assert.equal(town.flags.ticket, true);
 });
 
-test('adventure battles reuse real v5 combat and deterministic seeds, including repeat practice', () => {
+test('adventure battles reuse real v6 combat and deterministic seeds, including repeat practice', () => {
   const battle = chooseDialogue(meetMentor(1337), 'practice');
   const run = () => {
     let duel = createThrowDuel(
       battle.battle.seed,
-      ['pair', 'quick', 'draw'],
+      ['quick', 'needle'],
       battle.battle.enemyStyle,
-      'order',
+      null,
     );
     for (let i = 0; i < 2400 && duel.status !== 'ended'; i++) {
       if (i % 60 === 0)
         duel = launchThrow(
           duel,
           0,
-          duel.fighters[0].hand.map((card) => card.uid),
+          duel.fighters[0].hand.slice(0, 1).map((card) => card.uid),
         );
       duel = stepThrowDuel(duel);
     }
@@ -174,7 +174,7 @@ test('adventure battles reuse real v5 combat and deterministic seeds, including 
       finishAdventureBattle(battle, battle.battle.id, duel.winner),
     );
   };
-  assert.equal(RULES_VERSION, 'throw-duel-v5');
+  assert.equal(RULES_VERSION, 'throw-duel-v6');
   assert.equal(battle.battle.enemyStyle, 'lesson');
   assert.equal(battle.battle.coach, 'lesson');
   const result = run();
@@ -192,27 +192,54 @@ test('adventure battles reuse real v5 combat and deterministic seeds, including 
   assert.throws(() => createAdventure(0x100000000), RangeError);
 });
 
-test('chapter one hands out the trunk in story order: starter kit, Reed\'s lamp, then Mia\'s shields', () => {
+test('chapter one teaches single cards before unlocking pair and suit builds after qualification', () => {
   let state = readToEnd(createAdventure(77));
-  assert.deepEqual(unlockedKit(state), { items: ['pair', 'quick', 'draw'], relics: ['order'] });
+  assert.deepEqual(unlockedKit(state), { items: ['quick', 'needle'], relics: [] });
   assert.equal(adventureObjective(state).target, 'workshop-door');
   state = readToEnd(interactAdventure(walkTo(state, 825), 'mia'));
   assert.equal(state.flags.miaMet, false, 'Mia sends you to Reed first');
   state = trained();
-  assert.deepEqual(unlockedKit(state).items, ['pair', 'quick', 'draw', 'mend', 'wash']);
-  assert.equal(adventureObjective(state).target, 'mia');
+  assert.deepEqual(unlockedKit(state).items, ['quick', 'needle', 'tempo', 'stride']);
+  assert.equal(adventureObjective(state).target, 'workshop-exit');
   state = interactAdventure(walkTo(state, 140), 'workshop-exit');
   state = interactAdventure(walkTo(state, 825), 'mia');
   assert.equal(state.dialogue.id, 'mia-first');
   state = readToEnd(state);
   assert.equal(state.flags.miaMet, true);
   assert.deepEqual(unlockedKit(state), {
-    items: ['pair', 'quick', 'draw', 'mend', 'wash', 'umbrella', 'ward', 'thorns'],
-    relics: ['order', 'bastion'],
+    items: ['quick', 'needle', 'tempo', 'stride', 'ward'],
+    relics: ['bastion'],
   });
   assert.equal(adventureObjective(state).target, 'theatre-door');
   assert.equal(readToEnd(interactAdventure(state, 'mia')).flags.miaMet, true);
   assert.equal(interactAdventure(state, 'mia').dialogue.id, 'mia-reminder');
+  state = interactAdventure(walkTo(state, 1340), 'theatre-door');
+  state = readToEnd(interactAdventure(walkTo(state, 1030), 'felix'));
+  state = chooseDialogue(state, 'qualifier');
+  const lost = readToEnd(finishAdventureBattle(state, state.battle.id, 1));
+  assert.ok(!unlockedKit(lost).items.includes('pair'));
+  const won = readToEnd(finishAdventureBattle(state, state.battle.id, 0));
+  assert.deepEqual(unlockedKit(won).items, ['quick', 'needle', 'tempo', 'stride', 'ward', 'pair', 'umbrella', 'mend', 'wash', 'thorns', 'draw']);
+});
+
+test('name labels use physical reach while the objective always points to a visible local target', () => {
+  const far = readToEnd(createAdventure(99));
+  const door = MAPS.street.hotspots.find((entry) => entry.id === 'workshop-door');
+  assert.equal(hotspotInReach(far, door), false);
+  assert.equal(hotspotInReach({ ...far, player: { ...far.player, x: door.x + 95 } }, door), true);
+  assert.equal(hotspotInReach({ ...far, player: { ...far.player, x: door.x + 96 } }, door), false);
+  const inside = interactAdventure(walkTo(far, door.x), door.id);
+  assert.equal(adventureObjective(inside).target, 'reed');
+  const npc = MAPS.workshop.hotspots.find((entry) => entry.id === 'reed');
+  assert.equal(hotspotInReach({ ...inside, player: { ...inside.player, x: npc.x - 130 } }, npc), true);
+  assert.equal(hotspotInReach({ ...inside, player: { ...inside.player, x: npc.x - 131 } }, npc), false);
+  assert.equal(hotspotInReach({ ...inside, mode: 'dialogue' }, npc), false);
+  for (const flags of [far.flags, { ...far.flags, trained: true }, { ...far.flags, trained: true, miaMet: true }, { ...far.flags, trained: true, miaMet: true, ticket: true }]) {
+    for (const map of ['street', 'workshop', 'theatre']) {
+      const target = adventureObjective({ ...far, map, flags }).target;
+      assert.ok(MAPS[map].hotspots.some((entry) => entry.id === target), `${map}: ${target}`);
+    }
+  }
 });
 
 test('the qualifier coaches only the first attempt and Felix always brings fire', () => {

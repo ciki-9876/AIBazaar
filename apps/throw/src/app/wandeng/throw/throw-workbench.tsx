@@ -320,6 +320,7 @@ export default function ThrowWorkbench({
           className={`tp-relic-slot ${relic ? 'is-equipped' : ''}`}
           data-relic-slot
           aria-label="遗物槽"
+          disabled={!relicCatalog.length}
           onClick={() => {
             tap();
             setPicker(true);

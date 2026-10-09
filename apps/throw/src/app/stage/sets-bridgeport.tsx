@@ -237,7 +237,7 @@ export function BridgeportSet(): ScenePart[] {
             </g>
             <rect x="590" y="632" width="120" height="26" rx="3" fill="#163b31" stroke={BRASS} strokeWidth="1.5" />
             <text x="650" y="650" textAnchor="middle" fontFamily="var(--font-display)" fontSize="13" letterSpacing="3" fill={BRASS}>
-              DODD'S NEWS
+              DODD’S NEWS
             </text>
           </g>
 
@@ -445,7 +445,7 @@ export function BridgeportSet(): ScenePart[] {
             {/* Sign */}
             <rect x="2200" y="452" width="190" height="104" rx="6" fill="#1a1012" />
             <text x="2295" y="502" textAnchor="middle" fontFamily="var(--font-display)" fontSize="30" fontWeight="600" fill="#ffeab0" className="st-neon">
-              THURSDAY'S
+              THURSDAY’S
             </text>
             <text x="2295" y="536" textAnchor="middle" fontFamily="var(--font-ui)" fontSize="14" letterSpacing="6" fill={BRASS}>
               周 四 剧 院

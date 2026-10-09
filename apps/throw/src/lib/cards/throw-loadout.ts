@@ -19,7 +19,7 @@ export const ITEMS = [
     tag: '快甩',
     size: 1,
     family: 'damage',
-    text: '单张出牌：直伤 +4。',
+    text: '单张出牌：直伤 +8。',
     quip: '修好的牌飞得更快。修不好的，飞得更有个性。',
   },
   {
@@ -65,7 +65,7 @@ export const ITEMS = [
     tag: '顺子',
     size: 3,
     family: 'damage',
-    text: '顺子或同花顺：直伤 +36。手牌 ≥7 张时，被单张牌命中直伤减半（扇面格挡）。',
+    text: '顺子或同花顺：3／4／5 张组合直伤 +21／28／36。手牌 ≥7 张时，被单张牌命中直伤减半（扇面格挡）。',
     quip: '扇面一展，连观众都知道该排队。',
   },
   {
@@ -74,7 +74,7 @@ export const ITEMS = [
     tag: '同花',
     size: 2,
     family: 'damage',
-    text: '同花或同花顺：直伤 +30。',
+    text: '同花或同花顺：3／4／5 张组合直伤 +18／24／30。',
     quip: '一种颜色到底，像一位只穿灰西装的银行家。',
   },
   {
@@ -138,7 +138,7 @@ export const ITEMS = [
     tag: '盾击',
     size: 3,
     family: 'shield',
-    text: '出牌 ≥2 张：附加当前护盾 50% 的直伤，不消耗护盾。',
+    text: '出牌 ≥2 张：附加当前护盾 40% 的直伤，不消耗护盾。',
     quip: '把你的护盾投到对手脸上。礼貌地。',
   },
   // ── Burn: diamonds stoke the fire ──
@@ -311,12 +311,6 @@ export const adjacentThrowItems = (layout: ItemPlacement[], id: ItemId) => {
 };
 export const RELICS = [
   {
-    id: 'order',
-    name: '三息理线盒',
-    text: '按点数、花色排序或收拢选牌；整理冷却 3 秒。',
-    quip: '里德说，乱成一团的手牌是乱成一团的人生。他的工作台另当别论。',
-  },
-  {
     id: 'capacity',
     name: '双层旧邮匣',
     text: '手牌容量 +2，最多 12 张。',
@@ -337,7 +331,7 @@ export const RELICS = [
   {
     id: 'heart',
     name: '红心补缝毯',
-    text: '被单张牌命中：治疗 2。',
+    text: '被单张牌命中：治疗 4。',
     quip: '小伤口它全包了。大伤口，建议另请高明。',
   },
   {
@@ -349,7 +343,7 @@ export const RELICS = [
   {
     id: 'toxin',
     name: '浸露药匙',
-    text: '施加剧毒时，额外 +1。',
+    text: '施加剧毒时，额外 +2。',
     quip: '一勺见效。见什么效，看运气。',
   },
   {
@@ -376,14 +370,14 @@ export const PRESETS: Record<
     hint: string;
     beats: Style[];
     items: ItemId[];
-    relic: RelicId;
+    relic: RelicId | null;
   }
 > = {
   quick: {
     name: '快甩接力',
     hint: '单张连甩：单张牌额外削盾，边跑边抖掉毒。',
     beats: ['guard', 'poison'],
-    items: ['quick', 'compass', 'tempo', 'stride', 'draw'],
+    items: ['quick', 'compass', 'tempo', 'needle', 'stride', 'draw'],
     relic: 'relay',
   },
   combo: {
@@ -391,7 +385,7 @@ export const PRESETS: Record<
     hint: '理好牌，攒顺子同花，一击重创；扇面在手，单张飞牌伤不了你。',
     beats: ['mend', 'quick'],
     items: ['sequence', 'suit', 'focus', 'pair'],
-    relic: 'order',
+    relic: null,
   },
   guard: {
     name: '护灯反击',
@@ -425,8 +419,8 @@ export const PRESETS: Record<
     name: '里德的老把式',
     hint: '一位退休魔术师的慢节奏示范。',
     beats: [],
-    items: ['pair', 'mend'],
-    relic: 'order',
+    items: ['quick', 'needle'],
+    relic: null,
   },
 };
 /** Builds shown to players in the practice room, in the order of the counter wheel. */

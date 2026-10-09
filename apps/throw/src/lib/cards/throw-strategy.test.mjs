@@ -16,6 +16,8 @@ import {
   MAX_HP,
   PRESETS,
   FAN_PARRY_HAND,
+  REORDER_MS,
+  TICK_MS,
 } from './throw-duel.ts';
 import {
   packThrowItems,
@@ -67,6 +69,14 @@ test('the AI cannot form a scattered pair without selecting all intervening card
       Array.from({ length: indexes.length }, (_, i) => indexes[0] + i),
     );
   }
+});
+test('Reed demonstrates single-card tools even when his hand can form a straight flush', () => {
+  const hand = cards([12, 13, 14], [0, 0, 0]);
+  const pick = recommendCards(hand, PRESETS.lesson.items, 'lesson');
+  assert.equal(pick.length, 1);
+  assert.equal(pick[0].rank, 14);
+  assert.deepEqual(PRESETS.lesson.items, ['quick', 'needle']);
+  assert.equal(PRESETS.lesson.relic, null);
 });
 test('natural AI announcements and actual launches obey contiguous selection for every build', () => {
   for (const style of Object.keys(PRESETS)) {
@@ -133,7 +143,7 @@ test('dual adjacency amplifies both neighbours; suits drive the four condition i
   assert.equal(previewThrow(cards([2]), ['draw'], { throws: 3 }).draw, 1);
 });
 test('sorting buttons preserve identities; gathering keeps stable order and cooldown failure is atomic', () => {
-  let state = idle([], 'order');
+  let state = idle([], null);
   state.fighters[0].hand = cards([2, 13, 3, 2], [2, 1, 0, 3]);
   const identities = state.fighters[0].hand.map((c) => c.uid);
   state = arrangeThrow(state, 0, 'gather', [identities[0], identities[3]]);
@@ -144,7 +154,7 @@ test('sorting buttons preserve identities; gathering keeps stable order and cool
   const serialized = JSON.stringify(state);
   assert.equal(arrangeThrow(state, 0, 'rank'), state);
   assert.equal(JSON.stringify(state), serialized);
-  state = run(state, 60);
+  state = run(state, REORDER_MS / TICK_MS);
   const beforeSort = state.fighters[0].hand;
   state = arrangeThrow(state, 0, 'rank');
   assert.deepEqual(
@@ -152,13 +162,13 @@ test('sorting buttons preserve identities; gathering keeps stable order and cool
     beforeSort.map((c) => c.rank).sort((a, b) => a - b),
   );
 });
-test('an AI holding the sorting relic tidies its hand and pays the same cooldown', () => {
+test('an AI tidies its hand by the same default action and pays the same cooldown', () => {
   const state = createThrowDuel(5, [], 'combo');
   // The straight 2–6 is spread across the whole hand; only sorting makes it a tidy five.
   state.fighters[1].hand = cards([2, 13, 3, 12, 4, 11, 5, 10, 6], [0, 1, 2, 3, 0, 1, 2, 3, 0]);
   aiArrange(state, 1);
   assert.deepEqual(state.fighters[1].hand.map((c) => c.rank), [2, 3, 4, 5, 6, 10, 11, 12, 13]);
-  assert.equal(state.fighters[1].nextReorder, 60);
+  assert.equal(state.fighters[1].nextReorder, REORDER_MS / TICK_MS);
   const before = JSON.stringify(state);
   aiArrange(state, 1);
   assert.equal(JSON.stringify(state), before);
@@ -280,7 +290,7 @@ test('reactive kit: the heart blanket patches single-card hits; the needle box o
   state.fighters[1].relic = 'heart';
   state.fighters[1].hp = 300;
   state = hit(state, cards([5]));
-  assert.equal(state.fighters[1].hp, 297);
+  assert.equal(state.fighters[1].hp, 299);
   state = idle();
   state.fighters[1].items = ['thorns'];
   state.fighters[1].layout = packThrowItems(['thorns']);
@@ -300,7 +310,7 @@ test('a projectile applies ailments only at impact; fire and poison relics augme
   state = idle(['poison', 'venom'], 'toxin');
   state.fighters[0].hand = cards([2], [2]);
   state = run(launchThrow(state, 0, ['proof:0']), 9);
-  assert.equal(state.fighters[1].poison, 5);
+  assert.equal(state.fighters[1].poison, 6);
 });
 test('lifesteal measures actual HP loss, while penetration bypasses only its stated share', () => {
   let state = idle(['drain']);
@@ -390,7 +400,9 @@ function matchup(a, b, seeds) {
   return wins / seeds.length;
 }
 test('balance regression: every declared counter holds and no build runs away with the field', () => {
-  const seeds = Array.from({ length: 16 }, (_, i) => 5000 + i * 7919);
+  // The handbook requires 40 seeds for a balance conclusion; the original
+  // seed family remains intact rather than dropping inconvenient samples.
+  const seeds = Array.from({ length: 40 }, (_, i) => 5000 + i * 7919);
   const total = Object.fromEntries(COMPETITIVE_STYLES.map((s) => [s, 0]));
   for (const a of COMPETITIVE_STYLES)
     for (const b of COMPETITIVE_STYLES) {

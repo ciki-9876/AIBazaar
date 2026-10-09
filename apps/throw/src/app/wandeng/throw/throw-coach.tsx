@@ -1,5 +1,5 @@
 'use client';
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { scorePoker, type PlayingCard } from '../../../lib/cards/throw-poker';
 import type { ThrowDuel } from '../../../lib/cards/throw-duel';
 import type { CoachScript } from '../../../lib/adventure/magician-world';
@@ -67,11 +67,11 @@ const SCRIPTS: Record<CoachScript, Step[]> = {
     },
     {
       id: 'sort',
-      text: '你手里藏着一对。先点「按点数」，让同点数的牌挨在一起。',
+      text: '你手里藏着一对。先点「按点数」，让同点数的牌挨在一起。整理是每个人的基本功，冷却 20 秒。',
       target: 'sort',
       hold: true,
-      when: (c) => hasPair(player(c).hand) && !adjacentPair(player(c).hand),
-      skip: (c) => player(c).relic !== 'order' || adjacentPair(player(c).hand),
+      when: (c) => hasPair(player(c).hand) && !adjacentPair(player(c).hand) && player(c).nextReorder <= c.duel.tick,
+      skip: (c) => adjacentPair(player(c).hand),
       done: (c) => adjacentPair(player(c).hand),
     },
     {
@@ -84,7 +84,7 @@ const SCRIPTS: Record<CoachScript, Step[]> = {
     },
     {
       id: 'fire-pair',
-      text: '甩出去！对子有额外伤害，双响茶壶也会跟着响一声。',
+      text: '甩出去！对子本身有牌型加成。你的入门道具更适合单张，记得看手牌上方的「本箱打法」。',
       target: 'fire',
       hold: true,
       done: (c) => player(c).throws > c.mark.throws,
@@ -99,7 +99,7 @@ const SCRIPTS: Record<CoachScript, Step[]> = {
   qualifier: [
     {
       id: 'fire-intro',
-      text: '菲利克斯打火系：他出方块会点燃你。火怕盾——出黑桃、出对子，用补丁旧伞和守灯小毯竖起护盾。',
+      text: '菲利克斯打火系：他出方块会点燃你。火怕盾——米娅送的守灯小毯会在你出黑桃时竖起护盾。单张出黑桃，就能一边打、一边挡火。',
       target: 'stage',
       hold: true,
     },
@@ -112,6 +112,7 @@ const SCRIPTS: Record<CoachScript, Step[]> = {
     },
   ],
 };
+const NO_STEPS: Step[] = [];
 
 export function useCoach(
   script: CoachScript | null | undefined,
@@ -119,37 +120,41 @@ export function useCoach(
   picked: PlayingCard[],
   active: boolean,
 ) {
-  const [index, setIndex] = useState(0);
+  const [progress, setProgress] = useState({ index: 0, mark: { throws: 0, reorders: 0 } });
   const [dismissed, setDismissed] = useState(false);
-  const mark = useRef({ throws: 0, reorders: 0 });
-  const steps = script ? SCRIPTS[script] : [];
+  const steps = script ? SCRIPTS[script] : NO_STEPS;
   const reorders = duel.events.filter((event) => event.side === 0 && event.kind === 'reorder').length;
-  const context: Context = { duel, picked, mark: mark.current, reorders };
-  let step = !dismissed && active ? steps[index] : undefined;
+  const context: Context = useMemo(() => ({ duel, picked, mark: progress.mark, reorders }), [duel, picked, progress.mark, reorders]);
+  let step = !dismissed && active ? steps[progress.index] : undefined;
   // Skip steps that do not apply to this loadout.
   if (step?.skip?.(context)) step = undefined;
   const live = step && (step.when ? step.when(context) : true) ? step : undefined;
   const next = () => {
-    mark.current = { throws: duel.fighters[0].throws, reorders };
-    setIndex((value) => value + 1);
+    setProgress((value) => ({ index: value.index + 1, mark: { throws: duel.fighters[0].throws, reorders } }));
   };
   useEffect(() => {
     if (!script || dismissed || !active) return;
-    const current = steps[index];
+    const current = steps[progress.index];
     if (!current) return;
-    if (current.skip?.(context)) return next();
-    if (live && current.done?.(context)) next();
-  });
-  useEffect(() => {
-    if (live) mark.current = { throws: duel.fighters[0].throws, reorders };
-    // Mark only when a step first appears.
-  }, [live?.id]);
+    if (!current.skip?.(context) && !(live && current.done?.(context))) return;
+    // Advance after the acknowledged action's render; cancellation prevents a stale step
+    // from advancing again when the duel/selection changes in the same browser turn.
+    const timer = window.setTimeout(() => setProgress((value) => value.index !== progress.index ? value : {
+      index: value.index + 1,
+      mark: { throws: context.duel.fighters[0].throws, reorders: context.reorders },
+    }), 0);
+    return () => window.clearTimeout(timer);
+  }, [script, dismissed, active, steps, progress.index, context, live]);
   return {
     step: live ?? null,
     holding: Boolean(live?.hold),
     total: steps.length,
-    index,
+    index: progress.index,
     carryOn: next,
+    reset: () => {
+      setProgress({ index: 0, mark: { throws: 0, reorders: 0 } });
+      setDismissed(false);
+    },
     dismiss: () => setDismissed(true),
   };
 }
@@ -162,10 +167,9 @@ export function CoachCard({
   const { step } = coach;
   if (!step) return null;
   return (
-    <aside
+    <output
       className="tp-coach"
       data-coach-target={step.target ?? 'stage'}
-      role="status"
       aria-live="polite"
       key={step.id}
     >
@@ -184,6 +188,6 @@ export function CoachCard({
           </button>
         )}
       </div>
-    </aside>
+    </output>
   );
 }

@@ -113,7 +113,11 @@ export const GRAYWICK_DIALOGUES: Record<string, Dialogue> = {
       },
       {
         speaker: 'reed',
-        text: '单张能甩；凑成对子、顺子、同花，甩得更狠。真正的手艺是挑时机。犹豫太久，观众会去买爆米花。',
+        text: '先练单张：飞牌修缮箱加伤，穿幕细针穿盾。顺子、同花从三张起算；能凑出来时再甩一把。',
+      },
+      {
+        speaker: 'reed',
+        text: '想整理手牌，随时按点数或花色排；整理后要等二十秒才能再排。挑好时机——观众还在等你的下一手。',
       },
       {
         speaker: 'reed',
@@ -140,7 +144,7 @@ export const GRAYWICK_DIALOGUES: Record<string, Dialogue> = {
       },
       {
         speaker: 'reed',
-        text: '再送你两件旧物：回暖小灯，出红心能回血；清露药包，出红心顺手洗掉身上的火和毒。别问药包为什么认得红心，魔术就是这样。',
+        text: '再送你换调风铃和抖擞披风：单张轮换花色能加伤，连续出手能解毒。先把一张牌甩稳，再谈一整把。',
       },
       {
         speaker: 'reed',
@@ -159,7 +163,7 @@ export const GRAYWICK_DIALOGUES: Record<string, Dialogue> = {
       },
       {
         speaker: 'reed',
-        text: '凝牌和出手你已经会了，剩下的是节奏。邀请函拿去，还有回暖小灯和清露药包：一个回血，一个解火解毒。',
+        text: '邀请函拿去，还有换调风铃和抖擞披风：轮换花色加伤，出手解毒。单张的节奏练稳，大招才有地方落脚。',
       },
       {
         speaker: 'reed',
@@ -176,7 +180,7 @@ export const GRAYWICK_DIALOGUES: Record<string, Dialogue> = {
       },
       {
         speaker: 'reed',
-        text: '邀请函给你，再加回暖小灯和清露药包。然后去找米娅——她知道菲利克斯的路数。',
+        text: '邀请函给你，再加换调风铃和抖擞披风。继续练单张连甩，然后去找米娅——她知道菲利克斯的路数。',
       },
     ],
     effect: { set: ['invitation'] },
@@ -214,8 +218,8 @@ export const GRAYWICK_DIALOGUES: Record<string, Dialogue> = {
   },
   'rival-win': {
     lines: [
-      { speaker: 'felix', text: '……不可能。我的火从来没被一把破伞挡住过。' },
-      { speaker: 'eli', text: '那把伞补过十七次。它很有经验。' },
+      { speaker: 'felix', text: '……不可能。我的火从来没被一条旧毯子挡住过。' },
+      { speaker: 'eli', text: '米娅修过的东西，很少听你的话。' },
       {
         speaker: 'felix',
         text: '参赛证是你的。下次报幕，我会把你的名字念对——念得非常不情愿。',
@@ -223,6 +227,10 @@ export const GRAYWICK_DIALOGUES: Record<string, Dialogue> = {
       {
         speaker: 'narrator',
         text: '剧院门口贴出了第一张印着你名字的节目单。字很小，位置很偏，旁边就是“禁止吸烟”。但它在那儿。',
+      },
+      {
+        speaker: 'narrator',
+        text: '巡演箱开放新道具：双响茶壶、补丁旧伞、回暖小灯、清露药包、回声针盒、催信闹钟。下一站，再试对子与花色构筑。',
       },
     ],
   },
@@ -232,10 +240,10 @@ export const GRAYWICK_DIALOGUES: Record<string, Dialogue> = {
         speaker: 'felix',
         text: '别难过，输给我不丢人。很多人都输给过我，大多数还排了队。',
       },
-      { speaker: 'eli', text: '我会回来的。下次带更多的伞。' },
+      { speaker: 'eli', text: '我会回来的。下次把盾竖得更稳。' },
       {
         speaker: 'narrator',
-        text: '小提示：灼烧怕护盾。把补丁旧伞和守灯小毯放进巡演箱，多出对子和黑桃。还没见过米娅的话，她就在街上。',
+        text: '小提示：灼烧怕护盾。把守灯小毯放进巡演箱，用单张黑桃竖盾，再轮换花色连甩。还没见过米娅的话，她就在街上。',
       },
     ],
   },
@@ -271,12 +279,12 @@ export const GRAYWICK_DIALOGUES: Record<string, Dialogue> = {
       },
       {
         speaker: 'mia',
-        text: '拿着：补丁旧伞、守灯小毯、回声针盒。出对子、出黑桃都能竖盾。记得在开打前把它们摆进巡演箱。',
+        text: '拿着守灯小毯和折光铜镜。单张黑桃就能竖盾；盾吸收直伤时，铜镜还会反射。开打前把它们装好。',
       },
       { speaker: 'eli', text: '我该怎么谢你？' },
       {
         speaker: 'mia',
-        text: '等你上了电视，告诉全世界你的第一盏追光是我打的。还有，伞记得还我——开玩笑的。大概。',
+        text: '等你上了电视，告诉全世界你的第一盏追光是我打的。还有，毯子记得还我——开玩笑的。大概。',
       },
     ],
     effect: { set: ['miaMet'] },
@@ -293,7 +301,7 @@ export const GRAYWICK_DIALOGUES: Record<string, Dialogue> = {
     lines: [
       {
         speaker: 'mia',
-        text: '听说菲利克斯的火被一把旧伞闷灭了？我要把这句话裱起来，挂在后台。',
+        text: '听说菲利克斯的火被一条旧毯子闷灭了？我要把这句话裱起来，挂在后台。',
       },
       {
         speaker: 'mia',
@@ -350,22 +358,24 @@ export const GRAYWICK_BATTLES = {
     draw: 'rival-draw',
     winFlags: ['ticket'],
     afterFlags: ['coachedQualifier'],
-    tip: '米娅的建议：菲利克斯打火。把补丁旧伞、守灯小毯放进巡演箱（拖进格子，或点道具自动放入），开打后多出对子和黑桃。',
+    tip: '米娅的建议：菲利克斯打火。把守灯小毯和折光铜镜装好，用单张黑桃竖盾，再轮换花色连甩。',
   },
 } satisfies Record<string, BattleDefinition>;
 
 /** What the travelling trunk holds at each point of chapter one. */
-export const STARTER_ITEMS = ['pair', 'quick', 'draw'] as const satisfies readonly ItemId[];
-export const MENTOR_GIFT = ['mend', 'wash'] as const satisfies readonly ItemId[];
-export const MIA_GIFT = ['umbrella', 'ward', 'thorns'] as const satisfies readonly ItemId[];
+export const STARTER_ITEMS = ['quick', 'needle'] as const satisfies readonly ItemId[];
+export const MENTOR_GIFT = ['tempo', 'stride'] as const satisfies readonly ItemId[];
+export const MIA_GIFT = ['ward'] as const satisfies readonly ItemId[];
+export const POST_QUALIFIER_ITEMS = ['pair', 'umbrella', 'mend', 'wash', 'thorns', 'draw'] as const satisfies readonly ItemId[];
 export function graywickKit(state: AdventureState): { items: ItemId[]; relics: RelicId[] } {
   return {
     items: [
       ...STARTER_ITEMS,
       ...(state.flags.trained ? MENTOR_GIFT : []),
       ...(state.flags.miaMet ? MIA_GIFT : []),
+      ...(state.flags.ticket ? POST_QUALIFIER_ITEMS : []),
     ],
-    relics: ['order', ...(state.flags.miaMet ? (['bastion'] as const) : [])],
+    relics: state.flags.miaMet ? ['bastion'] : [],
   };
 }
 
@@ -381,10 +391,10 @@ export function graywickTalk(state: AdventureState, id: string): string | null {
 
 export function graywickObjective(state: AdventureState): Objective {
   if (!state.flags.trained)
-    return { title: '去里德的工作室', detail: '老魔术师说要教你点东西。他还说会备茶。', target: 'workshop-door' };
+    return { title: '去里德的工作室', detail: '老魔术师说要教你点东西。他还说会备茶。', target: state.map === 'workshop' ? 'reed' : state.map === 'street' ? 'workshop-door' : 'theatre-exit' };
   if (!state.flags.miaMet)
-    return { title: '找米娅聊聊', detail: '她修过菲利克斯的灯，知道他怕什么。', target: 'mia' };
+    return { title: '找米娅聊聊', detail: '她修过菲利克斯的灯，知道他怕什么。', target: state.map === 'street' ? 'mia' : `${state.map}-exit` };
   if (!state.flags.ticket)
-    return { title: '赢下第一张参赛证', detail: '抒情剧院，菲利克斯在等你。大概还在照镜子。', target: 'theatre-door' };
-  return { title: '乘巴士，去更大的舞台', detail: '旧剧院街尽头的车站。司机应该回来了。', target: 'bus' };
+    return { title: '赢下第一张参赛证', detail: '抒情剧院，菲利克斯在等你。大概还在照镜子。', target: state.map === 'theatre' ? 'felix' : state.map === 'street' ? 'theatre-door' : 'workshop-exit' };
+  return { title: '乘巴士，去更大的舞台', detail: '旧剧院街尽头的车站。司机应该回来了。', target: state.map === 'street' ? 'bus' : `${state.map}-exit` };
 }

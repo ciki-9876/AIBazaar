@@ -12,7 +12,7 @@ export const KITS = {
   guard: { style: 'guard', items: ['umbrella', 'ward', 'thorns', 'pair', 'mend'], relic: 'bastion' },
   poison: { style: 'poison', items: ['poison', 'venom', 'slow', 'pair', 'draw'], relic: 'toxin' },
   burn: { style: 'burn', items: ['cinder', 'bellows', 'ash', 'pair', 'draw'], relic: 'ember' },
-  combo: { style: 'combo', items: ['sequence', 'suit', 'focus', 'pair'], relic: 'order' },
+  combo: { style: 'combo', items: ['sequence', 'suit', 'focus', 'pair'], relic: null },
 };
 for (const [id, def] of Object.entries(BATTLES)) {
   if (def.act < 2 || (only.length && !only.includes(id))) continue;

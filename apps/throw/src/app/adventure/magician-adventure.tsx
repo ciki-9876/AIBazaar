@@ -23,6 +23,7 @@ import {
   createAdventure,
   DIALOGUES,
   finishAdventureBattle,
+  hotspotInReach,
   interactAdventure,
   keepExploring,
   MAPS,
@@ -44,13 +45,15 @@ import {
 import ThrowTable, {
   type PreparedThrowLoadout,
 } from '../wandeng/throw/throw-table';
-import { packThrowItems, validThrowLayout, type ItemId, type RelicId } from '../../lib/cards/throw-loadout';
+import { packThrowItems, PRESETS, RELICS, validThrowLayout, type ItemId, type RelicId } from '../../lib/cards/throw-loadout';
+import { validDeckBook } from '../../lib/cards/throw-enchant';
 import { DossierPanel, Fee, ShopPanel, ShowsPanel } from './adventure-panels';
+import { DialogueText } from './dialogue-text';
 
 const STARTER_LOADOUT: PreparedThrowLoadout = {
   style: 'quick',
   layout: packThrowItems(STARTER_ITEMS),
-  relic: 'order',
+  relic: null,
 };
 /** Arriving in Bridgeport without a remembered trunk: Graywick's full kit, packed sensibly. */
 const BRIDGEPORT_LOADOUT: PreparedThrowLoadout = {
@@ -170,18 +173,27 @@ export default function MagicianAdventure() {
   }, [state.player.x]);
   // Saves: restore once on mount, then keep the latest state (no clocks in the envelope).
   useEffect(() => {
-    try {
-      const raw = window.localStorage.getItem(SAVE_KEY);
-      const restored = raw ? restoreAdventure(raw) : null;
-      if (restored) {
-        dispatch({ type: 'load', state: restored.state });
-        const saved = restored.envelope.loadout as PreparedThrowLoadout | undefined;
-        if (saved && Array.isArray(saved.layout) && validThrowLayout(saved.layout)) setLoadout(saved);
+    let cancelled = false;
+    // Restore after mounting; the initial save effect cannot overwrite an unread save.
+    queueMicrotask(() => {
+      if (cancelled) return;
+      try {
+        const raw = window.localStorage.getItem(SAVE_KEY);
+        const restored = raw ? restoreAdventure(raw) : null;
+        if (restored) {
+          dispatch({ type: 'load', state: restored.state });
+          const saved = restored.envelope.loadout as PreparedThrowLoadout | undefined;
+          if (saved && typeof saved === 'object' && Object.hasOwn(PRESETS, saved.style)
+            && Array.isArray(saved.layout) && saved.layout.every((entry) => entry && typeof entry === 'object')
+            && validThrowLayout(saved.layout) && (saved.relic === null || RELICS.some((entry) => entry.id === saved.relic))
+            && (saved.book === undefined || validDeckBook(saved.book))) setLoadout(saved);
+        }
+      } catch {
+        // Storage may be unavailable (private mode); the story simply starts fresh.
       }
-    } catch {
-      // Storage may be unavailable (private mode); the story simply starts fresh.
-    }
-    loaded.current = true;
+      loaded.current = true;
+    });
+    return () => { cancelled = true; };
   }, []);
   useEffect(() => {
     if (!loaded.current) return;
@@ -195,11 +207,15 @@ export default function MagicianAdventure() {
   const act = ACTS[state.act - 1];
   const spots = visibleHotspots(state);
   const objective = adventureObjective(state);
+  const objectiveActive = state.act === 1 ? !state.flags.departed : !state.flags.leftBridgeport;
   const nearby = nearbyHotspot(state);
   const speaker = (id: CharacterId) => (id === 'narrator' ? narratorFor(state.act) : CHARACTERS[id]);
   const dialogue = state.dialogue ? DIALOGUES[state.dialogue.id] : null;
   const line =
     state.dialogue && dialogue ? dialogue.lines[state.dialogue.step] : null;
+  const dialoguePartner = line && line.speaker !== 'eli' && line.speaker !== 'narrator'
+    ? line.speaker
+    : dialogue?.lines.find((entry) => entry.speaker !== 'eli' && entry.speaker !== 'narrator')?.speaker;
   const choices =
     dialogue && state.dialogue?.step === dialogue.lines.length - 1
       ? dialogue.choices
@@ -381,12 +397,7 @@ export default function MagicianAdventure() {
     directionRef.current = direction;
     setMotion(direction);
   };
-  const targetOnMap =
-    state.map === 'workshop' && !state.flags.trained
-      ? 'reed'
-      : state.map === 'theatre' && !state.flags.ticket
-        ? 'felix'
-        : objective.target;
+  const targetOnMap = objective.target;
   const setup = state.mode === 'battle' ? battleSetup(state) : null;
   if (state.mode === 'battle' && state.battle && setup) {
     const battle = state.battle;
@@ -497,16 +508,27 @@ export default function MagicianAdventure() {
               style={{ left: spot.x, top: map.floor }}
             >
               <button
-                className="rg-hotspot-label"
+                className="rg-hotspot-hitarea"
                 onClick={() => approach(spot.id, spot.x)}
                 disabled={state.mode !== 'explore' || mapOpen}
-                aria-label={`${nearby?.id !== spot.id ? '步行至' : spot.kind === 'door' ? '进入' : spot.kind === 'pickup' ? '查看' : '交互'}${spot.label}`}
+                aria-label={`步行至${spot.label}`}
+                tabIndex={-1}
+              />
+              {hotspotInReach(state, spot) && !mapOpen && <button
+                className="rg-hotspot-label"
+                onClick={() => dispatch({ type: 'interact', id: spot.id })}
+                aria-label={`${spot.kind === 'door' ? '进入' : spot.kind === 'pickup' ? '查看' : '交互'}${spot.label}`}
               >
-                {spot.id === targetOnMap && <span className="rg-quest-diamond" />}
                 <span>{spot.label}</span>
-                {nearby?.id === spot.id && <kbd>E</kbd>}
-              </button>
-              {spot.id === targetOnMap && <i className="rg-waypoint" />}
+                <kbd>E</kbd>
+              </button>}
+              {spot.id === targetOnMap && objectiveActive && state.mode !== 'complete' && <>
+                <button className="rg-quest-marker" aria-label={`当前任务：${objective.title}`} title={objective.title}
+                  onClick={() => approach(spot.id, spot.x)} disabled={state.mode !== 'explore' || mapOpen}>
+                  <svg viewBox="0 0 32 40" aria-hidden="true"><path d="M16 2L30 10V29L16 38L2 29V10Z" /><path d="M16 10V23M16 28V29" /></svg>
+                </button>
+                <i className="rg-waypoint" />
+              </>}
             </div>
           ))}
         </div>
@@ -529,13 +551,13 @@ export default function MagicianAdventure() {
           </div>
         )}
         {state.mode === 'explore' && !mapOpen && !state.flags.trained && (
-          <div className="rg-coach" role="status">
+          <output className="rg-coach">
             {state.player.walkTicks === 0 ? (
               <>
                 <span>
                   <kbd>A</kbd>
                   <kbd>D</kbd> 或 <kbd>←</kbd>
-                  <kbd>→</kbd> 行走；也可以直接点地点名字。
+                  <kbd>→</kbd> 行走；也可以直接点人物、建筑或任务图标。
                 </span>
                 <small>别着急，格雷维克没什么好赶的。</small>
               </>
@@ -554,15 +576,15 @@ export default function MagicianAdventure() {
                 <small>他假装在修东西，其实在等你。</small>
               </>
             )}
-          </div>
+          </output>
         )}
         {state.act === 2 && state.mode === 'explore' && !mapOpen && !state.flags.metDoris && (
-          <div className="rg-coach" role="status">
+          <output className="rg-coach">
             <span>
               右上角是<b>演出费</b>：赢比赛、街头演出都会进账，在霍布斯旧货铺花掉。
             </span>
             <small>进度会自动保存在这台设备上。</small>
-          </div>
+          </output>
         )}
         {state.flags.ticket && state.mode === 'explore' && (
           <div className="rg-pass">
@@ -599,23 +621,12 @@ export default function MagicianAdventure() {
           <dialog
             ref={modalRef}
             open
-            className={`rg-dialogue ${state.dialogue.id === 'opening' || state.dialogue.id === 'bp-arrival' ? 'rg-opening' : ''}`}
+            className={`rg-dialogue ${dialoguePartner ? 'has-partner' : ''} ${state.dialogue.id === 'opening' || state.dialogue.id === 'bp-arrival' ? 'rg-opening' : ''}`}
             aria-modal="true"
             aria-label={speaker(line.speaker).name}
           >
-            <div className="rg-dialogue-portrait" data-speaker={line.speaker}>
-              {line.speaker !== 'narrator' ? (
-                <Figure
-                  key={line.speaker}
-                  crop="bust"
-                  character={line.speaker as RigId}
-                  height={188}
-                />
-              ) : (
-                <svg viewBox="0 0 100 100" className="rg-portrait-suit" aria-hidden="true">
-                  <SuitMark suit={0} size={56} x={50} y={50} color="currentColor" />
-                </svg>
-              )}
+            <div className={`rg-dialogue-portrait rg-dialogue-player ${line.speaker === 'eli' ? 'is-speaking' : ''}`} data-speaker="eli" aria-label="伊莱，玩家">
+              <Figure crop="bust" character="eli" height={188} />
             </div>
             <div className="rg-dialogue-content">
               <div className="rg-speaker">
@@ -623,7 +634,7 @@ export default function MagicianAdventure() {
                 <span>{speaker(line.speaker).role}</span>
               </div>
               <p key={`${state.dialogue.id}-${state.dialogue.step}`}>
-                {line.text}
+                <DialogueText text={line.text} />
               </p>
               <div className="rg-dialogue-footer">
                 <span>
@@ -641,7 +652,7 @@ export default function MagicianAdventure() {
                           dispatch({ type: 'choice', id: choice.id })
                         }
                       >
-                        {choice.label} <span>→</span>
+                        <DialogueText text={choice.label} /> <span>→</span>
                       </button>
                     ))
                   ) : (
@@ -664,6 +675,10 @@ export default function MagicianAdventure() {
                 </div>
               </div>
             </div>
+            {dialoguePartner && <div className={`rg-dialogue-portrait rg-dialogue-npc ${line.speaker === dialoguePartner ? 'is-speaking' : ''}`}
+              data-speaker={dialoguePartner} aria-label={`${CHARACTERS[dialoguePartner].name}，对话对象`}>
+              <Figure key={dialoguePartner} crop="bust" character={dialoguePartner as RigId} height={188} />
+            </div>}
           </dialog>
         )}
 

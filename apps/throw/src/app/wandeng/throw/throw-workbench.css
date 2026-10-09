@@ -731,6 +731,10 @@
 }
 .tp-deckcase-grid {
   display: grid;
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  border: 0;
   align-content: start;
   gap: 8px;
   overflow: auto;

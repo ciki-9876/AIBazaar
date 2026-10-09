@@ -89,7 +89,7 @@ test('every referenced dialogue, battle result and hotspot conversation exists',
   for (const dialogue of Object.values(DIALOGUES))
     for (const choice of dialogue.choices ?? []) {
       if (choice.action.type === 'battle') assert.ok(BATTLES[choice.action.battle], choice.action.battle);
-      if (choice.action.type === 'pay') assert.ok(DIALOGUES[choice.action.then] && DIALOGUES[choice.action.poor]);
+      if (choice.action.type === 'pay') assert.ok(DIALOGUES[choice.action.nextDialogue] && DIALOGUES[choice.action.poor]);
     }
   for (const show of SHOWS) assert.ok(BATTLES[`show-${show.id}`]);
   for (const map of Object.values(MAPS))
@@ -185,7 +185,7 @@ test('street shows carry their terms and kit restrictions into the duel', () => 
     state.battle.seed,
     ['pair'],
     setup.enemyStyle,
-    'order',
+    null,
     setup.enemyRelic,
     packThrowItems(['pair']),
     { enemy: setup.enemyBook },
@@ -283,10 +283,10 @@ test('deck books keep owned variants only', () => {
 test('saves round-trip and refuse other products, versions and broken shapes', () => {
   let state = arrived();
   state = talk(toTheatre(state), 'doris');
-  const json = serializeAdventure(state, { loadout: { relic: 'order' } });
+  const json = serializeAdventure(state, { loadout: { relic: null } });
   const back = restoreAdventure(json);
   assert.deepEqual(back.state, state);
-  assert.deepEqual(back.envelope.loadout, { relic: 'order' });
+  assert.deepEqual(back.envelope.loadout, { relic: null });
   const envelope = JSON.parse(json);
   assert.equal(restoreAdventure(JSON.stringify({ ...envelope, product: 'elevator' })), null);
   assert.equal(restoreAdventure(JSON.stringify({ ...envelope, version: 'magician-adventure-v2' })), null);
@@ -298,6 +298,13 @@ test('saves round-trip and refuse other products, versions and broken shapes', (
     { owned: { items: ['laser'], relics: [], variants: [] } },
     { owned: { items: [], relics: [], variants: ['0-2:LHA'] } },
     { flags: { ...state.flags, extra: true } },
+    { map: '__proto__' },
+    { dossier: [] },
+    { dossier: { ada: null } },
+    { dossier: { ada: { duels: 1, wins: 1, losses: 1, suits: [0, 0, 0, 0], kinds: Array(9).fill(0) } } },
+    { dossier: { ada: { duels: 1, wins: 1, losses: 0, suits: [0, 0, 0], kinds: Array(9).fill(0) } } },
+    { dossier: { ada: { duels: 1, wins: 1, losses: 0, suits: [0, -1, 0, 0], kinds: Array(9).fill(0) } } },
+    { dossier: { ada: { duels: 1, wins: 1, losses: 0, suits: [0, 0, 0, 0], kinds: ['bad', ...Array(8).fill(0)] } } },
   ])
     assert.equal(restoreAdventure(JSON.stringify({ ...envelope, state: { ...state, ...broken } })), null, JSON.stringify(broken));
   // A duel in progress is not resumable; the hero is put back.
@@ -305,6 +312,39 @@ test('saves round-trip and refuse other products, versions and broken shapes', (
   const resumed = restoreAdventure(serializeAdventure(fighting)).state;
   assert.equal(resumed.mode, 'explore');
   assert.equal(resumed.battle, null);
+  for (const broken of [
+    { returnX: -1 }, { returnX: MAPS.thursday.width }, { returnX: '430' },
+    { returnMap: 'workshop' }, { returnMap: '__proto__' }, { seed: -1 }, { id: fighting.nextBattleId },
+    { enemyStyle: 'laser' }, { coach: 'forged' }, { kind: 'practice' },
+  ]) assert.equal(restoreAdventure(serializeAdventure({ ...fighting, battle: { ...fighting.battle, ...broken } })), null, JSON.stringify(broken));
+});
+
+test('v3 saves preserve progress and earned kits while retiring the sorting relic', () => {
+  const current = arrived();
+  const legacy = { ...current, version: 'magician-adventure-v3', fee: 125,
+    owned: { items: ['poison'], relics: ['order', 'heart'], variants: ['1-7:mint'] } };
+  const json = JSON.stringify({ product: 'throw-adventure', version: 'magician-adventure-v3', state: legacy,
+    loadout: { style: 'quick', layout: [{ id: 'quick', start: 0 }], relic: 'order' } });
+  const restored = restoreAdventure(json);
+  assert.ok(restored);
+  assert.equal(restored.state.version, 'magician-adventure-v4');
+  assert.equal(restored.envelope.version, 'magician-adventure-v4');
+  assert.equal(restored.state.fee, 125);
+  assert.deepEqual(restored.state.won, current.won);
+  assert.deepEqual(restored.state.flags, current.flags);
+  assert.deepEqual(restored.state.owned.relics, ['heart']);
+  assert.equal(restored.envelope.loadout.relic, null);
+  assert.deepEqual(restored.envelope.loadout.layout, [{ id: 'quick', start: 0 }]);
+  assert.ok(['pair', 'draw', 'mend', 'wash', 'umbrella', 'thorns', 'poison'].every((id) => restored.state.owned.items.includes(id)));
+  assert.deepEqual(restoreAdventure(serializeAdventure(restored.state)).state, restored.state);
+  const mismatched = JSON.parse(json);
+  mismatched.state.version = 'magician-adventure-v2';
+  assert.equal(restoreAdventure(JSON.stringify(mismatched)), null);
+});
+
+test('save adapter extras cannot replace the product, rules version or deterministic state', () => {
+  const state = arrived();
+  assert.deepEqual(restoreAdventure(serializeAdventure(state, { product: 'elevator', version: 'garbage', state: null })).state, state);
 });
 
 test('every shop offer and battle reward names real items, relics and valid variants', () => {
@@ -325,7 +365,7 @@ test('every story battle builds a legal duel from its definition', () => {
       77,
       ['pair'],
       def.style,
-      'order',
+      null,
       def.relic !== undefined ? def.relic : undefined,
       packThrowItems(['pair']),
       { enemy: def.book },

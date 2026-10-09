@@ -34,6 +34,7 @@ import {
   TICK_MS,
   CURTAIN_MS,
   curtainDamage,
+  battlePhase,
   termsAllow,
   type DuelTerms,
   type ItemId,
@@ -54,6 +55,9 @@ import {
   type VisualShot,
 } from './throw-motion';
 import { ThrowSound } from './throw-sound';
+import { throwAdvice } from './throw-advice';
+import { deservesCheer } from './throw-audience';
+import { PhaseLights, VictoryConfetti } from './throw-celebration';
 import ThrowWorkbench from './throw-workbench';
 import {
   packThrowItems,
@@ -144,7 +148,7 @@ function PokerCard({
 const effectText = (effect: TriggerEffect) =>
   effect.kind === 'heal' && effect.value === 0
     ? '满生命'
-    : effect.kind === 'slow'
+    : effect.kind === 'slow' || effect.kind === 'wound'
       ? `${effect.value / 1000}s`
       : effect.kind === 'pierce' || effect.kind === 'leech'
         ? `${effect.value}%`
@@ -257,10 +261,10 @@ function Host({
           >
             {event.text}
             <b>
-              {event.source === 'relic:order'
-                ? '3s'
+              {event.source === 'rule:reorder'
+                ? '20s'
                 : event.value > 0
-                  ? event.kind === 'slow'
+                  ? event.kind === 'slow' || event.kind === 'wound'
                     ? `${event.value / 1000}s`
                     : event.kind === 'pierce' || event.kind === 'leech'
                       ? `${event.value}%`
@@ -414,7 +418,7 @@ export default function ThrowTable({
     challenge?.enemyStyle ?? 'guard',
   );
   const [seed, setSeed] = useState(String(challenge?.seed ?? 1024));
-  const [book, setBook] = useState<DeckBook>(() => ({ ...(initialLoadout?.book ?? {}) }));
+  const [book, setBook] = useState<DeckBook>(() => ({ ...initialLoadout?.book }));
   const [deckOpen, setDeckOpen] = useState(false);
   const [paused, setPaused] = useState(false);
   const [rules, setRules] = useState(false);
@@ -634,6 +638,7 @@ export default function ThrowTable({
     oldPositions.current.clear();
     const audio = unlockSound();
     audio.start();
+    coach.reset();
     dispatch({ type: 'start', duel: next });
     setPaused(false);
     setPhase('battle');
@@ -715,6 +720,9 @@ export default function ThrowTable({
   // Curtain call (presentation): countdown, live rate, and how far the drop has fallen.
   const curtainIn = Math.max(0, (CURTAIN_MS - duel.tick * TICK_MS) / 1000);
   const curtainNow = curtainDamage(duel.tick);
+  const stagePhase = battlePhase(duel.tick);
+  const advice = throwAdvice(player.items, duel.terms);
+  const audienceMoment = duel.events.filter((event) => deservesCheer(event) && duel.tick - event.tick < 30).at(-1);
   const curtainFall = Math.min(1, Math.max(0, (duel.tick * TICK_MS - CURTAIN_MS) / 30000));
   const lastHits = duel.events.filter(
     (event) =>
@@ -724,7 +732,7 @@ export default function ThrowTable({
   );
   const drawRemaining = (fighter: ThrowFighter) =>
     (
-      ((Math.max(0, drawInterval(fighter.items) - fighter.drawClock) +
+      ((Math.max(0, drawInterval(fighter.items, duel.tick) - fighter.drawClock) +
         Math.max(0, fighter.slowUntil - duel.tick)) *
         TICK_MS) /
       1000
@@ -791,9 +799,9 @@ export default function ThrowTable({
               tip={
                 tipOverride ??
                 (coachScript === 'qualifier'
-                  ? '米娅的建议：菲利克斯打火。把补丁旧伞、守灯小毯放进巡演箱（拖进格子，或点道具自动放入），开打后多出对子和黑桃。'
+                  ? '米娅的建议：菲利克斯打火。把守灯小毯放进巡演箱（拖进格子，或点道具自动放入），用单张黑桃攒护盾，守住再反击。'
                   : coachScript === 'lesson'
-                    ? '第一课只用入门三件：双响茶壶、飞牌修缮箱、催信闹钟。直接点「开始对战」就好。'
+                    ? '第一课先练单张：飞牌修缮箱加直伤，穿幕细针帮你穿盾。直接点「开始对战」就好。'
                     : undefined)
               }
               tap={() => unlockSound().tap()}
@@ -871,7 +879,7 @@ export default function ThrowTable({
           </div>
         </section>
       ) : (
-        <section className="tp-battle">
+        <section className="tp-battle" data-battle-phase={stagePhase}>
           <div className="tp-opponent">
             <div className="tp-hand-caption">
               <span>
@@ -915,6 +923,7 @@ export default function ThrowTable({
               <span className="tp-stage-curtain tp-stage-curtain-right" />
             </div>
             <div className="tp-stage-floor" aria-hidden="true" />
+            <PhaseLights phase={stagePhase} />
             <div className="tp-fight-hud">
               <FighterLife
                 fighter={player}
@@ -965,6 +974,11 @@ export default function ThrowTable({
               character={hosts[0]}
             />
             <ThrowSpectacle duel={duel} />
+            {audienceMoment && (
+              <output className="tp-audience-moment" key={audienceMoment.id} data-audience-cheer={audienceMoment.id} aria-live="polite">
+                <span aria-hidden="true">✦</span> 好手！观众喝彩
+              </output>
+            )}
             {lastHits.map((event) => (
               <div
                 className={`tp-impact tp-impact-${event.side === 0 ? 1 : 0} tp-impact-${event.kind ?? 'damage'} ${(event.combo ?? 0) >= 4 ? 'tp-impact-epic' : ''}`}
@@ -1024,6 +1038,10 @@ export default function ThrowTable({
             )}
           </div>
           <div className="tp-player-zone">
+            <div className="tp-play-advice" aria-label="当前道具出牌策略">
+              <span>本箱打法</span>
+              <strong>{advice.join(' · ')}</strong>
+            </div>
             <div className="tp-hand-caption">
               <span>
                 你的手牌{' '}
@@ -1038,22 +1056,11 @@ export default function ThrowTable({
               </span>
               <div className="tp-selection-actions">
                 <span className="tp-order-status">
-                  {player.relic === 'order'
-                    ? orderCooldown > 0
+                  {orderCooldown > 0
                       ? `理牌冷却 ${orderCooldown.toFixed(1)}s`
-                      : '理牌可用'
-                    : player.relic === 'relay'
-                      ? `接力 ${player.throws % 3}/3`
-                      : player.relic === 'echo'
-                        ? `余响 ${player.echo}/12`
-                        : player.relic === 'capacity'
-                          ? '夹层 +2'
-                          : player.relic === 'heart'
-                            ? '单张命中回 2'
-                            : ''}
+                      : '理牌可用'}
                 </span>
-                {player.relic === 'order' && (
-                  <span className="tp-sort-actions">
+                <span className="tp-sort-actions">
                     {(['rank', 'suit', 'gather'] as const).map((mode) => (
                       <button
                         key={mode}
@@ -1075,8 +1082,7 @@ export default function ThrowTable({
                             : '收拢所选'}
                       </button>
                     ))}
-                  </span>
-                )}
+                </span>
                 <button onClick={() => dispatch({ type: 'clear' })}>
                   清空
                 </button>
@@ -1205,6 +1211,7 @@ export default function ThrowTable({
             </span>
           </footer>
           <FlightLayer flights={flights} paused={clockStopped} />
+          {duel.status === 'ended' && duel.winner === 0 && <VictoryConfetti />}
           <CoachCard coach={coach} />
         </section>
       )}
@@ -1225,8 +1232,9 @@ export default function ThrowTable({
             </button>
 
             <h2>玩法规则</h2>
-            <p>开局各 5 张牌，每 3 秒抽 1 张；手牌上限 10 张，满了就不再抽——不会替你攒着。</p>
+            <p>开局各 5 张牌，自动补牌；手牌上限 10 张，满了就不再抽——不会替你攒着。</p>
             <p>点击选一张，按住拖动可框选一段连续的牌；按空格或「甩出去」出手。电脑也守同样的规矩，它不会作弊，只是不会累。</p>
+            <p>牌型基准倍率（顺子、同花、同花顺按 5 张展示）：</p>
             <div className="tp-rank-table">
               {HAND_NAMES.map((name, index) => (
                 <div key={name}>
@@ -1235,7 +1243,7 @@ export default function ThrowTable({
                 </div>
               ))}
             </div>
-            <p>J=11、Q=12、K=13、A=14，A 也能接 2–5。最强的五张组合吃倍率，其余牌按点数算；一对 2 打 6 点。</p>
+            <p>J=11、Q=12、K=13、A=14，A 也能接 2。顺子和同花从 3 张起成型；3／4 张组合的额外牌型加成按张数／5 缩放。最强的组合吃倍率，其余牌按点数算。所有人都能按点数、花色排序或收拢选牌，每次有效整理后冷却 20 秒。</p>
             <h3>四种花色，四种状态</h3>
             <p>♠ 护盾 · ♥ 治疗 · ♣ 剧毒 · ♦ 灼烧——具体由你巡演箱里的道具决定。</p>
             <ul className="tp-counter-rules">

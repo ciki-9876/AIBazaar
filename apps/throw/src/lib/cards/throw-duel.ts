@@ -29,12 +29,14 @@ export const TICK_MS = 50,
   MAX_SHIELD = 160,
   MAX_POWER = 30;
 /**
- * v4 makes the four conditions counter one another by rule, not by numbers:
+ * v6 retains the four-condition wheel introduced in v4:
  * healing cleanses poison, poison ignores shields, shields smother burn, and
  * burn halves healing. Direct-damage builds add shred (single cards) and
- * wounds (straights and better). Deck streams are unchanged from v3.
+ * wounds (straights and better). Three-card runs/flushes have proportional
+ * rewards, sorting is a shared action and draws accelerate by battle phase.
+ * Deck streams are unchanged from v3.
  */
-export const RULES_VERSION = 'throw-duel-v5';
+export const RULES_VERSION = 'throw-duel-v6';
 /**
  * v5 curtain call (落幕): from one minute in, the theatre starts closing on
  * both magicians. Every second each side takes damage that rises by
@@ -42,6 +44,10 @@ export const RULES_VERSION = 'throw-duel-v5';
  * absorb it and healing outlasts it: surviving is itself a way to win.
  */
 export const CURTAIN_MS = 60000;
+/** After thirty seconds, faster replenishment raises the pressure on both seats. */
+export const HEATED_MS = 30000;
+/** Sorting is a basic action shared by every fighter, paid only when order changes. */
+export const REORDER_MS = 20000;
 export const CURTAIN_RAMP = 1;
 /** Curtain damage dealt at the given tick (0 before the curtain falls). */
 export const curtainDamage = (tick: number) =>
@@ -56,8 +62,13 @@ export const FAN_PARRY_HAND = 7;
 export const handLimit = (relic: RelicId | null) =>
   relic === 'capacity' ? 12 : HAND_LIMIT;
 const ticks = (ms: number) => ms / TICK_MS;
-/** Always three seconds for every build. */
-export const drawInterval = (_items: readonly ItemId[]) => ticks(3000);
+export type BattlePhase = 'opening' | 'heated' | 'curtain';
+/** The thirty-second boundary remains opening; the next simulation tick is heated. */
+export const battlePhase = (tick: number): BattlePhase =>
+  tick >= ticks(CURTAIN_MS) ? 'curtain' : tick > ticks(HEATED_MS) ? 'heated' : 'opening';
+/** Builds share the phase's interval; elapsed draw progress is retained across transitions. */
+export const drawInterval = (_items: readonly ItemId[], tick = 0) =>
+  ticks(battlePhase(tick) === 'curtain' ? 1500 : battlePhase(tick) === 'heated' ? 2000 : 3000);
 export type Side = 0 | 1;
 export type EffectKind =
   | 'damage'
@@ -426,11 +437,12 @@ function itemEffects(
   kind: number,
   context: PreviewContext,
   pureSuit: number | null,
+  comboSize: number,
 ): Raw[] {
   const single = cards.length === 1;
   switch (id) {
     case 'quick':
-      return single ? [{ name: '轻巧飞掷', kind: 'damage', value: 4 }] : [];
+      return single ? [{ name: '轻巧飞掷', kind: 'damage', value: 8 }] : [];
     case 'tempo':
       return pureSuit !== null &&
         context.lastSuit != null &&
@@ -447,11 +459,11 @@ function itemEffects(
         : [];
     case 'sequence':
       return kind === 4 || kind === 8
-        ? [{ name: '织序连击', kind: 'damage', value: 36 }]
+        ? [{ name: '织序连击', kind: 'damage', value: Math.floor(36 * comboSize / 5) }]
         : [];
     case 'suit':
       return kind === 5 || kind === 8
-        ? [{ name: '四色辉光', kind: 'damage', value: 30 }]
+        ? [{ name: '四色辉光', kind: 'damage', value: Math.floor(30 * comboSize / 5) }]
         : [];
     case 'focus':
       return cards.length >= 5 && kind >= 4
@@ -477,7 +489,7 @@ function itemEffects(
             {
               name: '护心重映',
               kind: 'damage',
-              value: Math.floor((context.shield ?? 0) * 0.5),
+              value: Math.floor((context.shield ?? 0) * 0.4),
             },
           ]
         : [];
@@ -538,7 +550,7 @@ export function previewThrow(
   const links = new Map<ItemId, number>();
   if (cards.length)
     for (const id of items)
-      for (const raw of itemEffects(id, cards, poker.kind, context, pureSuit)) {
+      for (const raw of itemEffects(id, cards, poker.kind, context, pureSuit, poker.comboIds.length)) {
         let amount = raw.value;
         if (AMPLIFIED.includes(raw.kind))
           for (const neighbor of neighbors(id)) {
@@ -596,7 +608,7 @@ export function previewThrow(
     effects.push({ source: `relic:${context.relic}`, name, value, kind });
   if (cards.length) {
     if (context.relic === 'ember' && total('burn')) relic('灶心添火', 2, 'burn');
-    if (context.relic === 'toxin' && total('poison')) relic('浸露添毒', 1, 'poison');
+    if (context.relic === 'toxin' && total('poison')) relic('浸露添毒', 2, 'poison');
     if (context.relic === 'echo' && context.echo)
       relic('余响回奏', context.echo, 'damage');
     if (context.relic === 'relay' && ((context.throws ?? 0) + 1) % 3 === 0)
@@ -604,7 +616,7 @@ export function previewThrow(
     if (poker.kind >= 4)
       effects.push({ source: 'rule:wound', name: '压轴重创', value: WOUND_MS, kind: 'wound' });
     // Finale: a flourish of five or more cards snuffs your own flames and
-    // leaves you fireproof for four seconds.
+    // leaves you fireproof for six seconds.
     if (cards.length >= 5 && (context.burn ?? 0) > 0)
       effects.push({ source: 'rule:finale', name: '压轴灭火', value: context.burn ?? 0, kind: 'cleanse' });
   }
@@ -743,7 +755,6 @@ export function reorderThrow(
     from = fighter.hand.findIndex((card) => card.uid === uid);
   if (
     state.status !== 'playing' ||
-    fighter.relic !== 'order' ||
     state.tick < fighter.nextReorder ||
     from < 0 ||
     !Number.isInteger(targetIndex) ||
@@ -756,11 +767,11 @@ export function reorderThrow(
     hand = next.fighters[side].hand,
     [card] = hand.splice(from, 1);
   hand.splice(targetIndex, 0, card);
-  next.fighters[side].nextReorder = state.tick + ticks(3000);
+  next.fighters[side].nextReorder = state.tick + ticks(REORDER_MS);
   effectEvent(next, side, {
-    source: 'relic:order',
-    name: '三息理序',
-    value: 3,
+    source: 'rule:reorder',
+    name: '整理手牌',
+    value: REORDER_MS / 1000,
     kind: 'reorder',
   });
   return next;
@@ -774,7 +785,6 @@ export function arrangeThrow(
   const fighter = state.fighters[side];
   if (
     state.status !== 'playing' ||
-    fighter.relic !== 'order' ||
     state.tick < fighter.nextReorder ||
     !['rank', 'suit', 'gather'].includes(mode)
   )
@@ -799,11 +809,11 @@ export function arrangeThrow(
     return state;
   const next = structuredClone(state);
   next.fighters[side].hand = hand;
-  next.fighters[side].nextReorder = state.tick + ticks(3000);
+  next.fighters[side].nextReorder = state.tick + ticks(REORDER_MS);
   effectEvent(next, side, {
-    source: 'relic:order',
-    name: '三息理序',
-    value: 3,
+    source: 'rule:reorder',
+    name: '整理手牌',
+    value: REORDER_MS / 1000,
     kind: 'reorder',
   });
   return next;
@@ -854,7 +864,8 @@ export function recommendCards(
   let best = [hand[0]],
     bestValue = -1;
   for (let start = 0; start < hand.length; start++)
-    for (let length = 1; length <= hand.length - start; length++) {
+    // Reed's first lesson explicitly demonstrates the same single-card kit.
+    for (let length = 1; length <= (style === 'lesson' ? 1 : hand.length - start); length++) {
       const candidate = hand.slice(start, start + length);
       const value = batchValue(previewThrow(candidate, items, context), length, style);
       if (value > bestValue) {
@@ -865,12 +876,12 @@ export function recommendCards(
   return best;
 }
 /**
- * An AI holding the sorting relic tidies its hand when a sorted order offers a
+ * Any AI tidies its hand when a sorted order offers a
  * better contiguous batch, paying the same cooldown a player would.
  */
 export function aiArrange(state: ThrowDuel, side: Side, playerStyle: Style = 'combo') {
   const fighter = state.fighters[side];
-  if (fighter.relic !== 'order' || state.tick < fighter.nextReorder || fighter.hand.length < 3)
+  if (state.tick < fighter.nextReorder || fighter.hand.length < 3)
     return;
   const style = side === 1 ? state.ai.style : playerStyle;
   const context = { ...fighter, target: state.fighters[side === 0 ? 1 : 0], tick: state.tick };
@@ -896,14 +907,15 @@ export function aiArrange(state: ThrowDuel, side: Side, playerStyle: Style = 'co
   if (arranged === state) return;
   state.fighters[side].hand = arranged.fighters[side].hand;
   state.fighters[side].nextReorder = arranged.fighters[side].nextReorder;
-  effectEvent(state, side, { source: 'relic:order', name: '三息理序', value: 3, kind: 'reorder' });
+  effectEvent(state, side, { source: 'rule:reorder', name: '整理手牌', value: REORDER_MS / 1000, kind: 'reorder' });
 }
 /** Whether a build is willing to release the recommended batch now. */
 export function aiReady(style: Style, cards: PlayingCard[], fighter: ThrowFighter) {
   const full = fighter.hand.length >= handLimit(fighter.relic);
   const kind = scorePoker(cards).kind;
   if (style === 'combo')
-    return kind >= 4 || (fighter.hand.length >= handLimit(fighter.relic) - 2 && kind >= 3) || full;
+    return (kind >= 4 && cards.length >= 5) ||
+      (fighter.hand.length >= handLimit(fighter.relic) - 2 && kind >= 3) || full;
   return true;
 }
 function loseHealth(
@@ -1009,7 +1021,7 @@ export function stepThrowDuelInPlace(next: ThrowDuel) {
         source: 'item:drain',
       });
     if (target.relic === 'heart' && landed > 0 && shot.cards.length === 1)
-      heals.push({ side: targetSide, amount: 2, name: '红心补缝', source: 'relic:heart' });
+      heals.push({ side: targetSide, amount: 4, name: '红心补缝', source: 'relic:heart' });
     if (landed > 0) {
       let reflected = 0;
       if (target.items.includes('thorns') && shot.cards.length >= 3) {
@@ -1116,7 +1128,7 @@ export function stepThrowDuelInPlace(next: ThrowDuel) {
     if (
       next.tick >= fighter.slowUntil &&
       fighter.hand.length < handLimit(fighter.relic) &&
-      ++fighter.drawClock >= drawInterval(fighter.items)
+      ++fighter.drawClock >= drawInterval(fighter.items, next.tick)
     ) {
       fighter.drawClock = 0;
       draw(next, side);

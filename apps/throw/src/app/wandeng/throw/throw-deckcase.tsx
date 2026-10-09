@@ -88,17 +88,16 @@ export function DeckCase({
         </button>
       </header>
       <div className="tp-deckcase-body">
-        <div className="tp-deckcase-grid" role="grid" aria-label="52 个牌位">
+        <fieldset className="tp-deckcase-grid" aria-label="52 个牌位">
           {([0, 1, 2, 3] as Suit[]).map((suit) => (
-            <div key={suit} role="row" className="tp-deckcase-row">
+            <div key={suit} className="tp-deckcase-row">
               {RANKS.map((rank) => {
                 const id = book[cardKey(suit, rank)];
                 const picked = focus.suit === suit && focus.rank === rank;
                 return (
                   <button
                     key={rank}
-                    role="gridcell"
-                    aria-selected={picked}
+                    aria-pressed={picked}
                     aria-label={`${SUITS[suit]}${rankText(rank)}${id ? ` · ${enchantOf(id)!.name}` : ''}`}
                     className={`tp-deckcase-slot ${picked ? 'tp-picked' : ''}`}
                     onClick={() => {
@@ -112,7 +111,7 @@ export function DeckCase({
               })}
             </div>
           ))}
-        </div>
+        </fieldset>
         <aside className="tp-deckcase-detail" aria-live="polite">
           <h3>
             {SUITS[focus.suit]}
