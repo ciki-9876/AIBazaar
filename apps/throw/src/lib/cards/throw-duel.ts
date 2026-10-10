@@ -7,6 +7,8 @@ import {
   STOKE_AI_BURN,
   STOKE_MIN_BURN,
   STOKE_SHARE,
+  ALIGHT_DRAW,
+  SWITCH_AI_RANK,
   isPerformer,
   type PerformerId,
 } from './throw-performer.ts';
@@ -219,6 +221,8 @@ export type ThrowFighter = {
   boomerang: boolean;
   /** Eli's false shuffle: the next deal is face up until it lands (or is buried). */
   peeking: boolean;
+  /** A once-per-duel talent has fired (Stan's 中途下车). */
+  talentUsed: boolean;
 };
 /**
  * Optional house terms for a challenge duel (street shows). They bind the
@@ -478,6 +482,7 @@ export function createThrowDuel(
     nextSleight: 0,
     boomerang: false,
     peeking: false,
+    talentUsed: false,
   });
   const state: ThrowDuel = {
     rules: RULES_VERSION,
@@ -983,8 +988,13 @@ export function sleightReady(state: ThrowDuel, side: Side) {
       return !fighter.boomerang;
     case 'stoke':
       return target.burn >= STOKE_MIN_BURN;
+    case 'switch':
+      return fighter.hand.length > 0 && fighter.pile.length > 0;
   }
 }
+/** Stan's switch always trades away the lowest card (leftmost on ties). */
+const lowestCard = (hand: PlayingCard[]) =>
+  hand.reduce((low, card) => (card.rank < low.rank ? card : low), hand[0]);
 function sleightMutable(state: ThrowDuel, side: Side) {
   if (!sleightReady(state, side)) return false;
   const fighter = state.fighters[side],
@@ -998,6 +1008,12 @@ function sleightMutable(state: ThrowDuel, side: Side) {
     effectEvent(state, side, { source, name: sleight.name, value: Math.min(DEAL_SIZE, fighter.pile.length), kind: 'sleight' });
   } else if (sleight.id === 'boomerang') {
     fighter.boomerang = true;
+    effectEvent(state, side, { source, name: sleight.name, value: 0, kind: 'sleight' });
+  } else if (sleight.id === 'switch') {
+    const out = lowestCard(fighter.hand),
+      incoming = fighter.pile.pop()!;
+    fighter.hand[fighter.hand.indexOf(out)] = incoming;
+    fighter.pile.unshift(out);
     effectEvent(state, side, { source, name: sleight.name, value: 0, kind: 'sleight' });
   } else {
     // Stoke: half the target's flames burn all at once; a raised shield still takes it first.
@@ -1042,6 +1058,8 @@ export function aiWantsSleight(state: ThrowDuel, side: Side) {
       return true;
     case 'stoke':
       return state.fighters[side === 0 ? 1 : 0].burn >= STOKE_AI_BURN;
+    case 'switch':
+      return lowestCard(fighter.hand).rank <= SWITCH_AI_RANK;
     default:
       return false;
   }
@@ -1361,6 +1379,15 @@ export function stepThrowDuelInPlace(next: ThrowDuel) {
       // A round only fills free slots; draw() stops at the hand limit.
       for (let i = 0; i < DEAL_SIZE; i++) draw(next, side);
       fighter.peeking = false;
+    }
+  }
+  // Stan's talent: the first time he drops below half, he gets off the bus and draws.
+  for (const side of [0, 1] as const) {
+    const fighter = next.fighters[side];
+    if (fighter.performer === 'stan' && !fighter.talentUsed && fighter.hp > 0 && fighter.hp * 2 < MAX_HP) {
+      fighter.talentUsed = true;
+      for (let i = 0; i < ALIGHT_DRAW; i++) draw(next, side);
+      effectEvent(next, side, { source: 'talent:stan', name: '中途下车', value: ALIGHT_DRAW, kind: 'sleight' });
     }
   }
   if (aiWantsSleight(next, 1)) sleightMutable(next, 1);

@@ -55,7 +55,7 @@
 | 常量 | 当前值 | 什么时候升 |
 |---|---|---|
 | `RULES_VERSION`（`throw-duel.ts`） | `throw-duel-v10` | 同样的种子和输入会得出**不同结果**时：改数值、改结算顺序、加新机制 |
-| `ADVENTURE_VERSION`（`adventure-types.ts`） | `magician-adventure-v4` | 存档**结构**变化时：新增/删除旗标、新增状态字段、改字段含义 |
+| `ADVENTURE_VERSION`（`adventure-types.ts`） | `magician-adventure-v5` | 存档**结构**变化时：新增/删除旗标、新增状态字段、改字段含义 |
 
 升版本时同时：
 

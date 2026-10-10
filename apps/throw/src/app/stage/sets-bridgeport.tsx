@@ -572,6 +572,35 @@ export function GooseSet(): ScenePart[] {
             <Curtain x={352} y={176} w={44} h={220} fold={14} color={LACQUER_DARK} flip className="st-curtain" />
           </g>
 
+          {/* Notice board: lost cats, bicycles for hire, and one driver for hire */}
+          <g>
+            <rect x="404" y="238" width="84" height="112" rx="3" fill="#6b4630" />
+            <rect x="410" y="244" width="72" height="100" fill="#b98d5c" />
+            {Array.from({ length: 18 }, (_, i) => {
+              const r = scatter(400 + i);
+              return <circle key={i} cx={412 + r() * 68} cy={248 + r() * 92} r=".9" fill="#8a6440" />;
+            })}
+            <g transform="rotate(-4 430 270)">
+              <rect x="416" y="252" width="28" height="22" fill="#f0e8d4" />
+              <path d="M420 259h20M420 264h16M420 269h18" stroke="#8a8170" strokeWidth="1.2" />
+            </g>
+            <g transform="rotate(5 462 266)">
+              <rect x="450" y="254" width="26" height="26" fill="#e8d9a8" />
+              <circle cx="463" cy="263" r="4" fill="none" stroke="#5a4a38" strokeWidth="1.2" />
+              <path d="M455 273h16" stroke="#8a8170" strokeWidth="1.2" />
+            </g>
+            <g transform="rotate(-2 446 312)">
+              <rect x="420" y="290" width="54" height="44" fill="#f0e8d4" />
+              <text x="447" y="304" textAnchor="middle" fontFamily="var(--font-ui)" fontSize="9" fill={LACQUER}>
+                招 募
+              </text>
+              <path d="M426 312h42M426 318h36M426 324h40" stroke="#8a8170" strokeWidth="1.2" />
+            </g>
+            {[[430, 252], [463, 254], [447, 290]].map(([x, y]) => (
+              <circle key={`${x}-${y}`} cx={x} cy={y} r="2.2" fill={LACQUER} />
+            ))}
+          </g>
+
           {/* Pettigrew's table */}
           <g transform="translate(560 638)">
             <rect x="-60" y="-70" width="120" height="10" fill="#6b4630" />

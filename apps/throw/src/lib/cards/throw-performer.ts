@@ -6,8 +6,8 @@
 import type { DeckBook } from './throw-enchant.ts';
 import type { Style } from './throw-loadout.ts';
 
-export type PerformerId = 'eli' | 'juno' | 'rosie';
-export type SleightId = 'peek' | 'boomerang' | 'stoke';
+export type PerformerId = 'eli' | 'juno' | 'rosie' | 'stan';
+export type SleightId = 'peek' | 'boomerang' | 'stoke' | 'switch';
 
 /** Eli · 压箱底: emptying your hand with a throw adds this much damage. */
 export const EMPTY_HAND_BONUS = 3;
@@ -18,6 +18,10 @@ export const STOKE_SHARE = 0.5;
 export const STOKE_MIN_BURN = 4;
 /** The built-in AI stokes once the target carries at least this much burn. */
 export const STOKE_AI_BURN = 8;
+/** Stan · 中途下车: the first time his life drops below half, he draws this many cards. */
+export const ALIGHT_DRAW = 2;
+/** The built-in AI switches a card only if its lowest card is at most this rank. */
+export const SWITCH_AI_RANK = 5;
 
 export type Performer = {
   id: PerformerId;
@@ -88,6 +92,20 @@ export const PERFORMERS: Record<PerformerId, Performer> = {
       '3-8': 'seal',
       '3-13': 'LDK',
     },
+  },
+  stan: {
+    id: 'stan',
+    name: '司机斯坦',
+    style: 'quick',
+    talent: { name: '中途下车', text: `生命第一次跌破一半时：立刻抽 ${ALIGHT_DRAW} 张。` },
+    sleight: {
+      id: 'switch',
+      name: '换牌',
+      text: '把手里点数最小的一张换成牌堆顶的那张；换下的牌放到牌堆底。',
+      cooldownMs: 12000,
+    },
+    // He has never won. He has never wanted to. White cards suit him.
+    book: {},
   },
 };
 export const PERFORMER_IDS = Object.keys(PERFORMERS) as PerformerId[];

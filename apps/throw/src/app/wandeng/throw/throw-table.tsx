@@ -401,6 +401,10 @@ type ThrowTableProps = {
   };
   /** Fixed performer for the player (the story uses Eli); omitted lets the practice room choose. */
   playerPerformer?: PerformerId;
+  /** v5 troupe: members who may take this stage (street shows); the first is the default. */
+  performerChoices?: readonly PerformerId[];
+  /** Each member's own deck book; Eli plays the hero's collection. */
+  memberBooks?: Partial<Record<PerformerId, DeckBook>>;
   initialLoadout?: PreparedThrowLoadout;
   hostNames?: readonly [string, string];
   hosts?: readonly [RigId, RigId];
@@ -460,14 +464,20 @@ export default function ThrowTable({
   tip: tipOverride,
   onReturn,
   playerPerformer,
+  performerChoices,
+  memberBooks,
 }: ThrowTableProps = {}) {
   const [phase, setPhase] = useState<'prepare' | 'battle'>('prepare');
   const [prepView, setPrepView] = useState<'kit' | 'enemy'>('kit');
-  const [chosenPerformer, setChosenPerformer] = useState<PerformerId>('eli');
+  const [chosenPerformer, setChosenPerformer] = useState<PerformerId>(performerChoices?.[0] ?? 'eli');
   const performer = playerPerformer ?? chosenPerformer;
-  // The practice room puts whoever you pick on stage; story duels keep their hosts.
-  const stageHosts = [playerPerformer || challenge ? hosts[0] : (performer as RigId), hosts[1]] as const;
-  const stageNames = [hostNames?.[0] ?? PERFORMERS[performer].name, hostNames?.[1]] as const;
+  /** Who may be picked here: the troupe for a street show, everyone in the practice room. */
+  const pickable: readonly PerformerId[] = playerPerformer ? [] : (performerChoices ?? (challenge ? [] : PERFORMER_IDS));
+  // Whoever takes the stage is drawn there; a fixed story duel keeps its hosts.
+  const stageHosts = [playerPerformer ? hosts[0] : (performer as RigId), hosts[1]] as const;
+  const stageNames = [performer === 'eli' && hostNames?.[0] ? hostNames[0] : PERFORMERS[performer].name, hostNames?.[1]] as const;
+  /** A troupe member brings their own deck; Eli brings the hero's collection. */
+  const memberDeck = performer !== 'eli' && challenge ? (memberBooks?.[performer] ?? PERFORMERS[performer].book) : null;
   const [style, setStyle] = useState<Style>(initialLoadout?.style ?? 'quick');
   const [layout, setLayout] = useState<ItemPlacement[]>(() =>
     initialLoadout
@@ -685,9 +695,11 @@ export default function ThrowTable({
     if (!Number.isSafeInteger(value) || value < 0 || value > 0xffffffff) return;
     // In the story, only variants the hero owns go into the deck.
     const owned = available?.variants ? new Set(available.variants) : null;
-    const playerBook = owned
-      ? Object.fromEntries(Object.entries(book).filter(([key, id]) => owned.has(`${key}:${id}`)))
-      : book;
+    const playerBook = memberDeck
+      ? memberDeck
+      : owned
+        ? Object.fromEntries(Object.entries(book).filter(([key, id]) => owned.has(`${key}:${id}`)))
+        : book;
     const next = createThrowDuel(
       value,
       equipped,
@@ -909,6 +921,18 @@ export default function ThrowTable({
             <div className="tp-preparation-footer">
               {challenge ? (
                 <div className="tp-start-options">
+                  {pickable.length > 1 && (
+                    <label>
+                      派谁上台
+                      <select value={chosenPerformer} onChange={(event) => setChosenPerformer(event.target.value as PerformerId)}>
+                        {pickable.map((id) => (
+                          <option key={id} value={id}>
+                            {PERFORMERS[id].name}
+                          </option>
+                        ))}
+                      </select>
+                    </label>
+                  )}
                   <span className="tp-performer-line" title={`${PERFORMERS[performer].talent.text}　${PERFORMERS[performer].sleight.text}`}>
                     {PERFORMERS[performer].name.split('·')[0]}：{PERFORMERS[performer].talent.name} · {PERFORMERS[performer].sleight.name}
                   </span>
@@ -917,7 +941,7 @@ export default function ThrowTable({
                 </div>
               ) : (
                 <div className="tp-start-options">
-                  {!playerPerformer && (
+                  {pickable.length > 1 && (
                     <label>
                       上场角色
                       <select
@@ -928,7 +952,7 @@ export default function ThrowTable({
                           if (next !== 'eli') setBook({ ...PERFORMERS[next].book });
                         }}
                       >
-                        {PERFORMER_IDS.map((id) => (
+                        {pickable.map((id) => (
                           <option key={id} value={id}>
                             {PERFORMERS[id].name}
                           </option>
@@ -963,7 +987,7 @@ export default function ThrowTable({
                   </label>
                 </div>
               )}
-              {(!available || Boolean(available.variants?.length)) && (
+              {!memberDeck && (!available || Boolean(available.variants?.length)) && (
                 <button
                   className="tp-deckcase-open"
                   onClick={() => {

@@ -64,12 +64,10 @@ export type Enchant = {
 };
 export type DeckBook = Readonly<Record<string, string>>;
 
-/** Proposal: how many enchanted cards one 52-card deck may carry. */
-export const DECK_LIMITS: Record<Exclude<Rarity, 'common'>, number> = {
-  rare: 8,
-  epic: 4,
-  legendary: 3,
-};
+/*
+ * ADR-0058: no per-rarity cap. What limits a deck is what you have collected
+ * (each owned variant is one copy) and that each card slot holds one variant.
+ */
 export const RARITY_NAMES: Record<Rarity, string> = {
   common: '普通',
   rare: '稀有',
@@ -211,9 +209,8 @@ export const isWild = (card: PlayingCard) => Boolean(enchantOf(card.ench)?.wild)
 /** How many cards of its own suit this card counts as for per-suit items. */
 export const suitWeight = (card: PlayingCard) => enchantOf(card.ench)?.weight ?? 1;
 
-/** A deck book is valid when each entry fits its card and the rarity limits hold. */
+/** A deck book is valid when each entry is a real variant that fits its card. */
 export function validDeckBook(book: DeckBook) {
-  const counts = { rare: 0, epic: 0, legendary: 0 };
   for (const [key, id] of Object.entries(book)) {
     const match = /^([0-3])-(\d+)$/.exec(key);
     if (!match) return false;
@@ -223,9 +220,8 @@ export function validDeckBook(book: DeckBook) {
     const enchant = BY_ID.get(id);
     if (!enchant) return false;
     if (enchant.card && (enchant.card.suit !== suit || enchant.card.rank !== rank)) return false;
-    counts[enchant.rarity]++;
   }
-  return (Object.keys(counts) as (keyof typeof counts)[]).every((rarity) => counts[rarity] <= DECK_LIMITS[rarity]);
+  return true;
 }
 
 /** Effects every enchanted card in a throw adds, in card order. */

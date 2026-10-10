@@ -1203,3 +1203,83 @@
     display: none;
   }
 }
+
+/* v5 troupe panel: members first, then the people you might win over. */
+.rg-troupe-list {
+  display: grid;
+  gap: 10px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.rg-troupe-list li {
+  display: grid;
+  grid-template-columns: 64px minmax(0, 1fr);
+  gap: 14px;
+  align-items: start;
+  padding: 10px 12px;
+  border-radius: 8px;
+  background: rgba(239, 231, 214, 0.04);
+  box-shadow: inset 3px 0 0 var(--brass);
+}
+.rg-troupe-list li > div:last-child {
+  display: grid;
+  gap: 4px;
+}
+.rg-troupe-list strong {
+  font: 600 16px var(--font-cjk-serif);
+  color: var(--bone);
+}
+.rg-troupe-list strong small {
+  margin-left: 10px;
+  font: 12px var(--font-ui);
+  color: var(--bone-dim);
+}
+.rg-troupe-list span {
+  font-size: 13px;
+  line-height: 1.55;
+  color: #e3dccb;
+}
+.rg-troupe-list span b {
+  color: var(--limelight);
+  font-weight: 600;
+}
+.rg-troupe-list span small {
+  color: var(--bone-dim);
+}
+.rg-troupe-list.is-prospect li {
+  box-shadow: inset 3px 0 0 rgba(239, 231, 214, 0.2);
+  opacity: 0.88;
+}
+.rg-troupe-list .rg-troupe-how {
+  padding: 1px 8px;
+  border-radius: 999px;
+  background: rgba(247, 230, 176, 0.12);
+  color: var(--limelight);
+}
+.rg-troupe-heading {
+  margin: 18px 0 8px;
+  font: 600 15px var(--font-cjk-serif);
+  letter-spacing: 0.1em;
+  color: var(--bone-dim);
+}
+.rg-troupe-affinity {
+  position: relative;
+  height: 18px;
+  margin-top: 4px;
+  border-radius: 999px;
+  background: rgba(239, 231, 214, 0.08);
+  overflow: hidden;
+}
+.rg-troupe-affinity span {
+  position: absolute;
+  inset: 0 auto 0 0;
+  background: linear-gradient(90deg, #b3263a, #e2bd6a);
+}
+.rg-troupe-affinity small {
+  position: relative;
+  padding-left: 10px;
+  font-size: 11px;
+  line-height: 18px;
+  color: var(--bone);
+}

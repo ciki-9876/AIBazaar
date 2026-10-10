@@ -1,4 +1,4 @@
-import type { PerformerId } from '../cards/throw-performer.ts';
+import { PERFORMERS, isPerformer, type PerformerId } from '../cards/throw-performer.ts';
 import { ITEMS, PRESETS, RELICS, type ItemId, type RelicId, type Style } from '../cards/throw-loadout.ts';
 import { ENCHANTS, validDeckBook, type DeckBook } from '../cards/throw-enchant.ts';
 import type { DuelTerms } from '../cards/throw-duel';
@@ -39,13 +39,14 @@ import {
   bridgeportObjective,
   bridgeportTalk,
   HOBBS_THINGS,
+  BOND_IDS,
   SHOP,
   SHOWS,
 } from './bridgeport.ts';
 
 export * from './adventure-types.ts';
 export { STARTER_ITEMS, MENTOR_GIFT, MIA_GIFT, POST_QUALIFIER_ITEMS } from './graywick.ts';
-export { SHOP, SHOWS, GOSSIP, GROUP, isFinalist, morningDone, showsWon } from './bridgeport.ts';
+export { SHOP, SHOWS, GOSSIP, GROUP, isFinalist, morningDone, showsWon, RECRUITS, BOND_IDS } from './bridgeport.ts';
 
 export const WALK_TICK_MS = 20;
 const WALK_DISTANCE = 5;
@@ -94,6 +95,9 @@ export function createAdventure(seed: number, act: 1 | 2 = 1): AdventureState {
     won: [],
     found: [],
     dossier: {},
+    troupe: ['eli'],
+    affinity: {},
+    bonds: [],
   };
   if (act === 1) return state;
   // Starting at act two (chapter select, tests): act one is taken as played and won.
@@ -140,8 +144,17 @@ export function filterBook(state: AdventureState, book: DeckBook): DeckBook {
   const kept = Object.fromEntries(Object.entries(book).filter(([key, id]) => owned.has(`${key}:${id}`)));
   return validDeckBook(kept) ? kept : {};
 }
+export const AFFINITY_MAX = 100;
+const addAffinity = (state: AdventureState, who: CharacterId, amount: number): AdventureState => ({
+  ...state,
+  affinity: { ...state.affinity, [who]: Math.min(AFFINITY_MAX, (state.affinity[who] ?? 0) + amount) },
+});
 function grant(state: AdventureState, reward: Reward | undefined): AdventureState {
   if (!reward) return state;
+  let next = state;
+  for (const [who, amount] of Object.entries(reward.affinity ?? {}))
+    next = addAffinity(next, who as CharacterId, amount ?? 0);
+  state = next;
   return {
     ...state,
     fee: state.fee + (reward.fee ?? 0),
@@ -225,6 +238,9 @@ function applyEffect(state: AdventureState, script: Dialogue): AdventureState {
   const set = [...(effect.set ?? []), ...(effect.once ? [effect.once] : [])];
   if (set.length) next = { ...next, flags: { ...next.flags, ...Object.fromEntries(set.map((flag) => [flag, true])) } };
   if (effect.find && !next.found.includes(effect.find)) next = { ...next, found: [...next.found, effect.find] };
+  if (effect.affinity && !next.bonds.includes(effect.affinity.id))
+    next = { ...addAffinity(next, effect.affinity.who, effect.affinity.amount), bonds: [...next.bonds, effect.affinity.id] };
+  if (effect.recruit && !next.troupe.includes(effect.recruit)) next = { ...next, troupe: [...next.troupe, effect.recruit] };
   return next;
 }
 function closeDialogue(state: AdventureState): AdventureState {
@@ -245,8 +261,10 @@ export function chooseDialogue(state: AdventureState, choiceId: string): Adventu
   if (action.type === 'panel') return openPanel(heard, action.panel);
   if (action.type === 'pay') {
     if (heard.fee < action.price) return openDialogue(heard, action.poor);
-    return openDialogue({ ...heard, fee: heard.fee - action.price, flags: { ...heard.flags, [action.flag]: true } }, action.nextDialogue);
+    const flags = action.flag ? { ...heard.flags, [action.flag]: true } : heard.flags;
+    return openDialogue({ ...heard, fee: heard.fee - action.price, flags }, action.nextDialogue);
   }
+  if (action.type === 'goto') return openDialogue(heard, action.nextDialogue);
   return startBattle(heard, action.battle);
 }
 
@@ -336,6 +354,10 @@ export function battleSetup(state: AdventureState): {
   forced?: { items: ItemId[]; relic: RelicId | null };
   tip?: string;
   rule?: string;
+  /** v5: troupe members who may take this stage (street shows); otherwise Eli alone. */
+  performers: PerformerId[];
+  /** v5: each member's own deck book (Eli plays the hero's collection). */
+  books: Partial<Record<PerformerId, DeckBook>>;
 } | null {
   if (!state.battle) return null;
   const definition = BATTLES[state.battle.kind];
@@ -364,7 +386,22 @@ export function battleSetup(state: AdventureState): {
     ...(only ? { forced: { items: [...only.items], relic: only.relic } } : {}),
     ...(definition.tip ? { tip: definition.tip } : {}),
     ...(show ? { rule: show.rule } : {}),
+    performers: show && !only ? [...state.troupe] : ['eli'],
+    books: Object.fromEntries(state.troupe.filter((id) => id !== 'eli').map((id) => [id, memberBook(state, id)])),
   };
+}
+/**
+ * A member's own deck. Eli plays the hero's collection instead. Variants the
+ * hero owns have left their old owner (Juno handed over her ♠J): exclusive.
+ */
+export function memberBook(state: AdventureState, id: PerformerId): DeckBook {
+  if (id === 'eli') return {};
+  const book: Record<string, string> = { ...PERFORMERS[id].book };
+  for (const entry of state.owned.variants) {
+    const [key, enchant] = entry.split(':');
+    if (book[key] === enchant) delete book[key];
+  }
+  return book;
 }
 const validTally = (report: unknown): report is { suits: number[]; kinds: number[] } => {
   const r = report as { suits?: unknown; kinds?: unknown };
@@ -465,9 +502,25 @@ const isRecord = (value: unknown): value is Record<string, unknown> =>
   Boolean(value) && typeof value === 'object' && !Array.isArray(value);
 const has = (table: object, key: unknown): key is string => typeof key === 'string' && Object.hasOwn(table, key);
 const LEGACY_ADVENTURE_VERSION = 'magician-adventure-v3';
-/** v3's implicit gifts become owned items; retired sorting relic is safely removed. */
+const V4_ADVENTURE_VERSION = 'magician-adventure-v4';
+/** Supported saves walk forward one version at a time: v3 → v4 → v5. */
 function migrateAdventure(envelope: Record<string, unknown>): Record<string, unknown> | null {
   if (envelope.version === ADVENTURE_VERSION) return envelope;
+  const v4 = envelope.version === LEGACY_ADVENTURE_VERSION ? migrateV3(envelope) : envelope;
+  return v4 ? migrateV4(v4) : null;
+}
+/** v4 → v5: the troupe starts as Eli alone; nobody knows anybody yet. */
+function migrateV4(envelope: Record<string, unknown>): Record<string, unknown> | null {
+  if (envelope.version !== V4_ADVENTURE_VERSION || !isRecord(envelope.state) || envelope.state.version !== V4_ADVENTURE_VERSION)
+    return null;
+  return {
+    ...envelope,
+    version: ADVENTURE_VERSION,
+    state: { ...envelope.state, version: ADVENTURE_VERSION, troupe: ['eli'], affinity: {}, bonds: [] },
+  };
+}
+/** v3's implicit gifts become owned items; retired sorting relic is safely removed. */
+function migrateV3(envelope: Record<string, unknown>): Record<string, unknown> | null {
   if (envelope.version !== LEGACY_ADVENTURE_VERSION || !isRecord(envelope.state)
     || envelope.state.version !== LEGACY_ADVENTURE_VERSION) return null;
   const old = envelope.state;
@@ -478,8 +531,8 @@ function migrateAdventure(envelope: Record<string, unknown>): Record<string, unk
     ? { ...envelope.loadout, relic: null } : envelope.loadout;
   return {
     ...envelope,
-    version: ADVENTURE_VERSION,
-    state: { ...old, version: ADVENTURE_VERSION, owned: { ...old.owned,
+    version: V4_ADVENTURE_VERSION,
+    state: { ...old, version: V4_ADVENTURE_VERSION, owned: { ...old.owned,
       items: unique([...old.owned.items, ...earned]), relics: old.owned.relics.filter((id) => id !== 'order') } },
     ...(loadout !== undefined ? { loadout } : {}),
   };
@@ -546,6 +599,12 @@ export function restoreAdventure(json: string): { state: AdventureState; envelop
   if (!Array.isArray(s.won) || !s.won.every((id) => has(BATTLES, id))) return null;
   if (!Array.isArray(s.found) || !s.found.every((id) => (HOBBS_THINGS as readonly string[]).includes(id))) return null;
   if (!isRecord(s.dossier) || !Object.entries(s.dossier).every(([id, entry]) => has(CHARACTERS, id) && validDossier(entry))) return null;
+  if (!Array.isArray(s.troupe) || s.troupe[0] !== 'eli' || !s.troupe.every((id) => isPerformer(id))
+    || new Set(s.troupe).size !== s.troupe.length) return null;
+  if (!isRecord(s.affinity) || !Object.entries(s.affinity).every(([id, value]) => has(CHARACTERS, id) && isInt(value, 0, AFFINITY_MAX)))
+    return null;
+  if (!Array.isArray(s.bonds) || !s.bonds.every((id) => (BOND_IDS as readonly string[]).includes(id))
+    || new Set(s.bonds).size !== s.bonds.length) return null;
   let state: AdventureState = structuredClone(s);
   if (state.mode === 'battle') state = abandonAdventureBattle(state);
   return { state, envelope };
