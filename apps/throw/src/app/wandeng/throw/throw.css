@@ -104,7 +104,7 @@
 .tp-selection-actions > button,
 .tp-clock button,
 .tp-result button,
-.tp-bag-tools button {
+.tp-kit-actions button {
   height: 32px;
   padding: 0 13px;
   border: 1px solid rgba(239, 231, 214, 0.22);
@@ -123,7 +123,7 @@
 .tp-selection-actions > button:hover,
 .tp-clock button:hover:not(:disabled),
 .tp-result button:hover,
-.tp-bag-tools button:hover:not(:disabled) {
+.tp-kit-actions button:hover:not(:disabled) {
   border-color: var(--brass);
   background: rgba(201, 162, 90, 0.1);
 }
@@ -560,31 +560,40 @@ button:disabled {
 }
 .tp-proc-row {
   position: absolute;
-  bottom: calc(100% + 6px);
-  display: grid;
-  justify-items: center;
-  gap: 4px;
+  z-index: 5;
+  left: 50%;
+  bottom: 90%;
+  width: 0;
   pointer-events: none;
 }
+/* A trigger float: effect name and its number, rising from the character who triggered it. */
 .tp-proc {
+  --proc-slot: 0;
+  position: absolute;
+  left: 0;
+  bottom: calc(var(--proc-slot) * 26px);
   display: inline-flex;
+  align-items: baseline;
   gap: 6px;
-  padding: 3px 10px;
-  border-radius: 999px;
-  background: rgba(5, 14, 19, 0.82);
-  font-size: 12px;
+  transform: translateX(-50%);
+  font: 600 14px/1 var(--font-cjk-serif);
+  color: var(--bone);
   white-space: nowrap;
-  box-shadow: inset 0 0 0 1px rgba(201, 162, 90, 0.5);
-  animation: tp-proc 0.9s var(--ease-out) both;
+  text-shadow:
+    0 1px 0 #000,
+    0 0 6px rgba(0, 0, 0, 0.9),
+    0 0 14px rgba(5, 14, 19, 0.9);
+  animation: tp-proc 1.2s var(--ease-out) both;
 }
 .tp-proc b {
+  font: 600 22px/1 var(--font-display);
   color: var(--limelight);
 }
 .tp-proc-burn b {
-  color: #ffc08a;
+  color: #ffb36b;
 }
 .tp-proc-poison b {
-  color: #c4e0a4;
+  color: #b9dc8c;
 }
 .tp-proc-shield b {
   color: #b8d3ef;
@@ -593,9 +602,30 @@ button:disabled {
   color: #f2b8a8;
 }
 @keyframes tp-proc {
-  from {
+  0% {
     opacity: 0;
-    transform: translateY(10px) scale(0.9);
+    transform: translate(-50%, 12px) scale(0.7);
+  }
+  18% {
+    opacity: 1;
+    transform: translate(-50%, -4px) scale(1.08);
+  }
+  70% {
+    opacity: 1;
+    transform: translate(-50%, -22px) scale(1);
+  }
+  100% {
+    opacity: 0;
+    transform: translate(-50%, -40px) scale(1);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .tp-proc {
+    animation: tp-proc-fade 1.2s linear both;
+  }
+  @keyframes tp-proc-fade {
+    80% { opacity: 1; }
+    100% { opacity: 0; }
   }
 }
 
@@ -692,166 +722,6 @@ button:disabled {
   to {
     opacity: 0;
     transform: rotate(var(--a)) translateY(-70px) scaleY(0.3);
-  }
-}
-
-/* Spectacle: one focal title card per notable throw */
-.tp-spectacle {
-  position: absolute;
-  z-index: 5;
-  left: 50%;
-  top: calc(50% + 30px);
-  transform: translate(-50%, -50%);
-  pointer-events: none;
-  --tone: var(--limelight);
-}
-.tp-spectacle-burn {
-  --tone: #ffb36b;
-}
-.tp-spectacle-poison {
-  --tone: #b9dc8c;
-}
-.tp-spectacle-shield {
-  --tone: #b8d3ef;
-}
-.tp-spectacle-wave {
-  position: absolute;
-  left: 50%;
-  top: 50%;
-  width: 260px;
-  height: 260px;
-  margin: -130px;
-  border-radius: 50%;
-  border: 2px solid var(--tone);
-  opacity: 0;
-  animation: tp-wave 0.9s var(--ease-out);
-}
-.tp-wave-second {
-  animation-delay: 0.12s;
-}
-@keyframes tp-wave {
-  from {
-    transform: scale(0.2);
-    opacity: 0.9;
-  }
-  to {
-    transform: scale(1.4);
-    opacity: 0;
-  }
-}
-.tp-spectacle-streak {
-  position: absolute;
-  left: 50%;
-  top: 50%;
-  width: 520px;
-  height: 2px;
-  margin-left: -260px;
-  background: linear-gradient(90deg, transparent, var(--tone), transparent);
-  opacity: 0;
-  animation: tp-streak 0.7s var(--ease-out);
-}
-.tp-streak-second {
-  transform: rotate(-12deg);
-  animation-delay: 0.08s;
-}
-@keyframes tp-streak {
-  from {
-    opacity: 1;
-    clip-path: inset(0 50% 0 50%);
-  }
-  to {
-    opacity: 0;
-    clip-path: inset(0 0 0 0);
-  }
-}
-.tp-spectacle-body {
-  position: relative;
-  display: grid;
-  justify-items: center;
-  gap: 4px;
-  padding: 14px 26px 12px;
-  border-radius: 6px;
-  background: rgba(5, 14, 19, 0.82);
-  box-shadow:
-    inset 0 0 0 1px var(--tone),
-    0 18px 50px rgba(0, 0, 0, 0.5);
-  animation: tp-title 1.1s var(--ease-out) both;
-}
-@keyframes tp-title {
-  0% {
-    transform: scale(0.7);
-    opacity: 0;
-  }
-  18% {
-    transform: scale(1.04);
-    opacity: 1;
-  }
-  80% {
-    opacity: 1;
-  }
-  100% {
-    transform: scale(1);
-    opacity: 0;
-  }
-}
-.tp-spectacle-body small {
-  font-size: 12px;
-  color: var(--bone-dim);
-  letter-spacing: 0.2em;
-}
-.tp-spectacle-body strong {
-  font: 600 24px var(--font-cjk-serif);
-  letter-spacing: 0.16em;
-  color: var(--tone);
-}
-.tp-spectacle-epic .tp-spectacle-body strong {
-  font-size: 38px;
-}
-.tp-spectacle-score {
-  font: 600 34px/1 var(--font-display);
-  font-variant-numeric: tabular-nums;
-}
-.tp-spectacle-score span {
-  margin-left: 6px;
-  font: 13px var(--font-ui);
-  color: var(--bone-dim);
-}
-.tp-spectacle-objects {
-  display: flex;
-  gap: 6px;
-}
-.tp-spectacle-objects .object-glyph {
-  width: 32px;
-}
-.tp-spectacle-effects {
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: center;
-  gap: 6px;
-  font-size: 12px;
-  color: var(--bone-dim);
-}
-.tp-spectacle-spark {
-  position: absolute;
-  left: 50%;
-  top: 50%;
-  width: 5px;
-  height: 5px;
-  margin: -2.5px;
-  border-radius: 50%;
-  background: var(--tone);
-  box-shadow: 0 0 8px var(--tone);
-  opacity: 0;
-  animation: tp-burst 0.8s var(--ease-out);
-}
-@keyframes tp-burst {
-  from {
-    opacity: 1;
-    transform: rotate(var(--spark-angle)) translateY(0);
-  }
-  to {
-    opacity: 0;
-    transform: rotate(var(--spark-angle)) translateY(calc(var(--spark-distance) * -1.6));
   }
 }
 

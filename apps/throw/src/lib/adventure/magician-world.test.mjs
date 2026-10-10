@@ -199,7 +199,7 @@ test('chapter one teaches single cards before unlocking pair and suit builds aft
   state = readToEnd(interactAdventure(walkTo(state, 825), 'mia'));
   assert.equal(state.flags.miaMet, false, 'Mia sends you to Reed first');
   state = trained();
-  assert.deepEqual(unlockedKit(state).items, ['quick', 'needle', 'tempo', 'stride']);
+  assert.deepEqual(unlockedKit(state).items, ['quick', 'needle', 'tempo', 'wash']);
   assert.equal(adventureObjective(state).target, 'workshop-exit');
   state = interactAdventure(walkTo(state, 140), 'workshop-exit');
   state = interactAdventure(walkTo(state, 825), 'mia');
@@ -207,7 +207,7 @@ test('chapter one teaches single cards before unlocking pair and suit builds aft
   state = readToEnd(state);
   assert.equal(state.flags.miaMet, true);
   assert.deepEqual(unlockedKit(state), {
-    items: ['quick', 'needle', 'tempo', 'stride', 'ward'],
+    items: ['quick', 'needle', 'tempo', 'wash', 'ward'],
     relics: ['bastion'],
   });
   assert.equal(adventureObjective(state).target, 'theatre-door');
@@ -219,7 +219,7 @@ test('chapter one teaches single cards before unlocking pair and suit builds aft
   const lost = readToEnd(finishAdventureBattle(state, state.battle.id, 1));
   assert.ok(!unlockedKit(lost).items.includes('pair'));
   const won = readToEnd(finishAdventureBattle(state, state.battle.id, 0));
-  assert.deepEqual(unlockedKit(won).items, ['quick', 'needle', 'tempo', 'stride', 'ward', 'pair', 'umbrella', 'mend', 'wash', 'thorns', 'draw']);
+  assert.deepEqual(unlockedKit(won).items, ['quick', 'needle', 'tempo', 'wash', 'ward', 'pair', 'umbrella', 'mend', 'stride', 'thorns', 'draw']);
 });
 
 test('name labels use physical reach while the objective always points to a visible local target', () => {

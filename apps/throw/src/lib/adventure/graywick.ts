@@ -144,7 +144,7 @@ export const GRAYWICK_DIALOGUES: Record<string, Dialogue> = {
       },
       {
         speaker: 'reed',
-        text: '再送你换调风铃和抖擞披风：单张轮换花色能加伤，连续出手能解毒。先把一张牌甩稳，再谈一整把。',
+        text: '再送你换调风铃和清露药包：单张轮换花色能加伤；出牌带上红心，药包就替你洗掉身上的火和毒。先把一张牌甩稳，再谈一整把。',
       },
       {
         speaker: 'reed',
@@ -163,7 +163,7 @@ export const GRAYWICK_DIALOGUES: Record<string, Dialogue> = {
       },
       {
         speaker: 'reed',
-        text: '邀请函拿去，还有换调风铃和抖擞披风：轮换花色加伤，出手解毒。单张的节奏练稳，大招才有地方落脚。',
+        text: '邀请函拿去，还有换调风铃和清露药包：轮换花色加伤，甩红心就能洗掉身上的火。单张的节奏练稳，大招才有地方落脚。',
       },
       {
         speaker: 'reed',
@@ -180,7 +180,7 @@ export const GRAYWICK_DIALOGUES: Record<string, Dialogue> = {
       },
       {
         speaker: 'reed',
-        text: '邀请函给你，再加换调风铃和抖擞披风。继续练单张连甩，然后去找米娅——她知道菲利克斯的路数。',
+        text: '邀请函给你，再加换调风铃和清露药包——甩红心能灭身上的火。继续练单张连甩，然后去找米娅——她知道菲利克斯的路数。',
       },
     ],
     effect: { set: ['invitation'] },
@@ -230,7 +230,7 @@ export const GRAYWICK_DIALOGUES: Record<string, Dialogue> = {
       },
       {
         speaker: 'narrator',
-        text: '巡演箱开放新道具：双响茶壶、补丁旧伞、回暖小灯、清露药包、回声针盒、催信闹钟。下一站，再试对子与花色构筑。',
+        text: '巡演箱开放新道具：双响茶壶、补丁旧伞、回暖小灯、抖擞披风、回声针盒、催信闹钟。下一站，再试对子与花色构筑。',
       },
     ],
   },
@@ -243,7 +243,7 @@ export const GRAYWICK_DIALOGUES: Record<string, Dialogue> = {
       { speaker: 'eli', text: '我会回来的。下次把盾竖得更稳。' },
       {
         speaker: 'narrator',
-        text: '小提示：灼烧怕护盾。把守灯小毯放进巡演箱，用单张黑桃竖盾，再轮换花色连甩。还没见过米娅的话，她就在街上。',
+        text: '小提示：火怕盾。身上有护盾时，新火只点着一半，火只烧盾不烧血，还灭得更快。把守灯小毯放进巡演箱，用单张黑桃竖盾，再轮换花色连甩。还没见过米娅的话，她就在街上。',
       },
     ],
   },
@@ -275,11 +275,11 @@ export const GRAYWICK_DIALOGUES: Record<string, Dialogue> = {
       },
       {
         speaker: 'mia',
-        text: '火怕什么？怕盾。只要护盾还在，火落在盾上只剩一半，烧也只烧盾不烧人，还灭得更快。',
+        text: '火怕盾——这条记牢。只要你身上有护盾：新点的火只着一半；烧起来只烧盾、不烧血，我们管这叫闷火；而且每秒多灭两层。',
       },
       {
         speaker: 'mia',
-        text: '拿着守灯小毯和折光铜镜。单张黑桃就能竖盾；盾吸收直伤时，铜镜还会反射。开打前把它们装好。',
+        text: '拿着守灯小毯和折光铜镜。每甩一张黑桃，小毯给你 14 点护盾；盾挡下对手两张以上的出手时，铜镜还会反射一部分回去。开打前把它们装进巡演箱。',
       },
       { speaker: 'eli', text: '我该怎么谢你？' },
       {
@@ -293,7 +293,7 @@ export const GRAYWICK_DIALOGUES: Record<string, Dialogue> = {
     lines: [
       {
         speaker: 'mia',
-        text: '记住三件事：火怕盾；盾在开打前就得摆进巡演箱；以及别盯着菲利克斯的帽子看，会被催眠。',
+        text: '记住三件事：火怕盾——有盾时火只烧盾、不烧血；盾在开打前就得摆进巡演箱；以及别盯着菲利克斯的帽子看，会被催眠。',
       },
     ],
   },
@@ -358,15 +358,15 @@ export const GRAYWICK_BATTLES = {
     draw: 'rival-draw',
     winFlags: ['ticket'],
     afterFlags: ['coachedQualifier'],
-    tip: '米娅的建议：菲利克斯打火。把守灯小毯和折光铜镜装好，用单张黑桃竖盾，再轮换花色连甩。',
+    tip: '米娅的建议：菲利克斯打火，火怕盾。有盾时新火减半、只烧盾不烧血。把守灯小毯和折光铜镜装好，用单张黑桃竖盾，再轮换花色连甩。',
   },
 } satisfies Record<string, BattleDefinition>;
 
 /** What the travelling trunk holds at each point of chapter one. */
 export const STARTER_ITEMS = ['quick', 'needle'] as const satisfies readonly ItemId[];
-export const MENTOR_GIFT = ['tempo', 'stride'] as const satisfies readonly ItemId[];
+export const MENTOR_GIFT = ['tempo', 'wash'] as const satisfies readonly ItemId[];
 export const MIA_GIFT = ['ward'] as const satisfies readonly ItemId[];
-export const POST_QUALIFIER_ITEMS = ['pair', 'umbrella', 'mend', 'wash', 'thorns', 'draw'] as const satisfies readonly ItemId[];
+export const POST_QUALIFIER_ITEMS = ['pair', 'umbrella', 'mend', 'stride', 'thorns', 'draw'] as const satisfies readonly ItemId[];
 export function graywickKit(state: AdventureState): { items: ItemId[]; relics: RelicId[] } {
   return {
     items: [

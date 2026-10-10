@@ -99,16 +99,24 @@ const SCRIPTS: Record<CoachScript, Step[]> = {
   qualifier: [
     {
       id: 'fire-intro',
-      text: '菲利克斯打火系：他出方块会点燃你。火怕盾——米娅送的守灯小毯会在你出黑桃时竖起护盾。单张出黑桃，就能一边打、一边挡火。',
+      text: '菲利克斯打火：他甩方块会点燃你。记住「火怕盾」——身上有护盾时：① 新点的火只着一半；② 火只烧盾、不烧血（闷火）；③ 每秒多灭 2 层。守灯小毯让你每甩一张黑桃加 14 点护盾。',
       target: 'stage',
       hold: true,
     },
     {
-      id: 'burning',
-      text: '你着火了。灼烧每秒扣血，治疗只剩六成，出手还会烫手。只要护盾还在，火就只能烧盾，而且灭得更快。',
+      id: 'burning-bare',
+      text: '你着火了，而且身上没有盾：火正直接烧你的血，治疗只剩六成，火大了出手还烫手。现在甩一张黑桃，把盾竖起来。',
+      target: 'hand',
+      hold: true,
+      when: (c) => player(c).burn > 0 && player(c).shield === 0,
+      skip: (c) => player(c).burn > 0 && player(c).shield > 0,
+    },
+    {
+      id: 'smother',
+      text: '看，这就是闷火：火在烧你的盾，血一点没掉，而且火灭得更快。保持身上有盾，就能一边挡火一边进攻。',
       target: 'stage',
       hold: true,
-      when: (c) => player(c).burn > 0,
+      when: (c) => player(c).burn > 0 && player(c).shield > 0,
     },
   ],
 };

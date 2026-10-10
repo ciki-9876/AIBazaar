@@ -19,6 +19,7 @@ export const DIALOGUE_TERMS: readonly string[] = [...new Set([
   '第一张参赛证', '参赛证', '邀请函', '第一课', '巡回赛',
   '布里奇波特公开赛', '公开赛小组赛', '世界冠军赛', '街头演出',
   '早场', '决赛', '主厅', '三件旧物',
+  '火怕盾', '闷火',
 ])].filter((term) => term.length > 1).sort((a, b) => b.length - a.length || (a < b ? -1 : a > b ? 1 : 0));
 
 export type DialogueToken = { text: string; important: boolean };

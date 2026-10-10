@@ -1,13 +1,7 @@
 'use client';
-import { useLayoutEffect, useRef, type CSSProperties } from 'react';
-import {
-  TICK_MS,
-  ITEMS,
-  type Shot,
-  type ThrowDuel,
-} from '../../../lib/cards/throw-duel';
+import { useLayoutEffect, useRef } from 'react';
+import { TICK_MS, type Shot } from '../../../lib/cards/throw-duel';
 import { CardFace } from '../../stage/card-art';
-import { ObjectGlyph } from '../../stage/glyphs';
 
 export type CardRect = { x: number; y: number; width: number; height: number };
 export type TableGeometry = {
@@ -187,90 +181,6 @@ export function FlightLayer({
           />
         )),
       )}
-    </div>
-  );
-}
-
-/** A single focal celebration joins hand choices, old-object procs and impact. */
-export function ThrowSpectacle({ duel }: { duel: ThrowDuel }) {
-  const event = duel.events
-    .filter((entry) => entry.type === 'launch' && duel.tick - entry.tick < 22)
-    .at(-1);
-  if (!event) return null;
-  const effects = duel.events.filter(
-    (entry) =>
-      entry.type === 'effect' &&
-      entry.side === event.side &&
-      entry.tick === event.tick &&
-      entry.kind !== 'link',
-  );
-  if (!(event.combo ?? 0) && !effects.length) return null;
-  const epic = (event.combo ?? 0) >= 4;
-  const tone = effects.some((entry) => entry.kind === 'burn')
-    ? 'burn'
-    : effects.some((entry) => entry.kind === 'poison')
-      ? 'poison'
-      : effects.some((entry) => entry.kind === 'shield')
-        ? 'shield'
-        : 'gold';
-  const objects = ITEMS.filter((item) =>
-    effects.some((entry) => entry.source === 'item:' + item.id),
-  ).slice(0, 4);
-  return (
-    <div
-      key={event.id}
-      aria-hidden="true"
-      className={`tp-spectacle tp-spectacle-${tone} ${epic ? 'tp-spectacle-epic' : ''}`}
-      data-spectacle-id={event.id}
-      data-side={event.side}
-    >
-      <div className="tp-spectacle-wave" />
-      <div className="tp-spectacle-wave tp-wave-second" />
-      <div className="tp-spectacle-streak" />
-      <div className="tp-spectacle-streak tp-streak-second" />
-      <div className="tp-spectacle-body">
-        <small>{event.side === 0 ? '你的连击' : '对手连击'}</small>
-        <strong>
-          {(event.combo ?? 0) > 0
-            ? event.text.split(' · ')[0]
-            : effects[0]?.text}
-        </strong>
-        <div className="tp-spectacle-score">
-          {event.value}
-          <span>直伤</span>
-        </div>
-        <div className="tp-spectacle-objects">
-          {objects.map((item) => (
-            <ObjectGlyph key={item.id} id={item.id} family={item.family} />
-          ))}
-        </div>
-        <div className="tp-spectacle-effects">
-          {effects.slice(0, 5).map((entry) => (
-            <span key={entry.id}>
-              {entry.text}
-              {entry.kind === 'slow'
-                ? ` ${entry.value / 1000}s`
-                : entry.kind === 'pierce' || entry.kind === 'leech'
-                  ? ` ${entry.value}%`
-                  : entry.value > 0
-                    ? ' +' + entry.value
-                    : ''}
-            </span>
-          ))}
-        </div>
-      </div>
-      {Array.from({ length: 12 }, (_, index) => (
-        <i
-          className="tp-spectacle-spark"
-          key={index}
-          style={
-            {
-              '--spark-angle': `${index * 30}deg`,
-              '--spark-distance': `${80 + (index % 3) * 24}px`,
-            } as CSSProperties
-          }
-        />
-      ))}
     </div>
   );
 }
