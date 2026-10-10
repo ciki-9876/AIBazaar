@@ -4,6 +4,7 @@ import { scorePoker } from './throw-poker.ts';
 import {
   createThrowDuel,
   drawInterval,
+  DEAL_SIZE,
   launchThrow,
   MAX_HP,
   PRESETS,
@@ -179,31 +180,33 @@ test('straights, flushes and straight flushes start at three cards, including Ac
     assert.equal(score.comboIds.length, comboLength);
   }
 });
-test('phase boundaries drive draws and carry elapsed progress into the faster interval', () => {
-  assert.equal(RULES_VERSION, 'throw-duel-v7');
+test('phase boundaries drive deal rounds and carry elapsed progress into the faster interval', () => {
+  assert.equal(RULES_VERSION, 'throw-duel-v8');
+  assert.equal(DEAL_SIZE, 2);
   assert.equal(battlePhase(600), 'opening');
   assert.equal(battlePhase(601), 'heated');
   assert.equal(battlePhase(1199), 'heated');
   assert.equal(battlePhase(1200), 'curtain');
-  assert.equal(drawInterval([], 600), 60);
-  assert.equal(drawInterval([], 601), 40);
-  assert.equal(drawInterval([], 1199), 40);
-  assert.equal(drawInterval([], 1200), 30);
-  for (const [tick, interval] of [[599, 60], [600, 40], [1199, 30]]) {
+  // Same card rate as v7 (one per 3 s / 2 s / 1.5 s), delivered two at a time.
+  assert.equal(drawInterval([], 600), 120);
+  assert.equal(drawInterval([], 601), 80);
+  assert.equal(drawInterval([], 1199), 80);
+  assert.equal(drawInterval([], 1200), 60);
+  for (const [tick, interval] of [[599, 120], [600, 80], [1199, 60]]) {
     let state = idle();
     state.tick = tick;
     state.fighters[0].drawClock = interval - 1;
     state = run(state, 1);
-    assert.equal(state.fighters[0].drawn, 6);
+    assert.equal(state.fighters[0].drawn, 7);
     assert.equal(state.fighters[0].drawClock, 0);
   }
-  for (const [tick, interval] of [[601, 40], [1201, 30]]) {
+  for (const [tick, interval] of [[601, 80], [1201, 60]]) {
     let state = idle();
     state.tick = tick;
     state = run(state, interval - 1);
     assert.equal(state.fighters[0].drawn, 5);
     state = run(state, 1);
-    assert.equal(state.fighters[0].drawn, 6);
+    assert.equal(state.fighters[0].drawn, 7);
   }
 });
 test('short combinations earn proportional rewards and loose cards do not inflate item rewards', () => {
@@ -248,24 +251,27 @@ test('items affect actual preview, use ten cells and cannot stack', () => {
     previewThrow(cards([2, 3, 4, 5, 6]), ['sequence', 'mend']).damage,
     80,
   );
-  assert.equal(drawInterval(['draw']), 60);
+  assert.equal(drawInterval(['draw']), 120);
   assert.throws(() => createThrowDuel(1, ['quick', 'quick']));
   assert.throws(() =>
     createThrowDuel(1, ['sequence', 'suit', 'focus', 'mend', 'pair']),
   );
 });
-test('full hand pauses drawing, resumes once space opens, with no banked draws', () => {
-  let state = run(idle(), 300);
+test('full hand pauses dealing, resumes once space opens, with no banked draws', () => {
+  let state = run(idle(), 240);
+  assert.equal(state.fighters[0].hand.length, 9);
+  // A round with one free slot deals one card; the second is not banked.
+  state = run(state, 120);
   assert.equal(state.fighters[0].hand.length, 10);
   assert.equal(state.fighters[0].drawn, 10);
   const serialized = JSON.stringify(state.fighters[0]);
-  state = run(state, 60);
+  state = run(state, 120);
   assert.equal(JSON.stringify(state.fighters[0]), serialized);
-  state = launchThrow(state, 0, [state.fighters[0].hand[0].uid]);
-  state = run(state, 59);
-  assert.equal(state.fighters[0].hand.length, 9);
+  state = launchThrow(state, 0, [state.fighters[0].hand[0].uid, state.fighters[0].hand[1].uid]);
+  state = run(state, 119);
+  assert.equal(state.fighters[0].hand.length, 8);
   state = run(state, 1);
-  assert.equal(state.fighters[0].hand.length, 10);
+  assert.equal(state.fighters[0].hand.length, 10, 'a whole round lands at once');
 });
 test('failed selection is atomic and repeated launch cannot duplicate damage', () => {
   const state = idle(),

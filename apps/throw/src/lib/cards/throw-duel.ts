@@ -36,7 +36,7 @@ export const TICK_MS = 50,
  * rewards, sorting is a shared action and draws accelerate by battle phase.
  * Deck streams are unchanged from v3.
  */
-export const RULES_VERSION = 'throw-duel-v7';
+export const RULES_VERSION = 'throw-duel-v8';
 /**
  * v7 relic pass (ADR-0053), on top of the v6 tempo: relics change a rule
  * rather than add a number, and none is generically best. Relay stops drawing
@@ -89,7 +89,7 @@ export const CURTAIN_RAMP = 1;
 /** Curtain damage dealt at the given tick (0 before the curtain falls). */
 export const curtainDamage = (tick: number) =>
   tick < ticks(CURTAIN_MS) ? 0 : (Math.floor((tick - ticks(CURTAIN_MS)) / ticks(1000)) + 1) * CURTAIN_RAMP;
-export const SCORCH_PER_THROW = 2;
+export const SCORCH_PER_THROW = 4;
 export const SCORCH_THRESHOLD = 3;
 export const SMOTHER_EXTRA_DECAY = 2;
 export const WOUND_MS = 5000;
@@ -103,9 +103,15 @@ export type BattlePhase = 'opening' | 'heated' | 'curtain';
 /** The thirty-second boundary remains opening; the next simulation tick is heated. */
 export const battlePhase = (tick: number): BattlePhase =>
   tick >= ticks(CURTAIN_MS) ? 'curtain' : tick > ticks(HEATED_MS) ? 'heated' : 'opening';
-/** Builds share the phase's interval; elapsed draw progress is retained across transitions. */
+/**
+ * v8 deal rounds: cards arrive DEAL_SIZE at a time, every DEAL_SIZE base
+ * intervals (6 s / 4 s / 3 s by phase), so the card rate is unchanged but
+ * a fast thrower always has a choice instead of one card at a time.
+ */
+export const DEAL_SIZE = 2;
+/** Ticks between deal rounds. Builds share the phase's interval; elapsed progress is retained across transitions. */
 export const drawInterval = (_items: readonly ItemId[], tick = 0) =>
-  ticks(battlePhase(tick) === 'curtain' ? 1500 : battlePhase(tick) === 'heated' ? 2000 : 3000);
+  DEAL_SIZE * ticks(battlePhase(tick) === 'curtain' ? 1500 : battlePhase(tick) === 'heated' ? 2000 : 3000);
 export type Side = 0 | 1;
 export type EffectKind =
   | 'damage'
@@ -1191,7 +1197,8 @@ export function stepThrowDuelInPlace(next: ThrowDuel) {
       ++fighter.drawClock >= drawInterval(fighter.items, next.tick)
     ) {
       fighter.drawClock = 0;
-      draw(next, side);
+      // A round only fills free slots; draw() stops at the hand limit.
+      for (let i = 0; i < DEAL_SIZE; i++) draw(next, side);
     }
   }
   const ai = next.ai,

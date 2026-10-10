@@ -47,14 +47,14 @@ const hit = (state, hand, side = 0) => {
   return run(launchThrow(state, side, hand.map((card) => card.uid)), 9);
 };
 
-test('three-second draws are exact for every build, without an accelerated default preset', () => {
+test('six-second deal rounds of two are exact for every build, without an accelerated default preset', () => {
   for (const build of Object.values(PRESETS)) {
     let state = idle(build.items, build.relic);
-    assert.equal(drawInterval(build.items), 60);
-    state = run(state, 59);
+    assert.equal(drawInterval(build.items), 120);
+    state = run(state, 119);
     assert.equal(state.fighters[0].drawn, 5);
     state = run(state, 1);
-    assert.equal(state.fighters[0].drawn, 6);
+    assert.equal(state.fighters[0].drawn, 7);
   }
 });
 test('the AI cannot form a scattered pair without selecting all intervening cards', () => {
@@ -181,7 +181,7 @@ test('scorched healing: burning or wounded fighters receive 60% of a heal', () =
   state.fighters[0].hp = 200;
   state.fighters[0].burn = 5;
   state = launchThrow(state, 0, ((state.fighters[0].hand = cards([2, 3], [1, 1])), ['proof:0', 'proof:1']));
-  assert.equal(state.fighters[0].hp, 200 - 2 + Math.floor(18 * 0.6)); // scorch 2 then 60% of 18
+  assert.equal(state.fighters[0].hp, 200 - 4 + Math.floor(18 * 0.6)); // scorch 4 (v8) then 60% of 18
   state = idle(['mend']);
   state.fighters[0].hp = 200;
   state.fighters[0].woundUntil = 100;
@@ -228,13 +228,13 @@ test('poison ignores shields, festers on hoarded cards and ebbs every second tic
   assert.equal(state.fighters[0].hp, MAX_HP - (6 + 2) - (6 + 2));
   assert.equal(state.fighters[0].poison, 5);
 });
-test('scorch: throwing while properly alight costs two life, shield or no shield', () => {
+test('scorch: throwing while properly alight costs four life (v8), shield or no shield', () => {
   let state = idle();
   state.fighters[0].burn = 3;
   state.fighters[0].shield = 50;
   state.fighters[0].hand = cards([2]);
   state = launchThrow(state, 0, ['proof:0']);
-  assert.equal(state.fighters[0].hp, MAX_HP - 2);
+  assert.equal(state.fighters[0].hp, MAX_HP - 4);
   state = idle();
   state.fighters[0].burn = 2;
   state.fighters[0].hand = cards([2]);

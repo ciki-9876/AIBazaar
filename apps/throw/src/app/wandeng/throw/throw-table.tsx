@@ -22,6 +22,8 @@ import {
 import {
   createThrowDuel,
   drawInterval,
+  DEAL_SIZE,
+  SCORCH_PER_THROW,
   handLimit,
   ITEMS,
   launchThrow,
@@ -953,7 +955,7 @@ export default function ThrowTable({
                   ? `${enemyPreview.name} · ${enemyPreview.damage}伤害 · ${Math.max(0, ((duel.ai.releaseTick - duel.tick) * TICK_MS) / 1000).toFixed(1)}秒后甩出`
                   : enemy.hand.length === enemyCapacity
                     ? '满手，等待出牌'
-                    : `下张 ${drawRemaining(enemy)}秒`}
+                    : `下轮发 ${DEAL_SIZE} 张 · ${drawRemaining(enemy)}秒`}
               </span>
             </div>
             <div className="tp-enemy-hand">
@@ -1109,7 +1111,7 @@ export default function ThrowTable({
                 <span className="tp-draw-label">
                   {player.hand.length === capacity
                     ? '满手，抽牌暂停'
-                    : `下张 ${drawRemaining(player)}秒`}
+                    : `下轮发 ${DEAL_SIZE} 张 · ${drawRemaining(player)}秒`}
                 </span>
               </span>
               <div className="tp-selection-actions">
@@ -1293,7 +1295,7 @@ export default function ThrowTable({
             </button>
 
             <h2>玩法规则</h2>
-            <p>开局各 5 张牌，自动补牌；手牌上限 10 张，满了就不再抽——不会替你攒着。</p>
+            <p>开局各 5 张牌，之后按轮发牌：每轮 {DEAL_SIZE} 张，开场每 6 秒一轮，30 秒后（白热）每 4 秒，60 秒后（落幕）每 3 秒。手牌上限 10 张，满了就不再发——不会替你攒着。</p>
             <p>点击选一张，按住拖动可框选一段连续的牌；按空格或「甩出去」出手。电脑也守同样的规矩，它不会作弊，只是不会累。</p>
             <p>牌型基准倍率（顺子、同花、同花顺按 5 张展示）：</p>
             <div className="tp-rank-table">
@@ -1311,7 +1313,7 @@ export default function ThrowTable({
               <li><b>治疗克剧毒</b>：每次治疗顺带净化一半数值的剧毒，满血也有效。</li>
               <li><b>剧毒克护盾</b>：剧毒无视护盾；对手手里每攒 5 张牌，毒发 +1。剧毒每 2 秒退 1 层（浸露药匙：3 秒）。</li>
               <li><b>护盾克灼烧</b>：火落在盾上只点一半；有盾时，灼烧只烧盾、不伤血，熄得更快。</li>
-              <li><b>灼烧克治疗</b>：着火时治疗只剩六成；灼烧 ≥3 层时每次出手烫手，扣 2 血。</li>
+              <li><b>灼烧克治疗</b>：着火时治疗只剩六成；灼烧 ≥3 层时每次出手烫手，扣 {SCORCH_PER_THROW} 血。</li>
               <li><b>单张削盾</b>：单张牌被护盾挡下时多耗 10% 护盾，也不会被铜镜反射。</li>
               <li><b>压轴</b>：顺子及以上命中会造成重创（5 秒内治疗六成）；一次出 5 张以上会吹灭自身灼烧，6 秒内不被点燃。</li>
               <li><b>落幕</b>：第 60 秒起剧院开始关门，双方每秒受到 1、2、3……递增的伤害。护盾照挡，治疗照抵——活得久，本身就是一种赢法。</li>

@@ -109,7 +109,7 @@ export const GRAYWICK_DIALOGUES: Record<string, Dialogue> = {
       },
       {
         speaker: 'reed',
-        text: '规矩很简单：每三秒，你手里会多一张牌；手满十张就不再来——跟我的茶杯一个道理。',
+        text: '规矩很简单：每六秒发一轮牌，一轮两张；手满十张就不再来——跟我的茶杯一个道理。',
       },
       {
         speaker: 'reed',
