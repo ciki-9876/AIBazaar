@@ -7,8 +7,8 @@ const N = Number(process.argv[2] || 40);
 const only = process.argv.slice(3);
 /** Trunks a player plausibly carries in act two. Extend when an act adds kit. */
 export const KITS = {
-  early: { style: 'guard', items: ['pair', 'umbrella', 'ward', 'mend', 'wash', 'quick'], relic: 'bastion' },
-  mend: { style: 'mend', items: ['mend', 'wash', 'pair', 'quick', 'draw'], relic: 'heart' },
+  early: { style: 'guard', items: ['pair', 'umbrella', 'ward', 'thorns', 'quick', 'wash', 'draw'], relic: 'bastion' },
+  mend: { style: 'mend', items: ['mend', 'wash', 'drain', 'pair', 'quick', 'draw'], relic: 'heart' },
   guard: { style: 'guard', items: ['umbrella', 'ward', 'thorns', 'pair', 'mend'], relic: 'bastion' },
   poison: { style: 'poison', items: ['poison', 'venom', 'slow', 'pair', 'draw'], relic: 'toxin' },
   burn: { style: 'burn', items: ['cinder', 'bellows', 'ash', 'pair', 'draw'], relic: 'ember' },

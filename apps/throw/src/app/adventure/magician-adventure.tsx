@@ -58,7 +58,8 @@ const STARTER_LOADOUT: PreparedThrowLoadout = {
 /** Arriving in Bridgeport without a remembered trunk: Graywick's full kit, packed sensibly. */
 const BRIDGEPORT_LOADOUT: PreparedThrowLoadout = {
   style: 'guard',
-  layout: packThrowItems(['pair', 'umbrella', 'ward', 'mend', 'wash', 'quick']),
+  // v9: three shield items, so the splash tax never halves the default trunk.
+  layout: packThrowItems(['pair', 'umbrella', 'ward', 'thorns', 'quick', 'wash', 'draw']),
   relic: 'bastion',
 };
 import { Figure, type RigId } from '../stage/rig';

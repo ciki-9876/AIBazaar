@@ -371,6 +371,9 @@ export const SHOP: readonly ShopOffer[] = [
   { id: 'suit', kind: 'item', ref: 'suit', price: 24, note: '四种颜色，一种脾气。', stocked: after('basil') },
   { id: 'focus', kind: 'item', ref: 'focus', price: 26, note: '放映前请关掉怀疑。', stocked: after('basil') },
   { id: 'shieldbash', kind: 'item', ref: 'shieldbash', price: 26, note: '警长的旧装备。他说是“借给”我的。', stocked: after('pike') },
+  // v9 costumes: a specialist's reward, stocked once two group opponents have shown you what a pure trunk can do.
+  { id: 'sequin', kind: 'item', ref: 'sequin', price: 30, note: '只配一种颜色的人穿。穿上以后，你也只能是一种颜色。', stocked: (s) => GROUP.filter((id) => s.won.includes(id)).length >= 2 },
+  { id: 'tailcoat', kind: 'item', ref: 'tailcoat', price: 35, note: '裁缝寄卖的。他说两种本事刚好，三种就开线了。', stocked: (s) => GROUP.filter((id) => s.won.includes(id)).length >= 2 },
 ];
 
 /* ───────────────────────────── Dossier gossip ───────────────────────────── */

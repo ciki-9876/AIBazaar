@@ -65,6 +65,26 @@ const icons = (A: string): Record<ItemId | RelicId, ReactNode> => ({
       <path d="M15 15H33M15 36H33" />
     </g>
   ),
+  sequin: (
+    <g>
+      <path d="M15 6L24 20L33 6L40 12V40H8V12Z" />
+      <path d="M24 20V40" />
+      <circle cx="15" cy="22" r="1.8" fill={A} stroke="none" />
+      <circle cx="19" cy="29" r="1.8" fill={A} stroke="none" />
+      <circle cx="14" cy="34" r="1.8" fill={A} stroke="none" />
+      <circle cx="33" cy="22" r="1.8" fill={A} stroke="none" />
+      <circle cx="29" cy="29" r="1.8" fill={A} stroke="none" />
+      <circle cx="34" cy="34" r="1.8" fill={A} stroke="none" />
+    </g>
+  ),
+  tailcoat: (
+    <g>
+      <path d="M17 6L24 16L31 6L40 11L38 30L33 44L28 30H20L15 44L10 30L8 11Z" />
+      <path d="M17 6L21 24H27L31 6" />
+      <path d="M21 13L24 16L27 13" stroke={A} />
+      <circle cx="24" cy="27" r="1.6" fill={A} stroke="none" />
+    </g>
+  ),
   stride: (
     <g>
       <path d="M14 8Q24 4 34 8L38 38Q30 42 24 38Q18 42 10 38Z" />
