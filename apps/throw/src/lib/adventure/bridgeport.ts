@@ -10,6 +10,7 @@ import type {
   ShopOffer,
   ShowDefinition,
 } from './adventure-types';
+import { PERFORMERS } from '../cards/throw-performer.ts';
 
 /**
  * Act two · Bridgeport: 没人替你买票，就让他们自己来.
@@ -192,6 +193,8 @@ export const BRIDGEPORT_BATTLES = {
     style: 'burn',
     items: ['cinder', 'bellows', 'ash', 'pair', 'draw', 'quick'],
     relic: 'ember',
+    book: { ...PERFORMERS.rosie.book },
+    performer: 'rosie',
     reward: { fee: 15 },
     win: 'rosie-win',
     loss: 'rosie-loss',
@@ -226,17 +229,8 @@ export const BRIDGEPORT_BATTLES = {
     style: 'quick',
     items: ['quick', 'compass', 'tempo', 'needle', 'stride', 'draw', 'pair'],
     relic: 'relay',
-    book: {
-      '0-11': 'LSJ',
-      '0-14': 'gold',
-      '1-14': 'gold',
-      '2-14': 'gold',
-      '3-14': 'gold',
-      '0-3': 'edge',
-      '1-3': 'edge',
-      '2-3': 'edge',
-      '3-3': 'edge',
-    },
+    book: { ...PERFORMERS.juno.book },
+    performer: 'juno',
     reward: { fee: 40, items: ['stride', 'tempo', 'needle'], relics: ['relay'], variants: ['0-11:LSJ'] },
     winFlags: ['champion'],
     win: 'juno-win',

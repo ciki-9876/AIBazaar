@@ -121,6 +121,10 @@ export const GRAYWICK_DIALOGUES: Record<string, Dialogue> = {
       },
       {
         speaker: 'reed',
+        text: '还有你练了十年的那手假洗，别藏着：按 Q，下一轮要来的两张牌就亮在你眼前；不喜欢，就把它们埋回牌堆底。十八秒才能再来一次——手法用多了，观众会看穿。',
+      },
+      {
+        speaker: 'reed',
         text: '来，跟我过两招。我老了，出手慢——你就当在跟一只特别有礼貌的乌龟比赛。',
       },
     ],

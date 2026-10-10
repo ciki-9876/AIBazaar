@@ -23,6 +23,10 @@ import {
   createThrowDuel,
   drawInterval,
   DEAL_SIZE,
+  useSleight,
+  buryPeek,
+  peekedCards,
+  sleightReady,
   SCORCH_PER_THROW,
   SPLASH_MIN_ITEMS,
   handLimit,
@@ -68,6 +72,7 @@ import { throwAdvice } from './throw-advice';
 import { deservesCheer } from './throw-audience';
 import { PhaseLights, VictoryConfetti } from './throw-celebration';
 import ThrowWorkbench from './throw-workbench';
+import { PERFORMERS, PERFORMER_IDS, type PerformerId } from '../../../lib/cards/throw-performer';
 import EnemyPreview from './throw-enemy-preview';
 import {
   packThrowItems,
@@ -85,6 +90,8 @@ type Action =
   | { type: 'clear' }
   | { type: 'launch'; geometry: TableGeometry }
   | { type: 'arrange'; mode: 'rank' | 'suit' | 'gather' }
+  | { type: 'sleight' }
+  | { type: 'bury' }
   | { type: 'start'; duel: ThrowDuel };
 function reducer(state: Session, action: Action): Session {
   if (action.type === 'start')
@@ -107,6 +114,8 @@ function reducer(state: Session, action: Action): Session {
       ...state,
       duel: arrangeThrow(state.duel, 0, action.mode, state.selected),
     };
+  if (action.type === 'sleight') return { ...state, duel: useSleight(state.duel, 0) };
+  if (action.type === 'bury') return { ...state, duel: buryPeek(state.duel, 0) };
   let duel = state.duel;
   if (action.type === 'launch') duel = launchThrow(duel, 0, state.selected);
   else
@@ -274,7 +283,9 @@ function Host({
           >
             {event.text}
             <b>
-              {event.source === 'rule:reorder'
+              {event.kind === 'sleight'
+                ? event.value > 0 && event.source === 'sleight:stoke' ? `${event.value}层` : ''
+                : event.source === 'rule:reorder'
                 ? '20s'
                 : event.value > 0
                   ? event.kind === 'slow' || event.kind === 'wound'
@@ -385,7 +396,11 @@ type ThrowTableProps = {
     /** House rules for street shows; `rule` is their plain-language line. */
     terms?: DuelTerms;
     rule?: string;
+    /** v10: the opponent performer (talent + sleight), if any. */
+    enemyPerformer?: PerformerId;
   };
+  /** Fixed performer for the player (the story uses Eli); omitted lets the practice room choose. */
+  playerPerformer?: PerformerId;
   initialLoadout?: PreparedThrowLoadout;
   hostNames?: readonly [string, string];
   hosts?: readonly [RigId, RigId];
@@ -406,6 +421,17 @@ type ThrowTableProps = {
     report?: { suits: number[]; kinds: number[] },
   ) => void;
 };
+/** v10: one-line sleight status for a performer on stage. */
+function sleightLabel(duel: ThrowDuel, side: 0 | 1) {
+  const fighter = duel.fighters[side];
+  if (!fighter.performer) return '';
+  const sleight = PERFORMERS[fighter.performer].sleight;
+  const wait = Math.max(0, ((fighter.nextSleight - duel.tick) * TICK_MS) / 1000);
+  if (fighter.boomerang) return `${sleight.name} · 已备好`;
+  if (fighter.peeking) return `${sleight.name} · 亮牌中`;
+  if (wait > 0) return `${sleight.name} · ${wait.toFixed(1)}s`;
+  return sleightReady(duel, side) ? `${sleight.name} · 就绪` : `${sleight.name} · 条件未满足`;
+}
 /** One-line live state for relics that count something (v7). */
 function relicStatus(fighter: ThrowFighter) {
   switch (fighter.relic) {
@@ -433,9 +459,15 @@ export default function ThrowTable({
   coach: coachScript = null,
   tip: tipOverride,
   onReturn,
+  playerPerformer,
 }: ThrowTableProps = {}) {
   const [phase, setPhase] = useState<'prepare' | 'battle'>('prepare');
   const [prepView, setPrepView] = useState<'kit' | 'enemy'>('kit');
+  const [chosenPerformer, setChosenPerformer] = useState<PerformerId>('eli');
+  const performer = playerPerformer ?? chosenPerformer;
+  // The practice room puts whoever you pick on stage; story duels keep their hosts.
+  const stageHosts = [playerPerformer || challenge ? hosts[0] : (performer as RigId), hosts[1]] as const;
+  const stageNames = [hostNames?.[0] ?? PERFORMERS[performer].name, hostNames?.[1]] as const;
   const [style, setStyle] = useState<Style>(initialLoadout?.style ?? 'quick');
   const [layout, setLayout] = useState<ItemPlacement[]>(() =>
     initialLoadout
@@ -576,6 +608,7 @@ export default function ThrowTable({
         event.preventDefault();
         fire();
       }
+      if (event.code === 'KeyQ' && phase === 'battle' && !rules) dispatch({ type: 'sleight' });
       if (event.code === 'Escape') {
         setRules(false);
         dispatch({ type: 'clear' });
@@ -663,7 +696,11 @@ export default function ThrowTable({
       challenge?.enemyRelic !== undefined ? challenge.enemyRelic : PRESETS[enemyStyle].relic,
       layout,
       { player: playerBook, enemy: challenge?.enemyBook },
-      { enemyItems: challenge?.enemyItems, terms: challenge?.terms },
+      {
+        enemyItems: challenge?.enemyItems,
+        terms: challenge?.terms,
+        performers: { player: performer, enemy: challenge?.enemyPerformer ?? null },
+      },
     );
     soundCursor.current = next.nextId - 1;
     resultSound.current = false;
@@ -846,6 +883,7 @@ export default function ThrowTable({
                 relic={challenge?.enemyRelic !== undefined ? challenge.enemyRelic : PRESETS[enemyStyle].relic}
                 book={challenge?.enemyBook}
                 rule={challenge?.rule}
+                performer={challenge?.enemyPerformer}
                 tap={() => unlockSound().tap()}
               />
             ) : (
@@ -871,11 +909,33 @@ export default function ThrowTable({
             <div className="tp-preparation-footer">
               {challenge ? (
                 <div className="tp-start-options">
+                  <span className="tp-performer-line" title={`${PERFORMERS[performer].talent.text}　${PERFORMERS[performer].sleight.text}`}>
+                    {PERFORMERS[performer].name.split('·')[0]}：{PERFORMERS[performer].talent.name} · {PERFORMERS[performer].sleight.name}
+                  </span>
                   {hostNames?.[1]} · {PRESETS[enemyStyle].name}
                   {challenge.rule && <em className="tp-house-rule">规矩：{challenge.rule}</em>}
                 </div>
               ) : (
                 <div className="tp-start-options">
+                  {!playerPerformer && (
+                    <label>
+                      上场角色
+                      <select
+                        value={chosenPerformer}
+                        onChange={(event) => {
+                          const next = event.target.value as PerformerId;
+                          setChosenPerformer(next);
+                          if (next !== 'eli') setBook({ ...PERFORMERS[next].book });
+                        }}
+                      >
+                        {PERFORMER_IDS.map((id) => (
+                          <option key={id} value={id}>
+                            {PERFORMERS[id].name}
+                          </option>
+                        ))}
+                      </select>
+                    </label>
+                  )}
                   <label>
                     练习对手
                     <select
@@ -950,6 +1010,11 @@ export default function ThrowTable({
                   {enemy.hand.length}/{enemyCapacity}
                 </b>{' '}
                 · {PRESETS[duel.ai.style].name}
+                {enemy.performer && (
+                  <span className="tp-sleight-status" title={PERFORMERS[enemy.performer].sleight.text}>
+                    {sleightLabel(duel, 1)}
+                  </span>
+                )}
               </span>
               <span className={intentCards.length ? 'tp-warning' : ''}>
                 {intentCards.length
@@ -991,7 +1056,7 @@ export default function ThrowTable({
                 fighter={player}
                 duel={duel}
                 side={0}
-                name={hostNames?.[0]}
+                name={stageNames[0]}
               />
               <div className="tp-clock">
                 <strong>VS</strong>
@@ -1032,8 +1097,8 @@ export default function ThrowTable({
               fighter={player}
               duel={duel}
               side={0}
-              name={hostNames?.[0]}
-              character={hosts[0]}
+              name={stageNames[0]}
+              character={stageHosts[0]}
             />
             {audienceMoment && (
               <output className="tp-audience-moment" key={audienceMoment.id} data-audience-cheer={audienceMoment.id} aria-live="polite">
@@ -1114,8 +1179,38 @@ export default function ThrowTable({
                     ? '满手，抽牌暂停'
                     : `下轮发 ${DEAL_SIZE} 张 · ${drawRemaining(player)}秒`}
                 </span>
+                {player.peeking && (
+                  <span className="tp-peek" aria-label="假洗：下一轮要发的牌">
+                    {peekedCards(player).map((card) => (
+                      <span key={card.uid} className="tp-peek-card">
+                        <CardFace card={card} compact />
+                      </span>
+                    ))}
+                    <button
+                      onClick={() => {
+                        unlockSound().tap();
+                        dispatch({ type: 'bury' });
+                      }}
+                    >
+                      埋到牌堆底
+                    </button>
+                  </span>
+                )}
               </span>
               <div className="tp-selection-actions">
+                {player.performer && (
+                  <button
+                    className={`tp-sleight ${sleightReady(duel, 0) ? 'is-ready' : ''}`}
+                    disabled={!sleightReady(duel, 0)}
+                    title={`${PERFORMERS[player.performer].sleight.name}：${PERFORMERS[player.performer].sleight.text}（快捷键 Q）`}
+                    onClick={() => {
+                      unlockSound().tap();
+                      dispatch({ type: 'sleight' });
+                    }}
+                  >
+                    {sleightLabel(duel, 0)} <kbd>Q</kbd>
+                  </button>
+                )}
                 <span className="tp-order-status">
                   {orderCooldown > 0
                       ? `理牌冷却 ${orderCooldown.toFixed(1)}s`

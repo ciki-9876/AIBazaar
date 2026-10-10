@@ -1441,3 +1441,59 @@ button:disabled {
   font-size: 12px;
   color: var(--bone-dim);
 }
+
+/* v10 sleights: one button, a status in the opponent caption, and the face-up false shuffle. */
+.tp-selection-actions .tp-sleight {
+  height: 32px;
+  padding: 0 12px;
+  border: 1px solid rgba(247, 230, 176, 0.35);
+  border-radius: 999px;
+  background: rgba(247, 230, 176, 0.06);
+  color: var(--bone-dim);
+  font-size: 13px;
+}
+.tp-selection-actions .tp-sleight.is-ready {
+  border-color: var(--limelight);
+  background: rgba(247, 230, 176, 0.16);
+  color: var(--limelight);
+  box-shadow: 0 0 12px rgba(247, 230, 176, 0.25);
+}
+.tp-sleight kbd {
+  margin-left: 4px;
+  padding: 0 4px;
+  border-radius: 3px;
+  box-shadow: inset 0 0 0 1px currentColor;
+  font: 10px var(--font-ui);
+}
+.tp-sleight-status {
+  margin-left: 8px;
+  color: var(--limelight);
+  font-size: 12px;
+}
+.tp-peek {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  margin-left: 10px;
+  vertical-align: middle;
+}
+.tp-peek-card {
+  display: inline-block;
+  width: 34px;
+  height: 48px;
+  animation: tp-pop 0.35s var(--ease-spring);
+}
+.tp-peek-card .card-art,
+.tp-peek-card svg {
+  width: 100%;
+  height: 100%;
+}
+.tp-peek button {
+  height: 26px;
+  padding: 0 10px;
+  border: 1px solid rgba(239, 231, 214, 0.25);
+  border-radius: 999px;
+  background: transparent;
+  color: var(--bone);
+  font-size: 12px;
+}

@@ -415,7 +415,9 @@ export default function MagicianAdventure() {
             enemyBook: setup.enemyBook,
             terms: setup.terms,
             rule: setup.rule,
+            enemyPerformer: setup.enemyPerformer,
           }}
+          playerPerformer="eli"
           hostNames={['伊莱', CHARACTERS[setup.opponent].name]}
           initialLoadout={fitLoadout(loadout ?? (state.act > 1 ? BRIDGEPORT_LOADOUT : STARTER_LOADOUT), setup.available, setup.forced)}
           hosts={['eli', opponent]}

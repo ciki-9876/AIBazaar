@@ -183,7 +183,7 @@ test('straights, flushes and straight flushes start at three cards, including Ac
   }
 });
 test('phase boundaries drive deal rounds and carry elapsed progress into the faster interval', () => {
-  assert.equal(RULES_VERSION, 'throw-duel-v9');
+  assert.equal(RULES_VERSION, 'throw-duel-v10');
   assert.equal(DEAL_SIZE, 2);
   assert.equal(battlePhase(600), 'opening');
   assert.equal(battlePhase(601), 'heated');

@@ -16,6 +16,7 @@ import {
 import { SUITS } from '../../../lib/cards/throw-poker';
 import { enchantOf, RARITY_NAMES, type DeckBook } from '../../../lib/cards/throw-enchant';
 import { KitDetail, type KitFocus } from './throw-kit';
+import { PERFORMERS, type PerformerId } from '../../../lib/cards/throw-performer';
 
 const RANK_LABELS: Record<number, string> = { 11: 'J', 12: 'Q', 13: 'K', 14: 'A' };
 const cardLabel = (key: string) => {
@@ -35,6 +36,7 @@ export default function EnemyPreview({
   relic,
   book,
   rule,
+  performer,
   tap,
 }: {
   name: string;
@@ -44,6 +46,8 @@ export default function EnemyPreview({
   relic: RelicId | null;
   book?: DeckBook;
   rule?: string;
+  /** v10: the opponent's talent and sleight. */
+  performer?: PerformerId;
   tap: () => void;
 }) {
   const [focus, setFocus] = useState<KitFocus | null>(null);
@@ -88,6 +92,21 @@ export default function EnemyPreview({
                   <dd>{fearedBy.map((id) => PRESETS[id].name).join('、')}</dd>
                 </div>
               )}
+            </dl>
+          )}
+          {performer && (
+            <dl className="tp-enemy-identity">
+              <div>
+                <dt>天赋 · {PERFORMERS[performer].talent.name}</dt>
+                <dd>{PERFORMERS[performer].talent.text}</dd>
+              </div>
+              <div>
+                <dt>
+                  手法 · {PERFORMERS[performer].sleight.name}
+                  <small>冷却 {PERFORMERS[performer].sleight.cooldownMs / 1000} 秒</small>
+                </dt>
+                <dd>{PERFORMERS[performer].sleight.text}</dd>
+              </div>
             </dl>
           )}
           {rule && <p className="tp-house-rule">本场规矩：{rule}</p>}
