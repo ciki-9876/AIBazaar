@@ -97,7 +97,7 @@ export const PERFORMERS: Record<PerformerId, Performer> = {
     id: 'stan',
     name: '司机斯坦',
     style: 'quick',
-    talent: { name: '中途下车', text: `生命第一次跌破一半时：立刻抽 ${ALIGHT_DRAW} 张。` },
+    talent: { name: '中途下车', text: `气场第一次跌破一半时：立刻抽 ${ALIGHT_DRAW} 张。` },
     sleight: {
       id: 'switch',
       name: '换牌',

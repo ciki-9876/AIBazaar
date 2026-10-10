@@ -38,8 +38,10 @@ export { ITEMS, RELICS, PRESETS, BAG_CELLS };
 export type { ItemId, RelicId, Style, ItemPlacement };
 export const TICK_MS = 50,
   HAND_LIMIT = 10,
+  /** Default presence (气场) cap: every fighter's unless the duel supplies its own (v11). */
   MAX_HP = 320,
-  MAX_SHIELD = 160,
+  /** Largest presence cap a duel accepts (v11). */
+  PRESENCE_LIMIT = 2000,
   MAX_POWER = 30;
 /**
  * v6 retains the four-condition wheel introduced in v4:
@@ -49,7 +51,14 @@ export const TICK_MS = 50,
  * rewards, sorting is a shared action and draws accelerate by battle phase.
  * Deck streams are unchanged from v3.
  */
-export const RULES_VERSION = 'throw-duel-v10';
+export const RULES_VERSION = 'throw-duel-v11';
+/**
+ * v11 presence (气场, ADR-0059): each fighter has its own cap (default 320),
+ * supplied by the adventure from stage experience, fame, lodging and mood.
+ * Every "half life" rule reads the fighter's own cap, the curtain scales with
+ * it (round(ramp × cap / 320)), and shields are no longer capped. At the
+ * default cap every result matches v10 except duels whose shield passed 160.
+ */
 /**
  * v7 relic pass (ADR-0053), on top of the v6 tempo: relics change a rule
  * rather than add a number, and none is generically best. Relay stops drawing
@@ -102,6 +111,8 @@ export const CURTAIN_RAMP = 1;
 /** Curtain damage dealt at the given tick (0 before the curtain falls). */
 export const curtainDamage = (tick: number) =>
   tick < ticks(CURTAIN_MS) ? 0 : (Math.floor((tick - ticks(CURTAIN_MS)) / ticks(1000)) + 1) * CURTAIN_RAMP;
+/** v11: the curtain scales with the fighter's presence cap, so it threatens every tier alike. */
+export const curtainFor = (maxHp: number, base: number) => (maxHp === MAX_HP ? base : Math.round((base * maxHp) / MAX_HP));
 export const SCORCH_PER_THROW = 4;
 export const SCORCH_THRESHOLD = 3;
 export const SMOTHER_EXTRA_DECAY = 2;
@@ -223,6 +234,8 @@ export type ThrowFighter = {
   peeking: boolean;
   /** A once-per-duel talent has fired (Stan's 中途下车). */
   talentUsed: boolean;
+  /** v11 presence cap (气场上限). */
+  maxHp: number;
 };
 /**
  * Optional house terms for a challenge duel (street shows). They bind the
@@ -362,7 +375,7 @@ function healFighter(
   }
   const actual = Math.min(
     Math.floor(nominal * healingFactor(fighter, state.tick)),
-    MAX_HP - fighter.hp,
+    fighter.maxHp - fighter.hp,
   );
   fighter.hp += actual;
   if (actual > 0)
@@ -370,7 +383,7 @@ function healFighter(
   // Heart blanket: what would spill past full life is half kept as shield.
   if (fighter.relic === 'heart') {
     const spill = Math.floor(nominal * healingFactor(fighter, state.tick)) - actual;
-    const kept = Math.min(Math.floor(spill * HEART_OVERFLOW), MAX_SHIELD - fighter.shield);
+    const kept = Math.floor(spill * HEART_OVERFLOW);
     if (kept > 0) {
       fighter.shield += kept;
       addEvent(state, side, 'effect', '补缝余温', kept, { source: 'relic:heart', kind: 'shield' });
@@ -400,6 +413,8 @@ export function createThrowDuel(
     enemyItems?: ItemId[];
     terms?: DuelTerms;
     performers?: { player?: PerformerId | null; enemy?: PerformerId | null };
+    /** v11 presence caps; absent sides use MAX_HP. */
+    presence?: { player?: number; enemy?: number };
   } = {},
 ): ThrowDuel {
   if (!Number.isSafeInteger(seed) || seed < 0 || seed > 0xffffffff)
@@ -437,6 +452,8 @@ export function createThrowDuel(
   )
     throw new Error('Invalid opponent loadout');
   const performers = [options.performers?.player ?? null, options.performers?.enemy ?? null] as const;
+  const caps = [options.presence?.player ?? MAX_HP, options.presence?.enemy ?? MAX_HP] as const;
+  if (caps.some((cap) => !Number.isInteger(cap) || cap < 1 || cap > PRESENCE_LIMIT)) throw new Error('Invalid presence');
   if (performers.some((id) => id !== null && !isPerformer(id))) throw new Error('Invalid performer');
   const terms = options.terms ? structuredClone(options.terms) : null;
   if (
@@ -445,7 +462,7 @@ export function createThrowDuel(
       (terms.maxCards !== undefined && !(Number.isInteger(terms.maxCards) && terms.maxCards >= 1)) ||
       (terms.minCards !== undefined && !(Number.isInteger(terms.minCards) && terms.minCards >= 1 && terms.minCards <= 5)) ||
       (terms.deadlineMs !== undefined && !(Number.isInteger(terms.deadlineMs) && terms.deadlineMs > 0)) ||
-      (terms.hpFloor !== undefined && !(Number.isInteger(terms.hpFloor) && terms.hpFloor > 0 && terms.hpFloor <= MAX_HP)))
+      (terms.hpFloor !== undefined && !(Number.isInteger(terms.hpFloor) && terms.hpFloor > 0 && terms.hpFloor <= caps[0])))
   )
     throw new Error('Invalid duel terms');
   const make = (
@@ -454,7 +471,8 @@ export function createThrowDuel(
     equippedRelic: RelicId | null,
     book: DeckBook,
   ): ThrowFighter => ({
-    hp: MAX_HP,
+    hp: caps[side],
+    maxHp: caps[side],
     shield: 0,
     burn: 0,
     poison: 0,
@@ -709,8 +727,8 @@ export function previewThrow(
       {
         cards,
         kind: poker.kind,
-        hp: context.hp ?? MAX_HP,
-        maxHp: MAX_HP,
+        hp: context.hp ?? context.maxHp ?? MAX_HP,
+        maxHp: context.maxHp ?? MAX_HP,
         shield: context.shield ?? 0,
         poison: context.poison ?? 0,
         burn: context.burn ?? 0,
@@ -759,14 +777,7 @@ export function previewThrow(
     if (cards.length >= 5 && (context.burn ?? 0) > 0)
       effects.push({ source: 'rule:finale', name: '压轴灭火', value: context.burn ?? 0, kind: 'cleanse' });
   }
-  // Clamp shield and growth to their real headroom so the preview never lies.
-  const shieldRoom = Math.max(0, MAX_SHIELD - (context.shield ?? 0));
-  let shieldLeft = shieldRoom;
-  for (const effect of effects)
-    if (effect.kind === 'shield') {
-      effect.value = Math.min(effect.value, shieldLeft);
-      shieldLeft -= effect.value;
-    }
+  // Clamp growth to its real headroom so the preview never lies (shields are uncapped since v11).
   let growthLeft = Math.max(0, MAX_POWER - (context.power ?? 0));
   for (const effect of effects)
     if (effect.kind === 'growth') {
@@ -886,7 +897,7 @@ function launchMutable(state: ThrowDuel, side: Side, ids: string[]) {
   for (const effect of score.effects)
     if (effect.kind === 'heal' && effect.value > 0)
       healFighter(state, side, effect.value, effect.name, effect.source);
-  fighter.shield = Math.min(MAX_SHIELD, fighter.shield + score.shield);
+  fighter.shield += score.shield;
   fighter.power = Math.min(MAX_POWER, fighter.power + score.growth);
   fighter.lastSuit = score.currentSuit;
   for (let i = 0; i < score.draw; i++) draw(state, side);
@@ -1301,7 +1312,7 @@ export function stepThrowDuelInPlace(next: ThrowDuel) {
           shieldDamage: response.blocked,
         });
       }
-      if (target.relic === 'echo' && target.hp > 0 && target.hp * 2 < MAX_HP) {
+      if (target.relic === 'echo' && target.hp > 0 && target.hp * 2 < target.maxHp) {
         const gain = Math.min(ECHO_GAIN, ECHO_CAP - target.echo);
         target.echo += gain;
         if (gain)
@@ -1360,8 +1371,9 @@ export function stepThrowDuelInPlace(next: ThrowDuel) {
     for (const side of [0, 1] as const) {
       const fighter = next.fighters[side];
       if (!fighter.hp) continue;
-      const { health, blocked } = loseHealth(fighter, curtain);
-      addEvent(next, side === 0 ? 1 : 0, 'dot', '落幕', curtain, {
+      const amount = curtainFor(fighter.maxHp, curtain);
+      const { health, blocked } = loseHealth(fighter, amount);
+      addEvent(next, side === 0 ? 1 : 0, 'dot', '落幕', amount, {
         kind: 'curtain',
         hpDamage: health,
         shieldDamage: blocked,
@@ -1384,7 +1396,7 @@ export function stepThrowDuelInPlace(next: ThrowDuel) {
   // Stan's talent: the first time he drops below half, he gets off the bus and draws.
   for (const side of [0, 1] as const) {
     const fighter = next.fighters[side];
-    if (fighter.performer === 'stan' && !fighter.talentUsed && fighter.hp > 0 && fighter.hp * 2 < MAX_HP) {
+    if (fighter.performer === 'stan' && !fighter.talentUsed && fighter.hp > 0 && fighter.hp * 2 < fighter.maxHp) {
       fighter.talentUsed = true;
       for (let i = 0; i < ALIGHT_DRAW; i++) draw(next, side);
       effectEvent(next, side, { source: 'talent:stan', name: '中途下车', value: ALIGHT_DRAW, kind: 'sleight' });

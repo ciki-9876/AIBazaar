@@ -153,7 +153,7 @@ export const HOBBS_THINGS = ['pestle', 'scale', 'jar'] as const;
 export const SHOWS: readonly ShowDefinition[] = [
   { id: 'double', title: '两张起甩', rule: '每次至少甩 2 张牌。', blurb: '集市的观众说单张看着太寒酸。他们是认真的。' },
   { id: 'single', title: '一张就够', rule: '每次只能甩 1 张牌。', blurb: '街头魔术的老规矩：手里一张，眼里全场。' },
-  { id: 'tea', title: '别让茶凉', rule: '生命跌破 160 即告失败。', blurb: '比阿在台下泡好了茶。你倒下之前，茶必须还是热的。' },
+  { id: 'tea', title: '别让茶凉', rule: '气场跌破一半即告失败。', blurb: '比阿在台下泡好了茶。你倒下之前，茶必须还是热的。' },
   { id: 'quick', title: '速战速决', rule: '64 秒内获胜，否则失败。', blurb: '斯坦说巴士 64 秒后开。巴士其实不开，但他说得很坚定。落幕会帮你一把。' },
   { id: 'borrowed', title: '借来的箱子', rule: '只能用佩蒂格鲁借你的青苔巡演箱。', blurb: '「公司标准配置。」佩蒂格鲁说。「你会爱上它的。」' },
   { id: 'noshield', title: '无盾之夜', rule: '巡演箱里不许带护盾类道具。', blurb: '罗茜说盾牌挡住了她看你的视线。她要看清楚你被烤熟。' },
@@ -684,7 +684,7 @@ export const BRIDGEPORT_DIALOGUES: Record<string, Dialogue> = {
   'stan-hired': {
     lines: [
       { speaker: 'stan', text: '一镑？成交。巴士我照开，牌我照打，厕所我照去。三件事都不耽误——主要是第三件。' },
-      { speaker: 'narrator', text: '司机斯坦加入了剧团。他从没赢过，但他会「换牌」，而且第一次被打到半血时会突然来劲。' },
+      { speaker: 'narrator', text: '司机斯坦加入了剧团。他从没赢过，但他会「换牌」，而且第一次被打掉一半气场时会突然来劲。' },
     ],
     effect: { recruit: 'stan' },
   },
