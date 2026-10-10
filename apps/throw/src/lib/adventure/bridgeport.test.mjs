@@ -327,8 +327,11 @@ test('v3 saves preserve progress and earned kits while retiring the sorting reli
     loadout: { style: 'quick', layout: [{ id: 'quick', start: 0 }], relic: 'order' } });
   const restored = restoreAdventure(json);
   assert.ok(restored);
-  assert.equal(restored.state.version, 'magician-adventure-v4');
-  assert.equal(restored.envelope.version, 'magician-adventure-v4');
+  assert.equal(restored.state.version, 'magician-adventure-v5');
+  assert.deepEqual(restored.state.troupe, ['eli']);
+  assert.deepEqual(restored.state.affinity, {});
+  assert.deepEqual(restored.state.bonds, []);
+  assert.equal(restored.envelope.version, 'magician-adventure-v5');
   assert.equal(restored.state.fee, 125);
   assert.deepEqual(restored.state.won, current.won);
   assert.deepEqual(restored.state.flags, current.flags);

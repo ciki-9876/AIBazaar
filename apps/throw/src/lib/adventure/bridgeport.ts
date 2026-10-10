@@ -10,7 +10,7 @@ import type {
   ShopOffer,
   ShowDefinition,
 } from './adventure-types';
-import { PERFORMERS } from '../cards/throw-performer.ts';
+import { PERFORMERS, type PerformerId } from '../cards/throw-performer.ts';
 
 /**
  * Act two · Bridgeport: 没人替你买票，就让他们自己来.
@@ -61,6 +61,7 @@ export const BRIDGEPORT_MAPS = {
     cameraY: 64,
     hotspots: [
       { id: 'goose-exit', x: 130, label: '返回集市街', kind: 'door', target: 'bridgeport', spawn: 1130 },
+      { id: 'goose-board', x: 445, label: '招募告示板', kind: 'board' },
       { id: 'pettigrew', x: 500, label: '佩蒂格鲁先生', kind: 'npc', character: 'pettigrew' },
       { id: 'ada', x: 860, label: '艾达·普赖斯', kind: 'npc', character: 'ada', when: (s) => morningDone(s) },
       { id: 'bea', x: 1000, label: '比阿·普赖斯', kind: 'npc', character: 'bea', when: (s) => morningDone(s) },
@@ -71,6 +72,7 @@ export const BRIDGEPORT_MAPS = {
         kind: 'pickup',
         when: (s) => s.flags.hobbsAsked && !s.found.includes('scale'),
       },
+      { id: 'rosie-kitchen', x: 1180, label: '罗茜·费恩', kind: 'npc', character: 'rosie' },
     ],
   },
   curios: {
@@ -133,6 +135,15 @@ export const BRIDGEPORT_CAST = {
 } satisfies Partial<Record<CharacterId, { name: string; role: string }>>;
 
 export const GROUP: readonly BattleId[] = ['agnes', 'rosie', 'basil', 'pike'];
+
+/** v5 one-time affinity moments in act two (saves validate against this list). */
+export const BOND_IDS = ['rosie-stew', 'rosie-fire'] as const;
+/** v5: how each troupe member can be met and recruited (shown in the troupe panel). */
+export const RECRUITS: Record<Exclude<PerformerId, 'eli'>, { how: '剧情' | '酒馆' | '好感'; character: CharacterId; hint: string; threshold?: number }> = {
+  juno: { how: '剧情', character: 'juno', hint: '赢下布里奇波特公开赛决赛，她会自己来找你。' },
+  rosie: { how: '好感', character: 'rosie', threshold: 60, hint: '醉鹅吧台后面：尝尝她的炖菜，聊聊火，在小组赛上赢她。' },
+  stan: { how: '酒馆', character: 'stan', hint: '醉鹅的招募告示板。工钱：一镑。' },
+};
 export const morningDone = (s: AdventureState) => s.won.includes('ada') && s.won.includes('bea');
 export const showsWon = (s: AdventureState) => s.won.filter((id) => id.startsWith('show-')).length;
 export const isFinalist = (s: AdventureState) => GROUP.every((id) => s.won.includes(id));
@@ -195,7 +206,7 @@ export const BRIDGEPORT_BATTLES = {
     relic: 'ember',
     book: { ...PERFORMERS.rosie.book },
     performer: 'rosie',
-    reward: { fee: 15 },
+    reward: { fee: 15, affinity: { rosie: 35 } },
     win: 'rosie-win',
     loss: 'rosie-loss',
     tip: '火怕盾：补丁旧伞、守灯小毯竖起来，火就只烧盾、熄得更快。一次出 5 张还能吹灭自己身上的火。',
@@ -649,7 +660,84 @@ export const BRIDGEPORT_DIALOGUES: Record<string, Dialogue> = {
       { speaker: 'eli', text: '你把全部家当给我？' },
       { speaker: 'juno', text: '我会准备新招的。你也得准备。下次我不会输。' },
       { speaker: 'narrator', text: '布里奇波特公开赛冠军。获得 40 演出费、朱诺的牌盒，以及传奇变种「♠J · 伞兵杰克」。斯坦已经在按喇叭了。' },
+      { speaker: 'juno', text: '还有一件事。一个人在街头演了六年，我数过——观众加起来不到一千个。你那个……剧团，还缺不缺一个会削盾的？' },
+      { speaker: 'eli', text: '我还没有剧团。' },
+      { speaker: 'juno', text: '那现在有了。两个人也算剧团，斯坦说三个人才算，但斯坦的话不能信。' },
+      { speaker: 'narrator', text: '朱诺加入了剧团。打开「剧团」看看她的天赋与手法；街头演出可以派她上台。' },
     ],
+    effect: { recruit: 'juno' },
+  },
+  /* ───────── v5 troupe: tavern board, Rosie's kitchen ───────── */
+  'tavern-board': {
+    lines: [
+      { speaker: 'narrator', text: '告示板上钉满了纸条：寻猫、出租自行车、教钢琴（只教一首）。角落里有一张字迹潦草的：' },
+      { speaker: 'narrator', text: '「本人司机斯坦，会开巴士，会换牌，会等人。可随团巡演。工钱：一镑。厕所时间另计。」' },
+    ],
+    choices: [
+      { id: 'hire-stan', label: '雇用司机斯坦（£1）', action: { type: 'pay', price: 1, nextDialogue: 'stan-hired', poor: 'tavern-poor' } },
+      { id: 'close', label: '再看看', action: { type: 'close' } },
+    ],
+  },
+  'tavern-poor': {
+    lines: [{ speaker: 'narrator', text: '你翻遍口袋，连一镑都凑不齐。斯坦要是知道，大概会说「我等你」。' }],
+  },
+  'stan-hired': {
+    lines: [
+      { speaker: 'stan', text: '一镑？成交。巴士我照开，牌我照打，厕所我照去。三件事都不耽误——主要是第三件。' },
+      { speaker: 'narrator', text: '司机斯坦加入了剧团。他从没赢过，但他会「换牌」，而且第一次被打到半血时会突然来劲。' },
+    ],
+    effect: { recruit: 'stan' },
+  },
+  'tavern-board-empty': {
+    lines: [{ speaker: 'narrator', text: '斯坦那张纸条被撕走了，背面写着：「已被录用。勿念。」' }],
+  },
+  'rosie-kitchen': {
+    lines: [
+      { speaker: 'rosie', text: '要吃就坐，不吃就别挡着我的炉子。今天的炖菜火候刚好——比上礼拜好，上礼拜锅着火了。' },
+    ],
+    choices: [
+      { id: 'stew', label: '来一碗炖菜（£3）', action: { type: 'pay', price: 3, nextDialogue: 'rosie-stew', poor: 'rosie-poor' } },
+      { id: 'fire', label: '聊聊火', action: { type: 'goto', nextDialogue: 'rosie-fire' } },
+      { id: 'close', label: '改天再来', action: { type: 'close' } },
+    ],
+  },
+  'rosie-stew': {
+    lines: [
+      { speaker: 'rosie', text: '……你吃完了？没加盐，也没皱眉。好吧，你可以再来。' },
+      { speaker: 'narrator', text: '罗茜对你的态度好了一点。她把勺子放下的时候，没有用力。' },
+    ],
+    effect: { affinity: { who: 'rosie', amount: 25, id: 'rosie-stew' } },
+  },
+  'rosie-poor': {
+    lines: [{ speaker: 'rosie', text: '三镑。不赊账。上次赊账的那个人，现在在码头上搬鱼。' }],
+  },
+  'rosie-fire': {
+    lines: [
+      { speaker: 'eli', text: '你的火……是在厨房学的？' },
+      { speaker: 'rosie', text: '在厨房学的是不怕烫。火是我爸教的，他是锅炉工。他说火不讲道理，所以你得比它更不讲道理。' },
+      { speaker: 'narrator', text: '罗茜难得多说了几句。你记住了：她着火的时候，从来不会烫手。' },
+    ],
+    effect: { affinity: { who: 'rosie', amount: 10, id: 'rosie-fire' } },
+  },
+  'rosie-invite': {
+    lines: [
+      { speaker: 'rosie', text: '听说你在凑一个剧团。朱诺也去了？那个小丫头削盾削得我心烦。' },
+      { speaker: 'rosie', text: '……我在这口锅前站了九年。你要是缺一把火，我可以考虑。只是考虑。' },
+    ],
+    choices: [
+      { id: 'invite', label: '邀请罗茜加入剧团', action: { type: 'goto', nextDialogue: 'rosie-join' } },
+      { id: 'close', label: '再等等', action: { type: 'close' } },
+    ],
+  },
+  'rosie-join': {
+    lines: [
+      { speaker: 'rosie', text: '行。我带锅，你带观众。锅不离身，这是条件。' },
+      { speaker: 'narrator', text: '罗茜·费恩加入了剧团。她的方块牌全带着火漆。' },
+    ],
+    effect: { recruit: 'rosie' },
+  },
+  'rosie-member': {
+    lines: [{ speaker: 'rosie', text: '演出前别吃太饱。演出后随便吃。这是厨师的忠告，也是剧团的规矩。' }],
   },
   'juno-loss': {
     lines: [
@@ -842,6 +930,11 @@ export function bridgeportTalk(state: AdventureState, id: string): string | null
   const f = state.flags,
     won = (battle: BattleId) => state.won.includes(battle);
   switch (id) {
+    case 'goose-board':
+      return state.troupe.includes('stan') ? 'tavern-board-empty' : 'tavern-board';
+    case 'rosie-kitchen':
+      if (state.troupe.includes('rosie')) return 'rosie-member';
+      return (state.affinity.rosie ?? 0) >= RECRUITS.rosie.threshold! ? 'rosie-invite' : 'rosie-kitchen';
     case 'stan':
       if (!f.stanAsked) return 'stan-first';
       if (f.stanDone) return 'stan-after';

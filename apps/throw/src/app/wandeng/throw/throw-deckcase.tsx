@@ -4,7 +4,6 @@ import { CardFace } from '../../stage/card-art';
 import { rankText, SUITS, type Suit } from '../../../lib/cards/throw-poker';
 import {
   cardKey,
-  DECK_LIMITS,
   enchantOf,
   RARITY_NAMES,
   variantsFor,
@@ -57,8 +56,6 @@ export function DeckCase({
     else delete next[key];
     onBook(next);
   };
-  const full = (rarity: Rarity) =>
-    rarity !== 'common' && counts[rarity] >= DECK_LIMITS[rarity];
   return (
     <dialog
       ref={dialog}
@@ -76,10 +73,10 @@ export function DeckCase({
               : '一副 52 张，每个牌位放一个变种。练习场里所有变种都借给你——别告诉里德。'}
           </p>
         </div>
-        <ul className="tp-deckcase-limits" aria-label="附魔上限">
+        <ul className="tp-deckcase-limits" aria-label="已装变种">
           {LIMITED.map((rarity) => (
             <li key={rarity} className={`tp-rarity-${rarity}`}>
-              {RARITY_NAMES[rarity]} <b>{counts[rarity]}</b>/{DECK_LIMITS[rarity]}
+              {RARITY_NAMES[rarity]} <b>{counts[rarity]}</b>
             </li>
           ))}
         </ul>
@@ -124,20 +121,17 @@ export function DeckCase({
               const id = enchant?.id ?? null;
               const rarity: Rarity = enchant?.rarity ?? 'common';
               const active = (current ?? null) === id;
-              const blocked = !active && full(rarity) && enchantOf(current)?.rarity !== rarity;
               return (
                 <li key={id ?? 'common'}>
                   <button
                     className={`tp-variant tp-rarity-${rarity} ${active ? 'tp-active' : ''}`}
                     aria-pressed={active}
-                    disabled={blocked}
                     onClick={() => choose(id)}
                   >
                     <span className="tp-variant-chip">{RARITY_NAMES[rarity]}</span>
                     <strong>{enchant?.name ?? '白牌'}</strong>
                     <span>{enchant?.text ?? '没有附魔。朴素，可靠，像一杯不加糖的茶。'}</span>
                     {enchant && <em>{enchant.quip}</em>}
-                    {blocked && <small>此稀有度已满</small>}
                   </button>
                 </li>
               );

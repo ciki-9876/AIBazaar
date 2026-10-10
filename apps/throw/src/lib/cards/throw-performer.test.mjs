@@ -126,3 +126,24 @@ test('computer performers use their sleights deterministically', () => {
   const a = play(), b = play();
   assert.deepEqual(a, b);
 });
+
+test("Stan alights once below half life, and his switch trades the lowest card for the pile's top", () => {
+  let state = duel('stan');
+  const drawn = state.fighters[0].drawn;
+  state.fighters[0].hp = 170;
+  state = run(state, 1);
+  assert.equal(state.fighters[0].drawn, drawn, 'not yet below half');
+  state.fighters[0].hp = 150;
+  state = run(state, 1);
+  assert.equal(state.fighters[0].drawn, drawn + 2);
+  state.fighters[0].hp = 120;
+  state = run(state, 1);
+  assert.equal(state.fighters[0].drawn, drawn + 2, 'only once');
+
+  state = duel('stan');
+  state.fighters[0].hand = cards([9, 3, 12]);
+  const top = state.fighters[0].pile.at(-1);
+  state = useSleight(state, 0);
+  assert.deepEqual(state.fighters[0].hand.map((card) => card.uid), ['p0', top.uid, 'p2']);
+  assert.equal(state.fighters[0].pile[0].uid, 'p1', 'the three goes to the bottom');
+});

@@ -8,7 +8,7 @@ import type { PerformerId } from '../cards/throw-performer';
  * describe data; the engine in magician-world.ts applies it. Everything here
  * is deterministic: no clocks, no fresh randomness.
  */
-export const ADVENTURE_VERSION = 'magician-adventure-v4';
+export const ADVENTURE_VERSION = 'magician-adventure-v5';
 export type ActId = 1 | 2;
 export type MapId =
   | 'street'
@@ -86,6 +86,8 @@ export type Reward = {
   items?: ItemId[];
   relics?: RelicId[];
   variants?: OwnedVariant[];
+  /** v5: affinity gained with these people (first win only, like everything here). */
+  affinity?: Partial<Record<CharacterId, number>>;
 };
 export type DossierEntry = {
   duels: number;
@@ -125,6 +127,12 @@ export type AdventureState = {
   /** Hobbs's lost things the hero has picked up. */
   found: string[];
   dossier: Partial<Record<CharacterId, DossierEntry>>;
+  /** v5 troupe (ADR-0057): who tours with the hero. Eli is always first. */
+  troupe: PerformerId[];
+  /** v5: how well the hero knows people, 0–100. */
+  affinity: Partial<Record<CharacterId, number>>;
+  /** v5: one-time affinity moments already spent (a stew is only a first stew once). */
+  bonds: string[];
 };
 /** Guided duel scripts; presentation-only coaching layered over real rules. */
 export type CoachScript = 'lesson' | 'qualifier';
@@ -156,7 +164,9 @@ export type ChoiceAction =
   | { type: 'battle'; battle: BattleId }
   | { type: 'panel'; panel: PanelId }
   /** Pay `price` and set `flag`, then continue with `nextDialogue`; without the money, `poor`. */
-  | { type: 'pay'; price: number; flag: FlagId; nextDialogue: string; poor: string };
+  | { type: 'pay'; price: number; flag?: FlagId; nextDialogue: string; poor: string }
+  /** v5: carry on with another dialogue (its effect applies when it closes). */
+  | { type: 'goto'; nextDialogue: string };
 export type Choice = { id: string; label: string; action: ChoiceAction };
 export type DialogueEffect = {
   set?: readonly FlagId[];
@@ -165,6 +175,10 @@ export type DialogueEffect = {
   once?: FlagId;
   /** Pick up one of Hobbs's lost things. */
   find?: string;
+  /** v5: a one-time affinity moment; `id` makes it count only once. */
+  affinity?: { who: CharacterId; amount: number; id: string };
+  /** v5: this performer joins the troupe. */
+  recruit?: PerformerId;
   complete?: boolean;
 };
 export type Dialogue = {

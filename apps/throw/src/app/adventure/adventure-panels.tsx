@@ -4,6 +4,8 @@ import { useState, type KeyboardEvent, type RefObject } from 'react';
 import {
   CHARACTERS,
   GOSSIP,
+  memberBook,
+  RECRUITS,
   offerOwned,
   offerStocked,
   SHOP,
@@ -19,6 +21,7 @@ import { HAND_NAMES, SUITS } from '../../lib/cards/throw-poker';
 import { ObjectGlyph } from '../stage/glyphs';
 import { CardFace } from '../stage/card-art';
 import { Figure, type RigId } from '../stage/rig';
+import { PERFORMERS, type PerformerId } from '../../lib/cards/throw-performer';
 
 /** Variant reference `${suit}-${rank}:${id}` → a card to draw and its enchantment. */
 export function variantCard(ref: string) {
@@ -236,6 +239,83 @@ export function DossierPanel({
           );
         })}
       </ul>
+    </dialog>
+  );
+}
+
+/** v5 troupe: who tours with the hero, and how the others might be won over. */
+export function TroupePanel({
+  state,
+  modalRef,
+  onClose,
+}: {
+  state: AdventureState;
+  modalRef: RefObject<HTMLDialogElement | null>;
+  onClose: () => void;
+}) {
+  const prospects = (Object.keys(RECRUITS) as Exclude<PerformerId, 'eli'>[]).filter((id) => !state.troupe.includes(id));
+  return (
+    <dialog ref={modalRef} open className="rg-map-modal rg-panel rg-troupe" aria-modal="true" aria-label="剧团">
+      <PanelHeading title="剧团" eyebrow={`巡演中 ${state.troupe.length} 人 · 街头演出可以派任何人上台`} onClose={onClose} />
+      <ul className="rg-troupe-list">
+        {state.troupe.map((id) => {
+          const performer = PERFORMERS[id];
+          const deck = id === 'eli' ? state.owned.variants.length : Object.keys(memberBook(state, id)).length;
+          return (
+            <li key={id}>
+              <div className="rg-dossier-portrait">
+                <Figure character={id as RigId} crop="head" height={64} />
+              </div>
+              <div>
+                <strong>
+                  {performer.name}
+                  <small>{id === 'eli' ? '团长' : `牌匣 ${deck} 张变种`}</small>
+                </strong>
+                <span>
+                  <b>天赋 · {performer.talent.name}</b>　{performer.talent.text}
+                </span>
+                <span>
+                  <b>手法 · {performer.sleight.name}</b>　{performer.sleight.text}
+                  <small>（冷却 {performer.sleight.cooldownMs / 1000} 秒）</small>
+                </span>
+              </div>
+            </li>
+          );
+        })}
+      </ul>
+      {prospects.length > 0 && (
+        <>
+          <h3 className="rg-troupe-heading">还没入团</h3>
+          <ul className="rg-troupe-list is-prospect">
+            {prospects.map((id) => {
+              const recruit = RECRUITS[id];
+              const affinity = state.affinity[recruit.character] ?? 0;
+              return (
+                <li key={id}>
+                  <div className="rg-dossier-portrait">
+                    <Figure character={id as RigId} crop="head" height={64} />
+                  </div>
+                  <div>
+                    <strong>
+                      {PERFORMERS[id].name}
+                      <small className="rg-troupe-how">{recruit.how}</small>
+                    </strong>
+                    <span>{recruit.hint}</span>
+                    {recruit.threshold !== undefined && (
+                      <div className="rg-troupe-affinity" aria-label={`好感 ${affinity}/${recruit.threshold}`}>
+                        <span style={{ width: `${Math.min(100, (affinity / recruit.threshold) * 100)}%` }} />
+                        <small>
+                          好感 {affinity}/{recruit.threshold}
+                        </small>
+                      </div>
+                    )}
+                  </div>
+                </li>
+              );
+            })}
+          </ul>
+        </>
+      )}
     </dialog>
   );
 }

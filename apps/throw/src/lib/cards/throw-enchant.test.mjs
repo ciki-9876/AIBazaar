@@ -12,7 +12,6 @@ import {
   TICK_MS,
 } from './throw-duel.ts';
 import {
-  DECK_LIMITS,
   ENCHANTS,
   GENERIC_ENCHANTS,
   legendaryFor,
@@ -137,7 +136,7 @@ test('launching enchanted cards applies their effects atomically', () => {
   assert.ok(state.fighters[0].hp > 200);
 });
 
-test('deck books must fit their cards and the rarity limits', () => {
+test('deck books must fit their cards; there is no rarity cap (ADR-0058)', () => {
   assert.ok(validDeckBook({ '1-14': 'LHA', '0-2': 'gold' }));
   assert.ok(!validDeckBook({ '0-14': 'LHA' }));
   assert.ok(!validDeckBook({ '0-14': 'nonsense' }));
@@ -145,9 +144,10 @@ test('deck books must fit their cards and the rarity limits', () => {
   const legends = Object.fromEntries(
     [2, 3, 4, 5].map((rank) => [`0-${rank}`, legendaryFor(0, rank).id]),
   );
-  assert.equal(DECK_LIMITS.legendary, 3);
-  assert.ok(!validDeckBook(legends));
-  assert.throws(() => idle({ player: legends }), /Invalid deck book/);
+  assert.ok(validDeckBook(legends), 'four legendaries are fine');
+  const golden = Object.fromEntries([0, 1, 2, 3].flatMap((suit) => [2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14].map((rank) => [`${suit}-${rank}`, 'gold'])));
+  assert.ok(validDeckBook(golden), 'a fully gilded deck is legal');
+  assert.throws(() => idle({ player: { '0-14': 'LHA' } }), /Invalid deck book/);
 });
 
 test('enchanted duels replay identically', () => {

@@ -47,7 +47,7 @@ import ThrowTable, {
 } from '../wandeng/throw/throw-table';
 import { packThrowItems, PRESETS, RELICS, validThrowLayout, type ItemId, type RelicId } from '../../lib/cards/throw-loadout';
 import { validDeckBook } from '../../lib/cards/throw-enchant';
-import { DossierPanel, Fee, ShopPanel, ShowsPanel } from './adventure-panels';
+import { DossierPanel, Fee, ShopPanel, ShowsPanel, TroupePanel } from './adventure-panels';
 import { DialogueText } from './dialogue-text';
 
 const STARTER_LOADOUT: PreparedThrowLoadout = {
@@ -157,6 +157,9 @@ export default function MagicianAdventure() {
   const [state, dispatch] = useReducer(reducer, 1024, createAdventure);
   const [mapOpen, setMapOpen] = useState(false);
   const [dossierOpen, setDossierOpen] = useState(false);
+  const [troupeOpen, setTroupeOpen] = useState(false);
+  /** Read-only overlays (dossier, troupe) pause walking like any modal. */
+  const overlayOpen = dossierOpen || troupeOpen;
   const loaded = useRef(false);
   const [loadout, setLoadout] = useState<PreparedThrowLoadout | undefined>();
   const [motion, setMotion] = useState<-1 | 0 | 1>(0);
@@ -222,7 +225,7 @@ export default function MagicianAdventure() {
       : null;
   const inBattle = state.mode === 'battle';
   const modalOpen =
-    state.mode === 'dialogue' || state.mode === 'complete' || state.mode === 'panel' || mapOpen || dossierOpen;
+    state.mode === 'dialogue' || state.mode === 'complete' || state.mode === 'panel' || mapOpen || overlayOpen;
 
   const refreshMotion = () => {
     destinationRef.current = null;
@@ -273,7 +276,7 @@ export default function MagicianAdventure() {
       if (previous instanceof HTMLElement && previous.isConnected)
         previous.focus({ preventScroll: true });
     };
-  }, [modalOpen, state.dialogue?.id, state.dialogue?.step, mapOpen, state.panel, dossierOpen]);
+  }, [modalOpen, state.dialogue?.id, state.dialogue?.step, mapOpen, state.panel, overlayOpen]);
   useEffect(() => {
     const stop = () => {
       keys.current.clear();
@@ -305,10 +308,11 @@ export default function MagicianAdventure() {
       if (event.code === 'Escape') {
         setMapOpen(false);
         setDossierOpen(false);
+        setTroupeOpen(false);
         if (state.mode === 'panel') dispatch({ type: 'panel-close' });
         return;
       }
-      if (mapOpen || dossierOpen || state.mode === 'panel') return;
+      if (mapOpen || overlayOpen || state.mode === 'panel') return;
       // Leave focused buttons to their native Enter action, avoiding two dialogue advances.
       if (
         event.code === 'Enter' &&
@@ -337,7 +341,7 @@ export default function MagicianAdventure() {
       document.removeEventListener('visibilitychange', stop);
       stop();
     };
-  }, [state.mode, state.map, mapOpen, dossierOpen]);
+  }, [state.mode, state.map, mapOpen, overlayOpen]);
   useEffect(() => {
     if (state.mode !== 'explore' || mapOpen) return;
     let frame = 0,
@@ -417,7 +421,9 @@ export default function MagicianAdventure() {
             rule: setup.rule,
             enemyPerformer: setup.enemyPerformer,
           }}
-          playerPerformer="eli"
+          playerPerformer={setup.performers.length > 1 ? undefined : 'eli'}
+          performerChoices={setup.performers.length > 1 ? setup.performers : undefined}
+          memberBooks={setup.books}
           hostNames={['伊莱', CHARACTERS[setup.opponent].name]}
           initialLoadout={fitLoadout(loadout ?? (state.act > 1 ? BRIDGEPORT_LOADOUT : STARTER_LOADOUT), setup.available, setup.forced)}
           hosts={['eli', opponent]}
@@ -460,6 +466,11 @@ export default function MagicianAdventure() {
           {state.act > 1 && (
             <button onClick={() => setDossierOpen(true)} disabled={state.mode !== 'explore' || !state.flags.metDodd}>
               档案
+            </button>
+          )}
+          {state.act > 1 && (
+            <button onClick={() => setTroupeOpen(true)} disabled={state.mode !== 'explore'}>
+              剧团 <small>{state.troupe.length}</small>
             </button>
           )}
           <button
@@ -761,6 +772,7 @@ export default function MagicianAdventure() {
         {state.mode === 'panel' && state.panel === 'shows' && (
           <ShowsPanel state={state} modalRef={modalRef} onStart={(id) => dispatch({ type: 'show', id })} onClose={() => dispatch({ type: 'panel-close' })} />
         )}
+        {troupeOpen && <TroupePanel state={state} modalRef={modalRef} onClose={() => setTroupeOpen(false)} />}
         {((state.mode === 'panel' && state.panel === 'dossier') || dossierOpen) && (
           <DossierPanel
             state={state}
