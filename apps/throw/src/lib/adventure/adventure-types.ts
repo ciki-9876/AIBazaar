@@ -1,6 +1,7 @@
 import type { ItemId, RelicId, Style } from '../cards/throw-loadout';
 import type { DeckBook } from '../cards/throw-enchant';
 import type { DuelTerms } from '../cards/throw-duel';
+import type { PerformerId } from '../cards/throw-performer';
 
 /**
  * Shared shapes for the walkable story. Content modules (one per act) only
@@ -180,6 +181,8 @@ export type BattleDefinition = {
   items?: ItemId[];
   relic?: RelicId | null;
   book?: DeckBook;
+  /** v10: the opponent takes the stage as this performer (talent + sleight). */
+  performer?: PerformerId;
   terms?: DuelTerms;
   /** Restricts the hero's trunk for this duel. */
   kit?: { only?: { items: ItemId[]; relic: RelicId | null }; banFamilies?: string[] };

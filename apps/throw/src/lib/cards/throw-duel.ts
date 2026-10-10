@@ -1,6 +1,16 @@
 import { randomStream } from '../../packages/core/random.ts';
 import { scorePoker, type PlayingCard, type Suit } from './throw-poker.ts';
 import {
+  EMPTY_HAND_BONUS,
+  JUNO_SHRED,
+  PERFORMERS,
+  STOKE_AI_BURN,
+  STOKE_MIN_BURN,
+  STOKE_SHARE,
+  isPerformer,
+  type PerformerId,
+} from './throw-performer.ts';
+import {
   cardKey,
   enchantEffects,
   suitWeight,
@@ -37,7 +47,7 @@ export const TICK_MS = 50,
  * rewards, sorting is a shared action and draws accelerate by battle phase.
  * Deck streams are unchanged from v3.
  */
-export const RULES_VERSION = 'throw-duel-v9';
+export const RULES_VERSION = 'throw-duel-v10';
 /**
  * v7 relic pass (ADR-0053), on top of the v6 tempo: relics change a rule
  * rather than add a number, and none is generically best. Relay stops drawing
@@ -132,7 +142,8 @@ export type EffectKind =
   | 'wound'
   | 'curtain'
   | 'antidote'
-  | 'douse';
+  | 'douse'
+  | 'sleight';
 export type TriggerEffect = {
   source: string;
   name: string;
@@ -155,6 +166,8 @@ export type Shot = {
   leech: number;
   startTick: number;
   hitTick: number;
+  /** v10: this single card comes back to the thrower's hand on impact. */
+  boomerang?: boolean;
 };
 export type DuelEvent = {
   id: number;
@@ -198,6 +211,14 @@ export type ThrowFighter = {
   singles: number;
   /** What this side actually threw: cards per suit and throws per poker kind (dossiers). */
   tally: { suits: [number, number, number, number]; kinds: number[] };
+  /** v10 performer on stage (talent + sleight); null keeps the pre-v10 rules. */
+  performer: PerformerId | null;
+  /** Tick from which the sleight may be used again. */
+  nextSleight: number;
+  /** Juno's boomerang is armed for the next single card. */
+  boomerang: boolean;
+  /** Eli's false shuffle: the next deal is face up until it lands (or is buried). */
+  peeking: boolean;
 };
 /**
  * Optional house terms for a challenge duel (street shows). They bind the
@@ -371,7 +392,11 @@ export function createThrowDuel(
   enemyRelic: RelicId | null = PRESETS[aiStyle]?.relic ?? null,
   playerLayout?: ItemPlacement[],
   books: { player?: DeckBook; enemy?: DeckBook } = {},
-  options: { enemyItems?: ItemId[]; terms?: DuelTerms } = {},
+  options: {
+    enemyItems?: ItemId[];
+    terms?: DuelTerms;
+    performers?: { player?: PerformerId | null; enemy?: PerformerId | null };
+  } = {},
 ): ThrowDuel {
   if (!Number.isSafeInteger(seed) || seed < 0 || seed > 0xffffffff)
     throw new Error('Seed must be uint32');
@@ -407,6 +432,8 @@ export function createThrowDuel(
     new Set(enemyItems).size !== enemyItems.length
   )
     throw new Error('Invalid opponent loadout');
+  const performers = [options.performers?.player ?? null, options.performers?.enemy ?? null] as const;
+  if (performers.some((id) => id !== null && !isPerformer(id))) throw new Error('Invalid performer');
   const terms = options.terms ? structuredClone(options.terms) : null;
   if (
     terms &&
@@ -447,6 +474,10 @@ export function createThrowDuel(
     echo: 0,
     singles: 0,
     tally: { suits: [0, 0, 0, 0], kinds: [0, 0, 0, 0, 0, 0, 0, 0, 0] },
+    performer: performers[side],
+    nextSleight: 0,
+    boomerang: false,
+    peeking: false,
   });
   const state: ThrowDuel = {
     rules: RULES_VERSION,
@@ -713,6 +744,9 @@ export function previewThrow(
       relic('接力加速', Math.min(RELAY_CAP, context.singles * RELAY_STEP), 'damage');
     if (context.relic === 'capacity' && (context.hand?.length ?? 0) >= CAPACITY_FULL_HAND)
       relic('满匣倾出', CAPACITY_BONUS, 'damage');
+    // Eli's talent: a throw that empties the hand lands a little harder.
+    if (context.performer === 'eli' && context.hand && cards.length === context.hand.length)
+      effects.push({ source: 'talent:eli', name: '压箱底', value: EMPTY_HAND_BONUS, kind: 'damage' });
     if (poker.kind >= 4)
       effects.push({ source: 'rule:wound', name: '压轴重创', value: WOUND_MS, kind: 'wound' });
     // Finale: a flourish of five or more cards snuffs your own flames and
@@ -739,7 +773,7 @@ export function previewThrow(
       .filter((effect) => effect.kind === 'damage' && effect.source.startsWith(prefix))
       .reduce((sum, effect) => sum + effect.value, 0);
   const itemBonus = damageFrom('item:'),
-    relicBonus = damageFrom('relic:'),
+    relicBonus = damageFrom('relic:') + damageFrom('talent:'),
     cardBonus = damageFrom('card:');
   const cleanse = (name: string) =>
     effects.find((effect) => effect.kind === 'cleanse' && effect.name === name)?.value ?? 0;
@@ -805,7 +839,9 @@ function launchMutable(state: ThrowDuel, side: Side, ids: string[]) {
     leech: score.leech,
     startTick: state.tick,
     hitTick: state.tick + ticks(450),
+    ...(fighter.boomerang && cards.length === 1 ? { boomerang: true } : {}),
   });
+  if (fighter.boomerang && cards.length === 1) fighter.boomerang = false;
   state.nextLaunch[side] = state.tick + ticks(450);
   addEvent(
     state,
@@ -816,7 +852,7 @@ function launchMutable(state: ThrowDuel, side: Side, ids: string[]) {
     { combo: score.kind },
   );
   // Scorch: handling cards while properly on fire (3+ stacks) costs life, whatever the shield says.
-  if (fighter.burn >= SCORCH_THRESHOLD) {
+  if (fighter.burn >= SCORCH_THRESHOLD && fighter.performer !== 'rosie') {
     const loss = Math.min(fighter.hp, SCORCH_PER_THROW);
     fighter.hp -= loss;
     addEvent(state, side === 0 ? 1 : 0, 'dot', '烫手', loss, {
@@ -934,6 +970,82 @@ export function launchThrow(
   const next = structuredClone(state);
   return launchMutable(next, side, ids) ? next : state;
 }
+/* ───────────── v10 sleights (ADR-0057) ───────────── */
+/** Whether this side's performer may use their sleight right now. */
+export function sleightReady(state: ThrowDuel, side: Side) {
+  const fighter = state.fighters[side],
+    target = state.fighters[side === 0 ? 1 : 0];
+  if (state.status !== 'playing' || !fighter.performer || state.tick < fighter.nextSleight) return false;
+  switch (PERFORMERS[fighter.performer].sleight.id) {
+    case 'peek':
+      return !fighter.peeking;
+    case 'boomerang':
+      return !fighter.boomerang;
+    case 'stoke':
+      return target.burn >= STOKE_MIN_BURN;
+  }
+}
+function sleightMutable(state: ThrowDuel, side: Side) {
+  if (!sleightReady(state, side)) return false;
+  const fighter = state.fighters[side],
+    targetSide: Side = side === 0 ? 1 : 0,
+    target = state.fighters[targetSide],
+    sleight = PERFORMERS[fighter.performer!].sleight,
+    source = `sleight:${sleight.id}`;
+  fighter.nextSleight = state.tick + ticks(sleight.cooldownMs);
+  if (sleight.id === 'peek') {
+    fighter.peeking = true;
+    effectEvent(state, side, { source, name: sleight.name, value: Math.min(DEAL_SIZE, fighter.pile.length), kind: 'sleight' });
+  } else if (sleight.id === 'boomerang') {
+    fighter.boomerang = true;
+    effectEvent(state, side, { source, name: sleight.name, value: 0, kind: 'sleight' });
+  } else {
+    // Stoke: half the target's flames burn all at once; a raised shield still takes it first.
+    const amount = Math.floor(target.burn * STOKE_SHARE);
+    target.burn -= amount;
+    const { health, blocked } = loseHealth(target, amount);
+    effectEvent(state, side, { source, name: sleight.name, value: amount, kind: 'sleight' });
+    addEvent(state, side, 'dot', sleight.name, health + blocked, { kind: 'burn', hpDamage: health, shieldDamage: blocked });
+    if (target.hp === 0) finish(state);
+  }
+  return true;
+}
+/** Use the sleight; an unavailable sleight returns the same state untouched. */
+export function useSleight(state: ThrowDuel, side: Side): ThrowDuel {
+  const next = structuredClone(state);
+  return sleightMutable(next, side) ? next : state;
+}
+export function useSleightInPlace(state: ThrowDuel, side: Side) {
+  return sleightMutable(state, side);
+}
+/** The face-up next deal while Eli's false shuffle is active (draw order). */
+export function peekedCards(fighter: ThrowFighter): PlayingCard[] {
+  return fighter.peeking ? fighter.pile.slice(-DEAL_SIZE).reverse() : [];
+}
+/** Bury the face-up cards at the bottom of the pile; only while peeking. */
+export function buryPeek(state: ThrowDuel, side: Side): ThrowDuel {
+  if (state.status !== 'playing' || !state.fighters[side].peeking) return state;
+  const next = structuredClone(state),
+    fighter = next.fighters[side],
+    top = fighter.pile.splice(Math.max(0, fighter.pile.length - DEAL_SIZE));
+  fighter.pile.unshift(...top);
+  fighter.peeking = false;
+  effectEvent(next, side, { source: 'sleight:peek', name: '埋牌', value: top.length, kind: 'sleight' });
+  return next;
+}
+/** Built-in sleight policy for computer-controlled performers (also the sim proxy). */
+export function aiWantsSleight(state: ThrowDuel, side: Side) {
+  const fighter = state.fighters[side];
+  if (!sleightReady(state, side)) return false;
+  switch (PERFORMERS[fighter.performer!].sleight.id) {
+    case 'boomerang':
+      return true;
+    case 'stoke':
+      return state.fighters[side === 0 ? 1 : 0].burn >= STOKE_AI_BURN;
+    default:
+      return false;
+  }
+}
 /** Value the AI assigns to a candidate batch; also used by the hint system. */
 export function batchValue(
   score: ReturnType<typeof previewThrow>,
@@ -1030,16 +1142,17 @@ function loseHealth(
   fighter: ThrowFighter,
   amount: number,
   pierce = 0,
-  shred = false,
+  /** Shield spent per point a single card is stopped; 0 means no shred. */
+  shred = 0,
 ) {
   const bypass = Math.floor((amount * pierce) / 100),
     rest = amount - bypass;
-  // Shred: a single card spends 1.1 points of shield for every point it is stopped,
-  // and bypasses reflection (see bastion).
+  // Shred: a single card spends SHRED (Juno: JUNO_SHRED) points of shield for
+  // every point it is stopped, and bypasses reflection (see bastion).
   const blocked = shred
-    ? Math.min(rest, Math.floor(fighter.shield / SHRED))
+    ? Math.min(rest, Math.floor(fighter.shield / shred))
     : Math.min(fighter.shield, rest);
-  fighter.shield -= shred ? Math.min(fighter.shield, Math.ceil(blocked * SHRED)) : blocked;
+  fighter.shield -= shred ? Math.min(fighter.shield, Math.ceil(blocked * shred)) : blocked;
   const health = Math.min(fighter.hp, rest - blocked + bypass);
   fighter.hp -= health;
   return { health, blocked };
@@ -1084,7 +1197,7 @@ export function stepThrowDuelInPlace(next: ThrowDuel) {
         target,
         parried ? Math.ceil(shot.damage / 2) : shot.damage,
         shot.pierce,
-        single,
+        single ? (attacker.performer === 'juno' ? JUNO_SHRED : SHRED) : 0,
       );
     if (parried)
       effectEvent(next, targetSide, {
@@ -1101,6 +1214,11 @@ export function stepThrowDuelInPlace(next: ThrowDuel) {
       hpDamage: result.health,
       shieldDamage: result.blocked,
     });
+    // Juno's boomerang: the single card flies back if there is room for it.
+    if (shot.boomerang && attacker.hand.length < handLimit(attacker.relic)) {
+      attacker.hand.push(shot.cards[0]);
+      effectEvent(next, shot.side, { source: 'sleight:boomerang', name: '回旋飞牌', value: 1, kind: 'sleight' });
+    }
     // Smother on contact: flames that land on a raised shield catch only by half.
     const kindled =
       next.tick < target.fireproofUntil
@@ -1242,8 +1360,10 @@ export function stepThrowDuelInPlace(next: ThrowDuel) {
       fighter.drawClock = 0;
       // A round only fills free slots; draw() stops at the hand limit.
       for (let i = 0; i < DEAL_SIZE; i++) draw(next, side);
+      fighter.peeking = false;
     }
   }
+  if (aiWantsSleight(next, 1)) sleightMutable(next, 1);
   const ai = next.ai,
     enemy = next.fighters[1];
   if (ai.intent.length && next.tick >= ai.releaseTick) {

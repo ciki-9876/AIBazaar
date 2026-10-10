@@ -1105,3 +1105,38 @@
   background: rgba(239, 231, 214, 0.04);
   color: var(--bone);
 }
+
+/* v10 performers: the opponent's talent and sleight in the scouting card. */
+.tp-enemy-identity {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 8px;
+  margin: 10px 0 0;
+}
+.tp-enemy-identity div {
+  padding: 8px 12px;
+  border-radius: 8px;
+  background: rgba(247, 230, 176, 0.06);
+  box-shadow: inset 3px 0 0 var(--limelight);
+}
+.tp-enemy-identity dt {
+  font: 600 14px var(--font-cjk-serif);
+  color: var(--limelight);
+}
+.tp-enemy-identity dt small {
+  margin-left: 8px;
+  font: 12px var(--font-ui);
+  color: var(--bone-dim);
+}
+.tp-enemy-identity dd {
+  margin: 2px 0 0;
+  font-size: 13px;
+  color: #e3dccb;
+}
+.tp-performer-line {
+  padding: 4px 10px;
+  border-radius: 999px;
+  background: rgba(247, 230, 176, 0.08);
+  color: var(--limelight);
+  font-size: 13px;
+}

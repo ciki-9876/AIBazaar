@@ -1,3 +1,4 @@
+import type { PerformerId } from '../cards/throw-performer.ts';
 import { ITEMS, PRESETS, RELICS, type ItemId, type RelicId, type Style } from '../cards/throw-loadout.ts';
 import { ENCHANTS, validDeckBook, type DeckBook } from '../cards/throw-enchant.ts';
 import type { DuelTerms } from '../cards/throw-duel';
@@ -328,6 +329,7 @@ export function battleSetup(state: AdventureState): {
   enemyItems?: ItemId[];
   enemyRelic?: RelicId | null;
   enemyBook?: DeckBook;
+  enemyPerformer?: PerformerId;
   terms?: DuelTerms;
   available: { items: ItemId[]; relics: RelicId[] };
   variants: OwnedVariant[];
@@ -355,6 +357,7 @@ export function battleSetup(state: AdventureState): {
     ...(definition.items && !practiceAgain ? { enemyItems: [...definition.items] } : {}),
     ...(definition.relic !== undefined ? { enemyRelic: definition.relic } : {}),
     ...(definition.book ? { enemyBook: { ...definition.book } } : {}),
+    ...(definition.performer ? { enemyPerformer: definition.performer } : {}),
     ...(definition.terms ? { terms: structuredClone(definition.terms) } : {}),
     available,
     variants: [...state.owned.variants],

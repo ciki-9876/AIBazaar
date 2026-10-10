@@ -10,12 +10,14 @@ import {
   recommendCards,
   stepThrowDuelInPlace,
   termsAllow,
+  aiWantsSleight,
+  useSleightInPlace,
 } from '../src/lib/cards/throw-duel.ts';
 import { PRESETS } from '../src/lib/cards/throw-loadout.ts';
 
 /**
- * One duel. `player` is { style, items, relic, book? }; `enemy` is
- * { style, items?, relic?, book?, terms? }. Returns 1 for a win, 0.5 draw, 0 loss,
+ * One duel. `player` is { style, items, relic, book?, performer? }; `enemy` is
+ * { style, items?, relic?, book?, terms?, performer? }. Returns 1 for a win, 0.5 draw, 0 loss,
  * plus the duel length in seconds.
  */
 export function playDuel(player, enemy, seed) {
@@ -28,7 +30,7 @@ export function playDuel(player, enemy, seed) {
     enemy.relic !== undefined ? enemy.relic : PRESETS[enemy.style].relic,
     undefined,
     { player: player.book, enemy: enemy.book },
-    { enemyItems: enemy.items, terms },
+    { enemyItems: enemy.items, terms, performers: { player: player.performer ?? null, enemy: enemy.performer ?? null } },
   );
   let next = 48,
     intent = [],
@@ -37,6 +39,7 @@ export function playDuel(player, enemy, seed) {
     stepThrowDuelInPlace(s);
     if (s.status !== 'playing') break;
     const f = s.fighters[0];
+    if (aiWantsSleight(s, 0)) useSleightInPlace(s, 0);
     if (intent.length && s.tick >= release) {
       launchThrowInPlace(s, 0, intent);
       intent = [];
