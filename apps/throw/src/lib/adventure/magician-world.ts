@@ -487,8 +487,10 @@ export function gatherIntel(state: AdventureState, kind: BattleId, source: Intel
   const slot = INTEL_SLOTS[source];
   const record = state.intel[kind] ?? emptyIntel();
   const price = INTEL_PRICES[source];
+  const desk = state.mode === 'explore' || (state.mode === 'panel' && state.panel === 'dossier');
   if (
-    !canAct(state) ||
+    !desk ||
+    !lifeActive(state) ||
     !scoutable(state).includes(kind) ||
     record.sources.includes(source) ||
     (slot !== null && state.clock.slot !== slot) ||

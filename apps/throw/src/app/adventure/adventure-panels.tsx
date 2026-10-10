@@ -2,10 +2,30 @@
 
 import { useState, type KeyboardEvent, type RefObject } from 'react';
 import {
+  BATTLES,
   CHARACTERS,
   GOSSIP,
+  INTEL_NAMES,
+  INTEL_PRICES,
+  INTEL_SLOTS,
+  intelView,
+  LODGINGS,
+  lodgingOf,
+  MEALS,
   memberBook,
+  memberStatus,
+  MOODS,
+  presenceBreakdown,
   RECRUITS,
+  scoutable,
+  SLOT_NAMES,
+  stageLevel,
+  WEEKDAYS,
+  weekday,
+  weekNumber,
+  type BattleId,
+  type IntelSource,
+  type MealTier,
   offerOwned,
   offerStocked,
   SHOP,
@@ -189,20 +209,100 @@ export function ShowsPanel({
   );
 }
 
+/** v6: the clock in words: 第 2 周 · 周五 · 下午. */
+export const clockLabel = (state: AdventureState) =>
+  `第 ${weekNumber(state.clock.day)} 周 · ${WEEKDAYS[weekday(state.clock.day)]} · ${SLOT_NAMES[state.clock.slot]}`;
+const SOURCES: IntelSource[] = ['paper', 'pub', 'watch', 'backstage'];
+const SOURCE_HINTS: Record<IntelSource, string> = {
+  paper: '确认打法，外加一条头条传闻',
+  pub: '一两条传闻，有真有假',
+  watch: '亲眼确认三件大道具和手法',
+  backstage: '确认遗物（主厅开放后）',
+};
+/** v6 intel: scout the formal opponents on the bill (ADR-0059). */
+function IntelSection({ state, onScout }: { state: AdventureState; onScout: (battle: BattleId, source: IntelSource) => void }) {
+  const bill = scoutable(state);
+  if (!bill.length && !state.flags.doddCorrection) return null;
+  return (
+    <section className="rg-intel" aria-label="打听情报">
+      <h3 className="rg-troupe-heading">
+        打听情报 <small>{clockLabel(state)}</small>
+      </h3>
+      {state.flags.doddCorrection && (
+        <p className="rg-intel-card">
+          <b>情报的可信度</b>
+          报纸和酒馆传来的都是传闻，可能是假的；观摩比赛、后台打点，以及交过手之后看到的，都是确认的。每周日的报纸末版有更正启事。
+        </p>
+      )}
+      <ul className="rg-dossier-list">
+        {bill.map((battle) => {
+          const view = intelView(state, battle);
+          const definition = BATTLES[battle];
+          return (
+            <li key={battle}>
+              <div className="rg-dossier-portrait">
+                <Figure character={definition.opponent as RigId} crop="head" height={64} />
+              </div>
+              <div>
+                <strong>
+                  {CHARACTERS[definition.opponent].name}
+                  <small>
+                    {definition.title.split(' · ')[0]} · 已确认 {view.visible.length}/{view.units.length}
+                  </small>
+                </strong>
+                {view.rumours.map((rumour) => (
+                  <span key={rumour.id} className={`rg-rumour is-${rumour.status}`}>
+                    {rumour.status === 'heard' ? '传闻' : rumour.status === 'true' ? '属实' : '情报有误'} · {rumour.text}
+                  </span>
+                ))}
+                <div className="rg-intel-sources">
+                  {SOURCES.map((source) => {
+                    const used = view.sources.includes(source);
+                    const slot = INTEL_SLOTS[source];
+                    const wrongTime = slot !== null && state.clock.slot !== slot;
+                    const locked = source === 'backstage' && !state.flags.mainHall;
+                    const poor = state.fee < INTEL_PRICES[source];
+                    return (
+                      <button
+                        key={source}
+                        className="rg-secondary"
+                        disabled={used || wrongTime || locked || poor || !(state.mode === 'explore' || state.panel === 'dossier')}
+                        title={SOURCE_HINTS[source]}
+                        onClick={() => onScout(battle, source)}
+                      >
+                        {INTEL_NAMES[source]} <small>£{INTEL_PRICES[source]}</small>
+                        <em>{used ? '已打听' : locked ? '主厅开放后' : wrongTime ? `${SLOT_NAMES[slot!]}才行` : poor ? '钱不够' : SOURCE_HINTS[source]}</em>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            </li>
+          );
+        })}
+      </ul>
+    </section>
+  );
+}
+
 const ORDER: CharacterId[] = ['felix', 'ada', 'bea', 'agnes', 'rosie', 'basil', 'pike', 'juno', 'hobbs', 'stan', 'pettigrew'];
 export function DossierPanel({
   state,
   modalRef,
   onClose,
+  onScout,
 }: {
   state: AdventureState;
   modalRef: RefObject<HTMLDialogElement | null>;
   onClose: () => void;
+  /** v6: spend a slot learning about a formal opponent. */
+  onScout?: (battle: BattleId, source: IntelSource) => void;
 }) {
   const met = ORDER.filter((id) => state.dossier[id]);
   return (
     <dialog ref={modalRef} open className="rg-map-modal rg-panel rg-dossier" aria-modal="true" aria-label="对手档案">
       <PanelHeading title="对手档案" eyebrow="多德太太的账本 · 只记你亲眼见过的" onClose={onClose} />
+      {onScout && <IntelSection state={state} onScout={onScout} />}
       {!met.length && <p className="rg-panel-foot">还是空的。跟谁打过一场，多德太太就给谁记一笔。</p>}
       <ul className="rg-dossier-list">
         {met.map((id) => {
@@ -243,26 +343,47 @@ export function DossierPanel({
   );
 }
 
-/** v5 troupe: who tours with the hero, and how the others might be won over. */
+export type LifeAction =
+  | { kind: 'tea' | 'rehearse'; id: PerformerId }
+  | { kind: 'rent'; id: string }
+  | { kind: 'meals'; tier: MealTier }
+  | { kind: 'pay' | 'help' };
+const STATUS_NAMES = { ready: '', refuses: '罢演中', away: '回家吃饭了', lodged: '住不下，暂住朋友家' } as const;
+const signed = (value: number) => (value > 0 ? `+${value}%` : value < 0 ? `−${-value}%` : '');
+/** v5 troupe: who tours with the hero, and how the others might be won over. v6: their days, too. */
 export function TroupePanel({
   state,
   modalRef,
   onClose,
+  onLife,
 }: {
   state: AdventureState;
   modalRef: RefObject<HTMLDialogElement | null>;
   onClose: () => void;
+  /** v6 life actions (act two on). */
+  onLife?: (action: LifeAction) => void;
 }) {
   const prospects = (Object.keys(RECRUITS) as Exclude<PerformerId, 'eli'>[]).filter((id) => !state.troupe.includes(id));
+  const lodging = lodgingOf(state);
+  const life = Boolean(onLife && lodging);
+  const idle = state.mode === 'explore';
+  const members = state.troupe.filter((id) => id !== 'eli' && state.away[id] === undefined).length;
   return (
     <dialog ref={modalRef} open className="rg-map-modal rg-panel rg-troupe" aria-modal="true" aria-label="剧团">
-      <PanelHeading title="剧团" eyebrow={`巡演中 ${state.troupe.length} 人 · 街头演出可以派任何人上台`} onClose={onClose} />
+      <PanelHeading
+        title="剧团"
+        eyebrow={life ? `${clockLabel(state)} · 巡演中 ${state.troupe.length} 人` : `巡演中 ${state.troupe.length} 人 · 街头演出可以派任何人上台`}
+        onClose={onClose}
+      />
       <ul className="rg-troupe-list">
         {state.troupe.map((id) => {
           const performer = PERFORMERS[id];
           const deck = id === 'eli' ? state.owned.variants.length : Object.keys(memberBook(state, id)).length;
+          const presence = presenceBreakdown(state, id);
+          const mood = state.mood[id] ?? 2;
+          const status = memberStatus(state, id);
           return (
-            <li key={id}>
+            <li key={id} className={status === 'ready' ? '' : 'is-unavailable'}>
               <div className="rg-dossier-portrait">
                 <Figure character={id as RigId} crop="head" height={64} />
               </div>
@@ -270,7 +391,19 @@ export function TroupePanel({
                 <strong>
                   {performer.name}
                   <small>{id === 'eli' ? '团长' : `牌匣 ${deck} 张变种`}</small>
+                  {STATUS_NAMES[status] && <small className="rg-troupe-status">{STATUS_NAMES[status]}</small>}
                 </strong>
+                <span
+                  className="rg-presence"
+                  title={`底子 ${presence.base}（台龄 ${presence.level} 级）+ 名气 ${presence.fame}；住处 ${signed(presence.lodging) || '±0%'}，心情 ${signed(presence.mood) || '±0%'}`}
+                >
+                  <b>气场 {presence.total}</b>　台龄 {stageLevel(state.stage[id] ?? 0)} 级 · 名气 {presence.fame}
+                  {life && (
+                    <>
+                      {' '}· 心情 <i className={`rg-mood is-${mood}`}>{MOODS[mood].name}{signed(MOODS[mood].presence) && ` ${signed(MOODS[mood].presence)}`}</i>
+                    </>
+                  )}
+                </span>
                 <span>
                   <b>天赋 · {performer.talent.name}</b>　{performer.talent.text}
                 </span>
@@ -278,11 +411,93 @@ export function TroupePanel({
                   <b>手法 · {performer.sleight.name}</b>　{performer.sleight.text}
                   <small>（冷却 {performer.sleight.cooldownMs / 1000} 秒）</small>
                 </span>
+                {life && (
+                  <div className="rg-life-actions">
+                    {id !== 'eli' && (
+                      <button
+                        className="rg-secondary"
+                        disabled={!idle || state.clock.slot !== 1 || status === 'away' || state.week.includes(`tea:${id}`)}
+                        onClick={() => onLife!({ kind: 'tea', id })}
+                      >
+                        约下午茶 <em>{state.week.includes(`tea:${id}`) ? '本周喝过了' : state.clock.slot !== 1 ? '下午才行' : '心情 +1，好感 +3'}</em>
+                      </button>
+                    )}
+                    <button
+                      className="rg-secondary"
+                      disabled={!idle || state.clock.slot !== 0 || !lodging!.rehearsal || state.arrears >= 2 || status !== 'ready'}
+                      onClick={() => onLife!({ kind: 'rehearse', id })}
+                    >
+                      排练 <em>{!lodging!.rehearsal ? '住处没有排练室' : state.arrears >= 2 ? '排练室锁了' : state.clock.slot !== 0 ? '上午才行' : '台龄 +2'}</em>
+                    </button>
+                  </div>
+                )}
               </div>
             </li>
           );
         })}
       </ul>
+      {life && (
+        <>
+          <h3 className="rg-troupe-heading">
+            住处 <small>每周日晚上从演出费里扣房租、伙食和薪水</small>
+          </h3>
+          {state.arrears > 0 && (
+            <div className="rg-arrears">
+              <span>
+                欠了 {state.arrears} 周房租。{state.arrears >= 2 ? '排练室已经锁了，全员心情受影响。' : '再欠下去，排练室就要上锁了。'}
+              </span>
+              <button className="rg-primary" disabled={!idle || state.fee < lodging!.price * state.arrears} onClick={() => onLife!({ kind: 'pay' })}>
+                补交 £{lodging!.price * state.arrears}
+              </button>
+              <button className="rg-secondary" disabled={!idle} onClick={() => onLife!({ kind: 'help' })}>
+                帮房东干活抵一周 <em>花一个时段</em>
+              </button>
+            </div>
+          )}
+          <ul className="rg-lodgings">
+            {LODGINGS.map((entry) => {
+              const here = entry.id === state.lodging;
+              const blocked = !idle || (entry.price > 0 && (state.arrears > 0 || state.fee < entry.price));
+              return (
+                <li key={entry.id} className={here ? 'is-here' : ''}>
+                  <strong>
+                    {entry.name}
+                    <small>{entry.price ? `£${entry.price}/周` : '免费'}</small>
+                  </strong>
+                  <span>
+                    全员气场 <b>{entry.presence ? `+${entry.presence}%` : '+0%'}</b> · 住 {entry.beds} 人（不含伊莱）{entry.rehearsal ? ' · 有排练室' : ''}
+                  </span>
+                  <em>{entry.note}</em>
+                  <button className={here ? 'rg-secondary' : 'rg-primary'} disabled={here || blocked} onClick={() => onLife!({ kind: 'rent', id: entry.id })}>
+                    {here ? '住在这里' : entry.price ? `搬进去（先付一周 £${entry.price}）` : '搬过去'}
+                  </button>
+                </li>
+              );
+            })}
+          </ul>
+          <h3 className="rg-troupe-heading">
+            伙食 <small>{1 + members} 人吃饭</small>
+          </h3>
+          <div className="rg-meals" role="radiogroup" aria-label="伙食">
+            {(Object.keys(MEALS) as MealTier[]).map((tier) => (
+              <button
+                key={tier}
+                role="radio"
+                aria-checked={state.meals === tier}
+                className={state.meals === tier ? 'is-chosen' : ''}
+                disabled={!idle}
+                onClick={() => onLife!({ kind: 'meals', tier })}
+              >
+                <b>{MEALS[tier].name}</b>
+                <small>
+                  £{MEALS[tier].perHead}/人/周 · 心情 {MEALS[tier].mood > 0 ? '+1' : MEALS[tier].mood < 0 ? '−1' : '不变'}
+                </small>
+                <em>{MEALS[tier].note}</em>
+              </button>
+            ))}
+          </div>
+        </>
+      )}
       {prospects.length > 0 && (
         <>
           <h3 className="rg-troupe-heading">还没入团</h3>
