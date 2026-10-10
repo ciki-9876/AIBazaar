@@ -7,6 +7,7 @@ import type {
   Dialogue,
   MapDefinition,
   Objective,
+  Rumour,
   ShopOffer,
   ShowDefinition,
 } from './adventure-types';
@@ -139,10 +140,81 @@ export const GROUP: readonly BattleId[] = ['agnes', 'rosie', 'basil', 'pike'];
 /** v5 one-time affinity moments in act two (saves validate against this list). */
 export const BOND_IDS = ['rosie-stew', 'rosie-fire'] as const;
 /** v5: how each troupe member can be met and recruited (shown in the troupe panel). */
-export const RECRUITS: Record<Exclude<PerformerId, 'eli'>, { how: '剧情' | '酒馆' | '好感'; character: CharacterId; hint: string; threshold?: number }> = {
-  juno: { how: '剧情', character: 'juno', hint: '赢下布里奇波特公开赛决赛，她会自己来找你。' },
-  rosie: { how: '好感', character: 'rosie', threshold: 60, hint: '醉鹅吧台后面：尝尝她的炖菜，聊聊火，在小组赛上赢她。' },
-  stan: { how: '酒馆', character: 'stan', hint: '醉鹅的招募告示板。工钱：一镑。' },
+export const RECRUITS: Record<
+  Exclude<PerformerId, 'eli'>,
+  {
+    how: '剧情' | '酒馆' | '好感';
+    character: CharacterId;
+    hint: string;
+    threshold?: number;
+    /** v6 weekly wage (演出费). */
+    wage: number;
+    /** v6 stage experience they bring (raised to Eli's level − 3 if lower). */
+    stage: number;
+  }
+> = {
+  juno: { how: '剧情', character: 'juno', hint: '赢下布里奇波特公开赛决赛，她会自己来找你。', wage: 4, stage: 75 },
+  rosie: { how: '好感', character: 'rosie', threshold: 60, hint: '醉鹅吧台后面：尝尝她的炖菜，聊聊火，在小组赛上赢她。', wage: 3, stage: 15 },
+  stan: { how: '酒馆', character: 'stan', hint: '醉鹅的招募告示板。工钱：一镑。', wage: 1, stage: 0 },
+};
+
+/* ───────────────────────── v6 lodging (ADR-0059) ───────────────────────── */
+export type Lodging = {
+  id: string;
+  name: string;
+  /** Rent per week (演出费), paid on moving in and every Sunday night. */
+  price: number;
+  /** Members who can sleep here besides Eli. */
+  beds: number;
+  /** Presence bonus for everyone, in percent. */
+  presence: number;
+  rehearsal: boolean;
+  note: string;
+};
+export const LODGINGS: readonly Lodging[] = [
+  { id: 'bus', name: '斯坦的巴士', price: 0, beds: 2, presence: 0, rehearsal: false, note: '座椅能放平。斯坦管这叫「豪华卧铺」。' },
+  { id: 'attic', name: '醉鹅楼上的阁楼', price: 6, beds: 3, presence: 3, rehearsal: false, note: '楼下的歌声十一点停。理论上。' },
+  { id: 'boarding', name: '霍普太太的寄宿房', price: 12, beds: 5, presence: 6, rehearsal: true, note: '含早餐。后院的洗衣房可以排练，只要不碰晾着的床单。' },
+  { id: 'suite', name: '剧院楼上的套间', price: 20, beds: 7, presence: 10, rehearsal: true, note: '多丽丝说这里住过一位公爵。公爵本人对此没有发表意见。' },
+];
+
+/* ───────────────────────── v6 intel (ADR-0059) ───────────────────────── */
+/** What each source costs. Paper and pub carry rumours; watching and backstage only confirm. */
+export const INTEL_PRICES = { paper: 2, pub: 4, watch: 6, backstage: 8 } as const;
+/**
+ * Rumours about formal performances. Truth is fixed here (and checked against
+ * the real kit by tests). The first lies wait in the group stage, where being
+ * fooled costs little.
+ */
+export const RUMOURS: Partial<Record<BattleId, readonly Rumour[]>> = {
+  ada: [
+    { id: 'ada-paper', source: 'paper', unit: 'item:umbrella', truth: true, text: '《集市日报》：艾达·普赖斯「撑着伞上台」，据说是一把补丁旧伞。' },
+    { id: 'ada-pub', source: 'pub', unit: 'relic:bastion', truth: true, text: '酒馆里的木匠：「她兜里有面铜镜。照过我一次，我到现在还在反省。」' },
+  ],
+  bea: [
+    { id: 'bea-paper', source: 'paper', unit: 'item:mend', truth: true, text: '《集市日报》：比阿·普赖斯「随身带一盏小灯，说是为了暖茶」。' },
+    { id: 'bea-pub', source: 'pub', unit: 'relic:heart', truth: true, text: '吧台边的老太太：「那孩子的补丁毯子，是我年轻时织的。」' },
+  ],
+  agnes: [
+    { id: 'agnes-paper', source: 'paper', unit: 'item:poison', truth: true, text: '《集市日报》园艺版：莫斯会长的青苔药匣「比她的南瓜还受重视」。' },
+    { id: 'agnes-pub', source: 'pub', unit: 'relic:toxin', truth: true, text: '园艺协会的秘书：「她搅茶的那把勺子，你最好别借。」' },
+  ],
+  rosie: [
+    { id: 'rosie-paper', source: 'paper', unit: 'item:cinder', truth: true, text: '《集市日报》：醉鹅厨子罗茜·费恩「把灶台上的余烬小炉也带上了台」。' },
+    { id: 'rosie-pub', source: 'pub', unit: 'relic:ember', truth: true, text: '醉鹅的洗碗工：「她的煤块整个冬天没熄过。房东写了三封信。」' },
+  ],
+  basil: [
+    { id: 'basil-paper', source: 'paper', unit: 'item:cinder', truth: false, text: '《集市日报》独家：退休数学老师巴兹尔·怀特「新添一只余烬小炉，打算以火攻代替计算」。' },
+    { id: 'basil-pub', source: 'pub', unit: 'item:sequence', truth: true, text: '巴兹尔的学生：「他的扇子按黄金分割折的。他说的。」' },
+  ],
+  pike: [
+    { id: 'pike-paper', source: 'paper', unit: 'item:umbrella', truth: true, text: '《集市日报》治安版：派克警长「执勤时也撑伞，晴天也是」。' },
+    { id: 'pike-pub', source: 'pub', unit: 'item:poison', truth: false, text: '酒馆角落的醉汉：「警长最近在研究毒药。说是为了办案。我看不像。」' },
+  ],
+  juno: [
+    { id: 'juno-paper', source: 'paper', unit: 'item:needle', truth: true, text: '《集市日报》：台柱朱诺·贝尔的穿幕细针「快到摄影师只拍到残影」。' },
+    { id: 'juno-pub', source: 'pub', unit: 'relic:relay', truth: true, text: '集市的鱼贩：「她兜里有只闹钟，单张一张接一张，越打越快。」' },
+  ],
 };
 export const morningDone = (s: AdventureState) => s.won.includes('ada') && s.won.includes('bea');
 export const showsWon = (s: AdventureState) => s.won.filter((id) => id.startsWith('show-')).length;
@@ -164,6 +236,8 @@ export const BRIDGEPORT_BATTLES = {
   ada: {
     act: 2,
     title: '周四剧院 · 早场 · 艾达',
+    formal: true,
+    fame: 1,
     opponent: 'ada',
     style: 'guard',
     items: ['umbrella', 'ward', 'thorns', 'pair', 'draw'],
@@ -176,6 +250,8 @@ export const BRIDGEPORT_BATTLES = {
   bea: {
     act: 2,
     title: '周四剧院 · 早场 · 比阿',
+    formal: true,
+    fame: 1,
     opponent: 'bea',
     style: 'mend',
     items: ['mend', 'wash', 'drain', 'pair', 'quick'],
@@ -188,6 +264,8 @@ export const BRIDGEPORT_BATTLES = {
   agnes: {
     act: 2,
     title: '公开赛小组赛 · 艾格尼丝',
+    formal: true,
+    fame: 1,
     opponent: 'agnes',
     style: 'poison',
     items: ['poison', 'venom', 'slow', 'pair', 'draw', 'quick'],
@@ -200,6 +278,8 @@ export const BRIDGEPORT_BATTLES = {
   rosie: {
     act: 2,
     title: '公开赛小组赛 · 罗茜',
+    formal: true,
+    fame: 1,
     opponent: 'rosie',
     style: 'burn',
     items: ['cinder', 'bellows', 'ash', 'pair', 'draw', 'quick'],
@@ -214,6 +294,8 @@ export const BRIDGEPORT_BATTLES = {
   basil: {
     act: 2,
     title: '公开赛小组赛 · 巴兹尔',
+    formal: true,
+    fame: 1,
     opponent: 'basil',
     style: 'combo',
     reward: { fee: 15 },
@@ -224,6 +306,8 @@ export const BRIDGEPORT_BATTLES = {
   pike: {
     act: 2,
     title: '公开赛小组赛 · 派克警长',
+    formal: true,
+    fame: 1,
     opponent: 'pike',
     style: 'guard',
     items: ['umbrella', 'ward', 'thorns', 'pair', 'draw', 'quick'],
@@ -236,6 +320,11 @@ export const BRIDGEPORT_BATTLES = {
   juno: {
     act: 2,
     title: '布里奇波特公开赛 · 决赛',
+    formal: true,
+    boss: true,
+    fame: 3,
+    // ADR-0059: a town's final opponent stands at the hero's departure presence × 1.1.
+    presence: 374,
     opponent: 'juno',
     style: 'quick',
     items: ['quick', 'compass', 'tempo', 'needle', 'stride', 'draw', 'pair'],
@@ -252,6 +341,7 @@ export const BRIDGEPORT_BATTLES = {
   hobbs: {
     act: 2,
     title: '霍布斯旧货铺 · 年轻时的配方',
+    presence: 340,
     opponent: 'hobbs',
     style: 'poison',
     items: ['poison', 'venom', 'slow', 'stride', 'pair', 'draw'],
@@ -265,6 +355,7 @@ export const BRIDGEPORT_BATTLES = {
   sisters: {
     act: 2,
     title: '醉鹅 · 姐妹的赌约',
+    presence: 340,
     opponent: 'ada',
     style: 'mend',
     items: ['pair', 'umbrella', 'ward', 'mend', 'wash', 'quick'],
@@ -488,6 +579,15 @@ export const BRIDGEPORT_DIALOGUES: Record<string, Dialogue> = {
       { speaker: 'dodd', text: '两块，谢谢。头版是天气，第三版是你——好吧，还不是你。再加把劲。' },
       { speaker: 'narrator', text: '获得一份《布里奇波特周报》。斯坦会喜欢的。' },
     ],
+  },
+  'dodd-correction': {
+    lines: [
+      { speaker: 'dodd', text: '我看了你那场。报上说他带着炉子？亲爱的，报纸嘛，体育版十条里有三条是真的。这还算好年景。' },
+      { speaker: 'dodd', text: '记住了：报上登的、酒馆里听的，都是传闻，得自己验证。亲眼见过的才算数——买张票去看一场，比买十份报纸都准。' },
+      { speaker: 'narrator', text: '对手档案里多了一页「情报的可信度」。每周日的报纸末版，也会登出上周的更正启事。' },
+    ],
+    choices: [dossier, close('记下了')],
+    effect: { set: ['doddCorrection'] },
   },
   'dodd-poor': {
     lines: [{ speaker: 'dodd', text: '两块都没有？亲爱的，去集市演一场吧，观众会给你的。大部分会。' }],
@@ -943,6 +1043,7 @@ export function bridgeportTalk(state: AdventureState, id: string): string | null
       return f.champion ? 'bp-departure' : 'bp-bus-locked';
     case 'dodd':
       if (f.stanAsked && !f.stanPaper) return 'dodd-paper-offer';
+      if (f.falseIntelSeen && !f.doddCorrection) return 'dodd-correction';
       return f.metDodd ? 'dodd-again' : 'dodd-first';
     case 'juno':
       if (state.map === 'thursday') return f.champion ? 'juno-after' : 'juno-final';

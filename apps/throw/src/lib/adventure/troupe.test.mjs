@@ -157,6 +157,6 @@ test('saves: v5 round-trips the troupe; tampered rosters, affinity and bonds are
   delete old.state.affinity;
   delete old.state.bonds;
   const migrated = restoreAdventure(JSON.stringify(old));
-  assert.equal(migrated.state.version, 'magician-adventure-v5');
+  assert.equal(migrated.state.version, 'magician-adventure-v6', 'v4 → v5 → v6');
   assert.deepEqual(migrated.state.troupe, ['eli']);
 });
