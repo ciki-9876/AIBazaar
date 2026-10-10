@@ -119,7 +119,7 @@ test('the main route is gated in story order and pays each first win once', () =
   assert.match(adventureObjective(state).title, /街头演出/);
   for (const id of ['double', 'single', 'quick']) state = show(state, id);
   assert.equal(state.fee, 30 + 10 + 10 + 12);
-  assert.ok(state.owned.variants.includes('1-9:mint'));
+  assert.ok(state.owned.variants.includes('1-8:mint'));
   state = talk(toTheatre(state), 'doris');
   assert.ok(state.flags.mainHall);
   for (const id of ['agnes', 'rosie', 'basil', 'pike']) state = duel(state, id, id);
@@ -276,8 +276,8 @@ test('the dossier files what each opponent actually threw', () => {
 
 test('deck books keep owned variants only', () => {
   let state = arrived();
-  state = { ...state, owned: { ...state.owned, variants: ['1-9:mint', '0-11:LSJ'] } };
-  assert.deepEqual(filterBook(state, { '1-9': 'mint', '0-11': 'LSJ', '2-2': 'gold' }), { '1-9': 'mint', '0-11': 'LSJ' });
+  state = { ...state, owned: { ...state.owned, variants: ['1-8:mint', '0-11:LSJ'] } };
+  assert.deepEqual(filterBook(state, { '1-8': 'mint', '0-11': 'LSJ', '2-2': 'gold' }), { '1-8': 'mint', '0-11': 'LSJ' });
 });
 
 test('saves round-trip and refuse other products, versions and broken shapes', () => {

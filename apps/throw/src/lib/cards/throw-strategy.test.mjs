@@ -252,7 +252,7 @@ test('shred: single cards spend extra shield and slip past the mirror', () => {
   state.fighters[1].relic = 'bastion';
   state = hit(state, cards([5, 5], [0, 1]));
   assert.equal(state.fighters[1].shield, 85);
-  assert.equal(state.fighters[0].hp, MAX_HP - 5);
+  assert.equal(state.fighters[0].hp, MAX_HP - 6, 'v7: a pair is reflected at 40% (15 blocked)');
 });
 test('wound: straights and better leave the target healing at 60% for five seconds', () => {
   let state = idle();
@@ -285,12 +285,25 @@ test('fan parry: a sequence-fan holder with seven cards takes half from single c
   assert.equal(state.fighters[1].hp, MAX_HP - 7);
   assert.ok(state.events.some((event) => event.text === '扇面格挡'));
 });
-test('reactive kit: the heart blanket patches single-card hits; the needle box only answers big batches', () => {
+test('reactive kit: the heart blanket patches single hits and keeps spilled healing; the needle box only answers big batches', () => {
   let state = idle();
   state.fighters[1].relic = 'heart';
   state.fighters[1].hp = 300;
   state = hit(state, cards([5]));
-  assert.equal(state.fighters[1].hp, 299);
+  assert.equal(state.fighters[1].hp, 297, '5 damage, 2 patched with no healing items');
+  state = idle();
+  state.fighters[1].relic = 'heart';
+  state.fighters[1].items = ['mend', 'wash', 'drain'];
+  state.fighters[1].layout = packThrowItems(['mend', 'wash', 'drain']);
+  state.fighters[1].hp = 300;
+  state = hit(state, cards([5]));
+  assert.equal(state.fighters[1].hp, 300, '5 damage, 5 patched: two plus one per healing item');
+  state = idle(['mend'], 'heart');
+  state.fighters[0].hp = MAX_HP - 4;
+  state.fighters[0].hand = cards([5, 6], [1, 1]);
+  state = launchThrow(state, 0, ['proof:0', 'proof:1']);
+  assert.equal(state.fighters[0].hp, MAX_HP);
+  assert.equal(state.fighters[0].shield, 7, '18 healing, 4 needed: half of the 14 spilled becomes shield');
   state = idle();
   state.fighters[1].items = ['thorns'];
   state.fighters[1].layout = packThrowItems(['thorns']);
@@ -299,18 +312,54 @@ test('reactive kit: the heart blanket patches single-card hits; the needle box o
   state = hit(state, cards([2, 3, 9]));
   assert.equal(state.fighters[0].hp, MAX_HP - 15);
 });
-test('a projectile applies ailments only at impact; fire and poison relics augment actual stacks', () => {
+test('a projectile applies ailments only at impact; the coal ember adds heat and halves the cure', () => {
   let state = idle(['cinder'], 'ember');
   state.fighters[0].hand = cards([2], [3]);
   state = launchThrow(state, 0, ['proof:0']);
   assert.equal(state.fighters[1].burn, 0);
-  assert.equal(state.shots[0].burn, 5);
+  assert.equal(state.shots[0].burn, 5, 'cinder 3 + ember 2');
   state = run(state, 9);
   assert.equal(state.fighters[1].burn, 5);
-  state = idle(['poison', 'venom'], 'toxin');
-  state.fighters[0].hand = cards([2], [2]);
-  state = run(launchThrow(state, 0, ['proof:0']), 9);
-  assert.equal(state.fighters[1].poison, 6);
+  const cure = (relic) => {
+    const duel = idle([], relic);
+    duel.fighters[1].items = ['wash'];
+    duel.fighters[1].layout = packThrowItems(['wash']);
+    duel.fighters[1].burn = 8;
+    duel.fighters[1].hand = [{ uid: 'tea', rank: 2, suit: 1 }];
+    return launchThrow(duel, 1, ['tea']).fighters[1].burn;
+  };
+  assert.equal(cure(null), 4, 'the remedy douses 4');
+  assert.equal(cure('ember'), 6, 'against the ember only 2 come out');
+});
+test('the toxin spoon slows poison ebb from one stack per two seconds to one per three', () => {
+  const left = (relic) => {
+    let state = idle([], relic);
+    state.fighters[1].poison = 10;
+    state.fighters[1].hp = MAX_HP;
+    for (let i = 0; i < 120; i++) {
+      state.fighters[1].hand = [];
+      state = stepThrowDuel(state);
+    }
+    return state.fighters[1].poison;
+  };
+  assert.equal(left(null), 7, 'six seconds: three stacks ebb');
+  assert.equal(left('toxin'), 8, 'six seconds: two stacks ebb');
+});
+test('the brass mirror reflects big batches harder and the double letterbox pays off a full hand', () => {
+  const reflect = (ranks) => {
+    let state = idle();
+    state.fighters[1].shield = 100;
+    state.fighters[1].relic = 'bastion';
+    state = hit(state, cards(ranks, ranks.map(() => 0)));
+    return MAX_HP - state.fighters[0].hp;
+  };
+  assert.equal(reflect([5, 5]), 6, 'pair: 40% of 15');
+  assert.equal(reflect([5, 5, 5]), 19, 'three of a kind: 70% of 28');
+  const state = idle([], 'capacity');
+  const full = cards([2, 3, 4, 5, 6, 7, 8, 9, 10]);
+  const context = (hand) => ({ ...state.fighters[0], hand, target: state.fighters[1] });
+  assert.equal(previewThrow([full[0]], [], context(full.slice(0, 8))).relicBonus, 0);
+  assert.equal(previewThrow([full[0]], [], context(full)).relicBonus, 8);
 });
 test('lifesteal measures actual HP loss, while penetration bypasses only its stated share', () => {
   let state = idle(['drain']);

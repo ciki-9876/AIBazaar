@@ -1,7 +1,7 @@
 # 《最后一张王牌》内容开发手册
 
 > 适用项目：`apps/throw`（甩牌对决 + 魔术师冒险）
-> 适用版本：对决规则 `throw-duel-v6` · 冒险 `magician-adventure-v4`
+> 适用版本：对决规则 `throw-duel-v7` · 冒险 `magician-adventure-v4`
 
 当前修订见 [ADR-0052](../design-log/decisions/ADR-0052-throw-v6-vector-stage-and-tempo.md)：白热／落幕加快补牌、三张组合、默认 20 秒整理、单张入门，以及舞台／任务／对白反馈。旧剪纸与像素版已 [本机归档](../art/archives/README.md)，正式美术统一采用 SVG + CSS。v5 的历史平衡数据不能直接当作 v6 已验证结果。
 > 维护方式：规范变化时直接改这里；**设计取舍**写进 `docs/design-log/`，这里只链接，不复述。

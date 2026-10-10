@@ -33,6 +33,12 @@ import {
   stepThrowDuel,
   TICK_MS,
   CURTAIN_MS,
+  CAPACITY_BONUS,
+  CAPACITY_FULL_HAND,
+  ECHO_CAP,
+  heartPatch,
+  RELAY_CAP,
+  RELAY_STEP,
   curtainDamage,
   battlePhase,
   termsAllow,
@@ -393,6 +399,24 @@ type ThrowTableProps = {
     report?: { suits: number[]; kinds: number[] },
   ) => void;
 };
+/** One-line live state for relics that count something (v7). */
+function relicStatus(fighter: ThrowFighter) {
+  switch (fighter.relic) {
+    case 'relay':
+      return `接力 +${Math.min(RELAY_CAP, fighter.singles * RELAY_STEP)}`;
+    case 'echo':
+      return fighter.hp * 2 < MAX_HP || fighter.echo ? `余响 ${fighter.echo}/${ECHO_CAP}` : '余响待命（半血以下积累）';
+    case 'capacity':
+      return fighter.hand.length >= CAPACITY_FULL_HAND ? `满匣 +${CAPACITY_BONUS}` : `满匣 ${fighter.hand.length}/${CAPACITY_FULL_HAND}`;
+    case 'heart':
+      return `单张命中回 ${heartPatch(fighter.items)}`;
+    case 'ember':
+      return '对手净化减半';
+    default:
+      return '';
+  }
+}
+
 export default function ThrowTable({
   challenge,
   initialLoadout,
@@ -1060,6 +1084,7 @@ export default function ThrowTable({
                       ? `理牌冷却 ${orderCooldown.toFixed(1)}s`
                       : '理牌可用'}
                 </span>
+                {relicStatus(player) && <span className="tp-relic-status">{relicStatus(player)}</span>}
                 <span className="tp-sort-actions">
                     {(['rank', 'suit', 'gather'] as const).map((mode) => (
                       <button
@@ -1169,7 +1194,9 @@ export default function ThrowTable({
                     ? [
                         `点数 ${preview.base} + 牌型 ${preview.bonus} + 道具 ${preview.itemBonus}`,
                         player.power ? `力量 +${player.power}` : '',
-                        preview.relicBonus ? `余响 +${preview.relicBonus}` : '',
+                        preview.relicBonus
+                          ? `${player.relic === 'capacity' ? '满匣' : player.relic === 'relay' ? '接力' : '余响'} +${preview.relicBonus}`
+                          : '',
                         preview.burn ? `灼烧 +${preview.burn}` : '',
                         preview.poison ? `剧毒 +${preview.poison}` : '',
                         preview.shield ? `护盾 +${preview.shield}` : '',
@@ -1248,7 +1275,7 @@ export default function ThrowTable({
             <p>♠ 护盾 · ♥ 治疗 · ♣ 剧毒 · ♦ 灼烧——具体由你巡演箱里的道具决定。</p>
             <ul className="tp-counter-rules">
               <li><b>治疗克剧毒</b>：每次治疗顺带净化一半数值的剧毒，满血也有效。</li>
-              <li><b>剧毒克护盾</b>：剧毒无视护盾；对手手里每攒 5 张牌，毒发 +1。剧毒每 2 秒退 1 层。</li>
+              <li><b>剧毒克护盾</b>：剧毒无视护盾；对手手里每攒 5 张牌，毒发 +1。剧毒每 2 秒退 1 层（浸露药匙：3 秒）。</li>
               <li><b>护盾克灼烧</b>：火落在盾上只点一半；有盾时，灼烧只烧盾、不伤血，熄得更快。</li>
               <li><b>灼烧克治疗</b>：着火时治疗只剩六成；灼烧 ≥3 层时每次出手烫手，扣 2 血。</li>
               <li><b>单张削盾</b>：单张牌被护盾挡下时多耗 10% 护盾，也不会被铜镜反射。</li>

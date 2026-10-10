@@ -1,11 +1,13 @@
-// Usage: node apps/throw/tools/relic-swap.mjs [N=8]
+// Usage: node apps/throw/tools/relic-swap.mjs [N=8] [style,style…]
 // Every preset with every relic (and none) against the field. A relic that
 // equals 'none' everywhere is dead; one that tops many presets is generic.
 import { playDuel, seedAt } from './sim-proxy.mjs';
 import { PRESETS, COMPETITIVE_STYLES, RELICS } from '../src/lib/cards/throw-loadout.ts';
 const N = Number(process.argv[2] || 8);
+const only = process.argv[3]?.split(',');
 console.log('style  '.padEnd(8) + RELICS.map((r) => r.id.padStart(9)).join('') + '   none   own-rank');
 for (const a of COMPETITIVE_STYLES) {
+  if (only && !only.includes(a)) continue;
   const cells = [];
   for (const r of [...RELICS.map((x) => x.id), null]) {
     let sc = 0, n = 0;

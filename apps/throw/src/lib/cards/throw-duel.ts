@@ -36,7 +36,44 @@ export const TICK_MS = 50,
  * rewards, sorting is a shared action and draws accelerate by battle phase.
  * Deck streams are unchanged from v3.
  */
-export const RULES_VERSION = 'throw-duel-v6';
+export const RULES_VERSION = 'throw-duel-v7';
+/**
+ * v7 relic pass (ADR-0053), on top of the v6 tempo: relics change a rule
+ * rather than add a number, and none is generically best. Relay stops drawing
+ * and instead sharpens consecutive single cards; echo gathers only below half
+ * life; the heart blanket patches single hits in proportion to the healing
+ * kit and keeps overflowing healing as shield; the coal ember also halves an
+ * opponent's burn cleansing; the toxin spoon slows poison's ebb; the brass
+ * mirror reflects pairs and batches harder; the double letterbox pays off a
+ * full hand. Deck streams and phase draw intervals are unchanged.
+ */
+/** Relay: from the second consecutive single card, each hits RELAY_STEP harder (capped); a batch resets it. */
+export const RELAY_STEP = 1;
+export const RELAY_CAP = 1;
+/** Echo only gathers while you are below half life: a comeback, not a tax. */
+export const ECHO_GAIN = 3;
+export const ECHO_CAP = 9;
+/** Heart blanket: single-card hits patch this much life, plus one per healing item in the trunk. */
+export const HEART_PATCH = 2;
+export const HEART_PER_HEAL_ITEM = 1;
+export const heartPatch = (items: readonly ItemId[]) =>
+  HEART_PATCH + HEART_PER_HEAL_ITEM * items.filter((id) => itemDefinition(id).family === 'heal').length;
+/** Heart blanket: half of any healing past full life is kept as shield. */
+export const HEART_OVERFLOW = 0.5;
+/** Coal ember: +2 to every burn you apply, and opponents cleanse only half of it. */
+export const EMBER_BONUS = 2;
+export const EMBER_CLEANSE_SHARE = 0.5;
+export const FESTER_HAND = 5;
+/** Poison ebbs one stack per this many seconds; the toxin spoon slows it. */
+export const POISON_EBB_S = 2;
+export const TOXIN_EBB_S = 3;
+/** Toxin spoon: extra poison on every throw that poisons (kept small; the slow ebb is the rule). */
+export const TOXIN_BONUS = 1;
+/** Brass mirror: share of blocked damage reflected for two cards, and for three or more. Single cards slip past (shred). */
+export const BASTION_REFLECT = 0.4;
+export const BASTION_BATCH_REFLECT = 0.7;
+export const CAPACITY_FULL_HAND = 9;
+export const CAPACITY_BONUS = 8;
 /**
  * v5 curtain call (落幕): from one minute in, the theatre starts closing on
  * both magicians. Every second each side takes damage that rises by
@@ -150,6 +187,8 @@ export type ThrowFighter = {
   throws: number;
   hits: number;
   echo: number;
+  /** Consecutive single-card throws (relay counts these; any batch resets it). */
+  singles: number;
   /** What this side actually threw: cards per suit and throws per poker kind (dossiers). */
   tally: { suits: [number, number, number, number]; kinds: number[] };
 };
@@ -266,7 +305,7 @@ const effectEvent = (state: ThrowDuel, side: Side, effect: TriggerEffect) =>
     kind: effect.kind,
   });
 /** Burning or wounded fighters receive 60% healing (rounded down). */
-export const healingFactor = (fighter: ThrowFighter, tick: number) =>
+export const healingFactor = (fighter: Pick<ThrowFighter, 'burn' | 'woundUntil'>, tick: number) =>
   fighter.burn > 0 || tick < fighter.woundUntil ? 0.6 : 1;
 /**
  * Every healing effect also cleanses poison equal to half its nominal amount,
@@ -296,6 +335,15 @@ function healFighter(
   fighter.hp += actual;
   if (actual > 0)
     addEvent(state, side, 'heal', text, actual, { source, kind: 'heal' });
+  // Heart blanket: what would spill past full life is half kept as shield.
+  if (fighter.relic === 'heart') {
+    const spill = Math.floor(nominal * healingFactor(fighter, state.tick)) - actual;
+    const kept = Math.min(Math.floor(spill * HEART_OVERFLOW), MAX_SHIELD - fighter.shield);
+    if (kept > 0) {
+      fighter.shield += kept;
+      addEvent(state, side, 'effect', '补缝余温', kept, { source: 'relic:heart', kind: 'shield' });
+    }
+  }
   return actual;
 }
 function draw(state: ThrowDuel, side: Side) {
@@ -390,6 +438,7 @@ export function createThrowDuel(
     throws: 0,
     hits: 0,
     echo: 0,
+    singles: 0,
     tally: { suits: [0, 0, 0, 0], kinds: [0, 0, 0, 0, 0, 0, 0, 0, 0] },
   });
   const state: ThrowDuel = {
@@ -607,12 +656,14 @@ export function previewThrow(
   const relic = (name: string, value: number, kind: EffectKind) =>
     effects.push({ source: `relic:${context.relic}`, name, value, kind });
   if (cards.length) {
-    if (context.relic === 'ember' && total('burn')) relic('灶心添火', 2, 'burn');
-    if (context.relic === 'toxin' && total('poison')) relic('浸露添毒', 2, 'poison');
+    if (context.relic === 'ember' && total('burn')) relic('灶心添火', EMBER_BONUS, 'burn');
+    if (context.relic === 'toxin' && TOXIN_BONUS && total('poison')) relic('浸露添毒', TOXIN_BONUS, 'poison');
     if (context.relic === 'echo' && context.echo)
       relic('余响回奏', context.echo, 'damage');
-    if (context.relic === 'relay' && ((context.throws ?? 0) + 1) % 3 === 0)
-      relic('第三声接力', 1, 'draw');
+    if (context.relic === 'relay' && cards.length === 1 && context.singles)
+      relic('接力加速', Math.min(RELAY_CAP, context.singles * RELAY_STEP), 'damage');
+    if (context.relic === 'capacity' && (context.hand?.length ?? 0) >= CAPACITY_FULL_HAND)
+      relic('满匣倾出', CAPACITY_BONUS, 'damage');
     if (poker.kind >= 4)
       effects.push({ source: 'rule:wound', name: '压轴重创', value: WOUND_MS, kind: 'wound' });
     // Finale: a flourish of five or more cards snuffs your own flames and
@@ -726,13 +777,21 @@ function launchMutable(state: ThrowDuel, side: Side, ids: string[]) {
     });
   }
   fighter.throws++;
+  fighter.singles = cards.length === 1 ? fighter.singles + 1 : 0;
   fighter.echo = 0;
   for (const card of cards) fighter.tally.suits[card.suit]++;
   fighter.tally.kinds[score.kind]++;
   for (const effect of score.effects)
     if (effect.kind !== 'wound') effectEvent(state, side, effect);
   fighter.poison = Math.max(0, fighter.poison - score.cleansePoison);
-  fighter.burn = Math.max(0, fighter.burn - score.cleanseBurn);
+  // Coal ember: flames lit by an ember-carrier only half come out.
+  const douse =
+    state.fighters[side === 0 ? 1 : 0].relic === 'ember'
+      ? Math.floor(score.cleanseBurn * EMBER_CLEANSE_SHARE)
+      : score.cleanseBurn;
+  if (douse < score.cleanseBurn && fighter.burn > 0)
+    effectEvent(state, side === 0 ? 1 : 0, { source: 'relic:ember', name: '灶心余温', value: Math.min(fighter.burn, score.cleanseBurn) - Math.min(fighter.burn, douse), kind: 'burn' });
+  fighter.burn = Math.max(0, fighter.burn - douse);
   if (cards.length >= 5) fighter.fireproofUntil = state.tick + ticks(FIREPROOF_MS);
   for (const effect of score.effects)
     if (effect.kind === 'heal' && effect.value > 0)
@@ -1013,6 +1072,8 @@ export function stepThrowDuelInPlace(next: ThrowDuel) {
         kind: 'wound',
       });
     }
+    if (target.relic === 'heart' && landed > 0 && shot.cards.length === 1)
+      heals.push({ side: targetSide, amount: heartPatch(target.items), name: '红心补缝', source: 'relic:heart' });
     if (shot.leech && result.health)
       heals.push({
         side: shot.side,
@@ -1020,8 +1081,6 @@ export function stepThrowDuelInPlace(next: ThrowDuel) {
         name: '回甘汲取',
         source: 'item:drain',
       });
-    if (target.relic === 'heart' && landed > 0 && shot.cards.length === 1)
-      heals.push({ side: targetSide, amount: 4, name: '红心补缝', source: 'relic:heart' });
     if (landed > 0) {
       let reflected = 0;
       if (target.items.includes('thorns') && shot.cards.length >= 3) {
@@ -1037,7 +1096,9 @@ export function stepThrowDuelInPlace(next: ThrowDuel) {
         });
       }
       if (target.relic === 'bastion' && result.blocked && shot.cards.length > 1) {
-        const amount = Math.floor(result.blocked * 0.35);
+        const amount = Math.floor(
+          result.blocked * (shot.cards.length >= 3 ? BASTION_BATCH_REFLECT : BASTION_REFLECT),
+        );
         reflected += amount;
         if (amount)
           effectEvent(next, targetSide, {
@@ -1055,8 +1116,8 @@ export function stepThrowDuelInPlace(next: ThrowDuel) {
           shieldDamage: response.blocked,
         });
       }
-      if (target.relic === 'echo' && target.hp > 0) {
-        const gain = Math.min(3, 12 - target.echo);
+      if (target.relic === 'echo' && target.hp > 0 && target.hp * 2 < MAX_HP) {
+        const gain = Math.min(ECHO_GAIN, ECHO_CAP - target.echo);
         target.echo += gain;
         if (gain)
           effectEvent(next, targetSide, {
@@ -1094,13 +1155,12 @@ export function stepThrowDuelInPlace(next: ThrowDuel) {
       }
       if (fighter.poison) {
         // Fester: hoarded cards feed the poison, one extra point per five held.
-        const damage = Math.min(
-          fighter.hp,
-          fighter.poison + Math.floor(fighter.hand.length / 5),
-        );
+        const damage = Math.min(fighter.hp, fighter.poison + Math.floor(fighter.hand.length / FESTER_HAND));
         fighter.hp -= damage;
-        // Poison outlasts burn but still ebbs: one stack every two seconds.
-        if ((next.tick / ticks(1000)) % 2 === 0) fighter.poison--;
+        // Poison outlasts burn but still ebbs: one stack every two seconds
+        // (every TOXIN_EBB_S seconds for poison laid by a toxin-spoon carrier).
+        const ebb = next.fighters[source].relic === 'toxin' ? TOXIN_EBB_S : POISON_EBB_S;
+        if ((next.tick / ticks(1000)) % ebb === 0) fighter.poison--;
         addEvent(next, source, 'dot', '剧毒', damage, {
           kind: 'poison',
           hpDamage: damage,

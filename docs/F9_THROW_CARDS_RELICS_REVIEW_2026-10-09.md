@@ -1,6 +1,6 @@
 # 《最后一张王牌》牌的变种与遗物：广度、深度评估与迭代方案
 
-日期：2026-10-09。**状态：评估已完成（数据来自自动对局）；迭代方案是提案，未实装。**
+日期：2026-10-09。**状态：评估已完成（数据来自自动对局）。第 5.1、5.4、6.1 节已按调参结果实装为 `throw-duel-v7`（建立在协作者的 v6 节奏之上），最终数值与本文提案不同，以 [ADR-0053](./design-log/decisions/ADR-0053-throw-v7-relics-and-variants.md) 为准；第 5.2、5.3、5.5、5.6、6.3、7 节仍是提案。** 下文数据测于 v5。
 
 相关：[牌的变种](./F9_THROW_CARD_VARIANTS_2026-10-09.md) · [道具池评估与扩展](./F9_THROW_ITEM_EXPANSION_2026-10-09.md) · [开发手册 03 卡牌](./throw-handbook/03-cards-items-variants.md) · [开发手册 08 平衡](./throw-handbook/08-balance-and-simulation.md)
 
