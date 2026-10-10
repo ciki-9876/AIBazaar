@@ -390,11 +390,12 @@
   background: none;
   color: var(--bone);
   display: grid;
-  grid-template-columns: 148px minmax(0, 1fr);
+  /* Both seats are always reserved so the text box never shifts between speakers. */
+  grid-template-columns: 148px minmax(0, 1fr) 148px;
   align-items: end;
   animation: rg-dialogue-in 0.45s var(--ease-out);
 }
-.rg-dialogue.has-partner { grid-template-columns: 148px minmax(0, 1fr) 148px; }
+.rg-dialogue-seat { width: 148px; height: 1px; }
 @keyframes rg-dialogue-in {
   from {
     opacity: 0;
@@ -886,7 +887,7 @@
     grid-template-columns: 1fr 1fr;
     inset: auto 0 12px;
   }
-  .rg-dialogue.has-partner { grid-template-columns: 1fr 1fr; }
+  .rg-dialogue-seat { width: 104px; height: 98px; }
   .rg-dialogue-portrait {
     width: 104px;
     height: 116px;

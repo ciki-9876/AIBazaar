@@ -2,6 +2,7 @@
 import { useEffect, useRef, useState } from 'react';
 import InventoryDrag from '../../../../../../packages/ui/inventory-drag';
 import { ObjectGlyph } from '../../stage/glyphs';
+import { FAMILY_NAMES, KitDetail } from './throw-kit';
 import {
   ITEMS,
   RELICS,
@@ -34,13 +35,10 @@ type Props = {
 };
 const families: { id: Family | 'all'; name: string }[] = [
   { id: 'all', name: '全部' },
-  { id: 'damage', name: '直伤' },
-  { id: 'burn', name: '灼烧' },
-  { id: 'poison', name: '剧毒' },
-  { id: 'shield', name: '护盾' },
-  { id: 'heal', name: '续航' },
-  { id: 'utility', name: '联动' },
+  ...(Object.entries(FAMILY_NAMES) as [Family, string][]).map(([id, name]) => ({ id, name })),
 ];
+/** Drop target meaning “back into the pack”, i.e. unequip. */
+const TO_PACK = -1;
 
 function RelicPicker({
   equipped,
@@ -162,17 +160,28 @@ export default function ThrowWorkbench({
       0,
     ),
     selected = chosen ? layout.find((entry) => entry.id === chosen) : undefined;
-  const selectedItem = chosen ? itemDefinition(chosen) : null,
-    currentRelic = RELICS.find((entry) => entry.id === relic);
+  const currentRelic = RELICS.find((entry) => entry.id === relic);
+  const shown = catalog.filter((item) => filter === 'all' || item.family === filter);
+  const neighbors = selected ? adjacentThrowItems(layout, selected.id) : [];
+  const choose = (id: ItemId | null) => {
+    tap();
+    setChosen(chosen === id ? null : id);
+    setError('');
+  };
   const place = (id: ItemId, start?: number) => {
     const next = placeThrowItem(layout, id, start);
     setChosen(id);
     if (next === layout) {
-      setError(`需要连续 ${itemDefinition(id).size} 格空位`);
+      setError(`放不下：需要连续 ${itemDefinition(id).size} 格空位`);
       return;
     }
     tap();
     onLayout(next);
+    setError('');
+  };
+  const remove = (id: ItemId) => {
+    tap();
+    onLayout(layout.filter((entry) => entry.id !== id));
     setError('');
   };
   return (
@@ -206,12 +215,21 @@ export default function ThrowWorkbench({
             },
           };
         }
+        // Dragging an equipped item back down into the pack takes it off.
+        const pack = root.querySelector<HTMLElement>('[data-pack-drop]');
+        const box = pack?.getBoundingClientRect();
+        if (box && x >= box.left && x < box.right && y >= box.top && y < box.bottom)
+          return { value: TO_PACK, bounds: { x: box.left, y: box.top, width: box.width, height: box.height } };
         return null;
       }}
       canDrop={(source, start) =>
-        placeThrowItem(layout, source.id as ItemId, start) !== layout
+        start === TO_PACK
+          ? layout.some((entry) => entry.id === source.id)
+          : placeThrowItem(layout, source.id as ItemId, start) !== layout
       }
-      onDrop={(source, start) => place(source.id as ItemId, start)}
+      onDrop={(source, start) =>
+        start === TO_PACK ? remove(source.id as ItemId) : place(source.id as ItemId, start)
+      }
       ghostClassName="tp-drag-ghost"
       highlightClassName="tp-drop-highlight"
       renderGhost={(source, valid) => {
@@ -225,12 +243,6 @@ export default function ThrowWorkbench({
         );
       }}
     >
-      <div className="tp-section-heading">
-        <h2>道具布阵</h2>
-        <b>
-          {used}/{BAG_CELLS}格
-        </b>
-      </div>
       {tip && <p className="tp-workbench-tip">{tip}</p>}
       <div className="tp-presets tp-strategy-presets" hidden={Boolean(available)}>
         {COMPETITIVE_STYLES.map((value) => {
@@ -263,6 +275,13 @@ export default function ThrowWorkbench({
           );
         })}
       </div>
+      <div className="tp-section-heading">
+        <h2>道具布阵</h2>
+        <span>相邻道具互相增幅 · 从下方背包拖上来</span>
+        <b>
+          {used}/{BAG_CELLS}格
+        </b>
+      </div>
       <div className="tp-board-and-relic">
         <div className="tp-bag" aria-label="十格道具布阵">
           {Array.from({ length: BAG_CELLS }, (_, index) => (
@@ -281,8 +300,7 @@ export default function ThrowWorkbench({
             </button>
           ))}
           {layout.map((entry) => {
-            const item = itemDefinition(entry.id),
-              neighbors = adjacentThrowItems(layout, entry.id);
+            const item = itemDefinition(entry.id);
             return (
               <button
                 key={entry.id}
@@ -296,22 +314,12 @@ export default function ThrowWorkbench({
                   gridColumn: `${entry.start + 1} / span ${item.size}`,
                   gridRow: 1,
                 }}
-                title={
-                  item.text +
-                  (neighbors.length
-                    ? ' · 相邻：' +
-                      neighbors.map((n) => itemDefinition(n.id).name).join('、')
-                    : '')
-                }
-                onClick={() => {
-                  tap();
-                  setChosen(chosen === entry.id ? null : entry.id);
-                  setError('');
-                }}
+                onClick={() => choose(entry.id)}
               >
                 <ObjectGlyph id={item.id} family={item.family} />
                 <small>{item.size}格</small>
                 <b>{item.name}</b>
+                <em>{item.tag}</em>
               </button>
             );
           })}
@@ -335,95 +343,74 @@ export default function ThrowWorkbench({
           <strong>{currentRelic?.name ?? '选择遗物'}</strong>
         </button>
       </div>
-      <div className="tp-bag-tools">
-        <div className="tp-item-preview">
-          {selectedItem && (
-            <>
-              <strong>{selectedItem.name}</strong>
-              <p>{selectedItem.text}</p>
-              <p className="tp-quip">{selectedItem.quip}</p>
-            </>
-          )}
-          {error && <output>{error}</output>}
-        </div>
-        <div>
-          <button
-            disabled={!selected || selected.start === 0}
-            onClick={() => place(selected!.id, selected!.start - 1)}
-          >
-            左移
+      <KitDetail
+        focus={chosen ? { kind: 'item', id: chosen } : null}
+        note={neighbors.length ? `相邻：${neighbors.map((n) => itemDefinition(n.id).name).join('、')}` : undefined}
+        empty="点一件道具查看效果；拖到上方格子里装备，拖回背包取下。"
+      >
+        {error && <output>{error}</output>}
+        {chosen && !selected && (
+          <button className="tp-primary" onClick={() => place(chosen)}>
+            装备
           </button>
-          <button
-            disabled={!selected || itemEnd(selected) === BAG_CELLS}
-            onClick={() => place(selected!.id, selected!.start + 1)}
-          >
-            右移
-          </button>
-          <button
-            disabled={!selected}
-            onClick={() => {
-              tap();
-              onLayout(layout.filter((entry) => entry.id !== chosen));
-              setChosen(null);
-              setError('');
-            }}
-          >
-            取下
-          </button>
-        </div>
-      </div>
-      <div className="tp-catalog-heading">
-        <h3>道具</h3>
-        <div className="tp-catalog-filters">
-          {families.map((family) => (
+        )}
+        {selected && (
+          <>
             <button
-              key={family.id}
-              aria-pressed={filter === family.id}
-              className={filter === family.id ? 'is-active' : ''}
-              onClick={() => setFilter(family.id)}
+              disabled={selected.start === 0}
+              onClick={() => place(selected.id, selected.start - 1)}
             >
-              {family.name}
+              左移
             </button>
-          ))}
+            <button
+              disabled={itemEnd(selected) === BAG_CELLS}
+              onClick={() => place(selected.id, selected.start + 1)}
+            >
+              右移
+            </button>
+            <button onClick={() => remove(selected.id)}>取下</button>
+          </>
+        )}
+      </KitDetail>
+      <section className="tp-pack" data-pack-drop aria-label="道具背包">
+        <div className="tp-catalog-heading">
+          <h3>背包</h3>
+          <div className="tp-catalog-filters">
+            {families.map((family) => (
+              <button
+                key={family.id}
+                aria-pressed={filter === family.id}
+                className={filter === family.id ? 'is-active' : ''}
+                onClick={() => setFilter(family.id)}
+              >
+                {family.name}
+              </button>
+            ))}
+          </div>
+          <span>{shown.length}</span>
         </div>
-        <span>
-          {catalog.filter((item) => filter === 'all' || item.family === filter).length}
-        </span>
-      </div>
-      <div className="tp-items tp-strategy-catalog">
-        {catalog.filter((item) => filter === 'all' || item.family === filter).map(
-          (item) => {
+        <div className="tp-items tp-strategy-catalog">
+          {shown.map((item) => {
             const equipped = layout.some((entry) => entry.id === item.id);
             return (
               <button
                 key={item.id}
                 data-drag-uid={item.id}
-                className={`tp-item tp-family-${item.family} ${equipped ? 'is-equipped' : ''}`}
-                aria-pressed={equipped}
-                title={item.text}
-                onClick={() => {
-                  if (equipped) {
-                    tap();
-                    setChosen(item.id);
-                    setError('');
-                  } else place(item.id);
-                }}
+                className={`tp-item tp-family-${item.family} ${equipped ? 'is-equipped' : ''} ${chosen === item.id ? 'is-chosen' : ''}`}
+                aria-pressed={chosen === item.id}
+                aria-label={`${item.name}，${item.tag}，${item.size}格${equipped ? '，已装备' : ''}`}
+                style={{ gridColumn: `span ${item.size}` }}
+                onClick={() => choose(item.id)}
               >
                 <ObjectGlyph id={item.id} family={item.family} />
-                <span>
-                  <small>
-                    {item.tag} · {item.size}格
-                  </small>
-                  <strong>{item.name}</strong>
-                  <p>{item.text}</p>
-                  <em>{item.quip}</em>
-                </span>
-                <b>{equipped ? '✓' : '+'}</b>
+                <strong>{item.name}</strong>
+                <em>{item.tag}</em>
+                {equipped && <b aria-hidden="true">✓</b>}
               </button>
             );
-          },
-        )}
-      </div>
+          })}
+        </div>
+      </section>
       {picker && (
         <RelicPicker
           relics={relicCatalog}

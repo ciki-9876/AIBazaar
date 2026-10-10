@@ -213,9 +213,8 @@ export default function MagicianAdventure() {
   const dialogue = state.dialogue ? DIALOGUES[state.dialogue.id] : null;
   const line =
     state.dialogue && dialogue ? dialogue.lines[state.dialogue.step] : null;
-  const dialoguePartner = line && line.speaker !== 'eli' && line.speaker !== 'narrator'
-    ? line.speaker
-    : dialogue?.lines.find((entry) => entry.speaker !== 'eli' && entry.speaker !== 'narrator')?.speaker;
+  // Only whoever is speaking shows a cameo: Eli keeps the left seat, the NPC the right.
+  const npcSpeaker = line && line.speaker !== 'eli' && line.speaker !== 'narrator' ? line.speaker : null;
   const choices =
     dialogue && state.dialogue?.step === dialogue.lines.length - 1
       ? dialogue.choices
@@ -621,13 +620,15 @@ export default function MagicianAdventure() {
           <dialog
             ref={modalRef}
             open
-            className={`rg-dialogue ${dialoguePartner ? 'has-partner' : ''} ${state.dialogue.id === 'opening' || state.dialogue.id === 'bp-arrival' ? 'rg-opening' : ''}`}
+            className={`rg-dialogue ${state.dialogue.id === 'opening' || state.dialogue.id === 'bp-arrival' ? 'rg-opening' : ''}`}
             aria-modal="true"
             aria-label={speaker(line.speaker).name}
           >
-            <div className={`rg-dialogue-portrait rg-dialogue-player ${line.speaker === 'eli' ? 'is-speaking' : ''}`} data-speaker="eli" aria-label="伊莱，玩家">
-              <Figure crop="bust" character="eli" height={188} />
-            </div>
+            {line.speaker === 'eli' ? (
+              <div className="rg-dialogue-portrait rg-dialogue-player is-speaking" data-speaker="eli" aria-label="伊莱，玩家">
+                <Figure crop="bust" character="eli" height={188} />
+              </div>
+            ) : <div className="rg-dialogue-seat rg-dialogue-player" aria-hidden="true" />}
             <div className="rg-dialogue-content">
               <div className="rg-speaker">
                 <strong>{speaker(line.speaker).name}</strong>
@@ -675,10 +676,12 @@ export default function MagicianAdventure() {
                 </div>
               </div>
             </div>
-            {dialoguePartner && <div className={`rg-dialogue-portrait rg-dialogue-npc ${line.speaker === dialoguePartner ? 'is-speaking' : ''}`}
-              data-speaker={dialoguePartner} aria-label={`${CHARACTERS[dialoguePartner].name}，对话对象`}>
-              <Figure key={dialoguePartner} crop="bust" character={dialoguePartner as RigId} height={188} />
-            </div>}
+            {npcSpeaker ? (
+              <div key={npcSpeaker} className="rg-dialogue-portrait rg-dialogue-npc is-speaking"
+                data-speaker={npcSpeaker} aria-label={`${CHARACTERS[npcSpeaker].name}，对话对象`}>
+                <Figure crop="bust" character={npcSpeaker as RigId} height={188} />
+              </div>
+            ) : <div className="rg-dialogue-seat rg-dialogue-npc" aria-hidden="true" />}
           </dialog>
         )}
 

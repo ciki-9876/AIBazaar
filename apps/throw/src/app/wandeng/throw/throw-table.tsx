@@ -65,11 +65,11 @@ import { throwAdvice } from './throw-advice';
 import { deservesCheer } from './throw-audience';
 import { PhaseLights, VictoryConfetti } from './throw-celebration';
 import ThrowWorkbench from './throw-workbench';
+import EnemyPreview from './throw-enemy-preview';
 import {
   packThrowItems,
   type ItemPlacement,
 } from '../../../lib/cards/throw-loadout';
-import { ThrowSpectacle } from './throw-motion';
 import { CoachCard, useCoach } from './throw-coach';
 import type { CoachScript } from '../../../lib/adventure/magician-world';
 import { COMPETITIVE_STYLES } from '../../../lib/cards/throw-loadout';
@@ -161,6 +161,8 @@ const effectText = (effect: TriggerEffect) =>
         : effect.kind === 'draw'
           ? `+${effect.value}张`
           : `+${effect.value}`;
+/** How long a trigger float stays on stage: 1.2 s. */
+const PROC_FLOAT_TICKS = 24;
 function Host({
   fighter,
   duel,
@@ -215,9 +217,9 @@ function Host({
       (event) =>
         event.type === 'effect' &&
         event.side === side &&
-        duel.tick - event.tick < 18,
+        duel.tick - event.tick < PROC_FLOAT_TICKS,
     )
-    .slice(-4);
+    .slice(-5);
   return (
     <section className={`tp-host tp-host-${side}`}>
       <div
@@ -259,11 +261,13 @@ function Host({
           );
         })}
       </div>
-      <div className="tp-proc-row">
-        {procs.map((event) => (
+      {/* Item and relic triggers float up from whoever triggered them, like damage numbers. */}
+      <div className="tp-proc-row" aria-hidden="true">
+        {procs.map((event, index) => (
           <span
             className={`tp-proc tp-proc-${event.kind ?? 'damage'}`}
             key={event.id}
+            style={{ '--proc-slot': procs.length - 1 - index } as CSSProperties}
           >
             {event.text}
             <b>
@@ -428,6 +432,7 @@ export default function ThrowTable({
   onReturn,
 }: ThrowTableProps = {}) {
   const [phase, setPhase] = useState<'prepare' | 'battle'>('prepare');
+  const [prepView, setPrepView] = useState<'kit' | 'enemy'>('kit');
   const [style, setStyle] = useState<Style>(initialLoadout?.style ?? 'quick');
   const [layout, setLayout] = useState<ItemPlacement[]>(() =>
     initialLoadout
@@ -812,6 +817,35 @@ export default function ThrowTable({
       {phase === 'prepare' ? (
         <section className="tp-preparation">
           <div className="tp-loadout">
+            <div className="tp-prep-tabs" role="tablist" aria-label="整备">
+              {([['kit', '我的布阵'], ['enemy', '敌人预览']] as const).map(([value, label]) => (
+                <button
+                  key={value}
+                  role="tab"
+                  aria-selected={prepView === value}
+                  className={prepView === value ? 'is-active' : ''}
+                  onClick={() => {
+                    unlockSound().tap();
+                    setPrepView(value);
+                  }}
+                >
+                  {label}
+                  {value === 'enemy' && <small>{hostNames?.[1] ?? '练习对手'} · {PRESETS[enemyStyle].name}</small>}
+                </button>
+              ))}
+            </div>
+            {prepView === 'enemy' ? (
+              <EnemyPreview
+                name={hostNames?.[1] ?? '练习对手'}
+                character={hosts[1]}
+                style={enemyStyle}
+                items={challenge?.enemyItems ?? PRESETS[enemyStyle].items}
+                relic={challenge?.enemyRelic !== undefined ? challenge.enemyRelic : PRESETS[enemyStyle].relic}
+                book={challenge?.enemyBook}
+                rule={challenge?.rule}
+                tap={() => unlockSound().tap()}
+              />
+            ) : (
             <ThrowWorkbench
               layout={layout}
               relic={relic}
@@ -823,13 +857,14 @@ export default function ThrowTable({
               tip={
                 tipOverride ??
                 (coachScript === 'qualifier'
-                  ? '米娅的建议：菲利克斯打火。把守灯小毯放进巡演箱（拖进格子，或点道具自动放入），用单张黑桃攒护盾，守住再反击。'
+                  ? '米娅的建议：菲利克斯打火，而火怕盾——有盾时新火只着一半，只烧盾不烧血。把守灯小毯拖进格子（或点它再按「装备」），用单张黑桃攒护盾，守住再反击。'
                   : coachScript === 'lesson'
                     ? '第一课先练单张：飞牌修缮箱加直伤，穿幕细针帮你穿盾。直接点「开始对战」就好。'
                     : undefined)
               }
               tap={() => unlockSound().tap()}
             />
+            )}
             <div className="tp-preparation-footer">
               {challenge ? (
                 <div className="tp-start-options">
@@ -997,7 +1032,6 @@ export default function ThrowTable({
               name={hostNames?.[0]}
               character={hosts[0]}
             />
-            <ThrowSpectacle duel={duel} />
             {audienceMoment && (
               <output className="tp-audience-moment" key={audienceMoment.id} data-audience-cheer={audienceMoment.id} aria-live="polite">
                 <span aria-hidden="true">✦</span> 好手！观众喝彩
