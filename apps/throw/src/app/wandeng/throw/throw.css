@@ -952,6 +952,11 @@ button:disabled {
   margin-right: 4px;
   color: var(--brass);
 }
+.tp-relic-status {
+  margin-right: 4px;
+  color: var(--verdigris-light, #9ad6c9);
+  font-size: 12px;
+}
 .tp-hand {
   position: relative;
   padding-top: 18px;
@@ -1385,7 +1390,8 @@ button:disabled {
   .tp-fire kbd {
     display: none;
   }
-  .tp-order-status {
+  .tp-order-status,
+  .tp-relic-status {
     display: inline;
     width: 100%;
     font-size: 11px;

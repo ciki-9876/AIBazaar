@@ -77,44 +77,53 @@ test('default reordering preserves card identity and spends exactly twenty secon
   assert.notEqual(reordered, state);
   assert.equal(reordered.fighters[0].hand[0].uid, initial[0]);
 });
-test('relay draws once on the third successful batch without resetting the regular timer', () => {
+test('relay adds one to every consecutive single card after the first, never draws, and resets on a batch', () => {
   let state = createThrowDuel(7, [], 'guard', 'relay');
   state.ai.thinkTick = 99999;
-  for (let index = 0; index < 2; index++) {
-    state = launchThrow(state, 0, [state.fighters[0].hand[0].uid]);
-    state = run(state, 9);
-  }
-  const fighter = state.fighters[0],
-    clock = fighter.drawClock,
-    count = fighter.drawn;
-  const uid = fighter.hand[0].uid;
-  assert.ok(
-    previewThrow([fighter.hand[0]], [], fighter).effects.some(
-      (effect) => effect.source === 'relic:relay',
-    ),
-  );
+  let next = 0;
+  const deal = (count) => {
+    state.fighters[0].hand = Array.from({ length: count }, () => ({ uid: `relay${next++}`, rank: 6, suit: 0 }));
+  };
+  const bonus = () => {
+    deal(3);
+    return (
+      previewThrow([state.fighters[0].hand[0]], [], state.fighters[0]).effects.find(
+        (effect) => effect.source === 'relic:relay',
+      )?.value ?? 0
+    );
+  };
+  const single = () => {
+    deal(3);
+    const count = state.fighters[0].drawn;
+    state = run(launchThrow(state, 0, [state.fighters[0].hand[0].uid]), 9);
+    assert.ok(state.fighters[0].drawn - count <= 1, 'only the regular three-second draw');
+  };
+  assert.equal(bonus(), 0);
+  single();
+  assert.equal(bonus(), 1);
+  single();
+  assert.equal(bonus(), 1, 'capped at +1');
   assert.equal(launchThrow(state, 0, ['unknown']), state);
-  state = launchThrow(state, 0, [uid]);
-  assert.equal(state.fighters[0].drawn, count + 1);
-  assert.equal(state.fighters[0].drawClock, clock);
-  assert.equal(state.fighters[0].throws, 3);
-  assert.ok(
-    state.events.some(
-      (event) => event.source === 'relic:relay' && event.text === '第三声接力',
-    ),
-  );
+  deal(3);
+  state = run(launchThrow(state, 0, state.fighters[0].hand.slice(0, 2).map((card) => card.uid)), 9);
+  assert.equal(state.fighters[0].singles, 0);
+  assert.equal(bonus(), 0, 'a batch resets the streak');
 });
-test('echo gains three per impact up to twelve and is consumed only by a valid throw', () => {
+test('echo gathers three per impact below half life, up to nine, and is consumed only by a valid throw', () => {
   let state = createThrowDuel(9, [], 'guard', 'echo');
   state.ai.thinkTick = 99999;
-  for (let index = 0; index < 5; index++) {
+  const strike = (index) => {
     state.fighters[1].hand = [{ uid: `attack${index}`, rank: 2, suit: 0 }];
     state = run(launchThrow(state, 1, [`attack${index}`]), 9);
-  }
-  assert.equal(state.fighters[0].echo, 12);
+  };
+  strike(0);
+  assert.equal(state.fighters[0].echo, 0, 'healthy magicians do not brood');
+  state.fighters[0].hp = 150;
+  for (let index = 1; index < 6; index++) strike(index);
+  assert.equal(state.fighters[0].echo, 9);
   assert.equal(launchThrow(state, 0, ['unknown']), state);
   const card = state.fighters[0].hand[0];
-  const expected = card.rank + 12;
+  const expected = card.rank + 9;
   state = launchThrow(state, 0, [card.uid]);
   assert.equal(state.shots.at(-1).damage, expected);
   assert.equal(state.fighters[0].echo, 0);
@@ -171,7 +180,7 @@ test('straights, flushes and straight flushes start at three cards, including Ac
   }
 });
 test('phase boundaries drive draws and carry elapsed progress into the faster interval', () => {
-  assert.equal(RULES_VERSION, 'throw-duel-v6');
+  assert.equal(RULES_VERSION, 'throw-duel-v7');
   assert.equal(battlePhase(600), 'opening');
   assert.equal(battlePhase(601), 'heated');
   assert.equal(battlePhase(1199), 'heated');
@@ -319,8 +328,9 @@ test('seed, actions and ticks replay identically; decks keep stable unique ident
   };
   assert.deepEqual(replay(), replay());
   assert.equal(replay().rules, RULES_VERSION);
-  let state = idle();
-  state.fighters[0].relic = 'relay';
+  // The alarm clock's extra draws make the deck run out and reshuffle within the time limit.
+  let state = createThrowDuel(1024, ['draw']);
+  state.ai.thinkTick = 99999;
   const ids = new Set(state.fighters[0].hand.map((card) => card.uid));
   for (let i = 0; i < 100; i++) {
     // Keep both alive through the curtain call so the deck cycles.

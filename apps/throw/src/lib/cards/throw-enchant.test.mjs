@@ -16,6 +16,7 @@ import {
   ENCHANTS,
   GENERIC_ENCHANTS,
   legendaryFor,
+  SMALL_RANK,
   validDeckBook,
   variantsFor,
 } from './throw-enchant.ts';
@@ -159,4 +160,48 @@ test('enchanted duels replay identically', () => {
     return state;
   };
   assert.deepEqual(replay(), replay());
+});
+
+test('v6: rare crafts are banded by rank, so the same variant on ♠3 and ♠K differs', () => {
+  const effect = (rank, ench) =>
+    previewThrow([card(rank, 0, ench)], [], { hp: MAX_HP }).effects.filter((entry) => entry.source.startsWith('card:'));
+  const value = (rank, ench, kind) => effect(rank, ench).find((entry) => entry.kind === kind)?.value ?? 0;
+  assert.equal(SMALL_RANK, 8);
+  for (const [ench, kind, small, big] of [
+    ['edge', 'damage', 4, 1],
+    ['lining', 'shield', 4, 1],
+    ['mint', 'heal', 5, 2],
+    ['seal', 'burn', 2, 1],
+    ['moss', 'poison', 2, 1],
+  ]) {
+    assert.equal(value(3, ench, kind), small, `${ench} on a 3`);
+    assert.equal(value(8, ench, kind), small, `${ench} on an 8`);
+    assert.equal(value(9, ench, kind), big, `${ench} on a 9`);
+    assert.equal(value(13, ench, kind), big, `${ench} on a king`);
+  }
+});
+
+test('v6: curtain variants work all duel long and only grow stronger at the curtain', () => {
+  const at = (tick, suit, rank, kind) =>
+    previewThrow([card(rank, suit, legendaryFor(suit, rank).id)], [], { hp: MAX_HP, tick }).effects.find(
+      (entry) => entry.source.startsWith('card:') && entry.kind === kind,
+    )?.value ?? 0;
+  const late = CURTAIN_MS / TICK_MS + 20;
+  assert.deepEqual([at(0, 0, 5, 'shield'), at(late, 0, 5, 'shield')], [10, 24]);
+  assert.deepEqual([at(0, 1, 12, 'heal'), at(late, 1, 12, 'heal')], [12, 30]);
+  assert.deepEqual([at(0, 2, 5, 'poison'), at(late, 2, 5, 'poison')], [4, 9]);
+  const encore = (tick, kind) =>
+    previewThrow([card(9, 0, 'encore')], [], { hp: MAX_HP, tick }).effects.find(
+      (entry) => entry.source.startsWith('card:') && entry.kind === kind,
+    )?.value ?? 0;
+  assert.deepEqual([encore(0, 'shield'), encore(0, 'heal'), encore(late, 'shield'), encore(late, 'heal')], [4, 3, 12, 9]);
+});
+
+test('v6: the pierce craft adds damage on every throw and pierces half a shield on a single card', () => {
+  const single = previewThrow([card(14, 0, 'pierce')], [], { hp: MAX_HP });
+  const pair = previewThrow([card(14, 0, 'pierce'), card(14, 1)], [], { hp: MAX_HP });
+  assert.equal(single.cardBonus, 4);
+  assert.equal(single.pierce, 50);
+  assert.equal(pair.cardBonus, 4);
+  assert.equal(pair.pierce, 0);
 });
