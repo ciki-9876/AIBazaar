@@ -19,7 +19,20 @@ import {
   buyOffer,
   CHARACTERS,
   chooseDialogue,
+  clearNotice,
   closePanel,
+  gatherIntel,
+  haveTea,
+  helpLandlady,
+  passTime,
+  payArrears,
+  SLOT_NAMES,
+  WEEKDAYS,
+  weekday,
+  weekNumber,
+  rehearse,
+  rentLodging,
+  setMeals,
   createAdventure,
   DIALOGUES,
   finishAdventureBattle,
@@ -39,15 +52,18 @@ import {
   walkAdventure,
   WALK_TICK_MS,
   type AdventureState,
+  type BattleId,
   type CharacterId,
+  type IntelSource,
   type ShowId,
 } from '../../lib/adventure/magician-world';
+import type { PerformerId } from '../../lib/cards/throw-performer';
 import ThrowTable, {
   type PreparedThrowLoadout,
 } from '../wandeng/throw/throw-table';
 import { packThrowItems, PRESETS, RELICS, validThrowLayout, type ItemId, type RelicId } from '../../lib/cards/throw-loadout';
 import { validDeckBook } from '../../lib/cards/throw-enchant';
-import { DossierPanel, Fee, ShopPanel, ShowsPanel, TroupePanel } from './adventure-panels';
+import { clockLabel, DossierPanel, Fee, ShopPanel, ShowsPanel, TroupePanel, type LifeAction } from './adventure-panels';
 import { DialogueText } from './dialogue-text';
 
 const STARTER_LOADOUT: PreparedThrowLoadout = {
@@ -71,7 +87,7 @@ type Action =
   | { type: 'interact'; id?: string }
   | { type: 'advance' }
   | { type: 'choice'; id: string }
-  | { type: 'result'; id: number; winner: 0 | 1 | 'draw'; report?: { suits: number[]; kinds: number[] } }
+  | { type: 'result'; id: number; winner: 0 | 1 | 'draw'; report?: { suits: number[]; kinds: number[]; performer?: PerformerId } }
   | { type: 'abandon' }
   | { type: 'explore' }
   | { type: 'travel' }
@@ -79,7 +95,27 @@ type Action =
   | { type: 'buy'; id: string }
   | { type: 'show'; id: ShowId }
   | { type: 'load'; state: AdventureState }
-  | { type: 'restart'; act?: 1 | 2 };
+  | { type: 'restart'; act?: 1 | 2 }
+  | { type: 'life'; action: LifeAction }
+  | { type: 'rest' }
+  | { type: 'scout'; battle: BattleId; source: IntelSource }
+  | { type: 'notice-close' };
+function life(state: AdventureState, action: LifeAction): AdventureState {
+  switch (action.kind) {
+    case 'tea':
+      return haveTea(state, action.id);
+    case 'rehearse':
+      return rehearse(state, action.id);
+    case 'rent':
+      return rentLodging(state, action.id);
+    case 'meals':
+      return setMeals(state, action.tier);
+    case 'pay':
+      return payArrears(state);
+    case 'help':
+      return helpLandlady(state);
+  }
+}
 function reducer(state: AdventureState, action: Action): AdventureState {
   switch (action.type) {
     case 'walk':
@@ -108,6 +144,14 @@ function reducer(state: AdventureState, action: Action): AdventureState {
       return action.state;
     case 'restart':
       return createAdventure(state.seed, action.act ?? 1);
+    case 'life':
+      return life(state, action.action);
+    case 'rest':
+      return passTime(state);
+    case 'scout':
+      return gatherIntel(state, action.battle, action.source);
+    case 'notice-close':
+      return clearNotice(state);
   }
 }
 const route = [
@@ -224,8 +268,10 @@ export default function MagicianAdventure() {
       ? dialogue.choices
       : null;
   const inBattle = state.mode === 'battle';
+  /** v6: the Sunday ledger and intel checks wait until the hero is back on the street. */
+  const noticeOpen = Boolean(state.notice?.length) && state.mode === 'explore';
   const modalOpen =
-    state.mode === 'dialogue' || state.mode === 'complete' || state.mode === 'panel' || mapOpen || overlayOpen;
+    state.mode === 'dialogue' || state.mode === 'complete' || state.mode === 'panel' || mapOpen || overlayOpen || noticeOpen;
 
   const refreshMotion = () => {
     destinationRef.current = null;
@@ -420,6 +466,9 @@ export default function MagicianAdventure() {
             terms: setup.terms,
             rule: setup.rule,
             enemyPerformer: setup.enemyPerformer,
+            presence: setup.presence,
+            enemyPresence: setup.enemyPresence,
+            intel: setup.intel,
           }}
           playerPerformer={setup.performers.length > 1 ? undefined : 'eli'}
           performerChoices={setup.performers.length > 1 ? setup.performers : undefined}
@@ -429,7 +478,8 @@ export default function MagicianAdventure() {
           hosts={['eli', opponent]}
           available={{ ...setup.available, ...(state.act > 1 ? { variants: setup.variants } : {}) }}
           coach={battle.coach}
-          tip={setup.tip && battle.kind !== 'qualifier' ? setup.tip : undefined}
+          // v6: a formal opponent's gossip names their kit; it waits until their style is scouted.
+          tip={setup.tip && battle.kind !== 'qualifier' && (setup.intel.fog === 'open' || setup.intel.visible.includes('style')) ? setup.tip : undefined}
           onReturn={(winner, nextLoadout, report) => {
             // A borrowed trunk goes back to its owner; keep your own.
             if (!setup.forced) setLoadout(nextLoadout);
@@ -463,6 +513,19 @@ export default function MagicianAdventure() {
         </div>
         <nav aria-label="游戏菜单">
           {state.act > 1 && <Fee value={state.fee} />}
+          {state.act > 1 && (
+            <span className="rg-clock" aria-live="polite" aria-label={clockLabel(state)}>
+              <span className="rg-clock-week">第 {weekNumber(state.clock.day)} 周 · </span>
+              {WEEKDAYS[weekday(state.clock.day)]} · {SLOT_NAMES[state.clock.slot]}
+              <button
+                onClick={() => dispatch({ type: 'rest' })}
+                disabled={state.mode !== 'explore' || noticeOpen}
+                title="让一个时段过去：散散步，喝杯茶，什么也不干"
+              >
+                歇一会
+              </button>
+            </span>
+          )}
           {state.act > 1 && (
             <button onClick={() => setDossierOpen(true)} disabled={state.mode !== 'explore' || !state.flags.metDodd}>
               档案
@@ -772,7 +835,14 @@ export default function MagicianAdventure() {
         {state.mode === 'panel' && state.panel === 'shows' && (
           <ShowsPanel state={state} modalRef={modalRef} onStart={(id) => dispatch({ type: 'show', id })} onClose={() => dispatch({ type: 'panel-close' })} />
         )}
-        {troupeOpen && <TroupePanel state={state} modalRef={modalRef} onClose={() => setTroupeOpen(false)} />}
+        {troupeOpen && (
+          <TroupePanel
+            state={state}
+            modalRef={modalRef}
+            onClose={() => setTroupeOpen(false)}
+            onLife={state.act > 1 ? (action) => dispatch({ type: 'life', action }) : undefined}
+          />
+        )}
         {((state.mode === 'panel' && state.panel === 'dossier') || dossierOpen) && (
           <DossierPanel
             state={state}
@@ -781,7 +851,22 @@ export default function MagicianAdventure() {
               setDossierOpen(false);
               dispatch({ type: 'panel-close' });
             }}
+            onScout={state.act > 1 ? (battle, source) => dispatch({ type: 'scout', battle, source }) : undefined}
           />
+        )}
+        {noticeOpen && !overlayOpen && !mapOpen && (
+          <dialog ref={modalRef} open className="rg-map-modal rg-panel rg-notice" aria-modal="true" aria-label="消息">
+            <ul>
+              {state.notice!.map((line, index) => (
+                <li key={index} className={line.includes('情报有误') ? 'is-false' : line.includes('结账') ? 'is-heading' : ''}>
+                  {line}
+                </li>
+              ))}
+            </ul>
+            <button className="rg-primary" onClick={() => dispatch({ type: 'notice-close' })} autoFocus>
+              知道了
+            </button>
+          </dialog>
         )}
 
         {state.mode === 'complete' && (

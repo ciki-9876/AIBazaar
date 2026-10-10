@@ -16,8 +16,8 @@ import {
 import { PRESETS } from '../src/lib/cards/throw-loadout.ts';
 
 /**
- * One duel. `player` is { style, items, relic, book?, performer? }; `enemy` is
- * { style, items?, relic?, book?, terms?, performer? }. Returns 1 for a win, 0.5 draw, 0 loss,
+ * One duel. `player` is { style, items, relic, book?, performer?, presence? }; `enemy` is
+ * { style, items?, relic?, book?, terms?, performer?, presence? }. Returns 1 for a win, 0.5 draw, 0 loss,
  * plus the duel length in seconds.
  */
 export function playDuel(player, enemy, seed) {
@@ -30,7 +30,13 @@ export function playDuel(player, enemy, seed) {
     enemy.relic !== undefined ? enemy.relic : PRESETS[enemy.style].relic,
     undefined,
     { player: player.book, enemy: enemy.book },
-    { enemyItems: enemy.items, terms, performers: { player: player.performer ?? null, enemy: enemy.performer ?? null } },
+    {
+      enemyItems: enemy.items,
+      terms,
+      performers: { player: player.performer ?? null, enemy: enemy.performer ?? null },
+      // v11 presence caps (气场上限); absent means the classic 320.
+      presence: { player: player.presence, enemy: enemy.presence },
+    },
   );
   let next = 48,
     intent = [],

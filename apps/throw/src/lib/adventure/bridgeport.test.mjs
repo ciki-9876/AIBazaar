@@ -8,6 +8,7 @@ import {
   buyOffer,
   chooseDialogue,
   closePanel,
+  BUSK_REPEAT_FEE,
   createAdventure,
   DIALOGUES,
   filterBook,
@@ -157,7 +158,13 @@ test('rematches with a paid reward use the rematch dialogue and keep the money w
   state = startShow(state, 'double');
   state = finishAdventureBattle(state, state.battle.id, 0);
   assert.equal(state.dialogue.id, 'rematch-win');
-  assert.equal(read(state).fee, fee);
+  // v6 (ADR-0059): a show already won pays a little busking money once a week; the first-win reward is not paid again.
+  assert.equal(read(state).fee, fee + BUSK_REPEAT_FEE);
+  state = toTown(read(state));
+  state = go(state, 'busk-stage');
+  state = startShow(state, 'double');
+  state = finishAdventureBattle(state, state.battle.id, 0);
+  assert.equal(read(state).fee, fee + BUSK_REPEAT_FEE, 'once a week');
 });
 
 test('street shows carry their terms and kit restrictions into the duel', () => {
@@ -327,11 +334,12 @@ test('v3 saves preserve progress and earned kits while retiring the sorting reli
     loadout: { style: 'quick', layout: [{ id: 'quick', start: 0 }], relic: 'order' } });
   const restored = restoreAdventure(json);
   assert.ok(restored);
-  assert.equal(restored.state.version, 'magician-adventure-v5');
+  // v3 walks the whole chain (v3 → v4 → v5 → v6).
+  assert.equal(restored.state.version, 'magician-adventure-v6');
   assert.deepEqual(restored.state.troupe, ['eli']);
   assert.deepEqual(restored.state.affinity, {});
   assert.deepEqual(restored.state.bonds, []);
-  assert.equal(restored.envelope.version, 'magician-adventure-v5');
+  assert.equal(restored.envelope.version, 'magician-adventure-v6');
   assert.equal(restored.state.fee, 125);
   assert.deepEqual(restored.state.won, current.won);
   assert.deepEqual(restored.state.flags, current.flags);

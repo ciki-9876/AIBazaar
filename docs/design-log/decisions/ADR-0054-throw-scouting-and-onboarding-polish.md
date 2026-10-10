@@ -5,6 +5,7 @@
 - 影响的设计 DNA：A-05 反制循环、A-10 局外保留发现与选择
 - 相关迭代：[2026-10-09 · 试玩反馈与空手循环](../iterations/F9/2026-10-09-throw-playtest-polish-and-empty-hand.md)
 - 修订 [ADR-0051](./ADR-0051-throw-act-two-bridgeport.md) 中「信息只来自观察、不剧透对手的配置」这一条原则（见下文第 1 节）；其余经济与档案设计不变。
+- 2026-10-10：本 ADR 的「整备时公开对手配置」被 [ADR-0059](./ADR-0059-throw-growth-intel-rewards-cities.md) 修订：只保留在练习场，街头演出部分迷雾，正式演出改为情报制（尚未实装）。
 - 规则版本仍是 `throw-duel-v7`，冒险存档仍是 `magician-adventure-v4`：数值、结算、随机流、存档结构都没有变化。
 
 ## 背景（事实）

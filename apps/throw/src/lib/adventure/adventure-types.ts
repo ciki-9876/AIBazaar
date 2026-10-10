@@ -8,7 +8,7 @@ import type { PerformerId } from '../cards/throw-performer';
  * describe data; the engine in magician-world.ts applies it. Everything here
  * is deterministic: no clocks, no fresh randomness.
  */
-export const ADVENTURE_VERSION = 'magician-adventure-v5';
+export const ADVENTURE_VERSION = 'magician-adventure-v6';
 export type ActId = 1 | 2;
 export type MapId =
   | 'street'
@@ -62,6 +62,9 @@ export const FLAGS = [
   'stanDone',
   'sistersOffered',
   'leftBridgeport',
+  // v6 intel (ADR-0059): the hero has been caught out by a false rumour once.
+  'falseIntelSeen',
+  'doddCorrection',
 ] as const;
 export type FlagId = (typeof FLAGS)[number];
 export type PanelId = 'shop' | 'shows' | 'dossier';
@@ -88,6 +91,31 @@ export type Reward = {
   variants?: OwnedVariant[];
   /** v5: affinity gained with these people (first win only, like everything here). */
   affinity?: Partial<Record<CharacterId, number>>;
+};
+/** v6 time of day (ADR-0059 weekly schedule): morning, afternoon, evening. */
+export type Slot = 0 | 1 | 2;
+export type MealTier = 'plain' | 'home' | 'feast';
+/** v6 intel on one battle: confirmed units, rumours heard, sources used. */
+export type IntelRecord = {
+  /** Confirmed units: 'style', 'relic', 'performer', 'book', `item:${ItemId}`. */
+  seen: string[];
+  /** Rumour ids heard about this battle. */
+  heard: string[];
+  /** Rumour ids proven false after the duel. */
+  debunked: string[];
+  /** Intel sources already used on this battle. */
+  sources: IntelSource[];
+};
+export type IntelSource = 'paper' | 'pub' | 'watch' | 'backstage';
+/** A rumour about a battle. Its truth is fixed in content, so intel stays deterministic. */
+export type Rumour = {
+  id: string;
+  source: 'paper' | 'pub';
+  /** The unit it is about: 'relic' or `item:${ItemId}`. */
+  unit: string;
+  text: string;
+  /** Whether the claim is true; false rumours are debunked after the duel. */
+  truth: boolean;
 };
 export type DossierEntry = {
   duels: number;
@@ -133,6 +161,29 @@ export type AdventureState = {
   affinity: Partial<Record<CharacterId, number>>;
   /** v5: one-time affinity moments already spent (a stew is only a first stew once). */
   bonds: string[];
+  /** v6 clock (act two on): days since arrival and the time of day. */
+  clock: { day: number; slot: Slot };
+  /** v6 stage experience (台龄 points) per troupe member. */
+  stage: Partial<Record<PerformerId, number>>;
+  /** v6 名气: the troupe's fame, added to every member's presence. */
+  fame: number;
+  /** v6 mood per troupe member: 0 罢演 … 4 兴奋. */
+  mood: Partial<Record<PerformerId, number>>;
+  /** v6 lodging in the current town (null in act one). */
+  lodging: string | null;
+  meals: MealTier;
+  /** v6 weeks of unpaid rent. */
+  arrears: number;
+  /** v6 members gone home for a few square meals, and the day they come back. */
+  away: Partial<Record<PerformerId, number>>;
+  /** v6 once-a-week moments already used this week (tea, wins, busking). */
+  week: string[];
+  /** v6 collectibles (keepsakes): no rules, just memories. */
+  keepsakes: string[];
+  /** v6 what the hero knows about each battle. */
+  intel: Partial<Record<BattleId, IntelRecord>>;
+  /** v6 a message to show once (the Sunday ledger, a correction). */
+  notice: string[] | null;
 };
 /** Guided duel scripts; presentation-only coaching layered over real rules. */
 export type CoachScript = 'lesson' | 'qualifier';
@@ -210,6 +261,14 @@ export type BattleDefinition = {
   afterFlags?: FlagId[];
   /** Hint shown above the workbench. */
   tip?: string;
+  /** v6 the opponent's presence cap; omitted uses the act's default. */
+  presence?: number;
+  /** v6 fame on the first win. */
+  fame?: number;
+  /** v6 a town's final opponent (more stage experience). */
+  boss?: boolean;
+  /** v6 a formal performance: the opponent's kit is hidden until scouted. Street shows are half hidden. */
+  formal?: boolean;
 };
 export type Objective = { title: string; detail: string; target: string };
 export type ShowDefinition = {

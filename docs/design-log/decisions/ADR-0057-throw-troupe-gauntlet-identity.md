@@ -4,6 +4,7 @@
 - 日期：2026-10-10
 - 影响的设计 DNA：A-05 反制循环、A-10 局外保留发现与选择
 - 设计文档：[魔术剧团、车轮战与角色身份](../../F9_THROW_TROUPE_GAUNTLET_2026-10-10.md)
+- 2026-10-10：决定 4 被 [ADR-0059](./ADR-0059-throw-growth-intel-rewards-cities.md) 修订：天生的规则仍然平等，但每人的台龄（气场的「底子」）可以不同（尚未实装）。
 - 补充 [ADR-0041](./ADR-0041-throw-magician-personal-championship.md)：主线仍是伊莱个人夺冠，剧团作为支撑与第二条线，不取代主线。
 
 ## 用户的设计（事实）

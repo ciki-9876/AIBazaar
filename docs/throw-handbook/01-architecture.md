@@ -54,8 +54,8 @@
 
 | 常量 | 当前值 | 什么时候升 |
 |---|---|---|
-| `RULES_VERSION`（`throw-duel.ts`） | `throw-duel-v10` | 同样的种子和输入会得出**不同结果**时：改数值、改结算顺序、加新机制 |
-| `ADVENTURE_VERSION`（`adventure-types.ts`） | `magician-adventure-v5` | 存档**结构**变化时：新增/删除旗标、新增状态字段、改字段含义 |
+| `RULES_VERSION`（`throw-duel.ts`） | `throw-duel-v11` | 同样的种子和输入会得出**不同结果**时：改数值、改结算顺序、加新机制 |
+| `ADVENTURE_VERSION`（`adventure-types.ts`） | `magician-adventure-v6` | 存档**结构**变化时：新增/删除旗标、新增状态字段、改字段含义 |
 
 升版本时同时：
 
@@ -87,7 +87,7 @@ v4 支持从 v3 迁移：旧「三息理线盒」的 `order` 遗物引用移为 
 |---|---|---|
 | 对决 tick | 50 ms | `TICK_MS` |
 | 冒险行走 tick | 20 ms，每 tick 5 世界单位 | `WALK_TICK_MS`、`WALK_DISTANCE` |
-| 最大生命 / 护盾 / 力量 | 320 / 160 / 30 | `MAX_HP` / `MAX_SHIELD` / `MAX_POWER` |
+| 气场上限（默认）/ 护盾 / 力量 | 320（每人可不同，上限 `PRESENCE_LIMIT` 2000）/ 不设上限 / 30 | `MAX_HP` + `options.presence` / — / `MAX_POWER` |
 | 手牌上限 | 10（遗物可改） | `handLimit(relic)` |
 | 发牌轮（v8） | 每轮 `DEAL_SIZE` = 2 张；开场每 6 秒、超过 30 秒每 4 秒、60 秒起每 3 秒（总量同 v7）；一轮只填空位 | `drawInterval`、`DEAL_SIZE`、`battlePhase` |
 | 白热开始 | 超过 30 秒，即 tick 601（30.05 秒） | `HEATED_MS`、`battlePhase` |

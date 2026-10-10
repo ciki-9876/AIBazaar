@@ -21,6 +21,7 @@ import {
 } from '../../../lib/cards/throw-poker';
 import {
   createThrowDuel,
+  MAX_HP,
   drawInterval,
   DEAL_SIZE,
   useSleight,
@@ -32,7 +33,6 @@ import {
   handLimit,
   ITEMS,
   launchThrow,
-  MAX_HP,
   PRESETS,
   previewThrow,
   RELICS,
@@ -73,7 +73,7 @@ import { deservesCheer } from './throw-audience';
 import { PhaseLights, VictoryConfetti } from './throw-celebration';
 import ThrowWorkbench from './throw-workbench';
 import { PERFORMERS, PERFORMER_IDS, type PerformerId } from '../../../lib/cards/throw-performer';
-import EnemyPreview from './throw-enemy-preview';
+import EnemyPreview, { type PreviewIntel } from './throw-enemy-preview';
 import {
   packThrowItems,
   type ItemPlacement,
@@ -165,7 +165,7 @@ function PokerCard({
 }
 const effectText = (effect: TriggerEffect) =>
   effect.kind === 'heal' && effect.value === 0
-    ? '满生命'
+    ? '满气场'
     : effect.kind === 'slow' || effect.kind === 'wound'
       ? `${effect.value / 1000}s`
       : effect.kind === 'pierce' || effect.kind === 'leech'
@@ -293,7 +293,7 @@ function Host({
                     : event.kind === 'pierce' || event.kind === 'leech'
                       ? `${event.value}%`
                       : `+${event.value}`
-                  : '满生命'}
+                  : '满气场'}
             </b>
           </span>
         ))}
@@ -316,17 +316,17 @@ function FighterLife({
   return (
     <section
       className={`tp-host-life tp-life-${side}`}
-      aria-label={`${name ?? (side === 0 ? '伊莱·维尔' : '菲利克斯·克罗')}生命`}
+      aria-label={`${name ?? (side === 0 ? '伊莱·维尔' : '菲利克斯·克罗')}气场`}
     >
       <div className="tp-life-title">
         <span>{name ?? (side === 0 ? '伊莱·维尔' : '菲利克斯·克罗')}</span>
         <strong>
           {fighter.hp}
-          <small> / {MAX_HP}</small>
+          <small> / {fighter.maxHp}</small>
         </strong>
       </div>
       <div className="tp-hp-track">
-        <span style={{ width: `${(fighter.hp / MAX_HP) * 100}%` }} />
+        <span style={{ width: `${(fighter.hp / fighter.maxHp) * 100}%` }} />
       </div>
       <div className="tp-host-status">
         {fighter.shield > 0 && (
@@ -335,7 +335,7 @@ function FighterLife({
           </span>
         )}
         {fighter.burn > 0 && (
-          <span className="tp-stat-burn" title="灼烧每秒扣当前层数的生命并减 1 层；有盾时改为烧盾、熄得更快">
+          <span className="tp-stat-burn" title="灼烧每秒扣当前层数的气场并减 1 层；有盾时改为烧盾、熄得更快">
             火 {fighter.burn}
           </span>
         )}
@@ -398,6 +398,11 @@ type ThrowTableProps = {
     rule?: string;
     /** v10: the opponent performer (talent + sleight), if any. */
     enemyPerformer?: PerformerId;
+    /** v6 presence caps (气场上限): each member who may perform, and the opponent. */
+    presence?: Partial<Record<PerformerId, number>>;
+    enemyPresence?: number;
+    /** v6 what the hero knows of the opponent; omitted shows everything. */
+    intel?: PreviewIntel;
   };
   /** Fixed performer for the player (the story uses Eli); omitted lets the practice room choose. */
   playerPerformer?: PerformerId;
@@ -421,8 +426,8 @@ type ThrowTableProps = {
   onReturn?: (
     winner: ThrowDuel['winner'],
     loadout: PreparedThrowLoadout,
-    /** What the opponent actually threw, for the dossier. */
-    report?: { suits: number[]; kinds: number[] },
+    /** What the opponent actually threw, for the dossier; and who was on stage (v6). */
+    report?: { suits: number[]; kinds: number[]; performer?: PerformerId },
   ) => void;
 };
 /** v10: one-line sleight status for a performer on stage. */
@@ -442,7 +447,7 @@ function relicStatus(fighter: ThrowFighter) {
     case 'relay':
       return `接力 +${Math.min(RELAY_CAP, fighter.singles * RELAY_STEP)}`;
     case 'echo':
-      return fighter.hp * 2 < MAX_HP || fighter.echo ? `余响 ${fighter.echo}/${ECHO_CAP}` : '余响待命（半血以下积累）';
+      return fighter.hp * 2 < fighter.maxHp || fighter.echo ? `余响 ${fighter.echo}/${ECHO_CAP}` : '余响待命（气场低于一半时积累）';
     case 'capacity':
       return fighter.hand.length >= CAPACITY_FULL_HAND ? `满匣 +${CAPACITY_BONUS}` : `满匣 ${fighter.hand.length}/${CAPACITY_FULL_HAND}`;
     case 'heart':
@@ -575,7 +580,7 @@ export default function ThrowTable({
   useEffect(() => {
     if (phase !== 'battle') return;
     const fresh = duel.events.filter((event) => event.id > soundCursor.current);
-    fresh.forEach((event) => sound.current?.event(event));
+    fresh.forEach((event) => sound.current?.event(event, duel.fighters[1].maxHp));
     soundCursor.current = duel.nextId - 1;
     if (duel.status === 'ended' && !resultSound.current) {
       resultSound.current = true;
@@ -700,6 +705,11 @@ export default function ThrowTable({
       : owned
         ? Object.fromEntries(Object.entries(book).filter(([key, id]) => owned.has(`${key}:${id}`)))
         : book;
+    // v6: a house floor is written for the classic 320 and scales with the performer's presence.
+    const playerCap = challenge?.presence?.[performer] ?? MAX_HP;
+    const terms = challenge?.terms;
+    const houseTerms =
+      terms?.hpFloor !== undefined ? { ...terms, hpFloor: Math.round((terms.hpFloor * playerCap) / MAX_HP) } : terms;
     const next = createThrowDuel(
       value,
       equipped,
@@ -710,8 +720,9 @@ export default function ThrowTable({
       { player: playerBook, enemy: challenge?.enemyBook },
       {
         enemyItems: challenge?.enemyItems,
-        terms: challenge?.terms,
+        terms: houseTerms,
         performers: { player: performer, enemy: challenge?.enemyPerformer ?? null },
+        presence: { player: playerCap, enemy: challenge?.enemyPresence ?? MAX_HP },
       },
     );
     soundCursor.current = next.nextId - 1;
@@ -801,9 +812,11 @@ export default function ThrowTable({
   // Curtain call (presentation): countdown, live rate, and how far the drop has fallen.
   const curtainIn = Math.max(0, (CURTAIN_MS - duel.tick * TICK_MS) / 1000);
   const curtainNow = curtainDamage(duel.tick);
+  /** v6: an unscouted opponent's style stays hidden in the prep screen. */
+  const styleHidden = Boolean(challenge?.intel && challenge.intel.fog !== 'open' && !challenge.intel.visible.includes('style'));
   const stagePhase = battlePhase(duel.tick);
   const advice = throwAdvice(player.items, duel.terms);
-  const audienceMoment = duel.events.filter((event) => deservesCheer(event) && duel.tick - event.tick < 30).at(-1);
+  const audienceMoment = duel.events.filter((event) => deservesCheer(event, duel.fighters[1].maxHp) && duel.tick - event.tick < 30).at(-1);
   const curtainFall = Math.min(1, Math.max(0, (duel.tick * TICK_MS - CURTAIN_MS) / 30000));
   const lastHits = duel.events.filter(
     (event) =>
@@ -827,7 +840,9 @@ export default function ThrowTable({
         layout: layout.map((entry) => ({ ...entry })),
         book: { ...book },
       },
-      duel.status === 'ended' ? { suits: [...enemy.tally.suits], kinds: [...enemy.tally.kinds] } : undefined,
+      duel.status === 'ended'
+        ? { suits: [...enemy.tally.suits], kinds: [...enemy.tally.kinds], performer: player.performer ?? 'eli' }
+        : undefined,
     );
   return (
     <main
@@ -882,7 +897,12 @@ export default function ThrowTable({
                   }}
                 >
                   {label}
-                  {value === 'enemy' && <small>{hostNames?.[1] ?? '练习对手'} · {PRESETS[enemyStyle].name}</small>}
+                  {value === 'enemy' && (
+                    <small>
+                      {hostNames?.[1] ?? '练习对手'} ·{' '}
+                      {styleHidden ? '？' : PRESETS[enemyStyle].name}
+                    </small>
+                  )}
                 </button>
               ))}
             </div>
@@ -896,6 +916,7 @@ export default function ThrowTable({
                 book={challenge?.enemyBook}
                 rule={challenge?.rule}
                 performer={challenge?.enemyPerformer}
+                intel={challenge?.intel}
                 tap={() => unlockSound().tap()}
               />
             ) : (
@@ -936,7 +957,7 @@ export default function ThrowTable({
                   <span className="tp-performer-line" title={`${PERFORMERS[performer].talent.text}　${PERFORMERS[performer].sleight.text}`}>
                     {PERFORMERS[performer].name.split('·')[0]}：{PERFORMERS[performer].talent.name} · {PERFORMERS[performer].sleight.name}
                   </span>
-                  {hostNames?.[1]} · {PRESETS[enemyStyle].name}
+                  {hostNames?.[1]} · {styleHidden ? '打法未知' : PRESETS[enemyStyle].name}
                   {challenge.rule && <em className="tp-house-rule">规矩：{challenge.rule}</em>}
                 </div>
               ) : (
@@ -1166,7 +1187,7 @@ export default function ThrowTable({
                   }
                 </p>
                 {duel.endReason === 'deadline' && <p className="tp-house-rule">时间到：没能在规定时间内获胜。</p>}
-                {duel.endReason === 'floor' && <p className="tp-house-rule">生命跌破了规矩定的底线。</p>}
+                {duel.endReason === 'floor' && <p className="tp-house-rule">气场跌破了规矩定的底线。</p>}
                 <p>
                   命中 {player.hits} 次 · 用时 {((duel.tick * TICK_MS) / 1000).toFixed(1)} 秒
                 </p>
@@ -1439,7 +1460,7 @@ export default function ThrowTable({
               <li><b>压轴</b>：顺子及以上命中会造成重创（5 秒内治疗六成）；一次出 5 张以上会吹灭自身灼烧，6 秒内不被点燃。</li>
               <li><b>落幕</b>：第 60 秒起剧院开始关门，双方每秒受到 1、2、3……递增的伤害。护盾照挡，治疗照抵——活得久，本身就是一种赢法。</li>
             </ul>
-            <p>道具占 1–3 格，相邻指边缘贴合，增幅向下取整；遗物只能带 1 件。万一撑到 120 秒还没分出胜负，比较剩余生命。对手出手前 1 秒会亮牌预告——这是他的礼貌，不是他的失误。</p>
+            <p>道具占 1–3 格，相邻指边缘贴合，增幅向下取整；遗物只能带 1 件。万一撑到 120 秒还没分出胜负，比较剩余气场。对手出手前 1 秒会亮牌预告——这是他的礼貌，不是他的失误。</p>
             <button className="tp-primary" onClick={() => setRules(false)}>
               知道了
             </button>

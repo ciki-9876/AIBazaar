@@ -1283,3 +1283,231 @@
   line-height: 18px;
   color: var(--bone);
 }
+
+/* v6 life (ADR-0059): the clock, presence, mood, lodging, meals, notices and intel. */
+.rg-header nav > .rg-clock {
+  gap: 10px;
+  padding-right: 4px;
+  font-size: 13px;
+  color: var(--bone-dim);
+  white-space: nowrap;
+}
+.rg-clock button {
+  height: 26px;
+  padding: 0 10px;
+  border: 1px solid rgba(201, 162, 90, 0.4);
+  border-radius: 999px;
+  background: none;
+  color: var(--bone);
+  font-size: 12px;
+}
+.rg-clock button:disabled {
+  opacity: 0.4;
+}
+.rg-troupe-list li.is-unavailable {
+  opacity: 0.7;
+}
+.rg-troupe-list strong .rg-troupe-status {
+  padding: 1px 8px;
+  border-radius: 999px;
+  background: rgba(200, 66, 58, 0.18);
+  color: #f0b3ac;
+}
+.rg-troupe-list .rg-presence b {
+  font: 600 15px var(--font-display);
+}
+.rg-mood {
+  font-style: normal;
+}
+.rg-mood.is-0,
+.rg-mood.is-1 {
+  color: #f0b3ac;
+}
+.rg-mood.is-3,
+.rg-mood.is-4 {
+  color: #b8e0c4;
+}
+.rg-life-actions,
+.rg-intel-sources {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 4px;
+}
+.rg-life-actions button,
+.rg-intel-sources button {
+  display: inline-grid;
+  gap: 1px;
+  height: auto;
+  min-height: 0;
+  padding: 6px 14px;
+  border-radius: 12px;
+  letter-spacing: 0.02em;
+  font-size: 13px;
+  text-align: left;
+}
+.rg-life-actions em,
+.rg-intel-sources em {
+  font: normal 11px var(--font-ui);
+  color: var(--bone-dim);
+}
+.rg-intel-sources small {
+  margin-left: 4px;
+  color: var(--limelight);
+}
+.rg-arrears {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 10px;
+  padding: 10px 12px;
+  border-radius: 8px;
+  background: rgba(200, 66, 58, 0.12);
+  font-size: 13px;
+  color: #f0d6d2;
+}
+.rg-arrears span {
+  flex: 1 1 220px;
+}
+.rg-lodgings {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.rg-lodgings li {
+  display: grid;
+  gap: 4px;
+  align-content: start;
+  padding: 10px 12px;
+  border-radius: 8px;
+  background: rgba(239, 231, 214, 0.04);
+  font-size: 13px;
+  line-height: 1.5;
+  color: #e3dccb;
+}
+.rg-lodgings li.is-here {
+  box-shadow: inset 0 0 0 1.5px var(--limelight);
+}
+.rg-lodgings strong {
+  font: 600 15px var(--font-cjk-serif);
+  color: var(--bone);
+}
+.rg-lodgings strong small {
+  margin-left: 8px;
+  font: 12px var(--font-ui);
+  color: var(--limelight);
+}
+.rg-lodgings b {
+  color: var(--limelight);
+}
+.rg-lodgings em {
+  font-size: 12px;
+  color: var(--bone-dim);
+}
+.rg-lodgings button {
+  justify-self: start;
+  margin-top: 4px;
+}
+.rg-meals {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 8px;
+}
+.rg-meals button {
+  display: grid;
+  gap: 2px;
+  padding: 10px 12px;
+  border: 1px solid rgba(201, 162, 90, 0.3);
+  border-radius: 8px;
+  background: rgba(239, 231, 214, 0.04);
+  color: var(--bone);
+  text-align: left;
+}
+.rg-meals button.is-chosen {
+  border-color: var(--limelight);
+  box-shadow: inset 0 0 0 1px var(--limelight);
+}
+.rg-meals small {
+  color: var(--limelight);
+  font-size: 12px;
+}
+.rg-meals em {
+  font: normal 12px var(--font-ui);
+  color: var(--bone-dim);
+}
+.rg-intel {
+  margin-bottom: 14px;
+}
+.rg-intel-card {
+  display: grid;
+  gap: 2px;
+  margin: 0 0 10px;
+  padding: 10px 12px;
+  border-radius: 8px;
+  background: rgba(247, 230, 176, 0.08);
+  font-size: 13px;
+  line-height: 1.6;
+  color: #e3dccb;
+}
+.rg-intel-card b {
+  color: var(--limelight);
+}
+.rg-rumour {
+  padding-left: 8px;
+  border-left: 2px dashed rgba(201, 162, 90, 0.5);
+}
+.rg-rumour.is-true {
+  border-left-style: solid;
+  border-left-color: var(--verdigris);
+}
+.rg-rumour.is-false {
+  border-left-color: #c8423a;
+  color: var(--bone-dim) !important;
+}
+.rg-notice ul {
+  display: grid;
+  gap: 6px;
+  margin: 0 0 16px;
+  padding: 0;
+  list-style: none;
+  font-size: 14px;
+  line-height: 1.6;
+  color: #e3dccb;
+}
+.rg-notice li.is-heading {
+  font: 600 17px var(--font-cjk-serif);
+  color: var(--limelight);
+}
+.rg-notice li.is-false {
+  color: #f0b3ac;
+}
+@media (max-width: 760px) {
+  .rg-header {
+    min-width: 0;
+  }
+  .rg-header nav {
+    min-width: 0;
+    overflow-x: auto;
+    scrollbar-width: none;
+  }
+  .rg-header nav > .rg-clock {
+    gap: 6px;
+    padding: 0 2px 0 6px;
+    font-size: 12px;
+  }
+  .rg-clock-week {
+    display: none;
+  }
+}
+
+.rg-life-actions button:disabled,
+.rg-intel-sources button:disabled,
+.rg-lodgings button:disabled,
+.rg-meals button:disabled {
+  opacity: 0.5;
+  cursor: default;
+}

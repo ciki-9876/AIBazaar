@@ -146,7 +146,7 @@ export class ThrowSound {
       this.rustle(0.09, 1900 + i * 240, 0.3, i * 0.045);
     this.tone(330, 0.22, 0.14, 0.1, 660);
   }
-  event(event: DuelEvent) {
+  event(event: DuelEvent, targetMaxHp?: number) {
     if (event.type === 'draw') {
       this.rustle(0.1, 2200, 0.23, 0, 1400);
       this.tone(700, 0.065, 0.06);
@@ -169,7 +169,7 @@ export class ThrowSound {
       this.tone(event.value >= 60 ? 98 : 150, 0.22, 0.65, 0, 42, 'triangle');
       this.rustle(0.13, 950, 0.5, 0, 350);
       this.tone(960, 0.11, 0.12, 0.025, 440);
-      if (deservesCheer(event)) this.audience('cheer');
+      if (deservesCheer(event, targetMaxHp)) this.audience('cheer');
     }
     if (event.type === 'heal' && event.value > 0) {
       this.tone(660, 0.25, 0.17);
