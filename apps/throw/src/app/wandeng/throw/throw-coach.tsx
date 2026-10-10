@@ -40,7 +40,7 @@ const SCRIPTS: Record<CoachScript, Step[]> = {
   lesson: [
     {
       id: 'hand',
-      text: '这些是你的手牌。每 3 秒自动多一张，攒满 10 张就停——跟里德的茶杯一样，满了就不再倒。',
+      text: '这些是你的手牌。每 6 秒发一轮，一轮两张；攒满 10 张就停——跟里德的茶杯一样，满了就不再倒。',
       target: 'hand',
       hold: true,
     },

@@ -174,7 +174,7 @@ test('adventure battles reuse real v6 combat and deterministic seeds, including 
       finishAdventureBattle(battle, battle.battle.id, duel.winner),
     );
   };
-  assert.equal(RULES_VERSION, 'throw-duel-v7');
+  assert.equal(RULES_VERSION, 'throw-duel-v8');
   assert.equal(battle.battle.enemyStyle, 'lesson');
   assert.equal(battle.battle.coach, 'lesson');
   const result = run();
