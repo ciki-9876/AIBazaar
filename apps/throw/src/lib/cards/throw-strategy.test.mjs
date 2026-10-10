@@ -135,8 +135,9 @@ test('dual adjacency amplifies both neighbours; suits drive the four condition i
   const gap = placeThrowItem(layout, 'quick', 9);
   assert.equal(previewThrow(hand, gap.map((p) => p.id), { layout: gap }).damage, 16);
   const mixed = cards([2, 3, 4, 5], [0, 1, 2, 3]);
-  assert.equal(previewThrow(mixed, ['ward']).shield, 14);
-  assert.equal(previewThrow(mixed, ['mend']).heal, 9);
+  // Full shield and healing lines, so the v9 splash tax stays out of this test.
+  assert.equal(previewThrow(mixed, ['ward', 'thorns', 'shieldbash']).shield, 12);
+  assert.equal(previewThrow(mixed, ['mend', 'wash', 'drain']).heal, 9);
   assert.equal(previewThrow(mixed, ['poison']).poison, 3);
   assert.equal(previewThrow(mixed, ['cinder']).burn, 3);
   assert.equal(previewThrow(cards([2]), ['draw'], { throws: 2 }).draw, 0);
@@ -181,13 +182,14 @@ test('scorched healing: burning or wounded fighters receive 60% of a heal', () =
   state.fighters[0].hp = 200;
   state.fighters[0].burn = 5;
   state = launchThrow(state, 0, ((state.fighters[0].hand = cards([2, 3], [1, 1])), ['proof:0', 'proof:1']));
-  assert.equal(state.fighters[0].hp, 200 - 4 + Math.floor(18 * 0.6)); // scorch 4 (v8) then 60% of 18
+  // A lone lamp is halved by the v9 splash tax (18 -> 9), then scorched to 60%.
+  assert.equal(state.fighters[0].hp, 200 - 4 + Math.floor(9 * 0.6)); // scorch 4 (v8) then 60% of 9
   state = idle(['mend']);
   state.fighters[0].hp = 200;
   state.fighters[0].woundUntil = 100;
   state.fighters[0].hand = cards([2], [1]);
   state = launchThrow(state, 0, ['proof:0']);
-  assert.equal(state.fighters[0].hp, 205);
+  assert.equal(state.fighters[0].hp, 200 + Math.floor(Math.floor(9 / 2) * 0.6));
 });
 test('cleansing: every heal removes poison equal to half its nominal amount, even at full life', () => {
   let state = idle(['mend']);
@@ -195,8 +197,9 @@ test('cleansing: every heal removes poison equal to half its nominal amount, eve
   state.fighters[0].hand = cards([2, 3], [1, 1]);
   state = launchThrow(state, 0, ['proof:0', 'proof:1']);
   assert.equal(state.fighters[0].hp, MAX_HP);
-  assert.equal(state.fighters[0].poison, 11);
-  assert.ok(state.events.some((event) => event.text === '净化剧毒' && event.value === 9));
+  // A lone lamp heals 9 (halved by the splash tax); the cleanse is half of that, rounded up.
+  assert.equal(state.fighters[0].poison, 15);
+  assert.ok(state.events.some((event) => event.text === '净化剧毒' && event.value === 5));
 });
 test('smother: shields halve fresh flames on contact and soak ticks without letting them reach the body', () => {
   let state = idle(['cinder']);
@@ -303,7 +306,7 @@ test('reactive kit: the heart blanket patches single hits and keeps spilled heal
   state.fighters[0].hand = cards([5, 6], [1, 1]);
   state = launchThrow(state, 0, ['proof:0', 'proof:1']);
   assert.equal(state.fighters[0].hp, MAX_HP);
-  assert.equal(state.fighters[0].shield, 7, '18 healing, 4 needed: half of the 14 spilled becomes shield');
+  assert.equal(state.fighters[0].shield, 2, 'lone lamp heals 9 (splash tax), 4 needed: half of the 5 spilled becomes shield');
   state = idle();
   state.fighters[1].items = ['thorns'];
   state.fighters[1].layout = packThrowItems(['thorns']);
@@ -362,11 +365,16 @@ test('the brass mirror reflects big batches harder and the double letterbox pays
   assert.equal(previewThrow([full[0]], [], context(full)).relicBonus, 8);
 });
 test('lifesteal measures actual HP loss, while penetration bypasses only its stated share', () => {
-  let state = idle(['drain']);
+  let state = idle(['mend', 'wash', 'drain']);
   state.fighters[0].hp = 300;
   state.fighters[1].hp = 5;
   state = hit(state, cards([14]));
   assert.equal(state.fighters[0].hp, 301);
+  state = idle(['drain']);
+  state.fighters[0].hp = 300;
+  state.fighters[1].hp = 8;
+  state = hit(state, cards([14]));
+  assert.equal(state.fighters[0].hp, 300, 'a lone teapot drains 12%: 8 lost life rounds down to nothing');
   state = idle(['needle']);
   state.fighters[1].shield = 100;
   state = hit(state, cards([10]));
@@ -378,7 +386,13 @@ test('growth affects following throws and slow refresh pauses the draw clock wit
   state.fighters[0].power = 29;
   state.fighters[0].hand = cards([2], [2]);
   state = launchThrow(state, 0, ['proof:0']);
-  assert.equal(state.shots[0].damage, 31);
+  assert.equal(state.fighters[0].power, 29, 'v9: a single card no longer feeds the music box');
+  state = idle(['growth']);
+  state.fighters[0].lastSuit = 2;
+  state.fighters[0].power = 29;
+  state.fighters[0].hand = cards([2, 3], [2, 2]);
+  state = launchThrow(state, 0, ['proof:0', 'proof:1']);
+  assert.equal(state.shots[0].damage, 5 + 29);
   assert.equal(state.fighters[0].power, 30);
   state = idle(['slow']);
   state.fighters[0].hand = cards([2, 3], [2, 2]);

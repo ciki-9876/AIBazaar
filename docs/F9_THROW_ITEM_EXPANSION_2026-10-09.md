@@ -2,6 +2,8 @@
 
 日期：2026-10-09。**状态：提案，未实装。** 数值都是初值，上线前必须过平衡矩阵（见[开发手册 08](./throw-handbook/08-balance-and-simulation.md)）。
 
+> 2026-10-10 更新：第 8 节「专精回报」已部分落实，见 [ADR-0056](./design-log/decisions/ADR-0056-throw-v9-build-space.md)。亮片马甲（2 格，+25%）和定制燕尾服（改为 2 格，+20%）已经在第二幕霍布斯旧货铺上架；剪裁尺尚未实装。构筑空间审计工具为 `apps/throw/tools/build-audit.mjs`。本文其余内容仍是提案。
+
 相关：[30 小时大纲](./F9_THROW_STORY_OUTLINE_30H_2026-10-09.md) · [卡组平衡 v4/v5](./F9_THROW_DECK_BALANCE_V4_2026-10-09.md) · [牌的变种](./F9_THROW_CARD_VARIANTS_2026-10-09.md) · [第二幕落地](./F9_THROW_ACT2_BRIDGEPORT_2026-10-09.md)
 
 ---

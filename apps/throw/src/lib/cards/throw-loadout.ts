@@ -111,7 +111,7 @@ export const ITEMS = [
     tag: '护盾',
     size: 2,
     family: 'shield',
-    text: '对子、两对或葫芦：护盾 +30。',
+    text: '对子、两对或葫芦：护盾 +26。巡演箱里护盾道具不足 3 件时，效果减半。',
     quip: '补丁比伞布多。英国天气面前，它从未缺席。',
   },
   {
@@ -120,7 +120,7 @@ export const ITEMS = [
     tag: '黑桃',
     size: 2,
     family: 'shield',
-    text: '每张♠：护盾 +14。',
+    text: '每张♠：护盾 +12。巡演箱里护盾道具不足 3 件时，效果减半。',
     quip: '又暖又厚，还能挡飞来的扑克牌。祖母的手艺。',
   },
   {
@@ -204,7 +204,7 @@ export const ITEMS = [
     tag: '治疗',
     size: 2,
     family: 'heal',
-    text: '每张♥：治疗 9。',
+    text: '每张♥：治疗 9。巡演箱里治疗道具不足 3 件时，效果减半。',
     quip: '一盏灯，一杯茶，一切都会好起来的。大概。',
   },
   {
@@ -222,7 +222,7 @@ export const ITEMS = [
     tag: '吸血',
     size: 2,
     family: 'heal',
-    text: '本批直伤造成的生命损失，25% 转为治疗。',
+    text: '本批直伤造成的生命损失，25% 转为治疗。巡演箱里治疗道具不足 3 件时，效果减半。',
     quip: '别人的苦，是你的甜。这话在茶馆里说比较安全。',
   },
   {
@@ -231,8 +231,27 @@ export const ITEMS = [
     tag: '成长',
     size: 2,
     family: 'damage',
-    text: '连续两次均为同一纯花色：力量 +3（之后每批直伤 +力量，上限 30）。',
+    text: '出 ≥2 张同一纯花色，且与上次出手花色相同：力量 +3（之后每批直伤 +力量，上限 30）。',
     quip: '同一首曲子听第三遍，它就开始自信了。',
+  },
+  // ── Costumes: specialisation pays (v9) ──
+  {
+    id: 'sequin',
+    name: '亮片马甲',
+    tag: '专精',
+    size: 2,
+    family: 'utility',
+    text: '巡演箱里除辅助道具外只有 1 个家族：该家族道具的效果 +25%。',
+    quip: '一千片亮片，只为一个方向闪。',
+  },
+  {
+    id: 'tailcoat',
+    name: '定制燕尾服',
+    tag: '双修',
+    size: 2,
+    family: 'utility',
+    text: '巡演箱里除辅助道具外恰好 2 个家族：这两个家族道具的效果各 +20%。',
+    quip: '左边口袋装火柴，右边口袋装手帕。裁缝说这叫平衡。',
   },
 ] as const satisfies readonly {
   id: string;

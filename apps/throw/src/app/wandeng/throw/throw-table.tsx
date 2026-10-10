@@ -24,6 +24,7 @@ import {
   drawInterval,
   DEAL_SIZE,
   SCORCH_PER_THROW,
+  SPLASH_MIN_ITEMS,
   handLimit,
   ITEMS,
   launchThrow,
@@ -1307,6 +1308,7 @@ export default function ThrowTable({
               ))}
             </div>
             <p>J=11、Q=12、K=13、A=14，A 也能接 2。顺子和同花从 3 张起成型；3／4 张组合的额外牌型加成按张数／5 缩放。最强的组合吃倍率，其余牌按点数算。所有人都能按点数、花色排序或收拢选牌，每次有效整理后冷却 20 秒。</p>
+            <p>护盾、治疗道具要在巡演箱里凑满 {SPLASH_MIN_ITEMS} 件才全力发挥，不足时效果减半；亮片马甲、定制燕尾服奖励只走一两条路线的巡演箱。</p>
             <h3>四种花色，四种状态</h3>
             <p>♠ 护盾 · ♥ 治疗 · ♣ 剧毒 · ♦ 灼烧——具体由你巡演箱里的道具决定。</p>
             <ul className="tp-counter-rules">

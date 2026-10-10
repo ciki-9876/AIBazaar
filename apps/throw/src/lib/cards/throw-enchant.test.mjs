@@ -108,9 +108,11 @@ test('wild cards complete a flush; resonant cards count several times for per-su
   assert.equal(scorePoker([...four, card(4, 0, 'wild')]).kind, 5);
   assert.equal(scorePoker([...four, card(4, 0, 'wild')]).comboIds.length, 5);
   assert.equal(scorePoker([...four, card(13, 2, 'LCK')]).kind, 5);
-  assert.equal(previewThrow([card(2, 1)], ['mend']).heal, 9);
-  assert.equal(previewThrow([card(2, 1, 'resonant')], ['mend']).heal, 18);
-  assert.equal(previewThrow([card(2, 1, 'LH2')], ['mend']).heal, 27);
+  // A full healing line (three items), so the v9 splash tax does not halve the lamp.
+  const healers = ['mend', 'wash', 'drain'];
+  assert.equal(previewThrow([card(2, 1)], healers).heal, 9);
+  assert.equal(previewThrow([card(2, 1, 'resonant')], healers).heal, 18);
+  assert.equal(previewThrow([card(2, 1, 'LH2')], healers).heal, 27);
 });
 
 test('legendary effects read the real duel: curtain, opponent statuses and your own poison', () => {

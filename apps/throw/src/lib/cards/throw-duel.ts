@@ -20,6 +20,7 @@ import {
   type RelicId,
   type Style,
   type ItemPlacement,
+  type Family,
 } from './throw-loadout.ts';
 export { ITEMS, RELICS, PRESETS, BAG_CELLS };
 export type { ItemId, RelicId, Style, ItemPlacement };
@@ -36,7 +37,7 @@ export const TICK_MS = 50,
  * rewards, sorting is a shared action and draws accelerate by battle phase.
  * Deck streams are unchanged from v3.
  */
-export const RULES_VERSION = 'throw-duel-v8';
+export const RULES_VERSION = 'throw-duel-v9';
 /**
  * v7 relic pass (ADR-0053), on top of the v6 tempo: relics change a rule
  * rather than add a number, and none is generically best. Relay stops drawing
@@ -497,7 +498,7 @@ function itemEffects(
   const single = cards.length === 1;
   switch (id) {
     case 'quick':
-      return single ? [{ name: '轻巧飞掷', kind: 'damage', value: 8 }] : [];
+      return single ? [{ name: '轻巧飞掷', kind: 'damage', value: QUICK_BONUS }] : [];
     case 'tempo':
       return pureSuit !== null &&
         context.lastSuit != null &&
@@ -530,12 +531,12 @@ function itemEffects(
         : [];
     case 'umbrella':
       return PAIRISH.includes(kind)
-        ? [{ name: '补丁护心', kind: 'shield', value: 30 }]
+        ? [{ name: '补丁护心', kind: 'shield', value: UMBRELLA_SHIELD }]
         : [];
     case 'ward': {
       const spades = count(cards, 0);
       return spades
-        ? [{ name: '守灯结界', kind: 'shield', value: spades * 14 }]
+        ? [{ name: '守灯结界', kind: 'shield', value: spades * WARD_PER_SPADE }]
         : [];
     }
     case 'shieldbash':
@@ -571,7 +572,7 @@ function itemEffects(
     case 'mend': {
       const hearts = count(cards, 1);
       return hearts
-        ? [{ name: '灯火回暖', kind: 'heal', value: hearts * 9 }]
+        ? [{ name: '灯火回暖', kind: 'heal', value: hearts * MEND_PER_HEART }]
         : [];
     }
     case 'wash':
@@ -579,9 +580,9 @@ function itemEffects(
         ? [{ name: '清露净化', kind: 'cleanse', value: 4 }]
         : [];
     case 'drain':
-      return [{ name: '回甘汲取', kind: 'leech', value: 25 }];
+      return [{ name: '回甘汲取', kind: 'leech', value: DRAIN_RATE }];
     case 'growth':
-      return pureSuit !== null && context.lastSuit === pureSuit
+      return pureSuit !== null && cards.length >= GROWTH_MIN_CARDS && context.lastSuit === pureSuit
         ? [{ name: '续曲生长', kind: 'growth', value: 3 }]
         : [];
     default:
@@ -589,6 +590,39 @@ function itemEffects(
   }
 }
 const AMPLIFIED: EffectKind[] = ['damage', 'burn', 'poison', 'shield', 'heal'];
+/** Shield and healing engines (v8: 30 / 14 / 9 / 25%). */
+export const UMBRELLA_SHIELD = 26;
+export const WARD_PER_SPADE = 12;
+export const MEND_PER_HEART = 9;
+export const DRAIN_RATE = 25;
+/** 飞牌修缮箱's bonus per single card (v8: 8). */
+export const QUICK_BONUS = 8;
+/** v9: a single card is trivially "pure suit"; the music box needs a real flush-run. */
+export const GROWTH_MIN_CARDS = 2;
+/**
+ * v9 splash tax: shield and healing items work at half strength unless the
+ * trunk carries at least SPLASH_MIN_ITEMS items of that family.
+ */
+export const SPLASH_FAMILIES: readonly Family[] = ['shield', 'heal'];
+export const SPLASH_MIN_ITEMS = 3;
+const SPLASH_KINDS: EffectKind[] = ['shield', 'heal', 'leech'];
+export function splashed(items: readonly ItemId[], id: ItemId) {
+  const family = itemDefinition(id).family;
+  return SPLASH_MIN_ITEMS > 0 && SPLASH_FAMILIES.includes(family) &&
+    items.filter((other) => itemDefinition(other).family === family).length < SPLASH_MIN_ITEMS;
+}
+/** v9 costumes: specialisation pays. Utility items never count as a family. */
+export const SEQUIN_RATE = 25;
+export const TAILCOAT_RATE = 20;
+export function trunkFamilies(items: readonly ItemId[]) {
+  return new Set(items.map((id) => itemDefinition(id).family).filter((family) => family !== 'utility'));
+}
+export function costumeRate(items: readonly ItemId[]) {
+  const families = trunkFamilies(items).size;
+  if (items.includes('sequin') && families === 1) return { id: 'sequin' as const, rate: SEQUIN_RATE };
+  if (items.includes('tailcoat') && families === 2) return { id: 'tailcoat' as const, rate: TAILCOAT_RATE };
+  return null;
+}
 export function previewThrow(
   cards: PlayingCard[],
   items: readonly ItemId[],
@@ -603,10 +637,12 @@ export function previewThrow(
       ? cards[0].suit
       : null;
   const links = new Map<ItemId, number>();
+  const costume = costumeRate(items);
   if (cards.length)
     for (const id of items)
       for (const raw of itemEffects(id, cards, poker.kind, context, pureSuit, poker.comboIds.length)) {
-        let amount = raw.value;
+        let amount = SPLASH_KINDS.includes(raw.kind) && splashed(items, id) ? Math.floor(raw.value / 2) : raw.value;
+        const base = amount;
         if (AMPLIFIED.includes(raw.kind))
           for (const neighbor of neighbors(id)) {
             let rate = 0;
@@ -614,12 +650,19 @@ export function previewThrow(
             if (neighbor.id === 'venom' && raw.kind === 'poison') rate = 50;
             if (neighbor.id === 'compass' && neighbors('compass').length === 2)
               rate = 25;
-            const gain = Math.floor((raw.value * rate) / 100);
+            const gain = Math.floor((base * rate) / 100);
             if (gain) {
               amount += gain;
               links.set(neighbor.id, (links.get(neighbor.id) ?? 0) + gain);
             }
           }
+        if (costume && AMPLIFIED.includes(raw.kind) && itemDefinition(id).family !== 'utility') {
+          const gain = Math.floor((base * costume.rate) / 100);
+          if (gain) {
+            amount += gain;
+            links.set(costume.id, (links.get(costume.id) ?? 0) + gain);
+          }
+        }
         if (id === 'thorns') continue;
         effects.push({ source: `item:${id}`, name: raw.name, value: amount, kind: raw.kind });
       }
@@ -651,7 +694,7 @@ export function previewThrow(
   for (const [id, gain] of links)
     effects.push({
       source: `item:${id}`,
-      name: id === 'bellows' ? '鼓火相邻' : id === 'venom' ? '浸露相邻' : '联灯双邻',
+      name: id === 'bellows' ? '鼓火相邻' : id === 'venom' ? '浸露相邻' : id === 'sequin' ? '亮片专精' : id === 'tailcoat' ? '燕尾双修' : '联灯双邻',
       value: gain,
       kind: 'link',
     });

@@ -9,6 +9,8 @@ import {
   MAX_HP,
   PRESETS,
   previewThrow,
+  SPLASH_MIN_ITEMS,
+  WARD_PER_SPADE,
   RULES_VERSION,
   stepThrowDuel,
   handLimit,
@@ -181,7 +183,7 @@ test('straights, flushes and straight flushes start at three cards, including Ac
   }
 });
 test('phase boundaries drive deal rounds and carry elapsed progress into the faster interval', () => {
-  assert.equal(RULES_VERSION, 'throw-duel-v8');
+  assert.equal(RULES_VERSION, 'throw-duel-v9');
   assert.equal(DEAL_SIZE, 2);
   assert.equal(battlePhase(600), 'opening');
   assert.equal(battlePhase(601), 'heated');
@@ -375,4 +377,30 @@ test('AI publishes an intent for one second before launching its actual cards', 
     state.shots[0].cards.map((card) => card.uid),
     intent,
   );
+});
+test('costumes reward narrow trunks: sequin for one family, tailcoat for exactly two; utility never counts', () => {
+  const spade = cards([5], [0]);
+  const shields = ['ward', 'thorns', 'umbrella'];
+  assert.equal(previewThrow(spade, shields).shield, WARD_PER_SPADE);
+  assert.equal(previewThrow(spade, [...shields, 'sequin']).shield, 15, 'one family: +25% of 12');
+  assert.equal(previewThrow(spade, [...shields, 'sequin', 'draw']).shield, 15, 'utility items are not a family');
+  assert.equal(previewThrow(spade, [...shields, 'sequin', 'quick']).shield, 12, 'two families: the vest is idle');
+  const coat = previewThrow(spade, [...shields, 'quick', 'tailcoat']);
+  assert.equal(coat.shield, 14, 'two families: +20% of 12');
+  assert.equal(coat.damage, 5 + 8 + 1, '+20% of the 8 from the repair kit');
+  assert.ok(coat.effects.some((effect) => effect.kind === 'link' && effect.name === '燕尾双修' && effect.value === 3));
+  assert.equal(previewThrow(spade, [...shields, 'quick', 'wash', 'tailcoat']).shield, 12, 'three families: the coat is idle');
+});
+test('splash tax: shield and healing items are halved below three items of their family', () => {
+  const spade = cards([5], [0]),
+    heart = cards([5], [1]);
+  assert.equal(SPLASH_MIN_ITEMS, 3);
+  assert.equal(previewThrow(spade, ['ward']).shield, 6);
+  assert.equal(previewThrow(spade, ['ward', 'thorns']).shield, 6);
+  assert.equal(previewThrow(spade, ['ward', 'thorns', 'umbrella']).shield, 12);
+  assert.equal(previewThrow(heart, ['mend']).heal, 4);
+  assert.equal(previewThrow(heart, ['mend', 'wash', 'drain']).heal, 9);
+  assert.equal(previewThrow(spade, ['quick']).damage, 5 + 8, 'other families are never taxed');
+  assert.equal(previewThrow(cards([5, 6], [2, 2]), ['growth'], { lastSuit: 2 }).growth, 3);
+  assert.equal(previewThrow(cards([5], [2]), ['growth'], { lastSuit: 2 }).growth, 0, 'a single card is not a run');
 });
