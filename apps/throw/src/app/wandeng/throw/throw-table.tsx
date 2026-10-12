@@ -58,7 +58,7 @@ import {
   type ThrowFighter,
   type TriggerEffect,
 } from '../../../lib/cards/throw-duel';
-import { clickThrowSelection } from '../../../lib/cards/throw-selection';
+import { boxThrowSelection, clickThrowSelection } from '../../../lib/cards/throw-selection';
 import { enchantOf, RARITY_NAMES, type DeckBook } from '../../../lib/cards/throw-enchant';
 import { bookCounts, DeckCase } from './throw-deckcase';
 import {
@@ -83,11 +83,11 @@ import { CoachCard, useCoach } from './throw-coach';
 import type { CoachScript } from '../../../lib/adventure/magician-world';
 import { COMPETITIVE_STYLES } from '../../../lib/cards/throw-loadout';
 
-type Session = { duel: ThrowDuel; selected: string[]; flights: VisualShot[] };
+type Session = { duel: ThrowDuel; selected: string[]; flights: VisualShot[]; capped?: boolean };
 type Action =
   | { type: 'tick'; count: number; geometry: TableGeometry }
   | { type: 'click'; uid: string }
-  | { type: 'box'; ids: string[] }
+  | { type: 'box'; ids: string[]; fresh: boolean }
   | { type: 'clear' }
   | { type: 'launch'; geometry: TableGeometry }
   | { type: 'arrange'; mode: 'rank' | 'suit' | 'gather' }
@@ -97,19 +97,17 @@ type Action =
 function reducer(state: Session, action: Action): Session {
   if (action.type === 'start')
     return { duel: action.duel, selected: [], flights: [] };
-  if (action.type === 'clear') return { ...state, selected: [] };
+  if (action.type === 'clear') return { ...state, selected: [], capped: false };
   if (action.type === 'click')
     return {
       ...state,
       selected: clickThrowSelection(state.selected, action.uid),
+      capped: false,
     };
-  if (action.type === 'box')
-    return {
-      ...state,
-      selected: action.ids.filter((id) =>
-        state.duel.fighters[0].hand.some((card) => card.uid === id),
-      ),
-    };
+  if (action.type === 'box') {
+    const inHand = action.ids.filter((id) => state.duel.fighters[0].hand.some((card) => card.uid === id));
+    return { ...state, ...boxThrowSelection(state.selected, inHand, action.fresh) };
+  }
   if (action.type === 'arrange')
     return {
       ...state,
@@ -135,6 +133,7 @@ function reducer(state: Session, action: Action): Session {
     duel,
     flights,
     selected: action.type === 'launch' ? [] : state.selected,
+    capped: action.type === 'launch' ? false : state.capped,
   };
 }
 function PokerCard({
@@ -370,6 +369,8 @@ type Gesture = {
   x: number;
   y: number;
   moved: boolean;
+  /** Set after the first box dispatch, so later moves keep what the box already holds. */
+  boxing?: boolean;
   rects: {
     uid: string;
     left: number;
@@ -796,6 +797,8 @@ export default function ThrowTable({
       width: right - left,
       height: bottom - top,
     });
+    // Nearest the drag's start first, so a box that grows past five keeps the first five it met.
+    const centre = (rect: { left: number; right: number }) => Math.abs((rect.left + rect.right) / 2 - current.x);
     const ids = current.rects
       .filter(
         (rect) =>
@@ -804,8 +807,10 @@ export default function ThrowTable({
           rect.bottom >= top &&
           rect.top <= bottom,
       )
+      .sort((a, b) => centre(a) - centre(b))
       .map((rect) => rect.uid);
-    dispatch({ type: 'box', ids });
+    dispatch({ type: 'box', ids, fresh: !current.boxing });
+    current.boxing = true;
   };
   const pointerEnd = () => {
     suppressClick.current = Boolean(gesture.current?.moved);
@@ -1329,6 +1334,9 @@ export default function ThrowTable({
               >
                 {player.hand.map((card) => (
                   <div className="tp-hand-slot" key={card.uid}>
+                    {session.capped && card.uid === player.hand.find((entry) => selected.includes(entry.uid))?.uid && (
+                      <span className="tp-cap-hint" role="status">单次最多选择 {MAX_THROW} 张牌</span>
+                    )}
                     <PokerCard
                       card={card}
                       selected={selected.includes(card.uid)}

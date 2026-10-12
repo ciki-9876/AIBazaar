@@ -22,9 +22,12 @@ export const HAND_NAMES = [
   "四条",
   "同花顺",
 ] as const;
-// Tentative game multipliers; poker supplies combinations, not damage rules.
+// Game multipliers; poker supplies combinations, not damage rules.
+// v12: the four five-card hands (straight, flush, full house, straight flush)
+// pay 2.5× their v5 multipliers (220/250/280/400 → 550/625/700/1000), so a
+// hand that needs all five cards is worth assembling (ADR-0060).
 export const MULTIPLIERS = [
-  100, 150, 170, 180, 220, 250, 280, 320, 400,
+  100, 150, 170, 180, 550, 625, 700, 320, 1000,
 ] as const;
 /**
  * v12 (ADR-0060): Texas hold'em hands. A throw holds at most five cards, and

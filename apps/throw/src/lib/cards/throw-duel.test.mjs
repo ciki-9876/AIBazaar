@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { scorePoker } from './throw-poker.ts';
+import { scorePoker, MULTIPLIERS } from './throw-poker.ts';
 import {
   createThrowDuel,
   drawInterval,
@@ -226,7 +226,9 @@ test('phase boundaries drive deal rounds and carry elapsed progress into the fas
   }
 });
 test('v12 combination items pay a flat reward for a full five-card hand only', () => {
-  assert.equal(scorePoker(cards([2, 3, 4, 5, 6])).multiplier, 220);
+  // v12: five-card hands pay 2.5x their v5 multipliers (straight 220% -> 550%).
+  assert.equal(scorePoker(cards([2, 3, 4, 5, 6])).multiplier, 550);
+  assert.deepEqual([4, 5, 6, 8].map((kind) => MULTIPLIERS[kind]), [550, 625, 700, 1000]);
   assert.equal(previewThrow(cards([2, 3, 4, 5, 6]), ['sequence']).itemBonus, 36);
   assert.equal(previewThrow(cards([2, 3, 4]), ['sequence']).itemBonus, 0);
   assert.equal(previewThrow(cards([2, 5, 9, 11, 13], [1, 1, 1, 1, 1]), ['suit']).itemBonus, 30);
@@ -243,20 +245,21 @@ test('default sort no-ops never consume cooldown or change the seeded draw strea
   const reordered = reorderThrow(original, 0, original.fighters[0].hand[0].uid, 4);
   assert.deepEqual(run(original, 60).fighters[0].pile, run(reordered, 60).fighters[0].pile);
 });
-test('ten-card batch awards only its strongest combination; leftovers stay base damage', () => {
-  const score = scorePoker(
-    cards([2, 3, 4, 5, 6, 9, 9, 10, 12, 13], [0, 0, 0, 0, 0, 1, 2, 1, 2, 3]),
-  );
-  assert.equal(score.kind, 8);
-  assert.equal(score.comboIds.length, 5);
-  assert.equal(score.damage, score.base + 60);
+test('a five-card straight flush pays ten times its points; a pair in a five-card throw leaves the rest as base damage', () => {
+  const flush = scorePoker(cards([2, 3, 4, 5, 6], [0, 0, 0, 0, 0]));
+  assert.equal(flush.kind, 8);
+  assert.equal(flush.comboIds.length, 5);
+  assert.equal(flush.damage, 20 * 10);
+  const pair = scorePoker(cards([9, 9, 2, 5, 12], [1, 2, 0, 3, 1]));
+  assert.equal(pair.kind, 1);
+  assert.equal(pair.damage, pair.base + 9);
 });
 test('items affect actual preview, use ten cells and cannot stack', () => {
   assert.equal(previewThrow(cards([2]), ['quick']).damage, 10);
   assert.equal(previewThrow(cards([2, 2]), ['pair']).damage, 16);
   assert.equal(
     previewThrow(cards([2, 3, 4, 5, 6]), ['sequence', 'mend']).damage,
-    80,
+    20 + 90 + 36, // points, straight bonus at 550%, fan +36
   );
   assert.equal(drawInterval(['draw']), 120);
   assert.throws(() => createThrowDuel(1, ['quick', 'quick']));
@@ -408,4 +411,15 @@ test('splash tax: shield and healing items are halved below three items of their
   assert.equal(previewThrow(spade, ['quick']).damage, 5 + 8, 'other families are never taxed');
   assert.equal(previewThrow(cards([5, 6], [2, 2]), ['growth'], { lastSuit: 2 }).growth, 3);
   assert.equal(previewThrow(cards([5], [2]), ['growth'], { lastSuit: 2 }).growth, 0, 'a single card is not a run');
+});
+test('a box selection keeps the first five cards it meets and reports the cap', async () => {
+  const { boxThrowSelection } = await import('./throw-selection.ts');
+  const ids = ['a', 'b', 'c', 'd', 'e', 'f', 'g'];
+  assert.deepEqual(boxThrowSelection(['x'], ids.slice(0, 3), true), { selected: ['a', 'b', 'c'], capped: false });
+  const five = boxThrowSelection([], ids.slice(0, 5), false);
+  assert.deepEqual(five, { selected: ['a', 'b', 'c', 'd', 'e'], capped: false });
+  // The box grows to seven cards: the five it already held stay, the newcomers are ignored.
+  assert.deepEqual(boxThrowSelection(five.selected, ['f', 'g', 'a', 'b', 'c', 'd', 'e'], false), { selected: ['a', 'b', 'c', 'd', 'e'], capped: true });
+  // Shrinking the box drops what it no longer covers and makes room again.
+  assert.deepEqual(boxThrowSelection(five.selected, ['a', 'b', 'f'], false), { selected: ['a', 'b', 'f'], capped: false });
 });
