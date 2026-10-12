@@ -1,45 +1,37 @@
-import { ACTS, BATTLES, CHARACTERS, MAPS, SHOWS } from './magician-world.ts';
-import { ITEMS, RELICS } from '../cards/throw-loadout.ts';
-
-/** Authored proper nouns and task terms. Matching never interprets dialogue as HTML. */
-export const DIALOGUE_TERMS: readonly string[] = [...new Set([
-  ...Object.entries(CHARACTERS).filter(([id]) => id !== 'narrator').map(([, character]) => character.name),
-  ...Object.values(MAPS).map((map) => map.name),
-  ...Object.values(MAPS).flatMap((map) => map.hotspots.map((spot) => spot.label)),
-  ...Object.values(BATTLES).map((battle) => battle.title),
-  ...ACTS.map((act) => act.title),
-  ...SHOWS.map((show) => show.title),
-  ...ITEMS.map((item) => item.name),
-  ...RELICS.map((relic) => relic.name),
-  '伊莱', '里德先生', '里德', '米娅', '菲利克斯', '朱诺', '霍布斯',
-  '艾达', '比阿', '普赖斯姐妹', '斯坦', '多德太太', '多丽丝', '佩蒂格鲁',
-  '艾格尼丝', '罗茜', '巴兹尔', '派克警长',
-  '旧剧院街', '集市街', '醉鹅', '桥头', '醉鹅地窖', '剧院侧幕',
-  '韦斯特港', '奥罗拉', '世界大剧院',
-  '第一张参赛证', '参赛证', '邀请函', '第一课', '巡回赛',
-  '布里奇波特公开赛', '公开赛小组赛', '世界冠军赛', '街头演出',
-  '早场', '决赛', '主厅', '三件旧物',
-  '火怕盾', '闷火',
-])].filter((term) => term.length > 1).sort((a, b) => b.length - a.length || (a < b ? -1 : a > b ? 1 : 0));
+/**
+ * Dialogue emphasis is authored, not guessed (ADR-0060): the writer marks the
+ * names, places and quest terms that matter in a line with 【】, e.g.
+ * 「去【抒情剧院】找【菲利克斯】。」 The brackets never reach the screen.
+ * An unmatched bracket stays literal, and nothing is ever parsed as HTML.
+ */
+export const MARK_OPEN = '【';
+export const MARK_CLOSE = '】';
+/** More than this many marks in one line and nothing stands out any more. */
+export const MAX_MARKS_PER_LINE = 3;
 
 export type DialogueToken = { text: string; important: boolean };
 
-/** Longest term wins; adjacent ordinary text stays one readable run. */
-export function dialogueTokens(text: string, terms: readonly string[] = DIALOGUE_TERMS): DialogueToken[] {
-  const dictionary = [...new Set(terms)].filter(Boolean).sort((a, b) => b.length - a.length);
+export function dialogueTokens(text: string): DialogueToken[] {
   const tokens: DialogueToken[] = [];
   let plain = '';
-  for (let index = 0; index < text.length;) {
-    const term = dictionary.find((entry) => text.startsWith(entry, index));
-    if (!term) {
-      plain += text[index++];
+  for (let index = 0; index < text.length; ) {
+    const open = text.indexOf(MARK_OPEN, index);
+    const close = open < 0 ? -1 : text.indexOf(MARK_CLOSE, open + 1);
+    const nested = close < 0 ? -1 : text.indexOf(MARK_OPEN, open + 1);
+    if (open < 0 || close < 0 || close === open + 1 || (nested >= 0 && nested < close)) {
+      plain += text.slice(index, open < 0 || close < 0 ? text.length : open + 1);
+      index = open < 0 || close < 0 ? text.length : open + 1;
       continue;
     }
+    plain += text.slice(index, open);
     if (plain) tokens.push({ text: plain, important: false });
     plain = '';
-    tokens.push({ text: term, important: true });
-    index += term.length;
+    tokens.push({ text: text.slice(open + 1, close), important: true });
+    index = close + 1;
   }
   if (plain) tokens.push({ text: plain, important: false });
   return tokens;
 }
+
+/** The line as it reads on screen, without emphasis marks. */
+export const plainText = (text: string) => dialogueTokens(text).map((token) => token.text).join('');

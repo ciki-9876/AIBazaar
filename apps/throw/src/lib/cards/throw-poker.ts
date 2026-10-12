@@ -22,13 +22,19 @@ export const HAND_NAMES = [
   "四条",
   "同花顺",
 ] as const;
-// Tentative game multipliers; poker supplies combinations, not damage rules.
+// Game multipliers; poker supplies combinations, not damage rules.
+// v12: the four five-card hands (straight, flush, full house, straight flush)
+// pay 2.5× their v5 multipliers (220/250/280/400 → 550/625/700/1000), so a
+// hand that needs all five cards is worth assembling; quads follow (320 → 800)
+// so the ranking still reads like hold'em (ADR-0060).
 export const MULTIPLIERS = [
-  100, 150, 170, 180, 220, 250, 280, 320, 400,
+  100, 150, 170, 180, 550, 625, 700, 800, 1000,
 ] as const;
-/** Short runs/flushes are real combinations; five cards retain the full reward. */
-const comboMultiplier = (kind: number, members: number) =>
-  100 + (MULTIPLIERS[kind] - 100) * ([4, 5, 8].includes(kind) ? members / 5 : 1);
+/**
+ * v12 (ADR-0060): Texas hold'em hands. A throw holds at most five cards, and
+ * straights, flushes, full houses and straight flushes need all five.
+ */
+export const MAX_THROW = 5;
 export type PokerScore = {
   kind: number;
   name: string;
@@ -47,16 +53,15 @@ function classify(cards: PlayingCard[]) {
     (a, b) => b.length - a.length || b[0].rank - a[0].rank,
   );
   const values = [...groups.keys()].sort((a, b) => a - b);
-  const size = cards.length;
+  const five = cards.length === MAX_THROW;
   const straight =
-    size >= 3 &&
-    values.length === size &&
-    (values[size - 1] - values[0] === size - 1 ||
-      (values[size - 1] === 14 && values.slice(0, -1).every((rank, index) => rank === index + 2)));
+    five &&
+    values.length === 5 &&
+    (values[4] - values[0] === 4 || values.join(',') === '2,3,4,5,14');
   // Wild cards (百搭) take whichever suit the rest of the flush needs.
   const fixed = cards.filter((card) => !isWild(card));
   const flush =
-    size >= 3 && fixed.every((card) => card.suit === (fixed[0] ?? cards[0]).suit);
+    five && fixed.every((card) => card.suit === (fixed[0] ?? cards[0]).suit);
   let kind = 0;
   let members: PlayingCard[] = [];
   if (straight && flush) {
@@ -84,7 +89,7 @@ function classify(cards: PlayingCard[]) {
     kind = 1;
     members = ranked[0];
   }
-  const multiplier = comboMultiplier(kind, members.length);
+  const multiplier = MULTIPLIERS[kind];
   const bonus = Math.floor(
     (members.reduce((sum, card) => sum + cardPoints(card), 0) *
       (multiplier - 100)) /
@@ -93,7 +98,7 @@ function classify(cards: PlayingCard[]) {
   return { kind, bonus, members, multiplier };
 }
 
-/** A hand batch (10 normally, 12 with a relic); strongest <=5-card combo gains a bonus once. */
+/** A throw of up to five cards; its strongest combination gains the bonus once, the rest count their points. */
 export function scorePoker(cards: PlayingCard[]): PokerScore {
   const base = cards.reduce((sum, card) => sum + cardPoints(card), 0);
   let best = classify([]);

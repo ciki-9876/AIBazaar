@@ -102,8 +102,9 @@ test('silver adds 4 points and gold doubles a card’s points, including inside 
 
 test('wild cards complete a flush; resonant cards count several times for per-suit items', () => {
   const four = [2, 5, 8, 11].map((rank) => card(rank, 1));
-  assert.equal(scorePoker([...four, card(4, 0)]).kind, 5);
-  assert.equal(scorePoker([...four, card(4, 0)]).comboIds.length, 4);
+  // v12 hold'em: four hearts and an off-suit card are not a flush; a wild fifth card is.
+  assert.equal(scorePoker([...four, card(4, 0)]).kind, 0);
+  assert.equal(scorePoker([...four, card(4, 0)]).comboIds.length, 0);
   assert.equal(scorePoker([...four, card(4, 0, 'wild')]).kind, 5);
   assert.equal(scorePoker([...four, card(4, 0, 'wild')]).comboIds.length, 5);
   assert.equal(scorePoker([...four, card(13, 2, 'LCK')]).kind, 5);

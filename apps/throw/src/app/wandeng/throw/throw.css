@@ -1497,3 +1497,34 @@ button:disabled {
   color: var(--bone);
   font-size: 12px;
 }
+
+/* v12 (ADR-0060): a box that grows past five cards keeps five and says so above them. */
+.tp-hand-slot {
+  position: relative;
+}
+.tp-cap-hint {
+  position: absolute;
+  bottom: calc(100% + 14px);
+  left: 0;
+  z-index: 6;
+  padding: 2px 8px;
+  border-radius: 4px;
+  background: rgba(16, 26, 31, 0.86);
+  color: var(--limelight, #f5d979);
+  font-size: 12px;
+  line-height: 1.5;
+  white-space: nowrap;
+  pointer-events: none;
+  animation: tp-cap-hint-in 0.18s ease-out;
+}
+@keyframes tp-cap-hint-in {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .tp-cap-hint {
+    animation: none;
+  }
+}

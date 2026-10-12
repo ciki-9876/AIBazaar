@@ -1,5 +1,5 @@
 import { randomStream } from '../../packages/core/random.ts';
-import { scorePoker, type PlayingCard, type Suit } from './throw-poker.ts';
+import { MAX_THROW, scorePoker, type PlayingCard, type Suit } from './throw-poker.ts';
 import {
   EMPTY_HAND_BONUS,
   JUNO_SHRED,
@@ -34,7 +34,7 @@ import {
   type ItemPlacement,
   type Family,
 } from './throw-loadout.ts';
-export { ITEMS, RELICS, PRESETS, BAG_CELLS };
+export { ITEMS, RELICS, PRESETS, BAG_CELLS, MAX_THROW };
 export type { ItemId, RelicId, Style, ItemPlacement };
 export const TICK_MS = 50,
   HAND_LIMIT = 10,
@@ -47,11 +47,16 @@ export const TICK_MS = 50,
  * v6 retains the four-condition wheel introduced in v4:
  * healing cleanses poison, poison ignores shields, shields smother burn, and
  * burn halves healing. Direct-damage builds add shred (single cards) and
- * wounds (straights and better). Three-card runs/flushes have proportional
- * rewards, sorting is a shared action and draws accelerate by battle phase.
- * Deck streams are unchanged from v3.
+ * wounds (straights and better). Sorting is a shared action and draws
+ * accelerate by battle phase. Deck streams are unchanged from v3.
  */
-export const RULES_VERSION = 'throw-duel-v11';
+export const RULES_VERSION = 'throw-duel-v12';
+/**
+ * v12 hold'em hands (ADR-0060): a throw holds one to five cards, and
+ * straights, flushes, full houses and straight flushes need all five — the
+ * v6 three-card runs and flushes are gone (with ten cards in hand a
+ * three-card flush always existed). Item rewards are flat again.
+ */
 /**
  * v11 presence (气场, ADR-0059): each fighter has its own cap (default 320),
  * supplied by the adventure from stage experience, fame, lodging and mood.
@@ -83,7 +88,8 @@ export const heartPatch = (items: readonly ItemId[]) =>
 /** Heart blanket: half of any healing past full life is kept as shield. */
 export const HEART_OVERFLOW = 0.5;
 /** Coal ember: +2 to every burn you apply, and opponents cleanse only half of it. */
-export const EMBER_BONUS = 2;
+/** v12: +3 (was +2) — five-card throws cap how many ♦ one batch carries. */
+export const EMBER_BONUS = 3;
 export const EMBER_CLEANSE_SHARE = 0.5;
 export const FESTER_HAND = 5;
 /** Poison ebbs one stack per this many seconds; the toxin spoon slows it. */
@@ -459,7 +465,7 @@ export function createThrowDuel(
   if (
     terms &&
     ((terms.suits && (!terms.suits.length || terms.suits.some((suit) => ![0, 1, 2, 3].includes(suit)))) ||
-      (terms.maxCards !== undefined && !(Number.isInteger(terms.maxCards) && terms.maxCards >= 1)) ||
+      (terms.maxCards !== undefined && !(Number.isInteger(terms.maxCards) && terms.maxCards >= 1 && terms.maxCards <= MAX_THROW)) ||
       (terms.minCards !== undefined && !(Number.isInteger(terms.minCards) && terms.minCards >= 1 && terms.minCards <= 5)) ||
       (terms.deadlineMs !== undefined && !(Number.isInteger(terms.deadlineMs) && terms.deadlineMs > 0)) ||
       (terms.hpFloor !== undefined && !(Number.isInteger(terms.hpFloor) && terms.hpFloor > 0 && terms.hpFloor <= caps[0])))
@@ -547,7 +553,6 @@ function itemEffects(
   kind: number,
   context: PreviewContext,
   pureSuit: number | null,
-  comboSize: number,
 ): Raw[] {
   const single = cards.length === 1;
   switch (id) {
@@ -569,14 +574,14 @@ function itemEffects(
         : [];
     case 'sequence':
       return kind === 4 || kind === 8
-        ? [{ name: '织序连击', kind: 'damage', value: Math.floor(36 * comboSize / 5) }]
+        ? [{ name: '织序连击', kind: 'damage', value: 36 }]
         : [];
     case 'suit':
       return kind === 5 || kind === 8
-        ? [{ name: '四色辉光', kind: 'damage', value: Math.floor(30 * comboSize / 5) }]
+        ? [{ name: '四色辉光', kind: 'damage', value: 30 }]
         : [];
     case 'focus':
-      return cards.length >= 5 && kind >= 4
+      return cards.length >= MAX_THROW && kind >= 4
         ? [{ name: '星河贯注', kind: 'damage', value: 26 }]
         : [];
     case 'pair':
@@ -694,7 +699,7 @@ export function previewThrow(
   const costume = costumeRate(items);
   if (cards.length)
     for (const id of items)
-      for (const raw of itemEffects(id, cards, poker.kind, context, pureSuit, poker.comboIds.length)) {
+      for (const raw of itemEffects(id, cards, poker.kind, context, pureSuit)) {
         let amount = SPLASH_KINDS.includes(raw.kind) && splashed(items, id) ? Math.floor(raw.value / 2) : raw.value;
         const base = amount;
         if (AMPLIFIED.includes(raw.kind))
@@ -774,7 +779,7 @@ export function previewThrow(
       effects.push({ source: 'rule:wound', name: '压轴重创', value: WOUND_MS, kind: 'wound' });
     // Finale: a flourish of five or more cards snuffs your own flames and
     // leaves you fireproof for six seconds.
-    if (cards.length >= 5 && (context.burn ?? 0) > 0)
+    if (cards.length >= MAX_THROW && (context.burn ?? 0) > 0)
       effects.push({ source: 'rule:finale', name: '压轴灭火', value: context.burn ?? 0, kind: 'cleanse' });
   }
   // Clamp growth to its real headroom so the preview never lies (shields are uncapped since v11).
@@ -826,7 +831,7 @@ function launchMutable(state: ThrowDuel, side: Side, ids: string[]) {
     state.status !== 'playing' ||
     state.tick < state.nextLaunch[side] ||
     !ids.length ||
-    ids.length > handLimit(fighter.relic) ||
+    ids.length > MAX_THROW ||
     new Set(ids).size !== ids.length ||
     ids.some((id) => !fighter.hand.some((card) => card.uid === id))
   )
@@ -893,7 +898,7 @@ function launchMutable(state: ThrowDuel, side: Side, ids: string[]) {
   if (douse < score.cleanseBurn && fighter.burn > 0)
     effectEvent(state, side === 0 ? 1 : 0, { source: 'relic:ember', name: '灶心余温', value: Math.min(fighter.burn, score.cleanseBurn) - Math.min(fighter.burn, douse), kind: 'burn' });
   fighter.burn = Math.max(0, fighter.burn - douse);
-  if (cards.length >= 5) fighter.fireproofUntil = state.tick + ticks(FIREPROOF_MS);
+  if (cards.length >= MAX_THROW) fighter.fireproofUntil = state.tick + ticks(FIREPROOF_MS);
   for (const effect of score.effects)
     if (effect.kind === 'heal' && effect.value > 0)
       healFighter(state, side, effect.value, effect.name, effect.source);
@@ -1112,9 +1117,9 @@ export function recommendCards(
   if (!hand.length) return [];
   let best = [hand[0]],
     bestValue = -1;
+  const most = Math.min(MAX_THROW, PRESETS[style].maxThrow ?? MAX_THROW);
   for (let start = 0; start < hand.length; start++)
-    // Reed's first lesson explicitly demonstrates the same single-card kit.
-    for (let length = 1; length <= (style === 'lesson' ? 1 : hand.length - start); length++) {
+    for (let length = 1; length <= Math.min(most, hand.length - start); length++) {
       const candidate = hand.slice(start, start + length);
       const value = batchValue(previewThrow(candidate, items, context), length, style);
       if (value > bestValue) {
@@ -1163,7 +1168,7 @@ export function aiReady(style: Style, cards: PlayingCard[], fighter: ThrowFighte
   const full = fighter.hand.length >= handLimit(fighter.relic);
   const kind = scorePoker(cards).kind;
   if (style === 'combo')
-    return (kind >= 4 && cards.length >= 5) ||
+    return (kind >= 4 && cards.length >= MAX_THROW) ||
       (fighter.hand.length >= handLimit(fighter.relic) - 2 && kind >= 3) || full;
   return true;
 }

@@ -91,7 +91,7 @@ magician-world.ts    ← 引擎：读数据、执行效果，不写任何剧情
 
 ### 4.4 命名
 
-对白只显示本行说话者的头像，位置固定：伊莱在左、NPC 在右（[ADR-0054](../design-log/decisions/ADR-0054-throw-scouting-and-onboarding-polish.md)）；两侧头像位常驻，换人时文本框不跳；旁白两侧都空。人物、地点、任务等关键信息用亮黄色，新增正式名称时要进入关键字来源，长短词重合时优先匹配完整名字。正文不插入 HTML；重点仍由表现层安全渲染。
+对白只显示本行说话者的头像，位置固定：伊莱在左、NPC 在右（[ADR-0054](../design-log/decisions/ADR-0054-throw-scouting-and-onboarding-polish.md)）；两侧头像位常驻，换人时文本框不跳；旁白两侧都空。人物、地点、任务等关键信息用亮黄色：写对白时用【】把它标出来，例如「去【抒情剧院】找【菲利克斯】」。每行最多 3 个，同一个名字一行只标第一次；伊莱自己的名字不标。测试会检查括号是否成对、数量是否超标。正文不插入 HTML（[ADR-0060](../design-log/decisions/ADR-0060-throw-v12-holdem-hands.md)）。
 
 对话 id 用 `角色-场合`：`stan-first`、`stan-waiting`、`stan-done`、`stan-after`。常用后缀：
 

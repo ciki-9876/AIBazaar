@@ -33,6 +33,7 @@ import {
   handLimit,
   ITEMS,
   launchThrow,
+  MAX_THROW,
   PRESETS,
   previewThrow,
   RELICS,
@@ -57,7 +58,7 @@ import {
   type ThrowFighter,
   type TriggerEffect,
 } from '../../../lib/cards/throw-duel';
-import { clickThrowSelection } from '../../../lib/cards/throw-selection';
+import { boxThrowSelection, clickThrowSelection } from '../../../lib/cards/throw-selection';
 import { enchantOf, RARITY_NAMES, type DeckBook } from '../../../lib/cards/throw-enchant';
 import { bookCounts, DeckCase } from './throw-deckcase';
 import {
@@ -82,11 +83,11 @@ import { CoachCard, useCoach } from './throw-coach';
 import type { CoachScript } from '../../../lib/adventure/magician-world';
 import { COMPETITIVE_STYLES } from '../../../lib/cards/throw-loadout';
 
-type Session = { duel: ThrowDuel; selected: string[]; flights: VisualShot[] };
+type Session = { duel: ThrowDuel; selected: string[]; flights: VisualShot[]; capped?: boolean };
 type Action =
   | { type: 'tick'; count: number; geometry: TableGeometry }
   | { type: 'click'; uid: string }
-  | { type: 'box'; ids: string[] }
+  | { type: 'box'; ids: string[]; fresh: boolean }
   | { type: 'clear' }
   | { type: 'launch'; geometry: TableGeometry }
   | { type: 'arrange'; mode: 'rank' | 'suit' | 'gather' }
@@ -96,19 +97,17 @@ type Action =
 function reducer(state: Session, action: Action): Session {
   if (action.type === 'start')
     return { duel: action.duel, selected: [], flights: [] };
-  if (action.type === 'clear') return { ...state, selected: [] };
+  if (action.type === 'clear') return { ...state, selected: [], capped: false };
   if (action.type === 'click')
     return {
       ...state,
       selected: clickThrowSelection(state.selected, action.uid),
+      capped: false,
     };
-  if (action.type === 'box')
-    return {
-      ...state,
-      selected: action.ids.filter((id) =>
-        state.duel.fighters[0].hand.some((card) => card.uid === id),
-      ),
-    };
+  if (action.type === 'box') {
+    const inHand = action.ids.filter((id) => state.duel.fighters[0].hand.some((card) => card.uid === id));
+    return { ...state, ...boxThrowSelection(state.selected, inHand, action.fresh) };
+  }
   if (action.type === 'arrange')
     return {
       ...state,
@@ -134,6 +133,7 @@ function reducer(state: Session, action: Action): Session {
     duel,
     flights,
     selected: action.type === 'launch' ? [] : state.selected,
+    capped: action.type === 'launch' ? false : state.capped,
   };
 }
 function PokerCard({
@@ -369,6 +369,8 @@ type Gesture = {
   x: number;
   y: number;
   moved: boolean;
+  /** Set after the first box dispatch, so later moves keep what the box already holds. */
+  boxing?: boolean;
   rects: {
     uid: string;
     left: number;
@@ -547,12 +549,14 @@ export default function ThrowTable({
   const coach = useCoach(coachScript, duel, picked, phase === 'battle' && duel.status === 'playing');
   const clockStopped = paused || rules || coach.holding;
   const termsOk = termsAllow(duel.terms, picked);
+  const tooMany = picked.length > MAX_THROW;
   const launchReady =
     phase === 'battle' &&
     !paused &&
     !rules &&
     duel.status === 'playing' &&
     picked.length > 0 &&
+    !tooMany &&
     termsOk &&
     duel.tick >= duel.nextLaunch[0];
   const orderKey = player.hand.map((card) => card.uid).join('|');
@@ -793,6 +797,8 @@ export default function ThrowTable({
       width: right - left,
       height: bottom - top,
     });
+    // Nearest the drag's start first, so a box that grows past five keeps the first five it met.
+    const centre = (rect: { left: number; right: number }) => Math.abs((rect.left + rect.right) / 2 - current.x);
     const ids = current.rects
       .filter(
         (rect) =>
@@ -801,8 +807,10 @@ export default function ThrowTable({
           rect.bottom >= top &&
           rect.top <= bottom,
       )
+      .sort((a, b) => centre(a) - centre(b))
       .map((rect) => rect.uid);
-    dispatch({ type: 'box', ids });
+    dispatch({ type: 'box', ids, fresh: !current.boxing });
+    current.boxing = true;
   };
   const pointerEnd = () => {
     suppressClick.current = Boolean(gesture.current?.moved);
@@ -1326,6 +1334,9 @@ export default function ThrowTable({
               >
                 {player.hand.map((card) => (
                   <div className="tp-hand-slot" key={card.uid}>
+                    {session.capped && card.uid === player.hand.find((entry) => selected.includes(entry.uid))?.uid && (
+                      <span className="tp-cap-hint" role="status">单次最多选择 {MAX_THROW} 张牌</span>
+                    )}
                     <PokerCard
                       card={card}
                       selected={selected.includes(card.uid)}
@@ -1357,10 +1368,12 @@ export default function ThrowTable({
             </div>
             <div className="tp-launch-bar">
               <div className="tp-combo-preview">
-                <span>
-                  {picked.length
-                    ? `${preview.name} · ${picked.length}张待甩`
-                    : '单选 / 框选'}
+                <span className={tooMany ? 'tp-warning' : undefined}>
+                  {tooMany
+                    ? `一次最多甩 ${MAX_THROW} 张（已选 ${picked.length}）`
+                    : picked.length
+                      ? `${preview.name} · ${picked.length}张待甩`
+                      : `单选 / 框选（最多 ${MAX_THROW} 张）`}
                 </span>
                 <strong>
                   {picked.length ? preview.damage : '—'}
@@ -1438,7 +1451,7 @@ export default function ThrowTable({
             <h2>玩法规则</h2>
             <p>开局各 5 张牌，之后按轮发牌：每轮 {DEAL_SIZE} 张，开场每 6 秒一轮，30 秒后（白热）每 4 秒，60 秒后（落幕）每 3 秒。手牌上限 10 张，满了就不再发——不会替你攒着。</p>
             <p>点击选一张，按住拖动可框选一段连续的牌；按空格或「甩出去」出手。电脑也守同样的规矩，它不会作弊，只是不会累。</p>
-            <p>牌型基准倍率（顺子、同花、同花顺按 5 张展示）：</p>
+            <p>牌型倍率（和德州扑克一样，顺子、同花、葫芦、同花顺都要整整 5 张）：</p>
             <div className="tp-rank-table">
               {HAND_NAMES.map((name, index) => (
                 <div key={name}>
@@ -1447,7 +1460,7 @@ export default function ThrowTable({
                 </div>
               ))}
             </div>
-            <p>J=11、Q=12、K=13、A=14，A 也能接 2。顺子和同花从 3 张起成型；3／4 张组合的额外牌型加成按张数／5 缩放。最强的组合吃倍率，其余牌按点数算。所有人都能按点数、花色排序或收拢选牌，每次有效整理后冷却 20 秒。</p>
+            <p>J=11、Q=12、K=13、A=14，A 也能接 2。一次最多甩 5 张。最强的组合吃倍率，其余牌按点数算。所有人都能按点数、花色排序或收拢选牌，每次有效整理后冷却 20 秒。</p>
             <p>护盾、治疗道具要在巡演箱里凑满 {SPLASH_MIN_ITEMS} 件才全力发挥，不足时效果减半；亮片马甲、定制燕尾服奖励只走一两条路线的巡演箱。</p>
             <h3>四种花色，四种状态</h3>
             <p>♠ 护盾 · ♥ 治疗 · ♣ 剧毒 · ♦ 灼烧——具体由你巡演箱里的道具决定。</p>
@@ -1457,7 +1470,7 @@ export default function ThrowTable({
               <li><b>护盾克灼烧</b>：火落在盾上只点一半；有盾时，灼烧只烧盾、不伤血，熄得更快。</li>
               <li><b>灼烧克治疗</b>：着火时治疗只剩六成；灼烧 ≥3 层时每次出手烫手，扣 {SCORCH_PER_THROW} 血。</li>
               <li><b>单张削盾</b>：单张牌被护盾挡下时多耗 10% 护盾，也不会被铜镜反射。</li>
-              <li><b>压轴</b>：顺子及以上命中会造成重创（5 秒内治疗六成）；一次出 5 张以上会吹灭自身灼烧，6 秒内不被点燃。</li>
+              <li><b>压轴</b>：顺子及以上命中会造成重创（5 秒内治疗六成）；一次出满 5 张会吹灭自身灼烧，6 秒内不被点燃。</li>
               <li><b>落幕</b>：第 60 秒起剧院开始关门，双方每秒受到 1、2、3……递增的伤害。护盾照挡，治疗照抵——活得久，本身就是一种赢法。</li>
             </ul>
             <p>道具占 1–3 格，相邻指边缘贴合，增幅向下取整；遗物只能带 1 件。万一撑到 120 秒还没分出胜负，比较剩余气场。对手出手前 1 秒会亮牌预告——这是他的礼貌，不是他的失误。</p>

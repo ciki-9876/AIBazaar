@@ -9,8 +9,8 @@ export function throwAdvice(items: readonly ItemId[], terms?: DuelTerms | null) 
   const allowSingle = !terms?.minCards || terms.minCards <= 1;
   if (singleOnly || (allowSingle && has('quick', 'needle', 'tempo'))) advice.push('单张连甩');
   if (!singleOnly && has('pair', 'umbrella')) advice.push('出对子');
-  if (!singleOnly && has('sequence') && (!terms?.maxCards || terms.maxCards >= 3)) advice.push('凑三张起顺子');
-  if (!singleOnly && has('suit') && (!terms?.maxCards || terms.maxCards >= 3)) advice.push('凑三张起同花');
+  if (!singleOnly && has('sequence') && (!terms?.maxCards || terms.maxCards >= 5)) advice.push('凑五张顺子');
+  if (!singleOnly && has('suit') && (!terms?.maxCards || terms.maxCards >= 5)) advice.push('凑五张同花');
   if (has('focus') && (!terms?.maxCards || terms.maxCards >= 5)) advice.push('攒五张组合爆发');
   const suitHints: [ItemId[], number, string][] = [
     [['ward'], 0, '多出黑桃 ♠'],

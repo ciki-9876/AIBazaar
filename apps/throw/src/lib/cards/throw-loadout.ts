@@ -65,7 +65,7 @@ export const ITEMS = [
     tag: '顺子',
     size: 3,
     family: 'damage',
-    text: '顺子或同花顺：3／4／5 张组合直伤 +21／28／36。手牌 ≥7 张时，被单张牌命中直伤减半（扇面格挡）。',
+    text: '顺子或同花顺：直伤 +36。手牌 ≥7 张时，被单张牌命中直伤减半（扇面格挡）。',
     quip: '扇面一展，连观众都知道该排队。',
   },
   {
@@ -74,7 +74,7 @@ export const ITEMS = [
     tag: '同花',
     size: 2,
     family: 'damage',
-    text: '同花或同花顺：3／4／5 张组合直伤 +18／24／30。',
+    text: '同花或同花顺：直伤 +30。',
     quip: '一种颜色到底，像一位只穿灰西装的银行家。',
   },
   {
@@ -83,7 +83,7 @@ export const ITEMS = [
     tag: '蓄爆',
     size: 3,
     family: 'damage',
-    text: '出牌 ≥5 张且为顺子及以上：直伤 +26。',
+    text: '顺子及以上（出满 5 张）：直伤 +26。',
     quip: '放映前请关掉手机，以及你的怀疑。',
   },
   {
@@ -356,7 +356,7 @@ export const RELICS = [
   {
     id: 'ember',
     name: '灶心煤球',
-    text: '施加灼烧时，额外 +2；对手净化你点的火时，只能净化一半。',
+    text: '施加灼烧时，额外 +3；对手净化你点的火时，只能净化一半。',
     quip: '整个冬天都没熄过。房东为此写过三封信。',
   },
   {
@@ -390,6 +390,8 @@ export const PRESETS: Record<
     beats: Style[];
     items: ItemId[];
     relic: RelicId | null;
+    /** The built-in AI never throws more cards at once than this (default: the rules' five). */
+    maxThrow?: number;
   }
 > = {
   quick: {
@@ -404,7 +406,8 @@ export const PRESETS: Record<
     hint: '理好牌，攒顺子同花，一击重创；扇面在手，单张飞牌伤不了你。',
     beats: ['mend', 'quick'],
     items: ['sequence', 'suit', 'focus', 'pair'],
-    relic: null,
+    // v12: five-card hands need a fuller hand; the double letterbox holds twelve.
+    relic: 'capacity',
   },
   guard: {
     name: '护灯反击',
@@ -440,6 +443,8 @@ export const PRESETS: Record<
     beats: [],
     items: ['quick', 'needle'],
     relic: null,
+    // Reed demonstrates the single-card kit he hands you, even when his hand could do more.
+    maxThrow: 1,
   },
 };
 /** Builds shown to players in the practice room, in the order of the counter wheel. */
