@@ -96,6 +96,7 @@ test('relay adds one to every consecutive single card after the first, never dra
     );
   };
   const single = () => {
+    state.tick = Math.max(state.tick, state.nextLaunch[0]);
     deal(3);
     const count = state.fighters[0].drawn;
     state = run(launchThrow(state, 0, [state.fighters[0].hand[0].uid]), 9);
@@ -108,6 +109,7 @@ test('relay adds one to every consecutive single card after the first, never dra
   assert.equal(bonus(), 1, 'capped at +1');
   assert.equal(launchThrow(state, 0, ['unknown']), state);
   deal(3);
+  state.tick = Math.max(state.tick, state.nextLaunch[0]);
   state = run(launchThrow(state, 0, state.fighters[0].hand.slice(0, 2).map((card) => card.uid)), 9);
   assert.equal(state.fighters[0].singles, 0);
   assert.equal(bonus(), 0, 'a batch resets the streak');
@@ -116,6 +118,7 @@ test('echo gathers three per impact below half life, up to nine, and is consumed
   let state = createThrowDuel(9, [], 'guard', 'echo');
   state.ai.thinkTick = 99999;
   const strike = (index) => {
+    state.tick = Math.max(state.tick, state.nextLaunch[1]);
     state.fighters[1].hand = [{ uid: `attack${index}`, rank: 2, suit: 0 }];
     state = run(launchThrow(state, 1, [`attack${index}`]), 9);
   };
@@ -183,7 +186,7 @@ test('straights, flushes and straight flushes start at three cards, including Ac
   }
 });
 test('phase boundaries drive deal rounds and carry elapsed progress into the faster interval', () => {
-  assert.equal(RULES_VERSION, 'throw-duel-v11');
+  assert.equal(RULES_VERSION, 'throw-duel-v16');
   assert.equal(DEAL_SIZE, 2);
   assert.equal(battlePhase(600), 'opening');
   assert.equal(battlePhase(601), 'heated');
@@ -340,19 +343,20 @@ test('seed, actions and ticks replay identically; decks keep stable unique ident
   let state = createThrowDuel(1024, ['draw']);
   state.ai.thinkTick = 99999;
   const ids = new Set(state.fighters[0].hand.map((card) => card.uid));
-  for (let i = 0; i < 100; i++) {
+  for (let i = 0; i < 2399; i++) {
     // Keep both alive through the curtain call so the deck cycles.
     state.fighters[0].hp = MAX_HP;
     state.fighters[1].hp = MAX_HP;
+    const lastEvent = state.events.at(-1)?.id ?? 0;
     state = launchThrow(
       state,
       0,
-      state.fighters[0].hand.map((card) => card.uid),
+      state.fighters[0].hand.slice(0, 1).map((card) => card.uid),
     );
-    state = run(state, 24);
-    for (const card of state.fighters[0].hand) {
-      assert.ok(!ids.has(card.uid));
-      ids.add(card.uid);
+    state = run(state, 1);
+    for (const event of state.events.filter((event) => event.id > lastEvent && event.side === 0 && event.type === 'draw')) {
+      assert.ok(!ids.has(event.cardUid));
+      ids.add(event.cardUid);
     }
   }
   assert.ok(state.fighters[0].cycle > 0);

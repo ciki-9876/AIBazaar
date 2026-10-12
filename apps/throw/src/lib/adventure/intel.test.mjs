@@ -54,11 +54,11 @@ const mainHall = (state) => ({ ...state, flags: { ...state.flags, mainHall: true
 
 test('every rumour tells the truth about the real kit exactly when it says it does', () => {
   for (const [kind, rumours] of Object.entries(RUMOURS)) {
-    assert.equal(fogOf(kind), 'formal', `${kind} is a formal performance`);
+    assert.equal(fogOf(kind), BATTLES[kind].act === 4 ? 'open' : 'formal', `${kind} is a formal performance`);
     const kit = battleKit(kind);
     for (const rumour of rumours) {
       const [unit, ref] = rumour.unit.split(':');
-      const real = unit === 'relic' ? kit.relic === ref : kit.items.includes(ref);
+      const real = unit === 'style' ? true : unit === 'relic' ? kit.relic === ref : kit.items.includes(ref);
       assert.equal(rumour.truth, real, rumour.id);
       if (unit === 'item') assert.ok(ITEMS.some((item) => item.id === ref), rumour.id);
     }
@@ -83,7 +83,7 @@ test('fog: act one is open, street shows show their style and big props, formal 
 });
 
 test('sources cost a slot and fee, keep their hours, and work once per opponent', () => {
-  let state = registered();
+  const state = registered();
   assert.deepEqual(scoutable(state), ['ada', 'bea']);
   assert.strictEqual(gatherIntel(state, 'agnes', 'paper'), state, 'not on the bill yet');
   const paper = gatherIntel(state, 'ada', 'paper');
@@ -126,7 +126,7 @@ test('after the duel everything is seen; a false rumour is stamped, Mrs Dodd exp
 
 test('formal battles and their rumours are consistent with the battle table', () => {
   const formal = Object.entries(BATTLES).filter(([, def]) => def.formal).map(([id]) => id).sort();
-  assert.deepEqual(formal, ['ada', 'agnes', 'basil', 'bea', 'juno', 'pike', 'rosie'].sort());
+  assert.deepEqual(formal, ['mb-final', 'ada', 'agnes', 'basil', 'bea', 'juno', 'pike', 'rosie', 'wp-entry', 'wp-counter', 'wp-nora-1', 'wp-nora-2', 'wp-nora-3'].sort());
   assert.deepEqual(Object.keys(RUMOURS).sort(), formal);
   // A street show is fully seen after it is fought, too.
   let state = registered();

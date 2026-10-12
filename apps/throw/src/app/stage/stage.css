@@ -259,9 +259,30 @@
 .st-pool {
   transition: opacity 1.2s var(--ease-out);
 }
+.st-port-gull { animation:st-port-gull 6s ease-in-out infinite alternate; }
+.st-port-water { animation:st-port-water 4s ease-in-out infinite alternate; }
+.st-home-steam { animation:st-home-steam 3s ease-out infinite; }
+.st-home-rain { animation:st-home-rain 1.5s linear infinite; }
+.st-home-fire { transform-origin:910px 630px; animation:st-home-fire 1.5s ease-in-out infinite alternate; }
+@keyframes st-port-gull { to { transform:translate(26px,-9px); } }
+@keyframes st-port-water { to { transform:translateX(20px); opacity:.12; } }
+@keyframes st-home-steam { to { transform:translate(4px,-12px); opacity:0; } }
+@keyframes st-home-rain { to { transform:translate(-6px,22px); opacity:.12; } }
+@keyframes st-home-fire { to { transform:scale(.93,1.08); opacity:.78; } }
 @media (prefers-reduced-motion: reduce) {
   .st-scene *,
   .st-scene *::before {
     animation: none !important;
   }
 }
+
+.st-mill-minute { transform-origin:0 0; animation:mill-clock 60s linear infinite; }
+.st-mill-hour { transform-origin:0 0; animation:mill-clock 720s linear infinite; }
+.st-mill-smoke { animation:mill-smoke 8s ease-in-out infinite; }
+.st-mill-birds { animation:mill-birds 28s linear infinite; }
+.st-mill-leaf { animation:mill-leaf 7s ease-in-out infinite; }
+@keyframes mill-clock { to { transform:rotate(360deg); } }
+@keyframes mill-smoke { 50% { transform:translate(15px,-12px); opacity:.1; } }
+@keyframes mill-birds { to { transform:translateX(1800px); } }
+@keyframes mill-leaf { 50% { transform:translate(7px,-2px); } }
+@media(prefers-reduced-motion:reduce) { .st-mill-minute,.st-mill-hour,.st-mill-smoke,.st-mill-birds,.st-mill-leaf { animation:none; } }

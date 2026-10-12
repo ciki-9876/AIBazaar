@@ -2,6 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { throwAdvice } from './throw-advice.ts';
 import { deservesCheer } from './throw-audience.ts';
+import { createThrowDuel, launchThrowInPlace, stepThrowDuelInPlace } from '../../../lib/cards/throw-duel.ts';
 
 test('strategy advice follows a custom trunk and honours its show terms', () => {
   assert.deepEqual(throwAdvice(['quick', 'needle']), ['单张连甩']);
@@ -21,4 +22,24 @@ test('audience cheers use actual player life damage, a strict threshold, and nev
   assert.equal(deservesCheer({...hit,hpDamage:0,shieldDamage:100,value:100}), false);
   assert.equal(deservesCheer({...hit,side:1}), false);
   assert.equal(deservesCheer({...hit,type:'dot'}), false);
+});
+
+test('a real relay knockout cheers against the departed victim cap, never the replacement cap', () => {
+  for (const [originalCap, remainingHp, replacementCap, expected] of [[320, 100, 1000, true], [1000, 70, 100, false]]) {
+    const state = createThrowDuel(41, [], 'quick', null, null, undefined, {}, {
+      enemyItems: [], presence: { enemy: originalCap },
+      enemyReserve: { performer: 'molly', style: 'mend', items: [], presence: replacementCap },
+    });
+    state.ai.thinkTick = 99999;
+    state.fighters[1].hp = remainingHp;
+    state.fighters[0].hand = Array.from({ length: 4 }, (_, suit) => ({ uid: `ace-${suit}`, rank: 14, suit }));
+    launchThrowInPlace(state, 0, state.fighters[0].hand.map((card) => card.uid));
+    for (let tick = 0; tick < 9; tick++) stepThrowDuelInPlace(state);
+    const hit = state.events.find((event) => event.type === 'hit' && event.side === 0);
+    assert.equal(state.activeSeats[1], 1);
+    assert.equal(state.fighters[1].maxHp, replacementCap);
+    assert.equal(hit.hpDamage, remainingHp);
+    assert.equal(hit.targetMaxHp, originalCap);
+    assert.equal(deservesCheer(hit, state.fighters[1].maxHp), expected);
+  }
 });

@@ -15,6 +15,12 @@ import {
   ACTS,
   advanceDialogue,
   adventureObjective,
+  adventureSideObjectives,
+  adventureGains,
+  backpackUnlocked,
+  troupeUnlocked,
+  upgradeItem,
+  acknowledgeBackpack,
   battleSetup,
   buyOffer,
   CHARACTERS,
@@ -23,6 +29,7 @@ import {
   closePanel,
   gatherIntel,
   haveTea,
+  hireRecruit,
   helpLandlady,
   passTime,
   payArrears,
@@ -31,7 +38,6 @@ import {
   weekday,
   weekNumber,
   rehearse,
-  rentLodging,
   setMeals,
   createAdventure,
   DIALOGUES,
@@ -39,14 +45,17 @@ import {
   hotspotInReach,
   interactAdventure,
   keepExploring,
+  viewedLodgingOf,
   MAPS,
   narratorFor,
   nearbyHotspot,
   restoreAdventure,
+  repeatAdventureBattle,
   SAVE_KEY,
   serializeAdventure,
   startShow,
   STARTER_ITEMS,
+  unlockedKit,
   travelOn,
   visibleHotspots,
   walkAdventure,
@@ -56,15 +65,22 @@ import {
   type CharacterId,
   type IntelSource,
   type ShowId,
+  type Reward,
+  type ActId,
 } from '../../lib/adventure/magician-world';
+import type { UpgradeTier } from '../../lib/cards/throw-upgrades';
 import type { PerformerId } from '../../lib/cards/throw-performer';
 import ThrowTable, {
   type PreparedThrowLoadout,
 } from '../wandeng/throw/throw-table';
-import { packThrowItems, PRESETS, RELICS, validThrowLayout, type ItemId, type RelicId } from '../../lib/cards/throw-loadout';
-import { validDeckBook } from '../../lib/cards/throw-enchant';
+import { PRESETS, packThrowItems, validThrowLayout, type ItemId, type RelicId } from '../../lib/cards/throw-loadout';
+import { validPreparedThrowLoadout } from '../../lib/cards/throw-team';
 import { clockLabel, DossierPanel, Fee, ShopPanel, ShowsPanel, TroupePanel, type LifeAction } from './adventure-panels';
 import { DialogueText } from './dialogue-text';
+import { BackpackIntro, BackpackPanel, QuestScroll, RecruitBoard, RewardReveal } from './adventure-overlays';
+import { WorkshopPanel } from './workshop-panel';
+import { useCityMusic, CITY_SCORES } from '../stage/city-music';
+import { EdgeRouteMarkers, LocationFunctionIcon, LOCATION_FUNCTION_NAMES, type RouteMarker } from './location-markers';
 
 const STARTER_LOADOUT: PreparedThrowLoadout = {
   style: 'quick',
@@ -78,6 +94,7 @@ const BRIDGEPORT_LOADOUT: PreparedThrowLoadout = {
   layout: packThrowItems(['pair', 'umbrella', 'ward', 'thorns', 'quick', 'wash', 'draw']),
   relic: 'bastion',
 };
+const MILLBROOK_LOADOUT: PreparedThrowLoadout = { style: 'quick', layout: packThrowItems(PRESETS.quick.items), relic: PRESETS.quick.relic };
 import { Figure, type RigId } from '../stage/rig';
 import { StageScene } from '../stage/stage-scene';
 import { SuitMark } from '../stage/card-art';
@@ -87,7 +104,7 @@ type Action =
   | { type: 'interact'; id?: string }
   | { type: 'advance' }
   | { type: 'choice'; id: string }
-  | { type: 'result'; id: number; winner: 0 | 1 | 'draw'; report?: { suits: number[]; kinds: number[]; performer?: PerformerId } }
+  | { type: 'result'; id: number; winner: 0 | 1 | 'draw'; report?: { suits: number[]; kinds: number[]; performer?: PerformerId; playerSuits?: number[]; playerKinds?: number[] } }
   | { type: 'abandon' }
   | { type: 'explore' }
   | { type: 'travel' }
@@ -95,19 +112,21 @@ type Action =
   | { type: 'buy'; id: string }
   | { type: 'show'; id: ShowId }
   | { type: 'load'; state: AdventureState }
-  | { type: 'restart'; act?: 1 | 2 }
+  | { type: 'restart'; act?: ActId }
+  | { type: 'upgrade'; id: ItemId; tier: UpgradeTier }
   | { type: 'life'; action: LifeAction }
   | { type: 'rest' }
   | { type: 'scout'; battle: BattleId; source: IntelSource }
-  | { type: 'notice-close' };
+  | { type: 'notice-close' }
+  | { type: 'hire'; id: PerformerId }
+  | { type: 'backpack-guided' }
+  | { type: 'rematch'; previous: NonNullable<AdventureState['battle']> };
 function life(state: AdventureState, action: LifeAction): AdventureState {
   switch (action.kind) {
     case 'tea':
       return haveTea(state, action.id);
     case 'rehearse':
       return rehearse(state, action.id);
-    case 'rent':
-      return rentLodging(state, action.id);
     case 'meals':
       return setMeals(state, action.tier);
     case 'pay':
@@ -144,6 +163,8 @@ function reducer(state: AdventureState, action: Action): AdventureState {
       return action.state;
     case 'restart':
       return createAdventure(state.seed, action.act ?? 1);
+    case 'upgrade':
+      return upgradeItem(state, action.id, action.tier);
     case 'life':
       return life(state, action.action);
     case 'rest':
@@ -152,14 +173,21 @@ function reducer(state: AdventureState, action: Action): AdventureState {
       return gatherIntel(state, action.battle, action.source);
     case 'notice-close':
       return clearNotice(state);
+    case 'hire':
+      return hireRecruit(state, action.id);
+    case 'backpack-guided':
+      return acknowledgeBackpack(state);
+    case 'rematch':
+      return repeatAdventureBattle(state, action.previous);
   }
 }
 const route = [
   ['01', '格雷维克', '第一张参赛证'],
   ['02', '布里奇波特', '小镇公开赛'],
   ['03', '韦斯特港', '城市职业赛'],
-  ['04', '奥罗拉', '都会大师赛'],
-  ['05', '世界大剧院', '世界冠军赛'],
+  ['04', '米尔布鲁克', '剧团联赛'],
+  ['05', '奥罗拉', '都会大师赛'],
+  ['06', '世界大剧院', '世界冠军赛'],
 ] as const;
 /** Who to show beside the objective: the person the objective points at. */
 function objectivePortrait(state: AdventureState, target: string): RigId {
@@ -202,8 +230,15 @@ export default function MagicianAdventure() {
   const [mapOpen, setMapOpen] = useState(false);
   const [dossierOpen, setDossierOpen] = useState(false);
   const [troupeOpen, setTroupeOpen] = useState(false);
+  const [soundEnabled, setSoundEnabled] = useState(true);
+  const city = state.act === 1 ? 'graywick' : state.act === 2 ? 'bridgeport' : state.act === 3 ? 'westport' : 'millbrook';
+  useCityMusic({ city, enabled: soundEnabled, muted: state.mode === 'battle', volume: .16 });
+  const [backpackOpen, setBackpackOpen] = useState(false);
+  const [rewardQueue, setRewardQueue] = useState<Reward[]>([]);
+  const [pendingRematch, setPendingRematch] = useState<AdventureState['battle']>(null);
+  const previousRewardState = useRef(state);
   /** Read-only overlays (dossier, troupe) pause walking like any modal. */
-  const overlayOpen = dossierOpen || troupeOpen;
+  const overlayOpen = dossierOpen || troupeOpen || backpackOpen;
   const loaded = useRef(false);
   const [loadout, setLoadout] = useState<PreparedThrowLoadout | undefined>();
   const [motion, setMotion] = useState<-1 | 0 | 1>(0);
@@ -229,12 +264,10 @@ export default function MagicianAdventure() {
         const raw = window.localStorage.getItem(SAVE_KEY);
         const restored = raw ? restoreAdventure(raw) : null;
         if (restored) {
+          previousRewardState.current = restored.state;
           dispatch({ type: 'load', state: restored.state });
           const saved = restored.envelope.loadout as PreparedThrowLoadout | undefined;
-          if (saved && typeof saved === 'object' && Object.hasOwn(PRESETS, saved.style)
-            && Array.isArray(saved.layout) && saved.layout.every((entry) => entry && typeof entry === 'object')
-            && validThrowLayout(saved.layout) && (saved.relic === null || RELICS.some((entry) => entry.id === saved.relic))
-            && (saved.book === undefined || validDeckBook(saved.book))) setLoadout(saved);
+          if (validPreparedThrowLoadout(saved)) setLoadout(saved);
         }
       } catch {
         // Storage may be unavailable (private mode); the story simply starts fresh.
@@ -251,11 +284,22 @@ export default function MagicianAdventure() {
       // Ignore quota or privacy errors; progress then lasts for this visit only.
     }
   }, [state, loadout]);
+  useEffect(() => {
+    const before = previousRewardState.current;
+    previousRewardState.current = state;
+    if (!loaded.current || before.act !== state.act) return;
+    const gains = adventureGains(before, state);
+    if (gains) queueMicrotask(() => setRewardQueue((old) => [...old, gains]));
+  }, [state]);
   const map = MAPS[state.map];
   const act = ACTS[state.act - 1];
   const spots = visibleHotspots(state);
   const objective = adventureObjective(state);
-  const objectiveActive = state.act === 1 ? !state.flags.departed : !state.flags.leftBridgeport;
+  const sideObjectives = adventureSideObjectives(state);
+  const backpackReady = backpackUnlocked(state);
+  const reward = rewardQueue[0];
+  const backpackIntroOpen = backpackReady && !state.flags.backpackGuided && state.mode === 'explore' && !reward && !overlayOpen && !mapOpen;
+  const objectiveActive = state.mode !== 'complete';
   const nearby = nearbyHotspot(state);
   const speaker = (id: CharacterId) => (id === 'narrator' ? narratorFor(state.act) : CHARACTERS[id]);
   const dialogue = state.dialogue ? DIALOGUES[state.dialogue.id] : null;
@@ -271,7 +315,14 @@ export default function MagicianAdventure() {
   /** v6: the Sunday ledger and intel checks wait until the hero is back on the street. */
   const noticeOpen = Boolean(state.notice?.length) && state.mode === 'explore';
   const modalOpen =
-    state.mode === 'dialogue' || state.mode === 'complete' || state.mode === 'panel' || mapOpen || overlayOpen || noticeOpen;
+    state.mode === 'dialogue' || state.mode === 'complete' || state.mode === 'panel' || mapOpen || overlayOpen || noticeOpen || Boolean(reward) || backpackIntroOpen;
+  useEffect(() => {
+    if (!pendingRematch || state.mode !== 'explore' || modalOpen) return;
+    queueMicrotask(() => {
+      dispatch({ type: 'rematch', previous: pendingRematch });
+      setPendingRematch(null);
+    });
+  }, [pendingRematch, state.mode, modalOpen]);
 
   const refreshMotion = () => {
     destinationRef.current = null;
@@ -304,7 +355,7 @@ export default function MagicianAdventure() {
     ];
     buttons()[0]?.focus({ preventScroll: true });
     const trap = (event: KeyboardEvent) => {
-      if (event.key !== 'Tab') return;
+      if (event.key !== 'Tab' || modal.querySelector('dialog:modal')) return;
       const available = buttons();
       const first = available[0],
         last = available.at(-1);
@@ -322,7 +373,7 @@ export default function MagicianAdventure() {
       if (previous instanceof HTMLElement && previous.isConnected)
         previous.focus({ preventScroll: true });
     };
-  }, [modalOpen, state.dialogue?.id, state.dialogue?.step, mapOpen, state.panel, overlayOpen]);
+  }, [modalOpen, state.dialogue?.id, state.dialogue?.step, mapOpen, state.panel, overlayOpen, reward, backpackIntroOpen]);
   useEffect(() => {
     const stop = () => {
       keys.current.clear();
@@ -333,13 +384,16 @@ export default function MagicianAdventure() {
     };
     stop();
     const down = (event: KeyboardEvent) => {
+      if (reward || backpackIntroOpen) return;
+      // Native child editors own their Escape, Tab and shortcut keys.
+      if (event.target instanceof HTMLElement && event.target.closest('dialog:modal')) return;
       if (
         event.target instanceof HTMLElement &&
         ['INPUT', 'TEXTAREA', 'SELECT'].includes(event.target.tagName)
       )
         return;
       if (['ArrowLeft', 'ArrowRight', 'KeyA', 'KeyD'].includes(event.code)) {
-        if (state.mode === 'explore' && !mapOpen) {
+        if (state.mode === 'explore' && !mapOpen && !overlayOpen && !noticeOpen) {
           event.preventDefault();
           keys.current.add(event.code);
           refreshMotion();
@@ -347,7 +401,12 @@ export default function MagicianAdventure() {
         return;
       }
       if (event.repeat || state.mode === 'battle') return;
-      if (event.code === 'KeyM' && state.mode === 'explore') {
+      if (event.code === 'KeyB' && state.mode === 'explore' && backpackReady && !mapOpen && !dossierOpen && !troupeOpen && !noticeOpen) {
+        event.preventDefault();
+        setBackpackOpen((old) => !old);
+        return;
+      }
+      if (event.code === 'KeyM' && state.mode === 'explore' && !overlayOpen && !noticeOpen) {
         event.preventDefault();
         setMapOpen((old) => !old);
       }
@@ -355,10 +414,11 @@ export default function MagicianAdventure() {
         setMapOpen(false);
         setDossierOpen(false);
         setTroupeOpen(false);
+        setBackpackOpen(false);
         if (state.mode === 'panel') dispatch({ type: 'panel-close' });
         return;
       }
-      if (mapOpen || overlayOpen || state.mode === 'panel') return;
+      if (mapOpen || overlayOpen || noticeOpen || state.mode === 'panel') return;
       // Leave focused buttons to their native Enter action, avoiding two dialogue advances.
       if (
         event.code === 'Enter' &&
@@ -387,9 +447,9 @@ export default function MagicianAdventure() {
       document.removeEventListener('visibilitychange', stop);
       stop();
     };
-  }, [state.mode, state.map, mapOpen, overlayOpen]);
+  }, [state.mode, state.map, mapOpen, overlayOpen, noticeOpen, reward, backpackIntroOpen, backpackReady, dossierOpen, troupeOpen]);
   useEffect(() => {
-    if (state.mode !== 'explore' || mapOpen) return;
+    if (state.mode !== 'explore' || modalOpen) return;
     let frame = 0,
       last = performance.now(),
       accumulator = 0;
@@ -421,10 +481,10 @@ export default function MagicianAdventure() {
     };
     frame = requestAnimationFrame(loop);
     return () => cancelAnimationFrame(frame);
-  }, [state.mode, state.map, mapOpen]);
+  }, [state.mode, state.map, modalOpen]);
 
   const hold = (event: PointerEvent<HTMLButtonElement>, direction: -1 | 1) => {
-    if (state.mode !== 'explore' || mapOpen) return;
+    if (state.mode !== 'explore' || modalOpen) return;
     event.currentTarget.setPointerCapture(event.pointerId);
     touchDirection.current = direction;
     refreshMotion();
@@ -434,7 +494,7 @@ export default function MagicianAdventure() {
     refreshMotion();
   };
   const approach = (id: string, x: number) => {
-    if (state.mode !== 'explore' || mapOpen) return;
+    if (state.mode !== 'explore' || modalOpen) return;
     if (nearby?.id === id) {
       dispatch({ type: 'interact', id });
       return;
@@ -448,6 +508,11 @@ export default function MagicianAdventure() {
     setMotion(direction);
   };
   const targetOnMap = objective.target;
+  const routeMarkers: RouteMarker[] = spots.flatMap((spot) => [
+    ...(objectiveActive && spot.id === targetOnMap ? [{id: `main:${spot.id}`, spotId: spot.id, x: spot.x, title: objective.title, side: false}] : []),
+    ...(sideObjectives.some((side) => side.target === spot.id) ? [{id: `side:${spot.id}`, spotId: spot.id, x: spot.x,
+      title: sideObjectives.filter((side) => side.target === spot.id).map((side) => side.title).join('、'), side: true}] : []),
+  ]).sort((a, b) => Number(a.side) - Number(b.side));
   const setup = state.mode === 'battle' ? battleSetup(state) : null;
   if (state.mode === 'battle' && state.battle && setup) {
     const battle = state.battle;
@@ -456,6 +521,8 @@ export default function MagicianAdventure() {
       <div className="rg-duel">
         <ThrowTable
           key={battle.id}
+          initialSoundEnabled={soundEnabled}
+          onSoundChange={setSoundEnabled}
           challenge={{
             enemyStyle: battle.enemyStyle,
             seed: battle.seed,
@@ -469,17 +536,26 @@ export default function MagicianAdventure() {
             presence: setup.presence,
             enemyPresence: setup.enemyPresence,
             intel: setup.intel,
+            playerUpgrades: state.itemUpgrades,
+            playerTeam: setup.playerTeam,
+            enemyTeam: setup.enemyTeam,
+            teamChoices: setup.teamChoices,
+            enemyOrderKnown: setup.enemyOrderKnown,
+            stanEncore: setup.stanEncore,
+            playerReserve: setup.playerReserve,
+            enemyReserve: setup.enemyReserve,
+            enemyReserveCharacter: setup.enemyReserveCharacter as RigId | undefined,
           }}
           playerPerformer={setup.performers.length > 1 ? undefined : 'eli'}
           performerChoices={setup.performers.length > 1 ? setup.performers : undefined}
           memberBooks={setup.books}
           hostNames={['伊莱', CHARACTERS[setup.opponent].name]}
-          initialLoadout={fitLoadout(loadout ?? (state.act > 1 ? BRIDGEPORT_LOADOUT : STARTER_LOADOUT), setup.available, setup.forced)}
+          initialLoadout={fitLoadout(loadout ?? (state.act >= 4 ? MILLBROOK_LOADOUT : state.act > 1 ? BRIDGEPORT_LOADOUT : STARTER_LOADOUT), setup.available, setup.forced)}
           hosts={['eli', opponent]}
           available={{ ...setup.available, ...(state.act > 1 ? { variants: setup.variants } : {}) }}
           coach={battle.coach}
-          // v6: a formal opponent's gossip names their kit; it waits until their style is scouted.
-          tip={setup.tip && battle.kind !== 'qualifier' && (setup.intel.fog === 'open' || setup.intel.visible.includes('style')) ? setup.tip : undefined}
+          tutorialHints={state.act < 3 && !state.flags.westArrived}
+          tip={state.act < 3 && !state.flags.westArrived && battle.kind !== 'qualifier' ? setup.tip : undefined}
           onReturn={(winner, nextLoadout, report) => {
             // A borrowed trunk goes back to its owner; keep your own.
             if (!setup.forced) setLoadout(nextLoadout);
@@ -490,13 +566,20 @@ export default function MagicianAdventure() {
                 : { type: 'result', id: battle.id, winner, report },
             );
           }}
+          onRetry={(winner, nextLoadout, report) => {
+            if (winner === null) return;
+            if (!setup.forced) setLoadout(nextLoadout);
+            else if (loadout) setLoadout({ ...loadout, book: nextLoadout.book });
+            setPendingRematch(battle);
+            dispatch({ type: 'result', id: battle.id, winner, report });
+          }}
         />
       </div>
     );
   }
 
   return (
-    <main className="rg-root">
+    <main className="rg-root" data-sidequest={sideObjectives.length > 0}>
       <header className="rg-header">
         <div className="rg-wordmark">
           <svg viewBox="0 0 100 100" className="rg-brand-mark" aria-hidden="true">
@@ -527,15 +610,19 @@ export default function MagicianAdventure() {
             </span>
           )}
           {state.act > 1 && (
-            <button onClick={() => setDossierOpen(true)} disabled={state.mode !== 'explore' || !state.flags.metDodd}>
+            <button onClick={() => setDossierOpen(true)} disabled={state.mode !== 'explore' || !(state.flags.metDodd || state.flags.westRegistered)}>
               档案
             </button>
           )}
-          {state.act > 1 && (
+          {troupeUnlocked(state) && (
             <button onClick={() => setTroupeOpen(true)} disabled={state.mode !== 'explore'}>
               剧团 <small>{state.troupe.length}</small>
             </button>
           )}
+          {backpackReady && <button onClick={() => setBackpackOpen(true)} disabled={modalOpen}>
+            <CardsIcon /> 背包 <kbd>B</kbd>
+          </button>}
+          <button className="rg-audio-toggle" aria-pressed={soundEnabled} title={CITY_SCORES[city].title} onClick={() => setSoundEnabled((value) => !value)}>{soundEnabled ? '♫ 声音开' : '♫ 声音关'}</button>
           <button
             onClick={() => setMapOpen(true)}
             disabled={state.mode !== 'explore'}
@@ -562,6 +649,7 @@ export default function MagicianAdventure() {
         >
           <StageScene
             mapId={state.map}
+            lodgingId={state.viewedLodging ?? undefined}
             playerX={state.player.x}
             facing={state.player.facing}
             walking={
@@ -591,40 +679,56 @@ export default function MagicianAdventure() {
                 tabIndex={-1}
               />
               {hotspotInReach(state, spot) && !mapOpen && <button
-                className="rg-hotspot-label"
+                className={`rg-hotspot-label ${sideObjectives.some((side) => side.target === spot.id) ? 'rg-side-target' : ''}`}
                 onClick={() => dispatch({ type: 'interact', id: spot.id })}
                 aria-label={`${spot.kind === 'door' ? '进入' : spot.kind === 'pickup' ? '查看' : '交互'}${spot.label}`}
               >
                 <span>{spot.label}</span>
                 <kbd>E</kbd>
               </button>}
-              {spot.id === targetOnMap && objectiveActive && state.mode !== 'complete' && <>
-                <button className="rg-quest-marker" aria-label={`当前任务：${objective.title}`} title={objective.title}
+              <div className="rg-hotspot-icons" aria-label={`${spot.label}标识`}>
+                {(spot.functions ?? []).map((kind) => <button key={kind} className="rg-function-marker"
+                  title={LOCATION_FUNCTION_NAMES[kind]} aria-label={`功能：${LOCATION_FUNCTION_NAMES[kind]} · ${spot.label}`}
+                  onClick={() => approach(spot.id, spot.x)} disabled={modalOpen}>
+                  <LocationFunctionIcon kind={kind} />
+                </button>)}
+                {spot.id === targetOnMap && objectiveActive && <button className="rg-quest-marker" aria-label={`当前任务：${objective.title}`} title={objective.title}
                   onClick={() => approach(spot.id, spot.x)} disabled={state.mode !== 'explore' || mapOpen}>
-                  <svg viewBox="0 0 32 40" aria-hidden="true"><path d="M16 2L30 10V29L16 38L2 29V10Z" /><path d="M16 10V23M16 28V29" /></svg>
-                </button>
-                <i className="rg-waypoint" />
-              </>}
+                  <QuestScroll />
+                </button>}
+              {sideObjectives.some((side) => side.target === spot.id) && <button
+                className="rg-quest-marker rg-side-marker"
+                aria-label={`支线任务：${sideObjectives.filter((side) => side.target === spot.id).map((side) => side.title).join('、')}`} title={sideObjectives.filter((side) => side.target === spot.id).map((side) => side.title).join('、')} onClick={() => approach(spot.id, spot.x)} disabled={modalOpen}>
+                <QuestScroll />
+              </button>}
+              </div>
+              {spot.id === targetOnMap && objectiveActive && <i className="rg-waypoint" />}
             </div>
           ))}
         </div>
+        {state.mode === 'explore' && !modalOpen && <EdgeRouteMarkers markers={routeMarkers} worldWidth={map.width}
+          viewportRef={viewportRef} worldRef={worldRef} onApproach={approach} />}
         <div className="rg-location">
           <i />
           <div>
-            <strong>{map.name}</strong>
+            <strong>{state.map.endsWith('-home') ? viewedLodgingOf(state)?.name ?? map.name : map.name}</strong>
             <span>{map.subtitle}</span>
           </div>
         </div>
         {state.mode === 'explore' && (
-          <div className="rg-objective">
+          <div className="rg-objectives"><div className="rg-objective">
             <div className="rg-objective-portrait">
               <Figure crop="head" character={objectivePortrait(state, objective.target)} height={84} />
             </div>
             <div>
-              <strong>{objective.title}</strong>
+              <small className="rg-objective-category">主线</small><strong>{objective.title}</strong>
               <span>{objective.detail}</span>
             </div>
-          </div>
+          </div>{sideObjectives.length > 0 && <details className="rg-side-journal" open={sideObjectives.length < 3}>
+            <summary><QuestScroll /> 支线节目单 <b>{sideObjectives.length}</b><span>展开查看</span></summary>
+            {sideObjectives.map((side) => <div key={side.title} className="rg-objective rg-side-objective">
+            <QuestScroll /><div><small className="rg-objective-category">支线</small><strong>{side.title}</strong><span>{side.detail}</span></div>
+          </div>)}</details>}</div>
         )}
         {state.mode === 'explore' && !mapOpen && !state.flags.trained && (
           <output className="rg-coach">
@@ -640,14 +744,14 @@ export default function MagicianAdventure() {
             ) : state.map === 'street' ? (
               <>
                 <span>
-                  走到发光的门前，按 <kbd>E</kbd> 进去。
+                  <DialogueText text="走到发光的门前，按" /> <kbd>E</kbd> 进去。
                 </span>
-                <small>里德的工作室：橱窗里有兔子的那家。</small>
+                <small><DialogueText text="里德的工作室：橱窗里有兔子的那家。" /></small>
               </>
             ) : (
               <>
                 <span>
-                  靠近里德，按 <kbd>E</kbd> 打招呼。
+                  <DialogueText text="靠近里德，按" /> <kbd>E</kbd> 打招呼。
                 </span>
                 <small>他假装在修东西，其实在等你。</small>
               </>
@@ -657,7 +761,7 @@ export default function MagicianAdventure() {
         {state.act === 2 && state.mode === 'explore' && !mapOpen && !state.flags.metDoris && (
           <output className="rg-coach">
             <span>
-              右上角是<b>演出费</b>：赢比赛、街头演出都会进账，在霍布斯旧货铺花掉。
+              <DialogueText text="右上角是演出费：赢比赛、街头演出都会进账，在霍布斯旧货铺花掉。" />
             </span>
             <small>进度会自动保存在这台设备上。</small>
           </output>
@@ -667,7 +771,7 @@ export default function MagicianAdventure() {
             <svg viewBox="0 0 100 100" aria-hidden="true">
               <SuitMark suit={state.flags.champion ? 1 : 0} size={70} x={50} y={50} color="currentColor" />
             </svg>
-            {state.flags.champion
+            {state.flags.millChampion ? '米尔布鲁克剧团联赛冠军' : state.flags.noraChampion ? '韦斯特港职业联赛冠军' : state.flags.champion
               ? '布里奇波特公开赛冠军'
               : state.act > 1 && state.won.includes('ada') && state.won.includes('bea')
                 ? '布里奇波特公开赛资格'
@@ -693,11 +797,11 @@ export default function MagicianAdventure() {
           </button>
         )}
 
-        {line && state.dialogue && dialogue && (
+        {line && state.dialogue && dialogue && !reward && (
           <dialog
             ref={modalRef}
             open
-            className={`rg-dialogue ${state.dialogue.id === 'opening' || state.dialogue.id === 'bp-arrival' ? 'rg-opening' : ''}`}
+            className={`rg-dialogue ${state.dialogue.id === 'opening' || state.dialogue.id === 'bp-arrival' || state.dialogue.id === 'wp-arrival' ? 'rg-opening' : ''}`}
             aria-modal="true"
             aria-label={speaker(line.speaker).name}
           >
@@ -756,7 +860,7 @@ export default function MagicianAdventure() {
             {npcSpeaker ? (
               <div key={npcSpeaker} className="rg-dialogue-portrait rg-dialogue-npc is-speaking"
                 data-speaker={npcSpeaker} aria-label={`${CHARACTERS[npcSpeaker].name}，对话对象`}>
-                <Figure crop="bust" character={npcSpeaker as RigId} height={188} />
+                <Figure crop="bust" character={npcSpeaker as RigId} height={188} facing={-1} />
               </div>
             ) : <div className="rg-dialogue-seat rg-dialogue-npc" aria-hidden="true" />}
           </dialog>
@@ -811,7 +915,7 @@ export default function MagicianAdventure() {
                       onClick={() => {
                         setMapOpen(false);
                         setLoadout(undefined);
-                        dispatch({ type: 'restart', act: (index + 1) as 1 | 2 });
+                        dispatch({ type: 'restart', act: (index + 1) as ActId });
                       }}
                     >
                       从这一幕重新开始
@@ -835,11 +939,17 @@ export default function MagicianAdventure() {
         {state.mode === 'panel' && state.panel === 'shows' && (
           <ShowsPanel state={state} modalRef={modalRef} onStart={(id) => dispatch({ type: 'show', id })} onClose={() => dispatch({ type: 'panel-close' })} />
         )}
-        {troupeOpen && (
+        {state.mode === 'panel' && state.panel === 'recruits' && <RecruitBoard state={state} modalRef={modalRef}
+          onHire={() => dispatch({ type: 'hire', id: 'stan' })} onClose={() => dispatch({ type: 'panel-close' })} />}
+        {state.mode === 'panel' && state.panel === 'workshop' && <WorkshopPanel state={state} modalRef={modalRef}
+          onUpgrade={(id, tier) => dispatch({ type: 'upgrade', id, tier })} onClose={() => dispatch({ type: 'panel-close' })} />}
+        {backpackOpen && <BackpackPanel state={state} modalRef={modalRef} onClose={() => setBackpackOpen(false)}
+          loadout={fitLoadout(loadout ?? (state.act >= 4 ? MILLBROOK_LOADOUT : state.act > 1 ? BRIDGEPORT_LOADOUT : STARTER_LOADOUT), unlockedKit(state))} onChange={setLoadout} />}
+        {(troupeOpen || (state.mode === 'panel' && state.panel === 'troupe')) && (
           <TroupePanel
             state={state}
             modalRef={modalRef}
-            onClose={() => setTroupeOpen(false)}
+            onClose={() => { setTroupeOpen(false); if (state.mode === 'panel') dispatch({ type: 'panel-close' }); }}
             onLife={state.act > 1 ? (action) => dispatch({ type: 'life', action }) : undefined}
           />
         )}
@@ -854,12 +964,12 @@ export default function MagicianAdventure() {
             onScout={state.act > 1 ? (battle, source) => dispatch({ type: 'scout', battle, source }) : undefined}
           />
         )}
-        {noticeOpen && !overlayOpen && !mapOpen && (
+        {noticeOpen && !overlayOpen && !mapOpen && !reward && !backpackIntroOpen && (
           <dialog ref={modalRef} open className="rg-map-modal rg-panel rg-notice" aria-modal="true" aria-label="消息">
             <ul>
               {state.notice!.map((line, index) => (
                 <li key={index} className={line.includes('情报有误') ? 'is-false' : line.includes('结账') ? 'is-heading' : ''}>
-                  {line}
+                  <DialogueText text={line} />
                 </li>
               ))}
             </ul>
@@ -896,7 +1006,7 @@ export default function MagicianAdventure() {
                 </div>
                 <small>巴士已经在门口了。司机说他“顺便”想去布里奇波特看看那里的厕所。</small>
               </>
-            ) : (
+            ) : state.act === 2 ? (
               <>
                 <h2>
                   这一次，
@@ -909,30 +1019,31 @@ export default function MagicianAdventure() {
                   <span>下一站 · 韦斯特港职业赛</span>
                   <i>♠ ♦ ♣ ♥</i>
                 </div>
-                <small>第二幕到此为止。第三幕正在排练——韦斯特港的海鸥还在跟导演谈片酬。</small>
+                <small>朱诺已经上车。下一站有人读过你的档案——也有人等着改写它。</small>
               </>
-            )}
+            ) : state.act === 3 ? (
+              <>
+                <h2>这一次，<br />他们记住了你的判断。</h2>
+                <p>伊莱·维尔 · 韦斯特港职业赛冠军</p>
+                <div className="rg-ticket-art"><b>MILLBROOK</b><span>下一站 · 米尔布鲁克剧团联赛</span><i>♠ ♦ ♣ ♥</i></div>
+                <small>第三幕完成。你可以继续探索港口、完成支线、照顾伙伴与整理巡演箱。下一站米尔布鲁克，伙伴将有各自的一幕。</small>
+              </>
+            ) : <><h2>这一次，<br />节目单写了所有人的名字。</h2><p>米尔布鲁克 · 剧团联赛冠军</p><div className="rg-ticket-art"><b>AURORA</b><span>世界赛外卡邀请 · 霍尔特的指挥棒</span><i>♠ ♦ ♣ ♥</i></div><small>第四幕完成。可继续铜管乐队、篝火之夜与午夜钟声，或坐巴士回访旧城。奥罗拉是下一幕，尚未开放。</small></>}
             <div>
-              <button
-                className="rg-secondary"
-                onClick={() => {
-                  setLoadout(undefined);
-                  dispatch({ type: 'restart' });
-                }}
-              >
-                重新启幕
+              <button className={state.act < 4 ? 'rg-secondary' : 'rg-primary'} onClick={() => dispatch({ type: 'explore' })}>
+                {state.act === 3 ? '留在港口' : '留在小镇'}
               </button>
-              <button className={state.act === 1 ? 'rg-secondary' : 'rg-primary'} onClick={() => dispatch({ type: 'explore' })}>
-                留在小镇
-              </button>
-              {state.act === 1 && (
+              {state.act < 4 && (
                 <button className="rg-primary" onClick={() => dispatch({ type: 'travel' })}>
-                  前往布里奇波特 <span>→</span>
+                  前往{state.act === 1 ? '布里奇波特' : state.act === 2 ? '韦斯特港' : '米尔布鲁克'} <span>→</span>
                 </button>
               )}
             </div>
           </dialog>
         )}
+        {backpackIntroOpen && <BackpackIntro modalRef={modalRef} onLater={() => dispatch({ type: 'backpack-guided' })}
+          onOpen={() => { dispatch({ type: 'backpack-guided' }); setBackpackOpen(true); }} />}
+        {reward && <RewardReveal reward={reward} modalRef={modalRef} onClose={() => setRewardQueue((old) => old.slice(1))} />}
       </div>
 
       <footer className="rg-footer">

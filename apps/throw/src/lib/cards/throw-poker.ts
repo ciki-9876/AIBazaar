@@ -12,7 +12,7 @@ export const SUITS = ["♠", "♥", "♣", "♦"] as const;
 export const rankText = (rank: number) =>
   ({ 11: "J", 12: "Q", 13: "K", 14: "A" })[rank] ?? String(rank);
 export const HAND_NAMES = [
-  "散牌",
+  "单张",
   "对子",
   "两对",
   "三条",

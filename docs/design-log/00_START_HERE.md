@@ -1,5 +1,16 @@
 # AIBazaar 游戏设计迭代日志
 
+2026-10-12 当前甩牌为 v16 / 冒险 v10：[ADR-0064](./decisions/ADR-0064-throw-millbrook-upgrades-and-autoplay.md) 实装第四幕米尔布鲁克、三人独立备战、按道具机制强化、金级同款材料与无数量上限、可切换自动出牌。[内容清单](../F9_THROW_MILLBROOK_2026-10-12.md)与[验收证据](./iterations/F9/2026-10-12-throw-millbrook-upgrades-and-autoplay.md)为当前入口；下面各版保留历史。
+
+
+2026-10-11 甩牌双人赛修订：[ADR-0063](./decisions/ADR-0063-throw-team-preparation-and-intermission.md) 实装独立队员巡演箱/遗物/牌匣、公共收藏独占分配、5 秒报幕保护与新场阶段重置，以及只保留有匹配物件的筛选标签。[本轮验收](./iterations/F9/2026-10-11-throw-team-preparation-and-intermission.md) 为 v15 当前入口。
+
+2026-10-11 甩牌可读性与世界租用：[ADR-0062](./decisions/ADR-0062-throw-readable-recovery-and-local-leases.md) 采用禁手蒙层与阶段倍率、半秒落幕、逐手真实战报、两类交集筛选、基于已知信息的推荐、实体管家租约和同排建筑/任务图标。[本轮实现与验收](./iterations/F9/2026-10-11-throw-readable-recovery-and-local-leases.md) 为当前修订入口，保留下面 v13 的历史证据。
+
+2026-10-11 甩牌后续修订：[ADR-0061](./decisions/ADR-0061-throw-recovery-and-westport-troupe.md) 实装每张 1 秒禁手、去除灼烧出牌自伤、真实状态与声音反馈、对白结束后发奖，以及第三章韦斯特港的主线、支线、双人赛、工坊与三城可进入剧团住所。当前对决 v13 / 冒险 v8；[本轮证据](./iterations/F9/2026-10-11-throw-recovery-and-westport.md) 取代下条中的现行版本与开放时点，不改写历史结论。
+
+2026-10-11 甩牌最新修订：[ADR-0060](./decisions/ADR-0060-throw-quick-draw-and-readable-progress.md) 将伊莱初始手法改为快抽（5 张 / 15 秒），资格赛使用显式固定首副牌与实时操作前提；独立整场战报、稳定手牌布局、布阵交换与机制搭配、蓝色支线、统一收获弹窗和章后背包同步落地。当前对决 v12 / 冒险 v7。实现与验收状态见 [本轮记录](./iterations/F9/2026-10-11-throw-quick-draw-and-feedback.md)。
+
 2026-10-09 甩牌最新修订：[ADR-0052](./decisions/ADR-0052-throw-v6-vector-stage-and-tempo.md) 统一同伴矢量舞台、归档旧剪纸／像素；对决 v6 接入 30 秒后白热、60 秒落幕加快补牌、三张顺子／同花、默认 20 秒整理与单张入门。策略、观众、商店、对白、任务反馈见 [迭代与验证](./iterations/F9/2026-10-09-throw-v6-stage-and-tempo.md)，新协作者从 [内容手册](../throw-handbook/README.md) 开始。
 
 2026-09-30：用户接受电梯主线“我被取代了”的方向，要求持续攀爬动力、自洽替身原理、真实关系冲突与玩法联动。见 [ADR-0024](./decisions/ADR-0024-replacement-mystery-direction.md)。[底层框架推演](../F9_REPLACEMENT_FRAMEWORK_PROPOSAL_2026-09-30.md)中的现实修复设施、章节行动窗口和人物例子仍为提案，未实装。

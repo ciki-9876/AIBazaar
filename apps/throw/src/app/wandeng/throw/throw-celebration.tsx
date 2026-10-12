@@ -7,6 +7,10 @@ export function PhaseLights({ phase }: { phase: BattlePhase }) {
     <div className={`tp-phase-lights tp-phase-${phase}`} data-battle-phase={phase}>
       <i className="tp-phase-beam tp-phase-beam-left" aria-hidden="true" />
       <i className="tp-phase-beam tp-phase-beam-right" aria-hidden="true" />
+      <div className="tp-phase-surge" key={`surge-${phase}`} aria-hidden="true">
+        {Array.from({length: phase === 'heated' ? 12 : 20}, (_, index) => <i key={index} style={{'--surge-i': index} as CSSProperties} />)}
+      </div>
+      {phase === 'curtain' && <div className="tp-final-border" aria-hidden="true" />}
       <output className="tp-phase-callout" key={phase} aria-live="polite">
         <small>{phase === 'heated' ? 'THE STAGE IS YOURS' : 'THE FINAL CURTAIN'}</small>
         <strong>{phase === 'heated' ? '白热阶段' : '落幕阶段'}</strong>

@@ -1,6 +1,11 @@
 # 08 · 平衡与模拟
 
-当前正式规则为 v8：v6 的节奏（白热／落幕加快补牌、顺子／同花三张起、默认整理 20 秒）、v7 的遗物与变种，加上 v8 的发牌轮（每轮 2 张，总量不变）与烫手 4（[ADR-0055](../design-log/decisions/ADR-0055-throw-v8-deal-rounds.md)）。**AI 出手比真人慢得多**，矩阵测不到真人节奏下的问题；改节奏相关的规则时，要另外用真人节奏跑一遍。下面 v4／v5 数值与矩阵属于历史证据，新增改动必须以当前规则重新运行后再给出平衡结论，不能只改文档里的版本标签。最新矩阵见 [v7 迭代](../design-log/iterations/F9/2026-10-09-throw-v7-relics-variants.md)，v6 节奏见 [v6 迭代](../design-log/iterations/F9/2026-10-09-throw-v6-stage-and-tempo.md)。
+2026-10-12 当前规则：对决 v16 / 冒险 v10。第四幕、26件本体字段改装、金级同款材料且不限数量、自动出牌、三人独立配置见[ADR-0064](../design-log/decisions/ADR-0064-throw-millbrook-upgrades-and-autoplay.md)、[第四幕内容](../F9_THROW_MILLBROOK_2026-10-12.md)与[实测记录](../design-log/iterations/F9/2026-10-12-throw-millbrook-upgrades-and-autoplay.md)。下文此前版本的机制及证据有冲突时按本修订为准；历史结果不重写。
+
+
+当前正式规则为 v14：禁手按开场/白热/落幕缩放为每张 1、2/3、1/2 秒；落幕每半秒结算、每次伤害按原秒数公式不变，见 [ADR-0062](../design-log/decisions/ADR-0062-throw-readable-recovery-and-local-leases.md)。v8 的每轮 2 张发牌、v13 的移除灼烧出牌自伤继续沿用。AI 思考可与禁手重叠，但额外思考仍使单张节奏慢于真人；矩阵不能代替真人节奏。移除烫手后原灼烧预设掉至 35% 全场下限之下，因此 v13 已把其中的双响铃换成飞牌修缮箱；v14 没有再次改道具、预设或克制门槛。旧参数扫描见 [v13 迭代](../design-log/iterations/F9/2026-10-11-throw-recovery-and-westport.md)。下面 v4／v5 与 [v12 结果](../design-log/iterations/F9/2026-10-11-throw-quick-draw-and-feedback.md) 都是各自版本的历史证据；不带人物身份的预设矩阵不能证明快抽、改装、莫莉或双人赛已经平衡。
+
+2026-10-11 的 v14 同种子/同座位对照，`balance-matrix.mjs 40`：10 条克制均通过 ≥60%，六套全场均值仍为 49/53/52/41/52/53%；逐格最大变化为 3 个百分点。这里是基础预设回归证据，不能据此宣称半秒落幕的真人体验或第三幕长期难度已验收，详见 [v14 记录](../design-log/iterations/F9/2026-10-11-throw-readable-recovery-and-local-leases.md)。
 
 **任何数值改动都要有前后对比数据。** 「感觉强了一点」不是理由；「矩阵里从 48% 到 61%」才是。
 

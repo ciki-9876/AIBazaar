@@ -1,8 +1,11 @@
 # 02 · 规则功能开发
 
+2026-10-12 当前规则：对决 v16 / 冒险 v10。第四幕、26件本体字段改装、金级同款材料且不限数量、自动出牌、三人独立配置见[ADR-0064](../design-log/decisions/ADR-0064-throw-millbrook-upgrades-and-autoplay.md)、[第四幕内容](../F9_THROW_MILLBROOK_2026-10-12.md)与[实测记录](../design-log/iterations/F9/2026-10-12-throw-millbrook-upgrades-and-autoplay.md)。下文此前版本的机制及证据有冲突时按本修订为准；历史结果不重写。
+
+
 这一章讲怎样给对决加一条新规则或新机制。以 v5 的两个真实功能为例：**落幕**（全局机制）和**演出规矩 `DuelTerms`**（单局约束）。
 
-当前运行规则为 v6，见 [ADR-0052](../design-log/decisions/ADR-0052-throw-v6-vector-stage-and-tempo.md)。规则层统一提供 `battlePhase(tick)`：tick ≤600 为开场、601–1199 为白热、≥1200 为落幕；基础补牌分别为 60／40／30 tick。视觉阶段和模拟工具都要读这套判定，避免一边显示白热、一边仍按开场补牌。
+当前运行规则为 v14，见 [ADR-0062](../design-log/decisions/ADR-0062-throw-readable-recovery-and-local-leases.md)。每张甩出的牌带来开场 1 秒、白热 2/3 秒、落幕 1/2 秒禁手，由 `nextLaunch` 唯一判定；正在进行的禁手跨阶段也按相同比例缩短剩余时间。灼烧不再因出牌自伤。继续使用 v6 的 `battlePhase(tick)`：tick ≤600 为开场、601–1199 为白热、≥1200 为落幕；从 v8 起按每轮 2 张发牌，阶段轮间隔为 120／80／60 tick。视觉阶段和模拟工具都要读这套判定，避免一边显示白热、一边仍按开场补牌。
 
 v6 顺子／同花最低 3 张。3／4 张组合的基础牌型加成按张数相对 5 张缩放，5 张的原基线保留；涉及组合道具的描述、预览与实际效果要同步。默认整理 `arrangeThrow`（点数／花色／聚拢）和 `reorderThrow` 共用 20 秒冷却，不再读 `order` 遗物。整理失败仍要保证手牌及冷却不变。
 
@@ -79,3 +82,44 @@ AI 用的是和玩家一样的函数：`recommendCards`（选牌）→ `aiReady`
 - **用了真实时间**：`Date.now()`、`performance.now()` 只能出现在表现层。
 - **在 `.ts` 规则文件里 import 不带扩展名**：Node 直接跑测试时会 `ERR_MODULE_NOT_FOUND`。规则层运行时 import 一律写 `.ts` 后缀。
 - **改了抽牌顺序**：哪怕只是多调用了一次 `rng()`，所有种子的牌序都会变。
+
+## 8. v12 手法、教学与完整统计
+
+- 伊莱初始手法为快抽：成功使用时沿自己的牌堆抽最多 5 张、设置 15 秒冷却；最多补至 `handLimit`，满手原样返回。正常 `drawClock` 不重置。AI 只有伊莱身份才获得此手法，并在至少有 5 个空位时使用；不向其他身份追加通用按钮能力。
+- 资格赛开局调用 `applyQualifierOpening`，显式固定双方第一副 52 张而保留变种，玩家初始 3 张黑桃。`useCoach` 仍要逐步检查手牌、护盾、灼烧与守灯小毯；不能只因开局固定就省略实时条件。
+- `stats[side]` 记录整局：`throws`、`hits`、`cardsThrown`、`cards`、`kinds`、`damage`、`shieldGenerated`、`healingDone`、`itemTriggers`、`relicTriggers`、`sleightsUsed`、`curtainDamageTaken`。新增结算机制时同步更新适用账本。
+- `damage` 的直伤/灼烧/剧毒/反弹只算实际扣除对手气场；过量、挡伤不计。落幕是环境伤害。护盾算新增量，减伤格挡不算；治疗算衰减和上限处理后的恢复量。
+- 同一道具每次出手多种效果合并成一次激活，反应型触发另计；吸血发射和命中不能重复计数。只预览、被拒绝的行动不进入统计。
+- 定向测试在 `throw-performer.test.mjs`、`throw-statistics.test.mjs`；至少覆盖满手原子性、冷却边界、跨周期确定性、事件截断后的完整账本、教程不同种子仍可完成动作。
+
+## 9. v13 禁手与双人赛
+
+- `THROW_LOCK_MS_PER_CARD=1000`；发射成功后 `nextLaunch[side]=tick+cards.length×20`。`throwLockRemainingMs` 给表现层读剩余量。弹道的 450ms 只控制命中，不能再次加到禁手后面。
+- 禁手内出牌失败仍原子；手法和整理只受各自条件约束。AI 与模拟代理都等到 `releaseTick` 和 `nextLaunch` 同时满足，蓄势可以和禁手重叠。
+- 灼烧仅随时间伤害；有盾只烧盾、无盾烧气场，仍使治疗降至六成。罗茜的耐火只对每秒烧气场减 2，不免除盾消耗。
+- `DuelReserve` 作为 `createThrowDuel` 的 `playerReserve` / `enemyReserve`。替补配置独立身份、风格、道具、遗物、牌匣、气场与改装。`reserves`、`teamOrder`、`activeSeats` 是可序列化规则状态。
+- 倒地后先检查替补，再判断最终胜负。保留存活者状态与全局时钟，替补初始五张、1 秒禁手；在途弹清除，不能改打新登场者。
+- `playerUpgrades` / `enemyUpgrades` 注入道具改装，`PreviewContext.upgrades` 与实际出手共用。本体先升档，再走既有家族与相邻增幅；不能在 UI 另算最终伤害。
+- 定向边界在 `throw-recovery.test.mjs`；新增规则不要只测玩家，必须测试 AI、双倒地、存活者保留、替补身份不重复和失败时完整状态不变。
+
+## 10. v14 阶段节奏与每次出手账本
+
+本节取代上节固定 1 秒禁手的数值。`throwLockMsPerCard(tick)` 返回当前阶段每张禁手；整手总时间向上量化至 50ms，例如白热 3 张正好 2 秒、5 张 3.35 秒。`throwLockDuration` 只提供完整长度供表现计算，能否出牌仍只看 `nextLaunch`。`throwLockProgress(state, side)` 返回实际剩余毫秒、总毫秒、剩余比例；不能另设 DOM 定时器影响规则。开场→白热、白热→落幕时，未结束的禁手同比缩短剩余量与总长度、保留进度，向上量化最多多 1 tick。
+
+落幕伤害每 500ms 结算，`curtainDamage` 的按秒递增公式不变，所以默认气场下 60s、60.5s、61s、61.5s 分别造成 1、1、2、2；护盾照常抵挡。灼烧与剧毒仍每 1000ms 结算，不能通过缩短共用持续伤害时钟误加倍。
+
+- `stats[side].damageTaken` 与造成伤害使用相同的实际气场扣除口径，额外包含 `curtain`；环境不算给对手的直伤。原 `curtainDamageTaken` 为兼容读取保留。
+- `stats[side].actions` 逐次追加实际出手的 UID、花色/点数/变种、角色、时间和牌型。`id` 等于飞牌 ID；`pending/resolved/cancelled` 区分在途、命中、因结束/接棒清除。在途取消仍保留发射时已生效的护盾、治疗。
+- `effects.direct/burn/poison` 是实际气场损失；`shieldDamage` 独立记录实际削掉的盾（含单张削盾额外消耗）。`shield/heal/cleanse` 是实际获得/移除量；`burnApplied/poisonApplied` 是盾闷火、免火、状态上限之后真正新增的层数；`reflected` 是该次出手受到的反弹气场损失，不能显示为自己的伤害。
+- `effects.draw/growth` 是本次发射实际抽进的牌和新增力量，已扣除手牌/力量上限；自动补牌和独立手法不进入本次出手。`slowMs/woundMs` 是命中时实际延长的迟缓/重创毫秒数；若旧状态已经更长则为 0，刷新不能重复记成完整时长。
+- 每个目标保存 `afflictions` 因果层数桶。自然衰减与净化从最早施加的层数开始移除；每秒真实烧毒损失按当时剩余层数比例分到原始出手，整数份额总和恰好等于实际损失。旧层数或外部给定的状态以空来源保留，不能冒领到刚出的牌。接棒保留整队账本，替补不会继承倒地者的状态。
+- 手法、独立被动和环境伤害只进对应整场统计，不伪造一条甩牌记录。罗茜主动结算的烧伤属于手法，不重复计入原来施加灼烧的出手；牌自身吸血则归入原始出手。
+- `throw-tempo-ledger.test.mjs` 覆盖阶段边界、进行中缩时、半秒落幕不加倍烧毒、实际盾疗/反弹、状态混合与净化、序列化、上限与未知来源，以及换人取消。
+
+## 11. v15：换人保护与每场阶段
+
+本节取代第 9 节的即时换人和阶段沿用全场时钟。`INTERMISSION_MS=5000`；一人退场但双方仍有可出场成员时，替补入位并开启 `intermission {startTick,endTick,sides}`。100 个规则 tick 内拒绝甩牌、手法和整理，不处理伤害、发牌、AI；临时状态和冷却的未来截止 tick 同步延后，真实剩余时间不减少。存活者的状态、牌和永久增益不重建，在途飞牌取消，整队账本保留。双方同时倒地只开一份休息；某队已经全部退场则直接结算，无虚假的下一场。
+
+`tick` 仍是单调的绝对事件时间，包含报幕；`roundStartTick` 与 `round` 给出场次边界。`duelRoundTick(state)` 是阶段时间，休息时为 0，结束后从 0 重新走。所有阶段读数、补牌间隔、禁手倍率、落幕伤害和落幕附魔使用该时间；预览/AI 同时传绝对 `tick` 与 `phaseTick`，不能把 60 秒之前的旧时钟误当成新场落幕。自然烧毒在新场整秒处理，休息不偷跳状态。安全 120 秒上限按每场，挑战的显式总期限仍沿用绝对时间。
+
+`DuelReserve.layout` 接收真实的十格摆放，不在接棒时重新打包。测试见 `throw-intermission.test.mjs`、`throw-team.test.mjs`；要覆盖双方换人、同时退场、最后退场、保护时长与状态冻结、阶段重置、真实格位和独立牌匣、JSON 往返。

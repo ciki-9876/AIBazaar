@@ -1,0 +1,22 @@
+.st-status-fx { position:absolute; inset:0; pointer-events:none; z-index:2; overflow:visible; }
+.st-status-fx > svg { width:100%; height:100%; overflow:visible; }
+.st-status-flame { transform-origin:0 0; animation:st-flame-lick 1.2s ease-in-out infinite; animation-delay:calc(var(--i) * -.23s); }
+.st-status-ember { animation:st-ember-rise 1.9s linear infinite; animation-delay:calc(var(--i) * -.29s); }
+.st-status-miasma { transform-origin:90px 224px; animation:st-miasma-breathe 2.8s ease-in-out infinite; }
+.st-status-vapor { animation:st-vapor-curl 3.4s ease-in-out infinite; animation-delay:calc(var(--i) * -.8s); opacity:.34; }
+.st-status-bubble { animation:st-toxic-rise 2.8s ease-in-out infinite; animation-delay:calc(var(--i) * -.4s); }
+.st-status-impact { transform-origin:90px 155px; animation:st-status-pulse .42s ease-out both; }
+.st-status-impact--burn { transform-origin:90px 216px; }
+.st-status-impact--poison { animation-duration:.6s; }
+.st-status-fx[data-paused="true"] * { animation-play-state:paused; }
+@keyframes st-flame-lick { 0%,100% { transform:scale(.78,.85) rotate(-5deg); opacity:.66; } 50% { transform:scale(1,1.15) rotate(4deg); opacity:.9; } }
+@keyframes st-ember-rise { 0% { transform:translate(0,0); opacity:0; } 15% { opacity:.8; } 100% { transform:translate(10px,-125px); opacity:0; } }
+@keyframes st-miasma-breathe { 50% { transform:scale(1.13,.86); opacity:.26; } }
+@keyframes st-vapor-curl { 0%,100% { transform:translate(-5px,0); opacity:.13; } 50% { transform:translate(5px,-15px); opacity:.42; } }
+@keyframes st-toxic-rise { 0% { transform:translate(0,0); opacity:0; } 20% { opacity:.8; } 100% { transform:translate(-8px,-112px); opacity:0; } }
+@keyframes st-status-pulse { 0% { transform:scale(.7); opacity:0; } 18% { transform:scale(1); opacity:1; } 100% { transform:scale(1.13); opacity:0; } }
+@media (prefers-reduced-motion:reduce) {
+  .st-status-fx * { animation:none !important; }
+  .st-status-ember,.st-status-bubble { opacity:.65; }
+  .st-status-impact { opacity:.38; }
+}

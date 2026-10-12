@@ -318,6 +318,21 @@ export function placeThrowItem(
   }
   return layout;
 }
+/** Swap occupied cells, or replace one equipped item with one from the pack.
+ * Validate both destinations as one transaction; a failed swap preserves the exact input.
+ */
+export function swapThrowItems(layout: ItemPlacement[], source: ItemId, target: ItemId): ItemPlacement[] {
+  if (source === target || !validThrowLayout(layout) ||
+    !ITEMS.some((item) => item.id === source) || !ITEMS.some((item) => item.id === target)) return layout;
+  const from = layout.find((item) => item.id === source);
+  const to = layout.find((item) => item.id === target);
+  if (!from && !to) return layout;
+  const next = layout.filter((item) => item.id !== source && item.id !== target);
+  if (to) next.push({ id: source, start: to.start });
+  if (from) next.push({ id: target, start: from.start });
+  next.sort((a, b) => a.start - b.start);
+  return validThrowLayout(next) ? next : layout;
+}
 export const adjacentThrowItems = (layout: ItemPlacement[], id: ItemId) => {
   const source = layout.find((item) => item.id === id);
   return source
@@ -368,7 +383,7 @@ export const RELICS = [
   {
     id: 'bastion',
     name: '折光铜镜',
-    text: '护盾挡下 2 张的出手时，反射挡下量的 40%；3 张及以上反射 70%。单张不反射。',
+    text: '护盾挡下 2 张的出手时，反弹挡下量的 40%；3 张及以上反弹 70%。单张不反弹。',
     quip: '你在镜子里看到的，是你自己的拳头。',
   },
 ] as const;
@@ -415,9 +430,9 @@ export const PRESETS: Record<
   },
   burn: {
     name: '余烬燃爆',
-    hint: '方块点火。烧着的人治疗减半，越出手越烫手。',
-    beats: ['mend', 'quick'],
-    items: ['cinder', 'bellows', 'ash', 'pair', 'draw'],
+    hint: '方块点火。灼烧每秒造成伤害，并把治疗降至六成；出牌不会额外受伤。',
+    beats: ['mend'],
+    items: ['cinder', 'bellows', 'ash', 'quick', 'draw'],
     relic: 'ember',
   },
   poison: {

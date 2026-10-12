@@ -1,0 +1,16 @@
+.tp-kit-filters { min-width: 0; display: grid; gap: 5px; }
+.tp-kit-filter-row { min-width: 0; margin: 0; padding: 0; border: 0; display: grid; grid-template-columns: 40px minmax(0, 1fr); gap: 8px; align-items: start; }
+.tp-kit-filter-row > b { padding-top: 5px; font: 600 12px/1.5 var(--font-cjk-serif); color: var(--brass); letter-spacing: .12em; }
+.tp-kit-filter-row.is-effect > b { color: var(--verdigris-light); }
+.tp-kit-filter-options { display: flex; gap: 4px; overflow-x: auto; padding: 2px 2px 5px; scrollbar-width: thin; scrollbar-color: var(--mist) transparent; }
+.tp-kit-filter-options button { flex: 0 0 auto; min-height: 27px; padding: 3px 9px; border: 1px solid rgba(239,231,214,.16); border-radius: 4px; background: rgba(239,231,214,.025); color: var(--bone-dim); font: 12px/1.4 var(--font-ui); white-space: nowrap; }
+.tp-kit-filter-options button:hover { color: var(--bone); border-color: var(--brass); }
+.tp-kit-filter-options button[aria-pressed="true"] { border-color: var(--brass); background: rgba(201,162,90,.2); color: var(--limelight); box-shadow: inset 0 -2px 0 var(--brass); }
+.is-effect .tp-kit-filter-options button[aria-pressed="true"] { border-color: var(--verdigris); background: rgba(79,163,154,.16); color: var(--verdigris-light); box-shadow: inset 0 -2px 0 var(--verdigris); }
+.tp-kit-filter-note { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding-left: 48px; color: var(--bone-dim); font-size: 11px; }
+.tp-kit-filter-note button { flex: 0 0 auto; border: 0; padding: 2px 0; background: transparent; color: var(--limelight); font: 11px var(--font-ui); text-decoration: underline; text-underline-offset: 3px; }
+.tp-kit-filter-note button:disabled { opacity: .35; text-decoration: none; }
+.tp-kit-filters button:focus-visible { outline: 2px solid var(--limelight); outline-offset: 2px; }
+.tp-kit-filter-empty { grid-column: 1 / -1; align-self: start; display: grid; justify-items: center; gap: 10px; padding: 26px 14px; border: 1px dashed rgba(201,162,90,.3); border-radius: 8px; color: var(--bone-dim); font-size: 13px; text-align: center; }
+.tp-kit-filter-empty p { margin: 0; }
+.tp-kit-filter-empty button { border: 1px solid var(--brass); border-radius: 999px; padding: 5px 12px; color: var(--limelight); background: rgba(201,162,90,.08); }

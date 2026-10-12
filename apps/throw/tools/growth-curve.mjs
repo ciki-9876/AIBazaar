@@ -41,8 +41,8 @@ function screen(style) {
 }
 function book(style, city, mode, seed, best) {
   const share = mode === 'low' ? 0.6 : mode === 'enemy' ? 0.7 : 1;
-  let [nr, ne, nl] = CITIES[city].mix.map((n) => Math.round(n * share));
-  nr = Math.max(0, Math.min(nr, 52 - ne - nl));
+  const [baseRare, ne, nl] = CITIES[city].mix.map((n) => Math.round(n * share));
+  const nr = Math.max(0, Math.min(baseRare, 52 - ne - nl));
   const r = rng(seed);
   const pick = (list) => list[Math.floor(r() * list.length)];
   const out = {};

@@ -43,6 +43,8 @@ const idle = (items = [], relic = null, layout) => {
 };
 /** Fire one card from the player at an idle opponent and resolve the hit. */
 const hit = (state, hand, side = 0) => {
+  // These focused effect checks isolate impact from recovery and periodic ticks.
+  state.nextLaunch[side] = state.tick;
   state.fighters[side].hand = hand;
   return run(launchThrow(state, side, hand.map((card) => card.uid)), 9);
 };
@@ -183,7 +185,7 @@ test('scorched healing: burning or wounded fighters receive 60% of a heal', () =
   state.fighters[0].burn = 5;
   state = launchThrow(state, 0, ((state.fighters[0].hand = cards([2, 3], [1, 1])), ['proof:0', 'proof:1']));
   // A lone lamp is halved by the v9 splash tax (18 -> 9), then scorched to 60%.
-  assert.equal(state.fighters[0].hp, 200 - 4 + Math.floor(9 * 0.6)); // scorch 4 (v8) then 60% of 9
+  assert.equal(state.fighters[0].hp, 200 + Math.floor(9 * 0.6));
   state = idle(['mend']);
   state.fighters[0].hp = 200;
   state.fighters[0].woundUntil = 100;
@@ -231,13 +233,14 @@ test('poison ignores shields, festers on hoarded cards and ebbs every second tic
   assert.equal(state.fighters[0].hp, MAX_HP - (6 + 2) - (6 + 2));
   assert.equal(state.fighters[0].poison, 5);
 });
-test('scorch: throwing while properly alight costs four life (v8), shield or no shield', () => {
+test('v13 burn only ticks over time; throwing does not damage the thrower', () => {
   let state = idle();
   state.fighters[0].burn = 3;
   state.fighters[0].shield = 50;
   state.fighters[0].hand = cards([2]);
   state = launchThrow(state, 0, ['proof:0']);
-  assert.equal(state.fighters[0].hp, MAX_HP - 4);
+  assert.equal(state.fighters[0].hp, MAX_HP);
+  assert.ok(!state.events.some((event) => event.text === '烫手'));
   state = idle();
   state.fighters[0].burn = 2;
   state.fighters[0].hand = cards([2]);
@@ -441,7 +444,7 @@ function matchup(a, b, seeds) {
       stepThrowDuelInPlace(state);
       if (state.status !== 'playing') break;
       const fighter = state.fighters[0];
-      if (intent.length && state.tick >= release) {
+      if (intent.length && state.tick >= release && state.tick >= state.nextLaunch[0]) {
         launchThrowInPlace(state, 0, intent);
         intent = [];
         next = state.tick + aiThinkMs(a) / 50;

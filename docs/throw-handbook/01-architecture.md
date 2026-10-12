@@ -1,5 +1,8 @@
 # 01 · 架构与确定性
 
+2026-10-12 当前规则：对决 v16 / 冒险 v10。第四幕、26件本体字段改装、金级同款材料且不限数量、自动出牌、三人独立配置见[ADR-0064](../design-log/decisions/ADR-0064-throw-millbrook-upgrades-and-autoplay.md)、[第四幕内容](../F9_THROW_MILLBROOK_2026-10-12.md)与[实测记录](../design-log/iterations/F9/2026-10-12-throw-millbrook-upgrades-and-autoplay.md)。下文此前版本的机制及证据有冲突时按本修订为准；历史结果不重写。
+
+
 ## 1. 三层结构
 
 ```
@@ -34,12 +37,16 @@
 | `previewThrow(...)` | 纯计算：这手牌甩出去会发生什么。UI 的伤害预览和 AI 决策都用它 |
 | `launchThrow(state, side, uids)` | 出牌。违规（不连续、违反演出规矩、冷却中）就**原样返回**，不产生任何副作用 |
 | `reorderThrow` / `arrangeThrow` | 整理手牌（遵守理牌冷却） |
+| `useSleight(state, side)` | 使用角色手法；满手快抽等不可用状态原样返回 |
+| `applyQualifierOpening(state)` | 资格赛专用：仅开局时设置固定双方首副牌；普通对局不调用 |
 | `stepThrowDuel(state)` | 推进 1 tick（50 ms）：抽牌、持续伤害、落幕、AI、结算 |
 | `*InPlace` 变体 | 模拟与 AI 使用的可变版本，避免大量拷贝；UI 只用不可变版本 |
 
 **时间**：规则层只认 tick。浏览器端由 `throw-table.tsx` 用 `requestAnimationFrame` 累计真实时间，每满 50 ms 派发一次 `tick`。页面隐藏时不累计——所以切走标签页不会「被偷时间」。
 
 **事件**：规则层把发生的事写进 `state.events`（伤害、护盾、治疗、状态、抽牌、结束原因……），表现层读事件来播放飘字、动画和音效。**表现层永远不自己推算结果**，只播事件。
+
+**完整战报（v12）**：`state.stats[side]` 独立累计整局出牌、牌型、实际伤害、护盾、治疗和触发；事件缓冲最多 240 条，不能用于还原整场统计。统计的精确口径见 [02 规则功能开发](02-rules-and-features.md#8-v12-手法教学与完整统计)。
 
 **结束**：`finish()` 用 `end(winner, reason)` 统一出口，判定顺序是：击倒 → 演出规矩（血线、时限）→ 120 秒总时限。`endReason` 可能是 `knockout | time | deadline | floor`，双方同时倒下算平局。
 
@@ -54,8 +61,8 @@
 
 | 常量 | 当前值 | 什么时候升 |
 |---|---|---|
-| `RULES_VERSION`（`throw-duel.ts`） | `throw-duel-v11` | 同样的种子和输入会得出**不同结果**时：改数值、改结算顺序、加新机制 |
-| `ADVENTURE_VERSION`（`adventure-types.ts`） | `magician-adventure-v6` | 存档**结构**变化时：新增/删除旗标、新增状态字段、改字段含义 |
+| `RULES_VERSION`（`throw-duel.ts`） | `throw-duel-v15` | 同样的种子和输入会得出**不同结果**时：改数值、改结算顺序、加新机制 |
+| `ADVENTURE_VERSION`（`adventure-types.ts`） | `magician-adventure-v9` | 存档**结构**变化时：新增/删除旗标、新增状态字段、改字段含义 |
 
 升版本时同时：
 
@@ -76,12 +83,18 @@
 
 v4 支持从 v3 迁移：旧「三息理线盒」的 `order` 遗物引用移为 `null`，恢复后的玩家仍能使用默认整理机制。v3 原来隐式解锁的道具转入拥有列表，保留玩家已取得的历史物品；新建冒险按单张入门的顺序开放道具。对手档案与返场坐标必须完整校验，不能把外部 JSON 的嵌套字段直接当作可信状态。
 
+当前 v7 沿用 v3 → v4 → v5 → v6 → v7 的受支持迁移链。v6 → v7 仅补 `flags.backpackGuided = false`；背包开放从 `departed || act > 1` 推导，财产、时钟、剧团和胜场保留。收获演出是本次已提交交易的收据，读档不能把已有库存误认成新奖励。
+
 ## 6. 产品边界
 
 - `npm run check:boundaries` 会扫描 import：本项目不能引用 `apps/elevator`、`apps/resonance`、`apps/elevator-ai`，类型也不行。
 - 想复用别的产品的东西？先问：它是不是中性的基础设施？是，就提到 `packages/`；不是，就在本项目里重写一份适合自己的。
 
 ## 7. 运行时的几个固定参数
+
+v13 的 `nextLaunch[side]` 是唯一禁手截止 tick：出 N 张禁手 N 秒。换人事件隔离旧演员的受击/出手/道具特效；事件的 `targetMaxHp` 记录受伤当时的气场上限，喝彩不能读取后来替补的上限。`stats` 仍按整队累计，冒险公开打法和对手档案也从整队账本读取。
+
+v8 的 `pendingReward` 在战后对白结束才原子入账；保存、恢复、关闭弹窗不另发一份。新存档还包括第三章系列赛、公开打法、改装与室内返程；支持旧版本的明确迁移，已经领取的旧奖励不能重新创建待领副本。
 
 | 参数 | 值 | 位置 |
 |---|---|---|
@@ -93,5 +106,7 @@ v4 支持从 v3 迁移：旧「三息理线盒」的 `order` 遗物引用移为 
 | 白热开始 | 超过 30 秒，即 tick 601（30.05 秒） | `HEATED_MS`、`battlePhase` |
 | 落幕开始 | 60 秒，每秒伤害 +1 | `CURTAIN_MS`、`CURTAIN_RAMP` |
 | 默认整理冷却 | 20 秒，不需要遗物 | `REORDER_MS`、`arrangeThrow`、`reorderThrow` |
+| 出牌禁手 | 每张 1 秒，双方共用；不限制选牌与手法 | `THROW_LOCK_MS_PER_CARD`、`throwLockRemainingMs` |
+| 伊莱快抽 | 最多 5 张、15 秒冷却；满手拒绝，不重置发牌轮进度 | `QUICK_DRAW_COUNT`、`PERFORMERS.eli`、`useSleight` |
 | 总时限 | 120 秒 | `finish()` |
 | 巡演箱 | 10 格 | `BAG_CELLS` |

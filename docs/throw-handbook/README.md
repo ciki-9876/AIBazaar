@@ -1,9 +1,12 @@
 # 《最后一张王牌》内容开发手册
 
-> 适用项目：`apps/throw`（甩牌对决 + 魔术师冒险）
-> 适用版本：对决规则 `throw-duel-v11` · 冒险 `magician-adventure-v6`（气场、日程、住处与伙食、情报：[ADR-0059](../design-log/decisions/ADR-0059-throw-growth-intel-rewards-cities.md)）
+2026-10-12 当前规则：对决 v16 / 冒险 v10。第四幕、26件本体字段改装、金级同款材料且不限数量、自动出牌、三人独立配置见[ADR-0064](../design-log/decisions/ADR-0064-throw-millbrook-upgrades-and-autoplay.md)、[第四幕内容](../F9_THROW_MILLBROOK_2026-10-12.md)与[实测记录](../design-log/iterations/F9/2026-10-12-throw-millbrook-upgrades-and-autoplay.md)。下文此前版本的机制及证据有冲突时按本修订为准；历史结果不重写。
 
-当前修订见 [ADR-0052](../design-log/decisions/ADR-0052-throw-v6-vector-stage-and-tempo.md)：白热／落幕加快补牌、三张组合、默认 20 秒整理、单张入门，以及舞台／任务／对白反馈。旧剪纸与像素版已 [本机归档](../art/archives/README.md)，正式美术统一采用 SVG + CSS。v5 的历史平衡数据不能直接当作 v6 已验证结果。
+
+> 适用项目：`apps/throw`（甩牌对决 + 魔术师冒险）
+> 适用版本：对决规则 `throw-duel-v16` · 冒险 `magician-adventure-v10`（独立队员备战与中场报幕：[ADR-0063](../design-log/decisions/ADR-0063-throw-team-preparation-and-intermission.md)；逐手战报与管家租用沿用 ADR-0062）
+
+当前修订见 [ADR-0062](../design-log/decisions/ADR-0062-throw-readable-recovery-and-local-leases.md)：禁手按阶段缩短且有全手牌蒙层、半秒落幕、逐次实际出手和承受伤害账目、双行交集筛选、已知信息推荐、任务与功能标识、第三章先安家及管家租用。去烫手、实际授予后发奖、第三章完整流程与城市 BGM 沿用 [ADR-0061](../design-log/decisions/ADR-0061-throw-recovery-and-westport-troupe.md)，伊莱快抽及章后背包沿用 [ADR-0060](../design-log/decisions/ADR-0060-throw-quick-draw-and-readable-progress.md)。旧剪纸与像素版已 [本机归档](../art/archives/README.md)，正式美术统一采用 SVG + CSS。历史平衡数据只说明对应版本，不能直接作为当前规则的已验证结果。
 > 维护方式：规范变化时直接改这里；**设计取舍**写进 `docs/design-log/`，这里只链接，不复述。
 
 这份手册写给第一次接手《最后一张王牌》的人：策划、程序、美术、文案都适用。读完前两页就能跑起项目、看懂代码分层；之后按要做的事挑章节读。每一章都以「规则 → 做法 → 例子 → 检查清单」组织，例子取自现有代码，可以直接照抄改。
@@ -19,7 +22,7 @@ npm run test:throw:cards         # 本项目全部测试（规则、冒险、美
 
 然后按顺序做三件事：
 
-1. **玩一遍**：第一幕（格雷维克）+ 第二幕（布里奇波特）。打开地图可以直接跳到第二幕。
+1. **玩一遍**：第一幕格雷维克、第二幕布里奇波特、第三幕韦斯特港。地图可从指定章节重新开档；第三章巴士驾驶席可保留进度回访已到城市。
 2. **读四份设计文档**：`docs/design-log/00_START_HERE.md`、`01_DESIGN_DNA.md`、`03_CURRENT_DESIGN.md`，以及 `docs/F9_THROW_VOICE_GUIDE_2026-10-09.md`（文案风格）。
 3. **读本手册的 01 架构**，再按任务挑章节。
 
@@ -55,13 +58,15 @@ npm run test:throw:cards         # 本项目全部测试（规则、冒险、美
 | 术语 | 含义 | 代码位置 |
 |---|---|---|
 | 甩牌 / 出手 | 从手牌选一组连续的牌甩出，按扑克牌型结算 | `throw-duel.ts` `launchThrow` |
+| 手法 / 快抽 | 角色专属主动能力；伊莱快抽最多 5 张，冷却 15 秒 | `throw-performer.ts`、`useSleight` |
 | tick | 对决的时间单位，1 tick = 50 ms | `TICK_MS` |
 | 巡演箱（trunk / bag） | 10 格的道具栏，道具有尺寸，相邻会互相增幅 | `throw-loadout.ts` `BAG_CELLS` |
+| 背包 | 第一章结束后开放的管理入口，涵盖卡牌、道具、遗物、布阵 | `backpackUnlocked` |
 | 道具 / 遗物 | 道具占格子、按出牌触发；遗物每人一件、改变全局规则 | `ITEMS` / `RELICS` |
 | 预设（preset / style） | 六套竞技卡组：快甩、护灯、余烬、回甘、青苔、星光 | `PRESETS` / `COMPETITIVE_STYLES` |
 | 克制环 | 四种状态之间的机制克制：闷火、净化、焦灼、毒发…… | `03-cards-items-variants.md` |
-| 白热（heated） | 超过第 30 秒，基础补牌变为每 2 秒一次 | `HEATED_MS`、`battlePhase` |
-| 落幕（curtain） | 第 60 秒起双方每秒受递增伤害；基础补牌每 1.5 秒一次 | `CURTAIN_MS`、`battlePhase` |
+| 白热（heated） | 超过第 30 秒，每轮 2 张，每 4 秒一轮 | `HEATED_MS`、`battlePhase` |
+| 落幕（curtain） | 第 60 秒起双方每秒受递增伤害；每轮 2 张，每 3 秒一轮 | `CURTAIN_MS`、`battlePhase` |
 | 变种（variant / enchant） | 同一张扑克牌的附魔版本，分稀有/史诗/传奇 | `throw-enchant.ts` |
 | 牌匣（deck book） | 「哪个牌位装哪个变种」的映射 | `DeckBook` |
 | 演出规矩（terms） | 只约束玩家的出牌规则，用于街头演出 | `DuelTerms` |
@@ -99,4 +104,4 @@ apps/throw/
 
 ## 求助顺序
 
-1. 本手册 → 2. `docs/design-log/03_CURRENT_DESIGN.md` → 3. 相关 ADR（`docs/design-log/decisions/ADR-0035`～`0051` 与本项目有关）→ 4. 代码里的 JSDoc 注释（每个导出的类型都写了「为什么」）。
+1. 本手册 → 2. `docs/design-log/03_CURRENT_DESIGN.md` → 3. 本页及各章节链接的相关 ADR → 4. 对应实现的 JSDoc 注释与测试。

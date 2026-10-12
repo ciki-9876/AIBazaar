@@ -10,6 +10,7 @@ import {
   haveTea,
   helpLandlady,
   interactAdventure,
+  hireRecruit,
   LODGINGS,
   MEALS,
   memberStatus,
@@ -55,7 +56,7 @@ const go = (state, id) => {
 const talk = (state, id) => read(go(state, id));
 const toTown = (state) => (state.map === 'bridgeport' ? state : go(state, `${state.map}-exit`));
 const toTheatre = (state) => (state.map === 'thursday' ? state : go(toTown(state), 'thursday-door'));
-const arrived = () => read(createAdventure(4242, 2));
+const arrived = () => { const state = read(createAdventure(4242, 2)); return { ...state, flags: { ...state.flags, westArrived: true, troupeGuided: true } }; };
 /** Pass slots until the given weekday (0 = Monday) morning. */
 const until = (state, day) => {
   do state = passTime(state);
@@ -117,16 +118,19 @@ test('duels take a slot, grant experience and fame on first wins; Sunday night s
   assert.deepEqual(state.week, [], 'a fresh week');
 });
 
+const landlord = (state, id) => ({ ...state, map: id === 'bus' ? 'bus-interior' : 'bridgeport-home', homeReturn: { map: 'bridgeport', x: 2740 }, viewedLodging: id, player: { ...state.player, x: id === 'bus' ? 1140 : 1280 }, mode: 'dialogue', dialogue: { id: `rent-${id}`, step: 1 }, panel: null });
+
 test('moving in is atomic and paid up front; the bus is always free', () => {
   let state = { ...arrived(), fee: 5 };
-  assert.strictEqual(rentLodging(state, 'boarding'), state, 'not enough');
+  const poor = landlord(state, 'boarding');
+  assert.strictEqual(rentLodging(poor, 'boarding'), poor, 'not enough');
   state = { ...state, fee: 30 };
-  state = rentLodging(state, 'boarding');
+  state = rentLodging(landlord(state, 'boarding'), 'boarding');
   assert.equal(state.lodging, 'boarding');
   assert.equal(state.fee, 18);
   assert.strictEqual(rentLodging(state, 'nowhere'), state);
-  assert.equal(rentLodging({ ...state, arrears: 1 }, 'suite').lodging, 'boarding', 'pay what you owe first');
-  const bus = rentLodging({ ...state, arrears: 1 }, 'bus');
+  assert.equal(rentLodging(landlord({ ...state, arrears: 1 }, 'suite'), 'suite').lodging, 'boarding', 'pay what you owe first');
+  const bus = rentLodging(landlord({ ...state, arrears: 1 }, 'bus'), 'bus');
   assert.equal(bus.lodging, 'bus');
   assert.equal(bus.arrears, 0);
 });
@@ -145,7 +149,7 @@ test('unpaid rent only gets less comfortable: warning, locked rehearsal and gloo
   assert.equal(state.lodging, 'bus');
   assert.deepEqual(state.troupe, ['eli', 'juno'], 'nobody is lost');
   // Paying off and working off a week.
-  let owing = { ...state, lodging: 'attic', arrears: 2, fee: 12 };
+  const owing = { ...state, lodging: 'attic', arrears: 2, fee: 12 };
   assert.equal(payArrears(owing).fee, 0);
   assert.equal(payArrears(owing).arrears, 0);
   const short = { ...owing, fee: 11 };
@@ -190,7 +194,7 @@ test('tea is an afternoon thing, once a week each; rehearsal needs a morning and
   assert.strictEqual(rehearse(state, 'eli'), state, 'no room on the bus');
   state = { ...state, lodging: 'boarding' };
   const practised = rehearse(state, 'eli');
-  assert.equal(practised.stage.eli, state.stage.eli + REHEARSAL_STAGE);
+  assert.equal(practised.stage.eli, state.stage.eli + REHEARSAL_STAGE + 1, 'boarding room adds its actual rehearsal bonus');
   const later = passTime(state);
   assert.strictEqual(rehearse(later, 'eli'), later, 'mornings only');
 });
@@ -201,14 +205,14 @@ test('beds limit who can perform; recruits never start more than three levels be
   assert.equal(memberStatus({ ...state, lodging: 'attic' }, 'stan'), 'ready');
   state = toTown({ ...arrived(), stage: { eli: stageThreshold(8) } });
   state = go(toTown(state), 'goose-door');
-  state = read(chooseDialogue(talk(state, 'goose-board'), 'hire-stan'));
+  state = read(hireRecruit(talk(state, 'goose-board'), 'stan'));
   assert.ok(state.troupe.includes('stan'));
   assert.equal(stageLevel(state.stage.stan), 5, 'raised to Eli’s level − 3');
   assert.equal(state.mood.stan, 2);
 });
 
 test('saves round-trip v6 life and refuse tampered fields; v5 saves gain counted experience', () => {
-  let state = withTroupe({ ...arrived(), lodging: 'attic', arrears: 1, keepsakes: ['jam-juno'] }, ['juno']);
+  const state = withTroupe({ ...arrived(), lodging: 'attic', arrears: 1, keepsakes: ['jam-juno'] }, ['juno']);
   const saved = serializeAdventure(state);
   assert.deepEqual(restoreAdventure(saved).state.mood, state.mood);
   const tamper = (patch) => {
@@ -235,7 +239,7 @@ test('saves round-trip v6 life and refuse tampered fields; v5 saves gain counted
   delete old.state.flags.falseIntelSeen;
   delete old.state.flags.doddCorrection;
   const migrated = restoreAdventure(JSON.stringify(old)).state;
-  assert.equal(migrated.version, 'magician-adventure-v6');
+  assert.equal(migrated.version, 'magician-adventure-v10');
   assert.equal(migrated.stage.eli, 3 + 3 + 3, 'the qualifier and both morning duels');
   assert.equal(migrated.fame, START_FAME + 2);
   assert.equal(migrated.lodging, 'bus');

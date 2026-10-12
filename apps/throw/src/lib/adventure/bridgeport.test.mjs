@@ -142,7 +142,7 @@ test('the main route is gated in story order and pays each first win once', () =
   state = read(state);
   assert.equal(state.mode, 'complete');
   assert.ok(state.flags.leftBridgeport);
-  assert.strictEqual(travelOn(state), state, 'Westport has not opened yet');
+  assert.equal(travelOn(state).act, 3, 'chapter three opens after the departure dialogue');
 });
 
 test('rematches with a paid reward use the rematch dialogue and keep the money where it is', () => {
@@ -335,11 +335,11 @@ test('v3 saves preserve progress and earned kits while retiring the sorting reli
   const restored = restoreAdventure(json);
   assert.ok(restored);
   // v3 walks the whole chain (v3 → v4 → v5 → v6).
-  assert.equal(restored.state.version, 'magician-adventure-v6');
+  assert.equal(restored.state.version, 'magician-adventure-v10');
   assert.deepEqual(restored.state.troupe, ['eli']);
   assert.deepEqual(restored.state.affinity, {});
   assert.deepEqual(restored.state.bonds, []);
-  assert.equal(restored.envelope.version, 'magician-adventure-v6');
+  assert.equal(restored.envelope.version, 'magician-adventure-v10');
   assert.equal(restored.state.fee, 125);
   assert.deepEqual(restored.state.won, current.won);
   assert.deepEqual(restored.state.flags, current.flags);

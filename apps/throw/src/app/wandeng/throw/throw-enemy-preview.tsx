@@ -15,7 +15,7 @@ import {
 } from '../../../lib/cards/throw-loadout';
 import { SUITS } from '../../../lib/cards/throw-poker';
 import { enchantOf, RARITY_NAMES, type DeckBook } from '../../../lib/cards/throw-enchant';
-import { KitDetail, type KitFocus } from './throw-kit';
+import { KitDetail, KitTags, type KitFocus } from './throw-kit';
 import { PERFORMERS, type PerformerId } from '../../../lib/cards/throw-performer';
 
 const RANK_LABELS: Record<number, string> = { 11: 'J', 12: 'Q', 13: 'K', 14: 'A' };
@@ -197,7 +197,7 @@ export default function EnemyPreview({
                 <ObjectGlyph id={item.id} family={item.family} />
                 <small>{item.size}格</small>
                 <b>{item.name}</b>
-                <em>{item.tag}</em>
+                <KitTags kind="item" id={item.id} />
               </button>
             );
           })}
@@ -212,6 +212,7 @@ export default function EnemyPreview({
           <small>遗物</small>
           {relicEntry ? <ObjectGlyph id={relicEntry.id} family="relic" /> : <span className="tp-relic-empty">—</span>}
           <strong>{relicEntry?.name ?? '没带遗物'}</strong>
+          {relicEntry && <KitTags kind="relic" id={relicEntry.id} />}
         </button>
         ) : (
           <span className="tp-relic-slot is-fogged" aria-label="遗物未知">

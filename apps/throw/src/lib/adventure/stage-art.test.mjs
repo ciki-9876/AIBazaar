@@ -27,7 +27,7 @@ test('every speaking character and NPC hotspot has a vector rig', () => {
 
 test('each map has an authored set and the throw project ships no bitmap art', () => {
   const sets = read('stage-scene.tsx');
-  for (const id of Object.keys(MAPS)) assert.match(sets, new RegExp(`\\b${id}: \\w+Set`));
+  for (const id of Object.keys(MAPS)) assert.match(sets, new RegExp(`(?:\\b${id}|['"]${id}['"]): \\w+Set`));
   const app = path.resolve(here, '../../..');
   const walk = (dir) =>
     readdirSync(dir).flatMap((name) => {

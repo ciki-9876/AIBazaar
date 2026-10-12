@@ -3,6 +3,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { scorePoker, type PlayingCard } from '../../../lib/cards/throw-poker';
 import type { ThrowDuel } from '../../../lib/cards/throw-duel';
 import type { CoachScript } from '../../../lib/adventure/magician-world';
+import { DialogueText } from '../../adventure/dialogue-text';
 
 /**
  * Guided duels. Coaching only reads the real duel; while a step that asks
@@ -105,10 +106,11 @@ const SCRIPTS: Record<CoachScript, Step[]> = {
     },
     {
       id: 'burning-bare',
-      text: '你着火了，而且身上没有盾：火正直接烧你的血，治疗只剩六成，火大了出手还烫手。现在甩一张黑桃，把盾竖起来。',
+      text: '你着火了，而且身上没有盾：火正持续烧你的气场，治疗只剩六成。现在甩一张黑桃，把盾竖起来。每张牌出手后会禁手一秒，趁这时看看舞台上的火焰怎样被护盾挡住。',
       target: 'hand',
       hold: true,
-      when: (c) => player(c).burn > 0 && player(c).shield === 0,
+      when: (c) => player(c).burn > 0 && player(c).shield === 0 && player(c).items.includes('ward') && player(c).hand.some((card) => card.suit === 0),
+      // A prompt must only ask for an action that is possible with the real hand.
       skip: (c) => player(c).burn > 0 && player(c).shield > 0,
     },
     {
@@ -185,7 +187,7 @@ export function CoachCard({
         {coach.index + 1}
         <small>/{coach.total}</small>
       </span>
-      <p>{step.text}</p>
+      <p><DialogueText text={step.text} /></p>
       <div>
         <button className="tp-coach-skip" onClick={coach.dismiss}>
           跳过引导

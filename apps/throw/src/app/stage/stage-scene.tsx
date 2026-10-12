@@ -1,4 +1,6 @@
 'use client';
+import { MillbrookSet, MillhallSet, MillpubSet, MillSet, MillshopSet, MillsquareSet } from './sets-millbrook';
+
 
 import { useLayoutEffect, useMemo, useRef, type ReactNode, type RefObject } from 'react';
 import { MAPS, type Hotspot, type MapId } from '../../lib/adventure/magician-world';
@@ -6,9 +8,12 @@ import { Rig, type RigId } from './rig';
 import { SharedDefs } from './scene-kit';
 import { StreetSet, TheatreSet, WorkshopSet, type ScenePart } from './sets';
 import { BridgeportSet, CuriosSet, GooseSet, ThursdaySet } from './sets-bridgeport';
+import { DocksSet, LeagueSet, RadioSet, SubwaySet, WestportSet, WestpubSet, WestshopSet } from './sets-westport';
+import { BridgeportHomeSet, MillbrookHomeSet, BusInteriorSet, GraywickHomeSet, LodgingAnnex, WestportHomeSet } from './sets-lodgings';
 import { approach, subscribeFrame } from './ticker';
 
-const SETS: Record<MapId, () => ScenePart[]> = {
+const SETS: Record<MapId, (lodgingId?: string) => ScenePart[]> = {
+  millbrook: MillbrookSet, 'mb-hall': MillhallSet, 'mb-pub': MillpubSet, 'mb-mill': MillSet, 'mb-shop': MillshopSet, 'mb-square': MillsquareSet, 'millbrook-home': MillbrookHomeSet,
   street: StreetSet,
   workshop: WorkshopSet,
   theatre: TheatreSet,
@@ -16,6 +21,17 @@ const SETS: Record<MapId, () => ScenePart[]> = {
   goose: GooseSet,
   curios: CuriosSet,
   thursday: ThursdaySet,
+  westport: WestportSet,
+  league: LeagueSet,
+  radio: RadioSet,
+  docks: DocksSet,
+  subway: SubwaySet,
+  westshop: WestshopSet,
+  'wp-pub': WestpubSet,
+  'graywick-home': GraywickHomeSet,
+  'bridgeport-home': BridgeportHomeSet,
+  'westport-home': WestportHomeSet,
+  'bus-interior': BusInteriorSet,
 };
 export const VIEW_HEIGHT = 720;
 /** Adults stand 154 world units tall in the walkable world: doors read at ~1.35×. */
@@ -35,8 +51,11 @@ export function StageScene({
   worldRef,
   spotlight,
   hotspots,
+  lodgingId,
 }: {
   mapId: MapId;
+  /** Active home changes furnishings, rehearsal facilities and room identity. */
+  lodgingId?: string;
   /** The people present right now; defaults to everyone on the map. */
   hotspots?: readonly Hotspot[];
   playerX: number;
@@ -48,7 +67,15 @@ export function StageScene({
   spotlight: number;
 }) {
   const map = MAPS[mapId];
-  const parts = useMemo(() => SETS[mapId](), [mapId]);
+  const parts = useMemo(() => {
+    const set = SETS[mapId](lodgingId);
+    if (mapId === 'street' || mapId === 'bridgeport' || mapId === 'westport' || mapId === 'millbrook') {
+      // Keep annex on the final existing world plane: no extra parallax/GPU layer.
+      const last = set.at(-1)!;
+      return [...set.slice(0, -1), { ...last, node: <>{last.node}<LodgingAnnex city={mapId === 'street' ? 'graywick' : mapId === 'bridgeport' ? 'bridgeport' : mapId === 'westport' ? 'westport' : 'millbrook'} /></> }];
+    }
+    return set;
+  }, [mapId, lodgingId]);
   const rootRef = useRef<HTMLDivElement>(null);
   const heroRef = useRef<SVGGElement>(null);
   const poolRef = useRef<SVGEllipseElement>(null);
@@ -115,7 +142,8 @@ export function StageScene({
       style={{ width: map.width, height: map.height }}
     >
       {plane(1, <SharedDefs />, 'defs')}
-      {parts.map((part, index) => plane(part.depth, part.node, index))}
+      {/* A map change must discard transforms written by the old parallax ticker. */}
+      {parts.map((part, index) => plane(part.depth, part.node, `${mapId}:${index}`))}
       {plane(
         1,
         <>
@@ -133,7 +161,10 @@ export function StageScene({
             <g key={spot.id} transform={`translate(${spot.x} ${map.floor})`}>
               <g className="st-turn" style={{ transform: `scaleX(${playerX < spot.x ? -1 : 1})` }}>
                 <g transform={`scale(${FIGURE_SCALE})`}>
-                  <Rig character={spot.character as RigId} phaseOffset={0.3 + index * 0.37} />
+                  <Rig character={spot.character as RigId} phaseOffset={0.3 + index * 0.37}
+                    activity={mapId.endsWith('-home') || mapId === 'bus-interior'
+                      ? spot.character === 'butler' ? undefined : spot.character === 'juno' ? 'rehearse' : spot.character === 'rosie' ? 'tea' : 'read'
+                      : undefined} />
                 </g>
               </g>
             </g>

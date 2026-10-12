@@ -16,3 +16,10 @@ export const PLUM = '#2b2133';
 export const AMETHYST = '#9a7fd1';
 export const SILVER = '#c9d3d6';
 export const GILT = '#f1d892';
+/** Westport: salt-washed masonry, harbour water and oiled stage timber. */
+export const HARBOR = '#183c4d';
+export const SALT = '#899c99';
+export const TIMBER = '#594134';
+export const TIMBER_LIGHT = '#866447';
+export const SKIN = '#dfb998';
+export const SKIN_SHADE = '#ae8064';

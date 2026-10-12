@@ -17,7 +17,11 @@ for (const a of COMPETITIVE_STYLES) for (const b of COMPETITIVE_STYLES) for (let
     D.stepThrowDuelInPlace(s); note();
     if (s.status !== 'playing') break;
     const f = s.fighters[0];
-    if (intent.length && s.tick >= release) { intent.forEach((u) => { thrown.add(u); if (s.tick >= 1200) late.add(u); }); D.launchThrowInPlace(s, 0, intent); intent = []; next = s.tick + D.aiThinkMs(a) / 50; }
+    if (intent.length && s.tick >= release && s.tick >= s.nextLaunch[0]) {
+      if (D.launchThrowInPlace(s, 0, intent))
+        intent.forEach((u) => { thrown.add(u); if (s.tick >= 1200) late.add(u); });
+      intent = []; next = s.tick + D.aiThinkMs(a) / 50;
+    }
     else if (!intent.length && s.tick >= next && f.hand.length) {
       D.aiArrange(s, 0, a);
       const cards = D.recommendCards(f.hand, f.items, a, { ...f, target: s.fighters[1], tick: s.tick });

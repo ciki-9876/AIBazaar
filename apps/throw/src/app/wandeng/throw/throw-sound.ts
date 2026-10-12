@@ -2,6 +2,10 @@ import type { DuelEvent } from '../../../lib/cards/throw-duel';
 import { sitePath } from '../../../lib/site-path';
 import { deservesCheer } from './throw-audience';
 
+/** Audible at one point, bounded at huge overkill. The input is settled damage, not a preview. */
+export const damageLoudness = (amount: number) =>
+  0.32 + 0.48 * Math.sqrt(Math.min(1, Math.max(0, Number.isFinite(amount) ? amount : 0) / 100));
+
 /** Browser-only sound adapter. No audio clock or state enters the simulation. */
 export class ThrowSound {
   private context: AudioContext | null = null;
@@ -9,16 +13,27 @@ export class ThrowSound {
   private noise: AudioBuffer | null = null;
   private enabled = true;
   private audienceLoad: Promise<void> | null = null;
-  private audienceBuffers = new Map<'cheer' | 'applause', AudioBuffer>();
+  private audienceBuffers = new Map<'cheer' | 'applause' | 'intermission', AudioBuffer>();
   private audienceSources = new Set<AudioBufferSourceNode>();
   private effectSources = new Set<AudioScheduledSourceNode>();
   private audienceGeneration = 0;
+  private murmurs: AudioBuffer[] = [];
+  private murmurCursor = 0;
+  private nextCheerAt = 0;
+  private readonly maxVoices = 40;
   async unlock() {
     if (!this.context) {
       this.context = new AudioContext();
       this.master = this.context.createGain();
       this.master.gain.value = this.enabled ? 0.24 : 0;
-      this.master.connect(this.context.destination);
+      const compressor = this.context.createDynamicsCompressor();
+      compressor.threshold.value = -19;
+      compressor.knee.value = 15;
+      compressor.ratio.value = 5;
+      compressor.attack.value = 0.004;
+      compressor.release.value = 0.18;
+      this.master.connect(compressor);
+      compressor.connect(this.context.destination);
       const buffer = this.context.createBuffer(
         1,
         this.context.sampleRate * 0.4,
@@ -32,23 +47,32 @@ export class ThrowSound {
       }
       this.noise = buffer;
       const context = this.context;
-      this.audienceLoad = Promise.all((['cheer', 'applause'] as const).map(async (kind) => {
+      this.audienceLoad = Promise.all([
+        ...(['cheer', 'applause', 'intermission'] as const).map(async (kind) => {
         try {
           const extension = kind === 'cheer' ? 'ogg' : 'wav';
-          const response = await fetch(sitePath(`/audio/throw/audience-${kind}.${extension}`));
+          const response = await fetch(sitePath(kind === 'intermission' ? '/audio/throw/intermission-announcement.wav' : `/audio/throw/audience-${kind}.${extension}`));
           if (!response.ok) return;
           const decoded = await context.decodeAudioData(await response.arrayBuffer());
           this.audienceBuffers.set(kind, decoded);
         } catch {
           // A failed optional recording does not prevent the duel's normal sound effects.
         }
-      })).then(() => {});
+        }),
+        ...[1, 2, 3].map(async (index) => {
+          try {
+            const response = await fetch(sitePath(`/audio/throw/audience-murmur-${index}.wav`));
+            if (response.ok) this.murmurs[index - 1] = await context.decodeAudioData(await response.arrayBuffer());
+          } catch { /* Spoken crowd reactions are optional if an asset cannot load. */ }
+        }),
+      ]).then(() => {});
     }
     if (this.context.state === 'suspended') await this.context.resume();
     return this.context.state === 'running';
   }
   setEnabled(value: boolean) {
     this.enabled = value;
+    if (!value) this.stopAudience();
     if (this.context && this.master)
       this.master.gain.setTargetAtTime(
         value ? 0.24 : 0,
@@ -56,21 +80,38 @@ export class ThrowSound {
         0.025,
       );
   }
-  private audience(kind: 'cheer' | 'applause') {
+  private audience(kind: 'cheer' | 'applause' | 'intermission', amount = 60) {
     const generation = this.audienceGeneration;
     void this.audienceLoad?.then(() => {
       const buffer = this.audienceBuffers.get(kind);
       if (!buffer || !this.context || !this.master || !this.enabled ||
           this.context.state !== 'running' || generation !== this.audienceGeneration) return;
+      if (kind === 'cheer' && this.context.currentTime < this.nextCheerAt) return;
+      if (kind === 'cheer') this.nextCheerAt = this.context.currentTime + 2;
       const source = this.context.createBufferSource();
       const gain = this.context.createGain();
       source.buffer = buffer;
-      gain.gain.value = kind === 'cheer' ? 1.4 : 1.2;
+      gain.gain.value = kind === 'cheer' ? damageLoudness(amount) * 1.7 : 1.2;
       source.connect(gain);
       gain.connect(this.master);
       this.audienceSources.add(source);
       source.onended = () => { this.audienceSources.delete(source); source.disconnect(); gain.disconnect(); };
       source.start();
+      if (kind === 'cheer') {
+        const spoken = this.murmurs[this.murmurCursor++ % 3];
+        if (!spoken) return;
+        const voice = this.context.createBufferSource();
+        const voiceGain = this.context.createGain();
+        const band = this.context.createBiquadFilter();
+        voice.buffer = spoken;
+        voice.playbackRate.value = [1, .96, 1.04][(this.murmurCursor - 1) % 3];
+        band.type = 'lowpass'; band.frequency.value = 3400;
+        voiceGain.gain.value = damageLoudness(amount) * .65;
+        voice.connect(band); band.connect(voiceGain); voiceGain.connect(this.master);
+        this.audienceSources.add(voice);
+        voice.onended = () => { this.audienceSources.delete(voice); voice.disconnect(); band.disconnect(); voiceGain.disconnect(); };
+        voice.start(this.context.currentTime + .16);
+      }
     });
   }
   private stopAudience() {
@@ -79,6 +120,14 @@ export class ThrowSound {
     this.audienceSources.clear();
     for (const source of this.effectSources) source.stop();
     this.effectSources.clear();
+  }
+  private track(source: AudioScheduledSourceNode) {
+    // A multi-effect volley cannot accumulate an unbounded WebAudio graph.
+    if (this.effectSources.size >= this.maxVoices) {
+      const oldest = this.effectSources.values().next().value;
+      if (oldest) { oldest.stop(); this.effectSources.delete(oldest); }
+    }
+    this.effectSources.add(source);
   }
   private tone(
     frequency: number,
@@ -103,7 +152,7 @@ export class ThrowSound {
     gain.gain.exponentialRampToValueAtTime(0.0001, now + duration);
     oscillator.connect(gain);
     gain.connect(this.master);
-    this.effectSources.add(oscillator);
+    this.track(oscillator);
     oscillator.onended = () => { this.effectSources.delete(oscillator); oscillator.disconnect(); gain.disconnect(); };
     oscillator.start(now);
     oscillator.stop(now + duration + 0.02);
@@ -131,7 +180,7 @@ export class ThrowSound {
     source.connect(filter);
     filter.connect(gain);
     gain.connect(this.master);
-    this.effectSources.add(source);
+    this.track(source);
     source.onended = () => { this.effectSources.delete(source); source.disconnect(); filter.disconnect(); gain.disconnect(); };
     source.start(now);
     source.stop(now + duration);
@@ -142,11 +191,19 @@ export class ThrowSound {
   }
   start() {
     this.stopAudience();
+    this.nextCheerAt = 0;
+    this.murmurCursor = 0;
     for (let i = 0; i < 5; i++)
       this.rustle(0.09, 1900 + i * 240, 0.3, i * 0.045);
     this.tone(330, 0.22, 0.14, 0.1, 660);
   }
   event(event: DuelEvent, targetMaxHp?: number) {
+    if (event.source === 'rule:intermission') {
+      this.stopAudience();
+      [392, 523, 659].forEach((note, index) => this.tone(note, 0.35, 0.18, index * 0.13));
+      this.audience('intermission');
+      return;
+    }
     if (event.type === 'draw') {
       this.rustle(0.1, 2200, 0.23, 0, 1400);
       this.tone(700, 0.065, 0.06);
@@ -154,7 +211,7 @@ export class ThrowSound {
     if (event.type === 'launch') {
       this.rustle(0.24, 950, 0.65, 0, 5500);
       this.tone(180, 0.14, 0.18, 0, 520);
-      if (!event.text.startsWith('散牌')) {
+      if ((event.combo ?? 0) > 0) {
         this.tone(440, 0.14, 0.12, 0.025);
         this.tone(660, 0.19, 0.1, 0.065);
         const power = (event.combo ?? 0) >= 4;
@@ -166,31 +223,55 @@ export class ThrowSound {
       }
     }
     if (event.type === 'hit') {
-      this.tone(event.value >= 60 ? 98 : 150, 0.22, 0.65, 0, 42, 'triangle');
-      this.rustle(0.13, 950, 0.5, 0, 350);
-      this.tone(960, 0.11, 0.12, 0.025, 440);
-      if (deservesCheer(event, targetMaxHp)) this.audience('cheer');
+      const actual = (event.hpDamage ?? 0) + (event.shieldDamage ?? 0);
+      const bigHit = deservesCheer(event, targetMaxHp);
+      if (actual > 0 && !bigHit) {
+        const volume = damageLoudness(actual);
+        // A fast paper crack + tight low body; no long, soft downward chime.
+        this.rustle(0.048, 3900, volume * 1.5, 0, 1250);
+        this.tone(190, 0.13, volume * 0.7, 0, 46, 'triangle');
+        this.tone(2100, 0.035, volume * 0.15, 0.006, 720, 'square');
+      }
+      if (bigHit) this.audience('cheer', actual);
+    }
+    if (event.type === 'dot') {
+      const actual = (event.hpDamage ?? 0) + (event.shieldDamage ?? 0);
+      if (actual <= 0) return;
+      const volume = damageLoudness(actual);
+      if (event.kind === 'burn') {
+        this.rustle(0.18, 1700, volume * 0.7, 0, 4900);
+        this.rustle(0.035, 3300, volume * 0.5, 0.055, 1100);
+        this.tone(145, 0.12, volume * 0.2, 0, 62, 'triangle');
+      } else if (event.kind === 'poison') {
+        this.tone(480, 0.15, volume * 0.46, 0, 110);
+        this.tone(310, 0.16, volume * 0.3, 0.07, 135);
+        this.rustle(0.12, 640, volume * 0.16, 0.04, 300);
+      }
     }
     if (event.type === 'heal' && event.value > 0) {
-      this.tone(660, 0.25, 0.17);
-      this.tone(880, 0.32, 0.12, 0.06);
+      const volume = damageLoudness(event.value);
+      [523, 659, 784].forEach((note, index) => this.tone(note, 0.28, volume * 0.23, index * 0.045));
     }
     if (event.type === 'effect') {
       if (event.kind === 'burn') {
-        this.rustle(0.32, 700, 0.2, 0, 3200);
-        this.tone(130, 0.23, 0.18, 0, 52, 'sawtooth');
+        // Stack application is quiet; the distinct scorch cue belongs to each real tick.
+        if (event.value > 0) this.rustle(0.1, 1300, 0.075, 0, 2300);
         return;
       }
       if (event.kind === 'poison') {
-        this.tone(190, 0.18, 0.17, 0, 340);
-        this.tone(290, 0.22, 0.12, 0.07, 140);
+        if (event.value > 0) this.tone(260, 0.1, 0.065, 0, 330);
         return;
       }
       if (event.kind === 'shield') {
-        this.tone(740, 0.22, 0.17, 0, 920, 'triangle');
-        this.tone(1110, 0.25, 0.09, 0.02);
+        // Fan parry is damage prevention, not a fresh shield application.
+        if (event.value <= 0 || event.source === 'item:sequence') return;
+        const volume = damageLoudness(event.value);
+        this.tone(392, 0.2, volume * 0.34, 0, 430, 'triangle');
+        this.tone(1176, 0.32, volume * 0.14, 0.012);
+        this.rustle(0.07, 2700, volume * 0.2);
         return;
       }
+      if (event.kind === 'heal' || event.kind === 'leech') return;
       if (event.kind === 'growth') {
         [523, 659, 784].forEach((note, index) =>
           this.tone(note, 0.22, 0.12, index * 0.05),
@@ -218,5 +299,7 @@ export class ThrowSound {
   dispose() {
     this.stopAudience();
     void this.context?.close().catch(() => {});
+    this.context = null;
+    this.master = null;
   }
 }

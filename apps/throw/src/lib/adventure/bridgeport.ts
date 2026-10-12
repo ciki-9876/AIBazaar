@@ -63,7 +63,7 @@ export const BRIDGEPORT_MAPS = {
     hotspots: [
       { id: 'goose-exit', x: 130, label: '返回集市街', kind: 'door', target: 'bridgeport', spawn: 1130 },
       { id: 'goose-board', x: 445, label: '招募告示板', kind: 'board' },
-      { id: 'pettigrew', x: 500, label: '佩蒂格鲁先生', kind: 'npc', character: 'pettigrew' },
+      { id: 'pettigrew', x: 650, label: '佩蒂格鲁先生', kind: 'npc', character: 'pettigrew' },
       { id: 'ada', x: 860, label: '艾达·普赖斯', kind: 'npc', character: 'ada', when: (s) => morningDone(s) },
       { id: 'bea', x: 1000, label: '比阿·普赖斯', kind: 'npc', character: 'bea', when: (s) => morningDone(s) },
       {
@@ -153,9 +153,14 @@ export const RECRUITS: Record<
     stage: number;
   }
 > = {
+  pip: { how: '好感', character: 'pip', threshold: 30, hint: '第四幕铜管广场：赢下三声部，再当面邀请皮普。', wage: 4, stage: 70 },
+  holt: { how: '剧情', character: 'holt', hint: '纺锤剧团团长，不接受随团邀请。', wage: 0, stage: 0 },
+  edith: { how: '剧情', character: 'edith', hint: '联赛秘书，不接受随团邀请。', wage: 0, stage: 0 },
+  oswald: { how: '剧情', character: 'oswald', hint: '纺锤场务，不接受随团邀请。', wage: 0, stage: 0 },
   juno: { how: '剧情', character: 'juno', hint: '赢下布里奇波特公开赛决赛，她会自己来找你。', wage: 4, stage: 75 },
   rosie: { how: '好感', character: 'rosie', threshold: 60, hint: '醉鹅吧台后面：尝尝她的炖菜，聊聊火，在小组赛上赢她。', wage: 3, stage: 15 },
-  stan: { how: '酒馆', character: 'stan', hint: '醉鹅的招募告示板。工钱：一镑。', wage: 1, stage: 0 },
+  stan: { how: '酒馆', character: 'stan', hint: '第三章盐风酒馆的招募看板，或回访醉鹅。工钱：一镑。', wage: 1, stage: 0 },
+  molly: { how: '好感', character: 'molly', threshold: 60, hint: '第三章广播塔：完成午夜莫莉的三首点歌，再邀请她同行。', wage: 5, stage: 90 },
 };
 
 /* ───────────────────────── v6 lodging (ADR-0059) ───────────────────────── */
@@ -170,6 +175,8 @@ export type Lodging = {
   presence: number;
   rehearsal: boolean;
   note: string;
+  recovery?: number;
+  rehearsalBonus?: number;
 };
 export const LODGINGS: readonly Lodging[] = [
   { id: 'bus', name: '斯坦的巴士', price: 0, beds: 2, presence: 0, rehearsal: false, note: '座椅能放平。斯坦管这叫「豪华卧铺」。' },
@@ -315,7 +322,7 @@ export const BRIDGEPORT_BATTLES = {
     reward: { fee: 15 },
     win: 'pike-win',
     loss: 'pike-loss',
-    tip: '警长的盾很厚，铜镜反射大牌。单张削盾且不被反射；剧毒直接穿过护盾。',
+    tip: '警长的盾很厚，铜镜反弹大牌。单张削盾且不被反弹；剧毒直接穿过护盾。',
   },
   juno: {
     act: 2,
@@ -336,7 +343,7 @@ export const BRIDGEPORT_BATTLES = {
     win: 'juno-win',
     loss: 'juno-loss',
     draw: 'juno-draw',
-    tip: '朱诺单张连发、专削护盾，抖擞披风让她不怕毒。她怕两样：火（烫手专罚出手快的人），和攒满的大牌型（扇面格挡挡单张）。',
+    tip: '朱诺单张连发、专削护盾，抖擞披风让她不怕毒。可以用持续灼烧压低她的恢复，或攒好大牌型反击（扇面格挡挡单张）。',
   },
   hobbs: {
     act: 2,
@@ -478,10 +485,10 @@ export const GOSSIP: Partial<Record<CharacterId, string>> = {
   ada: '姐姐。只出对子和黑桃，像在砌墙。单张能削她的盾。',
   bea: '妹妹。红心回血，慢悠悠的。火能让她的茶凉掉。',
   agnes: '梅花叠毒，毒穿过护盾。手牌越多毒发越重——别攒牌。',
-  rosie: '方块点火，着火时你治疗打六折、出手烫手。带盾去。',
+  rosie: '方块点火，着火时你持续受灼烧伤害、治疗打六折。带盾去。',
   basil: '攒满一手才出，顺子、同花一击重创。他攒牌的时候你就打。',
-  pike: '盾厚，铜镜反射大牌。单张削盾且不被反射，剧毒直接穿盾。',
-  juno: '快。单张接单张，专削护盾。她怕火，也怕攒好的大牌型。',
+  pike: '盾厚，铜镜反弹大牌。单张削盾且不被反弹，剧毒直接穿盾。',
+  juno: '快。单张接单张，专削护盾。持续伤害能压低她的气场，攒好的大牌型也能突破。',
   hobbs: '退休前是毒手，配方比药房全，还会解毒。多带红心。',
   stan: '他从没赢过。也从没真正想赢。',
   pettigrew: '只用公司发的牌组。公司发什么，他就是什么。',
@@ -660,7 +667,7 @@ export const BRIDGEPORT_DIALOGUES: Record<string, Dialogue> = {
   'ada-loss': {
     lines: [
       { speaker: 'ada', text: '墙还在。你还年轻，墙不急。' },
-      { speaker: 'narrator', text: '小提示：单张牌打在护盾上会多削 10% 盾，而且不会被反射。多德太太的档案里有艾达的路数。' },
+      { speaker: 'narrator', text: '小提示：单张牌打在护盾上会多削 10% 盾，而且不会被反弹。多德太太的档案里有艾达的路数。' },
     ],
   },
   'bea-first': {
@@ -763,9 +770,9 @@ export const BRIDGEPORT_DIALOGUES: Record<string, Dialogue> = {
       { speaker: 'juno', text: '还有一件事。一个人在街头演了六年，我数过——观众加起来不到一千个。你那个……剧团，还缺不缺一个会削盾的？' },
       { speaker: 'eli', text: '我还没有剧团。' },
       { speaker: 'juno', text: '那现在有了。两个人也算剧团，斯坦说三个人才算，但斯坦的话不能信。' },
-      { speaker: 'narrator', text: '朱诺加入了剧团。打开「剧团」看看她的天赋与手法；街头演出可以派她上台。' },
+      { speaker: 'narrator', text: '朱诺加入了剧团。到第三章韦斯特港，剧团住处、伙伴上场和招募看板将正式开放。她有自己的天赋、手法与牌匣；伊莱的牌匣与她的收藏彼此独立。' },
     ],
-    effect: { recruit: 'juno' },
+    effect: { recruit: 'juno', set: ['troupeGuided'] },
   },
   /* ───────── v5 troupe: tavern board, Rosie's kitchen ───────── */
   'tavern-board': {
@@ -815,7 +822,7 @@ export const BRIDGEPORT_DIALOGUES: Record<string, Dialogue> = {
     lines: [
       { speaker: 'eli', text: '你的火……是在厨房学的？' },
       { speaker: 'rosie', text: '在厨房学的是不怕烫。火是我爸教的，他是锅炉工。他说火不讲道理，所以你得比它更不讲道理。' },
-      { speaker: 'narrator', text: '罗茜难得多说了几句。你记住了：她着火的时候，从来不会烫手。' },
+      { speaker: 'narrator', text: '罗茜难得多说了几句。你记住了：她没有护盾时，每秒受到的灼烧气场伤害减少 2 点，最低为 0。' },
     ],
     effect: { affinity: { who: 'rosie', amount: 10, id: 'rosie-fire' } },
   },
@@ -842,7 +849,7 @@ export const BRIDGEPORT_DIALOGUES: Record<string, Dialogue> = {
   'juno-loss': {
     lines: [
       { speaker: 'juno', text: '观众不等人。可是我等你——明天还是周四，多丽丝说的。' },
-      { speaker: 'narrator', text: '小提示：朱诺怕火（灼烧 3 层以上，每次出手都烫手）和攒好的大牌型（织序风扇挡单张）。霍布斯的铺子里有余烬小炉和织序风扇。' },
+      { speaker: 'narrator', text: '小提示：持续灼烧能压低朱诺的气场，攒好的大牌型也能反击（织序风扇挡单张）。霍布斯的铺子里有余烬小炉和织序风扇。' },
     ],
   },
   'juno-draw': {
@@ -978,7 +985,7 @@ const groupLines: Record<string, { first: string[]; again: string; win: string[]
   rosie: {
     first: [
       '醉鹅的厨子，罗茜。我的炸鱼全镇第一，我的火，全镇也第一。',
-      '方块点火，烧到你出手都烫手。你最好带把伞——带十把。',
+      '方块点火，让持续灼烧压着你的恢复。你最好带把伞——带十把。',
     ],
     again: '炉子又热了。来？',
     win: ['……你把我的火闷了。我得回去重新生炉子，今晚的炸鱼要晚一点了。', '获得 15 演出费。霍布斯的铺子里现在有余烬小炉了。'],
@@ -1000,7 +1007,7 @@ const groupLines: Record<string, { first: string[]; again: string; win: string[]
     ],
     again: '下午好，先生。还要打吗？我的盾还在。',
     win: ['……按照规定，我得给自己开一张罚单：防守不力。', '获得 15 演出费。霍布斯的铺子里现在有护心放映机了。'],
-    loss: ['请出示您的……哦，我们不是在执勤。祝您下午愉快。', '小提示：单张削盾且不被铜镜反射；剧毒直接穿过护盾。'],
+    loss: ['请出示您的……哦，我们不是在执勤。祝您下午愉快。', '小提示：单张削盾且不被铜镜反弹；剧毒直接穿过护盾。'],
   },
 };
 for (const [id, text] of Object.entries(groupLines)) {
@@ -1031,10 +1038,10 @@ export function bridgeportTalk(state: AdventureState, id: string): string | null
     won = (battle: BattleId) => state.won.includes(battle);
   switch (id) {
     case 'goose-board':
-      return state.troupe.includes('stan') ? 'tavern-board-empty' : 'tavern-board';
+      return (state.act >= 3 || f.westArrived) && f.troupeGuided ? 'panel:recruits' : 'troupe-locked';
     case 'rosie-kitchen':
       if (state.troupe.includes('rosie')) return 'rosie-member';
-      return (state.affinity.rosie ?? 0) >= RECRUITS.rosie.threshold! ? 'rosie-invite' : 'rosie-kitchen';
+      return (state.act >= 3 || f.westArrived) && f.troupeGuided && (state.affinity.rosie ?? 0) >= RECRUITS.rosie.threshold! ? 'rosie-invite' : 'rosie-kitchen';
     case 'stan':
       if (!f.stanAsked) return 'stan-first';
       if (f.stanDone) return 'stan-after';

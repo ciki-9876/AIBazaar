@@ -6,8 +6,11 @@
 import type { DeckBook } from './throw-enchant.ts';
 import type { Style } from './throw-loadout.ts';
 
-export type PerformerId = 'eli' | 'juno' | 'rosie' | 'stan';
-export type SleightId = 'peek' | 'boomerang' | 'stoke' | 'switch';
+export type PerformerId = 'eli' | 'juno' | 'rosie' | 'stan' | 'molly' | 'pip' | 'holt' | 'edith' | 'oswald';
+export type SleightId = 'quick-draw' | 'peek' | 'boomerang' | 'stoke' | 'switch' | 'remedy' | 'encore';
+
+/** Eli alone can pull up to five extra cards without disturbing the normal deal clock. */
+export const QUICK_DRAW_COUNT = 5;
 
 /** Eli · 压箱底: emptying your hand with a throw adds this much damage. */
 export const EMPTY_HAND_BONUS = 3;
@@ -22,6 +25,10 @@ export const STOKE_AI_BURN = 8;
 export const ALIGHT_DRAW = 2;
 /** The built-in AI switches a card only if its lowest card is at most this rank. */
 export const SWITCH_AI_RANK = 5;
+/** Rosie resists the body's burn tick, without strengthening an existing shield. */
+export const ROSIE_BURN_RESIST = 2;
+export const MOLLY_HEART_HEAL = 3;
+export const MOLLY_REMEDY = 24;
 
 export type Performer = {
   id: PerformerId;
@@ -35,16 +42,21 @@ export type Performer = {
 };
 
 export const PERFORMERS: Record<PerformerId, Performer> = {
+  pip: { id: 'pip', name: '小号手皮普', style: 'guard', talent: { name: '接住尾音', text: '每次出牌至少 2 张：护盾 +4。' }, sleight: { id: 'remedy', name: '深呼吸', text: '治疗 24，按治疗规则净毒。冷却 18 秒。', cooldownMs: 18000 }, book: { '0-4': 'lining', '0-8': 'lining', '1-9': 'mint' } },
+  holt: { id: 'holt', name: '阿瑟·霍尔特', style: 'combo', talent: { name: '整团的节拍', text: '含对子牌型的出手：护盾 +4。' }, sleight: { id: 'quick-draw', name: '续幕', text: '补抽最多 5 张，冷却 15 秒。', cooldownMs: 15000 }, book: {} },
+  edith: { id: 'edith', name: '伊迪丝·霍尔特', style: 'guard', talent: { name: '织布手', text: '每次甩出单张：护盾 +4。' }, sleight: { id: 'boomerang', name: '回针', text: '下一张单张命中后回到手中，冷却 20 秒。', cooldownMs: 20000 }, book: {} },
+  oswald: { id: 'oswald', name: '奥斯瓦尔德', style: 'burn', talent: { name: '炉膛余温', text: '每次出牌含方块：额外灼烧 +1。' }, sleight: { id: 'stoke', name: '添煤', text: '对手至少 4 层灼烧时：一半立刻结算并移除。冷却 15 秒。', cooldownMs: 15000 }, book: {} },
+
   eli: {
     id: 'eli',
     name: '伊莱·维尔',
     style: 'quick',
     talent: { name: '压箱底', text: `这一手打空手牌时：直伤 +${EMPTY_HAND_BONUS}。` },
     sleight: {
-      id: 'peek',
-      name: '假洗',
-      text: '亮出下一轮要发的 2 张；不想要，可以把它们埋到牌堆底。',
-      cooldownMs: 18000,
+      id: 'quick-draw',
+      name: '快抽',
+      text: '立即抽 5 张牌，最多补到手牌上限；满手时不可用。冷却 15 秒。',
+      cooldownMs: 15000,
     },
     book: {},
   },
@@ -75,7 +87,7 @@ export const PERFORMERS: Record<PerformerId, Performer> = {
     id: 'rosie',
     name: '罗茜·费恩',
     style: 'burn',
-    talent: { name: '厨房出身', text: '着火时出手不会烫手。' },
+    talent: { name: '厨房出身', text: `每秒灼烧对气场造成的伤害减少 ${ROSIE_BURN_RESIST}，最低为 0；闷火烧盾不减。` },
     sleight: {
       id: 'stoke',
       name: '火上浇油',
@@ -106,6 +118,18 @@ export const PERFORMERS: Record<PerformerId, Performer> = {
     },
     // He has never won. He has never wanted to. White cards suit him.
     book: {},
+  },
+  molly: {
+    id: 'molly',
+    name: '午夜莫莉',
+    style: 'mend',
+    talent: { name: '夜班照护', text: `每次甩出含红心的牌：治疗 ${MOLLY_HEART_HEAL}，并按治疗规则净毒；每次出手只触发一次。` },
+    sleight: {
+      id: 'remedy', name: '夜班急救',
+      text: `治疗 ${MOLLY_REMEDY} 并净化 ${MOLLY_REMEDY / 2} 层剧毒；灼烧或重创时治疗降至六成。冷却 18 秒。`,
+      cooldownMs: 18000,
+    },
+    book: { '1-4': 'mint', '1-8': 'mint', '1-12': 'mint' },
   },
 };
 export const PERFORMER_IDS = Object.keys(PERFORMERS) as PerformerId[];

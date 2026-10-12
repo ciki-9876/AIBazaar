@@ -2,7 +2,11 @@
 import { useEffect, useRef, useState } from 'react';
 import InventoryDrag from '../../../../../../packages/ui/inventory-drag';
 import { ObjectGlyph } from '../../stage/glyphs';
-import { FAMILY_NAMES, KitDetail } from './throw-kit';
+import { KitDetail, KitIcon, KitTags, UpgradeMark } from './throw-kit';
+import { KitFilterBar } from './throw-kit-filters';
+import type { ItemUpgrades } from '../../../lib/cards/throw-upgrades';
+import { DialogueText } from '../../adventure/dialogue-text';
+import { ITEM_LABELS, EMPTY_KIT_FILTERS, matchesKitFilters, type KitFilterSelection, type KitRecommendations } from '../../../lib/cards/throw-kit-guide';
 import {
   ITEMS,
   RELICS,
@@ -12,12 +16,12 @@ import {
   itemEnd,
   packThrowItems,
   placeThrowItem,
+  swapThrowItems,
   adjacentThrowItems,
   type ItemPlacement,
   type ItemId,
   type RelicId,
   type Style,
-  type Family,
   COMPETITIVE_STYLES,
 } from '../../../lib/cards/throw-loadout';
 
@@ -31,14 +35,11 @@ type Props = {
   /** Story-limited kit; omitted in the practice room, where everything is out. */
   available?: { items: readonly ItemId[]; relics: readonly RelicId[] };
   tip?: string;
+  upgrades?: ItemUpgrades;
+  recommendations?: KitRecommendations;
   tap: () => void;
 };
-const families: { id: Family | 'all'; name: string }[] = [
-  { id: 'all', name: '全部' },
-  ...(Object.entries(FAMILY_NAMES) as [Family, string][]).map(([id, name]) => ({ id, name })),
-];
-/** Drop target meaning “back into the pack”, i.e. unequip. */
-const TO_PACK = -1;
+type KitDrop = { kind: 'cell'; start: number } | { kind: 'item'; id: ItemId; area: 'board' | 'pack' } | { kind: 'pack' };
 
 function RelicPicker({
   equipped,
@@ -46,12 +47,14 @@ function RelicPicker({
   onClose,
   tap,
   relics,
+  recommendations,
 }: {
   equipped: RelicId | null;
   onEquip: (id: RelicId | null) => void;
   onClose: () => void;
   tap: () => void;
   relics: readonly (typeof RELICS)[number][];
+  recommendations?: KitRecommendations['relics'];
 }) {
   const [draft, setDraft] = useState<RelicId>(equipped ?? relics[0].id);
   const dialog = useRef<HTMLDialogElement>(null);
@@ -98,17 +101,20 @@ function RelicPicker({
               setDraft(entry.id);
             }}
           >
-            <ObjectGlyph id={entry.id} family="relic" />
+            <KitIcon id={entry.id} family="relic" recommendation={recommendations?.[entry.id]} />
             <strong>{entry.name}</strong>
+            <KitTags kind="relic" id={entry.id} />
             <small>{equipped === entry.id ? '已装备' : '\u00a0'}</small>
           </button>
         ))}
       </div>
       <div className="tp-relic-preview">
-        <ObjectGlyph id={selected.id} family="relic" />
+        <KitIcon id={selected.id} family="relic" recommendation={recommendations?.[selected.id]} />
         <div>
           <h3>{selected.name}</h3>
+          <KitTags kind="relic" id={selected.id} />
           <p>{selected.text}</p>
+          {recommendations?.[selected.id] && <p className="tp-kit-note">{recommendations[selected.id]}</p>}
           <p className="tp-quip">{selected.quip}</p>
         </div>
       </div>
@@ -146,13 +152,16 @@ export default function ThrowWorkbench({
   onRelic,
   onStyle,
   available,
+  upgrades,
   tip,
+  recommendations,
   tap,
 }: Props) {
-  const catalog = ITEMS.filter((item) => !available || available.items.includes(item.id));
+  const [packOrder, setPackOrder] = useState<ItemId[]>(() => ITEMS.map((item) => item.id));
+  const catalog = packOrder.map(itemDefinition).filter((item) => !available || available.items.includes(item.id));
   const relicCatalog = RELICS.filter((entry) => !available || available.relics.includes(entry.id));
-  const [chosen, setChosen] = useState<ItemId | null>(null),
-    [filter, setFilter] = useState<Family | 'all'>('all'),
+  const [chosen, setChosen] = useState<ItemId | null>(() => catalog[0]?.id ?? null),
+    [filter, setFilter] = useState<KitFilterSelection>(EMPTY_KIT_FILTERS),
     [error, setError] = useState(''),
     [picker, setPicker] = useState(false);
   const used = layout.reduce(
@@ -161,7 +170,7 @@ export default function ThrowWorkbench({
     ),
     selected = chosen ? layout.find((entry) => entry.id === chosen) : undefined;
   const currentRelic = RELICS.find((entry) => entry.id === relic);
-  const shown = catalog.filter((item) => filter === 'all' || item.family === filter);
+  const shown = catalog.filter((item) => matchesKitFilters('item', item.id, filter));
   const neighbors = selected ? adjacentThrowItems(layout, selected.id) : [];
   const choose = (id: ItemId | null) => {
     tap();
@@ -184,11 +193,32 @@ export default function ThrowWorkbench({
     onLayout(layout.filter((entry) => entry.id !== id));
     setError('');
   };
+  const dropResult = (id: ItemId, target: KitDrop) => {
+    if (target.kind === 'pack') return layout.some((entry) => entry.id === id) ? layout.filter((entry) => entry.id !== id) : layout;
+    if (target.kind === 'cell') return placeThrowItem(layout, id, target.start);
+    return swapThrowItems(layout, id, target.id);
+  };
+  const reorderPack = (source: ItemId, target: ItemId) => {
+    setPackOrder((order) => order.map((id) => id === source ? target : id === target ? source : id));
+  };
   return (
-    <InventoryDrag<number>
+    <InventoryDrag<KitDrop>
       className="tp-workbench"
       resolve={(root, source, x, y) => {
         if (!ITEMS.some((entry) => entry.id === source.id)) return null;
+        const visibleRoot = root.getBoundingClientRect();
+        if (x < visibleRoot.left || x >= visibleRoot.right || y < visibleRoot.top || y >= visibleRoot.bottom) return null;
+        // Hit a whole item first: even a drop over the second occupied cell swaps its anchor.
+        for (const node of root.querySelectorAll<HTMLElement>('[data-kit-drop-id]')) {
+          const clip = node.closest('.tp-items')?.getBoundingClientRect();
+          if (clip && (x < clip.left || x >= clip.right || y < clip.top || y >= clip.bottom)) continue;
+          const bounds = node.getBoundingClientRect();
+          if (x >= bounds.left && x < bounds.right && y >= bounds.top && y < bounds.bottom)
+            return {
+              value: { kind: 'item', id: node.dataset.kitDropId as ItemId, area: node.dataset.kitArea as 'board' | 'pack' },
+              bounds: { x: bounds.left, y: bounds.top, width: bounds.width, height: bounds.height },
+            };
+        }
         const item = itemDefinition(source.id as ItemId),
           cells = [...root.querySelectorAll<HTMLElement>('[data-drop-slot]')];
         for (const node of cells) {
@@ -206,7 +236,7 @@ export default function ThrowWorkbench({
                 Math.min(BAG_CELLS - 1, start + item.size - 1)
               ].getBoundingClientRect();
           return {
-            value: start,
+            value: { kind: 'cell', start },
             bounds: {
               x: bounds.left,
               y: bounds.top,
@@ -219,17 +249,26 @@ export default function ThrowWorkbench({
         const pack = root.querySelector<HTMLElement>('[data-pack-drop]');
         const box = pack?.getBoundingClientRect();
         if (box && x >= box.left && x < box.right && y >= box.top && y < box.bottom)
-          return { value: TO_PACK, bounds: { x: box.left, y: box.top, width: box.width, height: box.height } };
+          return { value: { kind: 'pack' }, bounds: { x: box.left, y: box.top, width: box.width, height: box.height } };
         return null;
       }}
-      canDrop={(source, start) =>
-        start === TO_PACK
-          ? layout.some((entry) => entry.id === source.id)
-          : placeThrowItem(layout, source.id as ItemId, start) !== layout
-      }
-      onDrop={(source, start) =>
-        start === TO_PACK ? remove(source.id as ItemId) : place(source.id as ItemId, start)
-      }
+      canDrop={(source, target) => {
+        if (target.kind === 'item' && target.area === 'pack' && source.data.kitArea === 'pack')
+          return source.id !== target.id;
+        return dropResult(source.id as ItemId, target) !== layout;
+      }}
+      onDrop={(source, target) => {
+        const id = source.id as ItemId;
+        if (target.kind === 'item' && target.area === 'pack' && source.data.kitArea === 'pack') reorderPack(id, target.id);
+        else {
+          const next = dropResult(id, target);
+          if (next === layout) return;
+          onLayout(next);
+        }
+        tap();
+        setChosen(id);
+        setError('');
+      }}
       ghostClassName="tp-drag-ghost"
       highlightClassName="tp-drop-highlight"
       renderGhost={(source, valid) => {
@@ -243,7 +282,7 @@ export default function ThrowWorkbench({
         );
       }}
     >
-      {tip && <p className="tp-workbench-tip">{tip}</p>}
+      {tip && <p className="tp-workbench-tip"><DialogueText text={tip} /></p>}
       <div className="tp-presets tp-strategy-presets" hidden={Boolean(available)}>
         {COMPETITIVE_STYLES.map((value) => {
           const preset = PRESETS[value],
@@ -265,7 +304,7 @@ export default function ThrowWorkbench({
                 onStyle(value);
                 onLayout(packThrowItems(preset.items));
                 onRelic(preset.relic);
-                setChosen(null);
+                setChosen(catalog[0]?.id ?? null);
                 setError('');
               }}
             >
@@ -277,7 +316,7 @@ export default function ThrowWorkbench({
       </div>
       <div className="tp-section-heading">
         <h2>道具布阵</h2>
-        <span>相邻道具互相增幅 · 从下方背包拖上来</span>
+        <span>拖到空位装备 · 拖到道具上交换 · 相邻增幅见说明</span>
         <b>
           {used}/{BAG_CELLS}格
         </b>
@@ -307,6 +346,8 @@ export default function ThrowWorkbench({
                 data-drag-uid={entry.id}
                 data-layout-id={entry.id}
                 data-layout-start={entry.start}
+                data-kit-drop-id={entry.id}
+                data-kit-area="board"
                 className={`tp-bag-item tp-family-${item.family} ${chosen === entry.id ? 'is-chosen' : ''}`}
                 aria-label={`摆放 ${item.name}，第${entry.start + 1}至${itemEnd(entry)}格`}
                 aria-pressed={chosen === entry.id}
@@ -316,10 +357,10 @@ export default function ThrowWorkbench({
                 }}
                 onClick={() => choose(entry.id)}
               >
-                <ObjectGlyph id={item.id} family={item.family} />
+                <KitIcon id={item.id} family={item.family} recommendation={recommendations?.items[item.id]} />
                 <small>{item.size}格</small>
-                <b>{item.name}</b>
-                <em>{item.tag}</em>
+                <b>{item.name}<UpgradeMark tier={upgrades?.[item.id]} /></b>
+                <KitTags kind="item" id={item.id} />
               </button>
             );
           })}
@@ -336,16 +377,21 @@ export default function ThrowWorkbench({
         >
           <small>遗物</small>
           {currentRelic ? (
-            <ObjectGlyph id={currentRelic.id} family="relic" />
+            <KitIcon id={currentRelic.id} family="relic" recommendation={recommendations?.relics[currentRelic.id]} />
           ) : (
             <span className="tp-relic-empty">＋</span>
           )}
           <strong>{currentRelic?.name ?? '选择遗物'}</strong>
+          {currentRelic && <KitTags kind="relic" id={currentRelic.id} />}
         </button>
       </div>
       <KitDetail
+        upgrades={upgrades}
         focus={chosen ? { kind: 'item', id: chosen } : null}
-        note={neighbors.length ? `相邻：${neighbors.map((n) => itemDefinition(n.id).name).join('、')}` : undefined}
+        note={[
+          neighbors.length ? `相邻：${neighbors.map((n) => itemDefinition(n.id).name).join('、')}` : '',
+          chosen ? recommendations?.items[chosen] : '',
+        ].filter(Boolean).join('　') || undefined}
         empty="点一件道具查看效果；拖到上方格子里装备，拖回背包取下。"
       >
         {error && <output>{error}</output>}
@@ -375,36 +421,28 @@ export default function ThrowWorkbench({
       <section className="tp-pack" data-pack-drop aria-label="道具背包">
         <div className="tp-catalog-heading">
           <h3>背包</h3>
-          <div className="tp-catalog-filters">
-            {families.map((family) => (
-              <button
-                key={family.id}
-                aria-pressed={filter === family.id}
-                className={filter === family.id ? 'is-active' : ''}
-                onClick={() => setFilter(family.id)}
-              >
-                {family.name}
-              </button>
-            ))}
-          </div>
-          <span>{shown.length}</span>
+          <span aria-live="polite">{shown.length} / {catalog.length}</span>
         </div>
+        <KitFilterBar catalog={catalog.map(({ id }) => ({ kind: 'item', id }))} value={filter} onChange={setFilter} />
         <div className="tp-items tp-strategy-catalog">
+          {!shown.length && <div className="tp-kit-filter-empty"><p>没有同时满足这些标签的道具。</p><button onClick={() => setFilter(EMPTY_KIT_FILTERS)}>清空筛选，查看全部</button></div>}
           {shown.map((item) => {
             const equipped = layout.some((entry) => entry.id === item.id);
             return (
               <button
                 key={item.id}
                 data-drag-uid={item.id}
+                data-kit-drop-id={item.id}
+                data-kit-area="pack"
                 className={`tp-item tp-family-${item.family} ${equipped ? 'is-equipped' : ''} ${chosen === item.id ? 'is-chosen' : ''}`}
                 aria-pressed={chosen === item.id}
-                aria-label={`${item.name}，${item.tag}，${item.size}格${equipped ? '，已装备' : ''}`}
+                aria-label={`${item.name}，${ITEM_LABELS[item.id].play}，${ITEM_LABELS[item.id].effect}，${item.size}格${equipped ? '，已装备' : ''}${recommendations?.items[item.id] ? '，推荐对抗当前对手' : ''}`}
                 style={{ gridColumn: `span ${item.size}` }}
                 onClick={() => choose(item.id)}
               >
-                <ObjectGlyph id={item.id} family={item.family} />
-                <strong>{item.name}</strong>
-                <em>{item.tag}</em>
+                <KitIcon id={item.id} family={item.family} recommendation={recommendations?.items[item.id]} />
+                <strong>{item.name}<UpgradeMark tier={upgrades?.[item.id]} /></strong>
+                <KitTags kind="item" id={item.id} />
                 {equipped && <b aria-hidden="true">✓</b>}
               </button>
             );
@@ -414,6 +452,7 @@ export default function ThrowWorkbench({
       {picker && (
         <RelicPicker
           relics={relicCatalog}
+          recommendations={recommendations?.relics}
           equipped={relic}
           onEquip={onRelic}
           onClose={() => setPicker(false)}

@@ -59,7 +59,7 @@ test('walking remains on the horizontal map, stops at both bounds, and dialogue 
   let state = readToEnd(opening);
   for (let i = 0; i < 100; i++) state = walkAdventure(state, -1, 5);
   assert.equal(state.player.x, 48);
-  for (let i = 0; i < 100; i++) state = walkAdventure(state, 1, 5);
+  for (let i = 0; i < Math.ceil(MAPS.street.width / 25); i++) state = walkAdventure(state, 1, 5);
   assert.equal(state.player.x, MAPS.street.width - 48);
   assert.deepEqual(Object.keys(state.player).sort(), [
     'facing',
@@ -108,7 +108,7 @@ test('abandoned training grants nothing; an acknowledged completed practice teac
   assert.equal(abandoned.flags.invitation, false);
   const loss = finishAdventureBattle(battle, battle.battle.id, 1);
   assert.equal(loss.dialogue.id, 'practice-loss');
-  assert.equal(loss.flags.trained, true);
+  assert.equal(loss.flags.trained, false, 'teaching gifts wait for the result dialogue');
   assert.equal(loss.flags.ticket, false);
   const result = readToEnd(loss);
   assert.equal(result.flags.invitation, true);
@@ -133,7 +133,8 @@ test('the qualifier is gated by the invitation; victory alone grants its ticket,
     assert.equal(failed.map, 'theatre');
   }
   const won = finishAdventureBattle(battle, battle.battle.id, 0);
-  assert.equal(won.flags.ticket, true);
+  assert.equal(won.flags.ticket, false);
+  assert.equal(readToEnd(won).flags.ticket, true);
   assert.strictEqual(finishAdventureBattle(won, battle.battle.id, 0), won);
 });
 
@@ -174,7 +175,7 @@ test('adventure battles reuse real v6 combat and deterministic seeds, including 
       finishAdventureBattle(battle, battle.battle.id, duel.winner),
     );
   };
-  assert.equal(RULES_VERSION, 'throw-duel-v11');
+  assert.equal(RULES_VERSION, 'throw-duel-v16');
   assert.equal(battle.battle.enemyStyle, 'lesson');
   assert.equal(battle.battle.coach, 'lesson');
   const result = run();

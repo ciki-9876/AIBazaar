@@ -7,6 +7,7 @@ import {
   createAdventure,
   finishAdventureBattle,
   interactAdventure,
+  hireRecruit,
   memberBook,
   RECRUITS,
   restoreAdventure,
@@ -43,7 +44,8 @@ const duel = (state, id, choice, winner = 0) => {
 const toTown = (state) => (state.map === 'bridgeport' ? state : go(state, `${state.map}-exit`));
 const toGoose = (state) => (state.map === 'goose' ? state : go(toTown(state), 'goose-door'));
 const toTheatre = (state) => (state.map === 'thursday' ? state : go(toTown(state), 'thursday-door'));
-const arrived = () => read(createAdventure(4242, 2));
+// A return visit after chapter three unlocks recruitment, without replaying Juno's story.
+const arrived = () => { const state = read(createAdventure(4242, 2)); return { ...state, flags: { ...state.flags, westArrived: true, troupeGuided: true } }; };
 const show = (state, id) => {
   state = go(toTown(state), 'busk-stage');
   if (state.mode === 'dialogue') state = chooseDialogue(read(state), 'shows');
@@ -69,15 +71,17 @@ test('a new adventure tours alone; every recruit says how to meet them', () => {
 test('tavern: Stan joins for a pound, once; without the pound he waits', () => {
   let state = toGoose(arrived());
   state = talk(state, 'goose-board');
-  assert.equal(state.dialogue.id, 'tavern-board');
-  const broke = read(chooseDialogue({ ...state, fee: 0 }, 'hire-stan'));
+  assert.equal(state.panel, 'recruits');
+  const broke = read(hireRecruit({ ...state, fee: 0 }, 'stan'));
   assert.deepEqual(broke.troupe, ['eli']);
   assert.equal(broke.fee, 0);
   const fee = state.fee;
-  state = read(chooseDialogue(state, 'hire-stan'));
+  state = read(hireRecruit(state, 'stan'));
   assert.deepEqual(state.troupe, ['eli', 'stan']);
   assert.equal(state.fee, fee - 1);
-  assert.equal(go(state, 'goose-board').dialogue.id, 'tavern-board-empty');
+  const board = go(state, 'goose-board');
+  assert.equal(board.panel, 'recruits');
+  assert.equal(hireRecruit(board, 'stan'), board, 'an already hired performer cannot be paid twice');
 });
 
 test('affinity: stew and a chat count once each; beating Rosie adds the rest; then she can be asked', () => {
@@ -121,7 +125,7 @@ test('story: Juno joins after the final, keeping her deck except the jack she ga
 
 test('members may take street-show stages; story duels and borrowed trunks stay with Eli', () => {
   let state = toGoose(arrived());
-  state = read(chooseDialogue(talk(state, 'goose-board'), 'hire-stan'));
+  state = read(hireRecruit(talk(state, 'goose-board'), 'stan'));
   const busk = show(state, 'double');
   assert.deepEqual(battleSetup(busk).performers, ['eli', 'stan']);
   assert.deepEqual(battleSetup(busk).books, { stan: {} });
@@ -134,7 +138,7 @@ test('members may take street-show stages; story duels and borrowed trunks stay 
 
 test('saves: v5 round-trips the troupe; tampered rosters, affinity and bonds are refused', () => {
   let state = toGoose(arrived());
-  state = read(chooseDialogue(talk(state, 'goose-board'), 'hire-stan'));
+  state = read(hireRecruit(talk(state, 'goose-board'), 'stan'));
   const saved = serializeAdventure(state);
   assert.deepEqual(restoreAdventure(saved).state.troupe, ['eli', 'stan']);
   const tamper = (patch) => {
@@ -157,6 +161,6 @@ test('saves: v5 round-trips the troupe; tampered rosters, affinity and bonds are
   delete old.state.affinity;
   delete old.state.bonds;
   const migrated = restoreAdventure(JSON.stringify(old));
-  assert.equal(migrated.state.version, 'magician-adventure-v6', 'v4 → v5 → v6');
+  assert.equal(migrated.state.version, 'magician-adventure-v10', 'v4 → v5 → v6 → v7');
   assert.deepEqual(migrated.state.troupe, ['eli']);
 });

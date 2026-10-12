@@ -2,7 +2,7 @@
 
 import { useEffect, useId, useRef, type ReactNode } from 'react';
 import { approach, reducedMotion, subscribeFrame } from './ticker';
-import { BONE, BRASS, LACQUER, LACQUER_DARK, INK } from './palette';
+import { BONE, BRASS, BRASS_DARK, LACQUER, LACQUER_DARK, INK, PLUM, AMETHYST, SALT, MIST, VERDIGRIS, TIMBER, TIMBER_LIGHT, SKIN, SKIN_SHADE } from './palette';
 
 export type RigId =
   | 'eli'
@@ -20,7 +20,8 @@ export type RigId =
   | 'agnes'
   | 'rosie'
   | 'basil'
-  | 'pike';
+  | 'pike'
+  | 'holt' | 'edith' | 'oswald' | 'pip' | 'butler' | 'nora' | 'theo' | 'molly' | 'brannigan' | 'kit' | 'vale';
 export type RigAction = { kind: 'throw' | 'hit'; id: number } | null;
 export type Stance = 'stand' | 'duel';
 
@@ -55,6 +56,56 @@ type Look = {
   skirt?: string;
 };
 export const LOOKS: Record<RigId, Look> = {
+  holt: { name: '阿瑟·霍尔特', scale: 1.06, lean: -2, skin: SKIN, skinShade: SKIN_SHADE, hair: SALT, coat: TIMBER, coatShade: INK, coatLight: TIMBER_LIGHT, sleeve: TIMBER, forearm: TIMBER, trouser: INK, boot: INK, body: 'frock', hairStyle: 'reed', glasses: 'round', moustache: true, accent: BRASS },
+  edith: { name: '伊迪丝·霍尔特', scale: 1, lean: 0, skin: SKIN, skinShade: SKIN_SHADE, hair: INK, coat: VERDIGRIS, coatShade: MIST, coatLight: BONE, sleeve: VERDIGRIS, forearm: VERDIGRIS, trouser: INK, boot: INK, body: 'dress', hairStyle: 'bun', glasses: 'round', accent: BRASS, skirt: MIST },
+  oswald: { name: '奥斯瓦尔德', scale: 1.05, lean: 2, skin: SKIN, skinShade: SKIN_SHADE, hair: TIMBER, coat: TIMBER_LIGHT, coatShade: TIMBER, coatLight: BRASS, sleeve: TIMBER_LIGHT, forearm: TIMBER_LIGHT, trouser: TIMBER, boot: INK, body: 'overall', hairStyle: 'crop', hat: 'cap', hatColor: INK, accent: LACQUER_DARK },
+  pip: { name: '小号手皮普', scale: .96, lean: 1, skin: SKIN, skinShade: SKIN_SHADE, hair: TIMBER, coat: LACQUER_DARK, coatShade: INK, coatLight: LACQUER, sleeve: LACQUER_DARK, forearm: LACQUER_DARK, trouser: INK, boot: INK, body: 'jacket', hairStyle: 'curly', hat: 'peaked', hatColor: LACQUER_DARK, accent: BRASS },
+  butler: {
+    name: '根据地管家', scale: 1.02, lean: -1, skin: SKIN, skinShade: SKIN_SHADE,
+    hair: SALT, coat: INK, coatShade: TIMBER, coatLight: MIST,
+    sleeve: INK, forearm: INK, trouser: INK, boot: INK,
+    body: 'tails', hairStyle: 'reed', glasses: 'round', moustache: true, accent: BONE,
+  },
+  nora: {
+    name: '诺拉·哈特', scale: 1.03, lean: -1, skin: SKIN, skinShade: SKIN_SHADE,
+    hair: INK, coat: BONE, coatShade: SALT, coatLight: BONE,
+    sleeve: BONE, forearm: BONE, trouser: INK, boot: INK,
+    body: 'tails', hairStyle: 'bob', accent: LACQUER_DARK,
+  },
+  theo: {
+    name: '西奥·格兰特', scale: .99, lean: 4, skin: SKIN, skinShade: SKIN_SHADE,
+    hair: TIMBER, coat: TIMBER_LIGHT, coatShade: TIMBER, coatLight: BRASS,
+    sleeve: BONE, forearm: BONE, trouser: TIMBER, boot: INK,
+    body: 'vest', hairStyle: 'crop', hat: 'brim', hatColor: TIMBER,
+    glasses: 'round', accent: LACQUER_DARK,
+  },
+  molly: {
+    name: '午夜莫莉', scale: .95, lean: 1, skin: SKIN, skinShade: SKIN_SHADE,
+    hair: INK, coat: AMETHYST, coatShade: PLUM, coatLight: AMETHYST,
+    sleeve: AMETHYST, forearm: AMETHYST, trouser: PLUM, boot: INK,
+    body: 'dress', hairStyle: 'curly', skirt: PLUM, accent: BONE,
+  },
+  brannigan: {
+    name: '船长布兰尼根', scale: .93, lean: 8, skin: SKIN, skinShade: SKIN_SHADE,
+    hair: BONE, coat: MIST, coatShade: INK, coatLight: SALT,
+    sleeve: MIST, forearm: MIST, trouser: INK, boot: INK,
+    body: 'frock', hairStyle: 'reed', hat: 'peaked', hatColor: INK,
+    moustache: true, accent: BRASS,
+  },
+  kit: {
+    name: '基特', scale: .88, lean: 2, skin: SKIN, skinShade: SKIN_SHADE,
+    hair: TIMBER, coat: BRASS_DARK, coatShade: TIMBER, coatLight: BRASS,
+    sleeve: TIMBER_LIGHT, forearm: SKIN, trouser: TIMBER, boot: INK,
+    body: 'jacket', hairStyle: 'crop', hat: 'cap', hatColor: LACQUER_DARK,
+    accent: BONE,
+  },
+  vale: {
+    name: '维尔', scale: 1.07, lean: -1, skin: SKIN, skinShade: SKIN_SHADE,
+    hair: INK, coat: PLUM, coatShade: INK, coatLight: AMETHYST,
+    sleeve: PLUM, forearm: PLUM, trouser: INK, boot: INK,
+    body: 'frock', hairStyle: 'felix', hat: 'bowler', hatColor: PLUM,
+    accent: VERDIGRIS,
+  },
   eli: {
     name: '伊莱·维尔',
     scale: 1,
@@ -817,6 +868,7 @@ export function Rig({
   action = null,
   facing = 1,
   phaseOffset = 0,
+  activity,
 }: {
   character: RigId;
   /** Distance along the floor, used to phase the stride. Read every frame. */
@@ -826,6 +878,8 @@ export function Rig({
   action?: RigAction;
   facing?: -1 | 1;
   phaseOffset?: number;
+  /** Domestic activities stay local to the portrait rig and never move an interaction anchor. */
+  activity?: 'rehearse' | 'tea' | 'read';
 }) {
   const look = LOOKS[character];
   const id = useId().replace(/:/g, '');
@@ -869,7 +923,8 @@ export function Rig({
         actionKind = state.action.kind;
         actionStart = clock;
       }
-      const elapsed = clock - actionStart;
+      const ambientThrow = activity === 'rehearse' && !still && !state.action;
+      const elapsed = ambientThrow ? clock % 8 : clock - actionStart;
       const travelled = travel?.current ?? 0;
       const phase = still ? 0 : (travelled / (STRIDE * look.scale)) * Math.PI * 2;
       const s = Math.sin(phase) * walk;
@@ -908,8 +963,9 @@ export function Rig({
       set(legB, `translate(-3 ${HIP}) rotate(${thighB.toFixed(2)})`);
       set(kneeB, `translate(0 ${THIGH}) rotate(${kB.toFixed(2)})`);
 
-      const ready = duel * (1 - walk);
-      const armFront = 21 * s - 30 * ready + throwArm + breath * 1.4 * (1 - walk);
+      const ready = Math.max(duel, activity ? .74 : 0) * (1 - walk);
+      const domestic = activity === 'tea' && !still ? Math.max(0, Math.sin(clock * .55)) * 17 : 0;
+      const armFront = 21 * s - 30 * ready + throwArm + breath * 1.4 * (1 - walk) - domestic;
       const armBack = -21 * s + 10 * ready - breath * 1.2 * (1 - walk);
       set(armF, `translate(4 ${SHOULDER + 4}) rotate(${armFront.toFixed(2)})`);
       set(elbowF, `translate(0 ${UPPER}) rotate(${(-14 - 12 * Math.max(0, -s) - 62 * ready + Math.min(0, throwArm) * 0.25).toFixed(2)})`);
@@ -924,7 +980,7 @@ export function Rig({
       }
       scarf.current?.setAttribute('d', ribbon(clock, walk, Math.abs(hitLean) * 0.15));
     });
-  }, [look, travel, phaseOffset]);
+  }, [look, travel, phaseOffset, activity]);
 
   const coatGradient = `${id}-coat`;
   return (
@@ -1001,7 +1057,10 @@ export function Rig({
           lowerColor={look.forearm === look.coat ? look.coatLight : look.forearm}
           upperWidth={8.8}
           lowerWidth={7.6}
-          tip={hand(look, stance === 'duel')}
+          tip={<>{hand(look, stance === 'duel' || activity === 'rehearse')}
+            {activity === 'tea' && <g transform="rotate(95)"><rect x="-7" y="-7" width="15" height="15" rx="2" fill={BONE} /><path d="M8-4q11-2 8 7q-1 3-8 2" fill="none" stroke={BONE} strokeWidth="3" /></g>}
+            {activity === 'read' && <g transform="rotate(95)"><path d="M-15-15h15l3 3 3-3h15v29H6l-3 3-3-3h-15Z" fill={BONE} /><path d="M3-12v25m-13-21h8m-8 5h8m-8 5h8m8-10h10m-10 5h10m-10 5h10" stroke={TIMBER} strokeWidth="1.2" /></g>}
+          </>}
         />
         {character === 'eli' && <path d="M8 -159 L12 -151" stroke={LACQUER_DARK} strokeWidth="1.2" />}
       </g>
@@ -1037,7 +1096,9 @@ export function Figure({
         ? `-34 ${(-176 * scale - 54).toFixed(0)} 68 84`
         : `-26 ${(-176 * scale - 32).toFixed(0)} 52 60`
       : crop === 'bust'
-        ? '-40 -236 80 112'
+        ? TALL_HATS.includes(LOOKS[character].hat ?? '')
+          ? `-40 ${(-238 * scale).toFixed(0)} 80 ${(132 * scale).toFixed(0)}`
+          : `-38 ${(-206 * scale).toFixed(0)} 76 ${(100 * scale).toFixed(0)}`
         : '-48 -246 96 252';
   const [, , w, h] = box.split(' ').map(Number);
   return (

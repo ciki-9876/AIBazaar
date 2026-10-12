@@ -2,6 +2,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { CardFace } from '../../stage/card-art';
 import { rankText, SUITS, type Suit } from '../../../lib/cards/throw-poker';
+import { hasAvailableVariant } from '../../../lib/cards/throw-deckcase-guide';
 import {
   cardKey,
   enchantOf,
@@ -43,10 +44,13 @@ export function DeckCase({
 }) {
   const dialog = useRef<HTMLDialogElement>(null);
   const [focus, setFocus] = useState<{ suit: Suit; rank: number }>({ suit: 1, rank: 14 });
+  const [onlyVariants, setOnlyVariants] = useState(false);
   useEffect(() => {
     dialog.current!.showModal();
   }, []);
   const counts = bookCounts(book);
+  const visibleRows = ([0, 1, 2, 3] as Suit[]).map((suit) => ({ suit, ranks: RANKS.filter((rank) => !onlyVariants || hasAvailableVariant(suit, rank, owned)) }));
+  const visibleCount = visibleRows.reduce((total, row) => total + row.ranks.length, 0);
   const key = cardKey(focus.suit, focus.rank);
   const current = book[key];
   const choose = (id: string | null) => {
@@ -84,11 +88,29 @@ export function DeckCase({
           ×
         </button>
       </header>
+      <div className="tp-deckcase-filter">
+        <label>
+          <input type="checkbox" checked={onlyVariants} onChange={(event) => {
+            const enabled = event.target.checked;
+            tap();
+            setOnlyVariants(enabled);
+            if (enabled && !hasAvailableVariant(focus.suit, focus.rank, owned)) {
+              for (const suit of [0, 1, 2, 3] as Suit[]) {
+                const rank = RANKS.find((value) => hasAvailableVariant(suit, value, owned));
+                if (rank !== undefined) { setFocus({ suit, rank }); break; }
+              }
+            }
+          }} />
+          仅查看有变种的牌
+        </label>
+        <span>{visibleCount} / 52 个牌位{onlyVariants ? ' · 按已拥有变种筛选，包含尚未装备的牌' : ''}</span>
+      </div>
       <div className="tp-deckcase-body">
-        <fieldset className="tp-deckcase-grid" aria-label="52 个牌位">
-          {([0, 1, 2, 3] as Suit[]).map((suit) => (
+        <fieldset className={`tp-deckcase-grid ${onlyVariants ? 'is-filtered' : ''}`} aria-label="52 个牌位">
+          {!visibleCount && <p className="tp-deckcase-no-cards">还没有收集到变种。取消筛选可查看整副牌。</p>}
+          {visibleRows.filter((row) => row.ranks.length).map(({ suit, ranks }) => (
             <div key={suit} className="tp-deckcase-row">
-              {RANKS.map((rank) => {
+              {ranks.map((rank) => {
                 const id = book[cardKey(suit, rank)];
                 const picked = focus.suit === suit && focus.rank === rank;
                 return (
@@ -109,7 +131,7 @@ export function DeckCase({
             </div>
           ))}
         </fieldset>
-        <aside className="tp-deckcase-detail" aria-live="polite">
+        {visibleCount > 0 && <aside className="tp-deckcase-detail" aria-live="polite">
           <h3>
             {SUITS[focus.suit]}
             {rankText(focus.rank)} 的变种
@@ -140,7 +162,7 @@ export function DeckCase({
           {owned && !owned.some((entry) => entry.startsWith(`${key}:`)) && (
             <p className="tp-deckcase-empty">这张牌还没有收集到变种。街头演出、旧货铺和强敌手里都有。</p>
           )}
-        </aside>
+        </aside>}
       </div>
       <footer>
         <button

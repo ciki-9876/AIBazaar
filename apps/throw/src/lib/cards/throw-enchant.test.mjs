@@ -37,7 +37,7 @@ const run = (state, count) => {
 };
 const curtainTick = CURTAIN_MS / TICK_MS;
 
-test('curtain call: nothing before one minute, then 1, 2, 3 … to both sides every second', () => {
+test('curtain call: nothing before one minute; its per-tick amount still rises 1, 2, 3 … once per second', () => {
   assert.equal(curtainDamage(curtainTick - 1), 0);
   assert.equal(curtainDamage(curtainTick), 1);
   assert.equal(curtainDamage(curtainTick + 20), 2);

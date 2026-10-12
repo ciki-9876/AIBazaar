@@ -11,6 +11,7 @@ import {
 } from 'react';
 import { ObjectGlyph } from '../../stage/glyphs';
 import { Figure, type RigAction, type RigId } from '../../stage/rig';
+import { StageStatusFx } from '../../stage/status-fx';
 import { CardFace } from '../../stage/card-art';
 import {
   HAND_NAMES,
@@ -21,14 +22,19 @@ import {
 } from '../../../lib/cards/throw-poker';
 import {
   createThrowDuel,
+  setAutoPlay,
+  fighterSleight,
+  applyQualifierOpening,
   MAX_HP,
   drawInterval,
   DEAL_SIZE,
-  useSleight,
+  useSleight as activateSleight,
   buryPeek,
   peekedCards,
   sleightReady,
-  SCORCH_PER_THROW,
+  throwLockMsPerCard,
+  throwLockProgress,
+  throwLockRemainingMs,
   SPLASH_MIN_ITEMS,
   handLimit,
   ITEMS,
@@ -48,6 +54,7 @@ import {
   RELAY_STEP,
   curtainDamage,
   battlePhase,
+  duelRoundTick,
   termsAllow,
   type DuelTerms,
   type ItemId,
@@ -56,7 +63,9 @@ import {
   type ThrowDuel,
   type ThrowFighter,
   type TriggerEffect,
+  type DuelReserve,
 } from '../../../lib/cards/throw-duel';
+import type { ItemUpgrades } from '../../../lib/cards/throw-upgrades';
 import { clickThrowSelection } from '../../../lib/cards/throw-selection';
 import { enchantOf, RARITY_NAMES, type DeckBook } from '../../../lib/cards/throw-enchant';
 import { bookCounts, DeckCase } from './throw-deckcase';
@@ -79,12 +88,17 @@ import {
   type ItemPlacement,
 } from '../../../lib/cards/throw-loadout';
 import { CoachCard, useCoach } from './throw-coach';
+import { BattleReport } from './throw-report';
 import type { CoachScript } from '../../../lib/adventure/magician-world';
 import { COMPETITIVE_STYLES } from '../../../lib/cards/throw-loadout';
+import { revealedKitRecommendations } from '../../../lib/cards/throw-kit-guide';
+import { bookRefs, fitMemberThrowLoadout, freeTeamPoolMany, validTeamAllocationMany, type PreparedThrowLoadout, type MemberThrowLoadout } from '../../../lib/cards/throw-team';
+export type { PreparedThrowLoadout } from '../../../lib/cards/throw-team';
 
 type Session = { duel: ThrowDuel; selected: string[]; flights: VisualShot[] };
 type Action =
   | { type: 'tick'; count: number; geometry: TableGeometry }
+  | { type: 'auto'; enabled: boolean }
   | { type: 'click'; uid: string }
   | { type: 'box'; ids: string[] }
   | { type: 'clear' }
@@ -96,6 +110,8 @@ type Action =
 function reducer(state: Session, action: Action): Session {
   if (action.type === 'start')
     return { duel: action.duel, selected: [], flights: [] };
+  if (action.type === 'auto') return { ...state, duel: setAutoPlay(state.duel, action.enabled), selected: [] };
+  if (['click', 'box', 'launch', 'arrange', 'sleight', 'bury'].includes(action.type) && state.duel.autoPlayer.enabled) return state;
   if (action.type === 'clear') return { ...state, selected: [] };
   if (action.type === 'click')
     return {
@@ -114,7 +130,7 @@ function reducer(state: Session, action: Action): Session {
       ...state,
       duel: arrangeThrow(state.duel, 0, action.mode, state.selected),
     };
-  if (action.type === 'sleight') return { ...state, duel: useSleight(state.duel, 0) };
+  if (action.type === 'sleight') return { ...state, duel: activateSleight(state.duel, 0) };
   if (action.type === 'bury') return { ...state, duel: buryPeek(state.duel, 0) };
   let duel = state.duel;
   if (action.type === 'launch') duel = launchThrow(duel, 0, state.selected);
@@ -133,7 +149,7 @@ function reducer(state: Session, action: Action): Session {
   return {
     duel,
     flights,
-    selected: action.type === 'launch' ? [] : state.selected,
+    selected: duel.autoPlayer.enabled ? [...duel.autoPlayer.intent] : action.type === 'launch' ? [] : state.selected.filter((id) => duel.fighters[0].hand.some((card) => card.uid === id)),
   };
 }
 function PokerCard({
@@ -153,16 +169,23 @@ function PokerCard({
       type="button"
       className={`tp-card ${card.suit % 2 ? 'tp-red' : ''} ${selected ? 'tp-selected' : ''}`}
       data-card-id={card.uid}
-      aria-label={`${SUITS[card.suit]}${rankText(card.rank)}${variant ? ` · ${variant.name}` : ''}`}
+      aria-label={`${SUITS[card.suit]}${rankText(card.rank)}${variant ? ` · ${variant.name}` : ''}${enemy && selected ? ' · 已选中，即将甩出' : ''}`}
       title={variant ? `${RARITY_NAMES[variant.rarity]} · ${variant.name}：${variant.text}` : undefined}
       aria-pressed={selected}
       disabled={enemy}
       onClick={onClick}
     >
       <CardFace card={card} compact={enemy} />
+      {enemy && <span className="tp-enemy-card-rank" aria-hidden="true">{rankText(card.rank)}</span>}
+      {enemy && selected && <span className="tp-enemy-ready" aria-hidden="true">待甩</span>}
     </button>
   );
 }
+const EFFECT_LABELS: Record<TriggerEffect['kind'], string> = {
+  damage: '直伤', heal: '治疗', draw: '抽牌', reorder: '理牌', charge: '蓄力', burn: '灼烧', poison: '剧毒',
+  shield: '护盾', cleanse: '净化', growth: '力量', slow: '迟缓', pierce: '穿透', link: '增幅',
+  leech: '吸血', wound: '重创', curtain: '落幕', antidote: '解毒', douse: '灭火', sleight: '手法',
+};
 const effectText = (effect: TriggerEffect) =>
   effect.kind === 'heal' && effect.value === 0
     ? '满气场'
@@ -181,12 +204,14 @@ function Host({
   side,
   name,
   character,
+  paused,
 }: {
   fighter: ThrowFighter;
   duel: ThrowDuel;
   side: 0 | 1;
   name?: string;
   character: RigId;
+  paused: boolean;
 }) {
   const relic = RELICS.find((entry) => entry.id === fighter.relic);
   const badges = [
@@ -212,26 +237,36 @@ function Host({
         ]
       : []),
   ];
-  const hit = duel.events
+  const enteredAt = duel.events.filter((event) => event.side === side && event.source === 'rule:substitute').at(-1)?.id ?? 0;
+  const actorEvents = duel.events.filter((event) => event.id > enteredAt);
+  const hit = actorEvents
     .filter((event) => event.type === 'hit' && event.side !== side)
     .at(-1);
-  const launch = duel.events
+  const launch = actorEvents
     .filter((event) => event.type === 'launch' && event.side === side)
     .at(-1);
+  const damage = actorEvents.filter((event) => (event.type === 'hit' || event.type === 'dot') && event.side !== side
+    && (event.hpDamage ?? 0) + (event.shieldDamage ?? 0) > 0 && duel.tick - event.tick < 13).at(-1);
   const action: RigAction =
     hit && (!launch || hit.id > launch.id)
       ? { kind: 'hit', id: hit.id }
       : launch
         ? { kind: 'throw', id: launch.id }
         : null;
-  const procs = duel.events
+  const procs = actorEvents
     .filter(
       (event) =>
         event.type === 'effect' &&
+        event.kind !== 'shield' && event.kind !== 'heal' && event.kind !== 'leech' &&
         event.side === side &&
         duel.tick - event.tick < PROC_FLOAT_TICKS,
     )
     .slice(-5);
+  const headEffects = actorEvents.filter((event) => duel.tick - event.tick < 20 && (
+    ((event.type === 'hit' || event.type === 'dot') && event.side !== side && (event.hpDamage ?? 0) + (event.shieldDamage ?? 0) > 0) ||
+    (event.side === side && event.value > 0 && (event.type === 'heal' ||
+      (event.type === 'effect' && event.kind === 'shield' && event.source !== 'item:sequence')))
+  )).slice(-3);
   return (
     <section className={`tp-host tp-host-${side}`}>
       <div
@@ -250,10 +285,22 @@ function Host({
           stance="duel"
           action={action}
         />
+        <StageStatusFx burn={fighter.burn} poison={fighter.poison} paused={paused}
+          damage={damage ? { id: damage.id, kind: damage.kind === 'burn' ? 'burn' : damage.kind === 'poison' ? 'poison' : 'damage', value: (damage.hpDamage ?? 0) + (damage.shieldDamage ?? 0) } : undefined} />
+      </div>
+      <div className="tp-head-effects" aria-hidden="true">
+        {headEffects.map((event, index) => {
+          const isDamage = event.type === 'hit' || event.type === 'dot';
+          const value = isDamage ? (event.hpDamage ?? 0) + (event.shieldDamage ?? 0) : event.value;
+          return <span key={event.id} className={`tp-head-number tp-head-${event.kind ?? 'damage'}`}
+            style={{ '--head-slot': headEffects.length - 1 - index } as CSSProperties}>
+            <b>{isDamage ? '−' : '+'}{value}</b><small>{isDamage ? event.text : event.type === 'heal' ? '治疗' : '护盾'}</small>
+          </span>;
+        })}
       </div>
       <div className="tp-host-kit">
         {badges.map((badge) => {
-          const event = duel.events
+          const event = actorEvents
             .filter(
               (entry) =>
                 entry.type === 'effect' &&
@@ -273,7 +320,7 @@ function Host({
           );
         })}
       </div>
-      {/* Item and relic triggers float up from whoever triggered them, like damage numbers. */}
+      {/* Bonuses beside the actor; settled damage, shield and healing above their head. */}
       <div className="tp-proc-row" aria-hidden="true">
         {procs.map((event, index) => (
           <span
@@ -329,6 +376,11 @@ function FighterLife({
         <span style={{ width: `${(fighter.hp / fighter.maxHp) * 100}%` }} />
       </div>
       <div className="tp-host-status">
+        {duel.status === 'playing' && throwLockRemainingMs(duel, side) > 0 && (
+          <span className="tp-stat-lock" title="禁手随阶段加速；仍可选牌、整理和使用手法">
+            禁手 {(throwLockRemainingMs(duel, side) / 1000).toFixed(1)}s
+          </span>
+        )}
         {fighter.shield > 0 && (
           <span className="tp-stat-shield" title="护盾挡直伤，也把灼烧闷成小火；剧毒照样穿过去">
             ◇ {fighter.shield}
@@ -360,11 +412,6 @@ function FighterLife({
   );
 }
 const styles = COMPETITIVE_STYLES as readonly Style[];
-const RESULT_QUIPS = {
-  win: ['掌声稀稀拉拉，但每一下都是真心的。', '观众起立了。好吧，是有人去续茶。', '对手表示今天风向不对。'],
-  loss: ['观众很有礼貌地假装没看见。', '输得体面，也是一门手艺。', '没关系，巡演箱可以重新摆。'],
-  draw: ['双方都认为自己才是赢家。', '平局：英国人最擅长的结局。'],
-} as const;
 type Gesture = {
   x: number;
   y: number;
@@ -377,14 +424,9 @@ type Gesture = {
     bottom: number;
   }[];
 };
-export type PreparedThrowLoadout = {
-  style: Style;
-  layout: ItemPlacement[];
-  relic: RelicId | null;
-  /** Variant chosen for each card slot; absent means plain white cards. */
-  book?: DeckBook;
-};
 type ThrowTableProps = {
+  initialSoundEnabled?: boolean;
+  onSoundChange?: (enabled: boolean) => void;
   challenge?: {
     enemyStyle: Style;
     seed: number;
@@ -403,6 +445,15 @@ type ThrowTableProps = {
     enemyPresence?: number;
     /** v6 what the hero knows of the opponent; omitted shows everything. */
     intel?: PreviewIntel;
+    playerUpgrades?: ItemUpgrades;
+    playerTeam?: DuelReserve[];
+    enemyTeam?: DuelReserve[];
+    teamChoices?: PerformerId[];
+    enemyOrderKnown?: boolean;
+    stanEncore?: boolean;
+    playerReserve?: DuelReserve;
+    enemyReserve?: DuelReserve;
+    enemyReserveCharacter?: RigId;
   };
   /** Fixed performer for the player (the story uses Eli); omitted lets the practice room choose. */
   playerPerformer?: PerformerId;
@@ -423,22 +474,33 @@ type ThrowTableProps = {
   coach?: CoachScript | null;
   /** Advice shown above the workbench; overrides the coach's default line. */
   tip?: string;
+  /** Act three permanently removes tutorial prose, even when revisiting old cities. */
+  tutorialHints?: boolean;
   onReturn?: (
     winner: ThrowDuel['winner'],
     loadout: PreparedThrowLoadout,
     /** What the opponent actually threw, for the dossier; and who was on stage (v6). */
-    report?: { suits: number[]; kinds: number[]; performer?: PerformerId },
+    report?: { suits: number[]; kinds: number[]; performer?: PerformerId; playerSuits?: number[]; playerKinds?: number[]; participants?: PerformerId[] },
+  ) => void;
+  /** Commit this result before arranging a fresh story attempt. */
+  onRetry?: (
+    winner: ThrowDuel['winner'],
+    loadout: PreparedThrowLoadout,
+    report?: { suits: number[]; kinds: number[]; performer?: PerformerId; playerSuits?: number[]; playerKinds?: number[]; participants?: PerformerId[] },
   ) => void;
 };
 /** v10: one-line sleight status for a performer on stage. */
 function sleightLabel(duel: ThrowDuel, side: 0 | 1) {
   const fighter = duel.fighters[side];
   if (!fighter.performer) return '';
-  const sleight = PERFORMERS[fighter.performer].sleight;
+  const sleight = fighterSleight(fighter);
+  if (duel.intermission) return `${sleight.name} · 中场休息`;
   const wait = Math.max(0, ((fighter.nextSleight - duel.tick) * TICK_MS) / 1000);
+  if (fighter.encore && fighter.encoreUsed) return `${sleight.name} · 已使用`;
   if (fighter.boomerang) return `${sleight.name} · 已备好`;
   if (fighter.peeking) return `${sleight.name} · 亮牌中`;
   if (wait > 0) return `${sleight.name} · ${wait.toFixed(1)}s`;
+  if (fighter.performer === 'eli' && fighter.hand.length >= handLimit(fighter.relic)) return `${sleight.name} · 手牌已满`;
   return sleightReady(duel, side) ? `${sleight.name} · 就绪` : `${sleight.name} · 条件未满足`;
 }
 /** One-line live state for relics that count something (v7). */
@@ -467,20 +529,25 @@ export default function ThrowTable({
   available,
   coach: coachScript = null,
   tip: tipOverride,
+  tutorialHints = true,
   onReturn,
+  onRetry,
   playerPerformer,
   performerChoices,
   memberBooks,
+  initialSoundEnabled = true,
+  onSoundChange,
 }: ThrowTableProps = {}) {
   const [phase, setPhase] = useState<'prepare' | 'battle'>('prepare');
+  const tableRoot = useRef<HTMLElement>(null);
+  useLayoutEffect(() => { tableRoot.current?.scrollTo({ top: 0 }); }, [phase]);
+  const teamOrderHidden = Boolean(challenge?.enemyTeam && !challenge.enemyOrderKnown);
+  const [enemySeat, setEnemySeat] = useState(() => teamOrderHidden ? [challenge!.enemyPerformer!, ...challenge!.enemyTeam!.map((r) => r.performer)].map((id, index) => ({ id, index })).sort((a, b) => a.id.localeCompare(b.id))[0].index : 0);
   const [prepView, setPrepView] = useState<'kit' | 'enemy'>('kit');
   const [chosenPerformer, setChosenPerformer] = useState<PerformerId>(performerChoices?.[0] ?? 'eli');
   const performer = playerPerformer ?? chosenPerformer;
   /** Who may be picked here: the troupe for a street show, everyone in the practice room. */
   const pickable: readonly PerformerId[] = playerPerformer ? [] : (performerChoices ?? (challenge ? [] : PERFORMER_IDS));
-  // Whoever takes the stage is drawn there; a fixed story duel keeps its hosts.
-  const stageHosts = [playerPerformer ? hosts[0] : (performer as RigId), hosts[1]] as const;
-  const stageNames = [performer === 'eli' && hostNames?.[0] ? hostNames[0] : PERFORMERS[performer].name, hostNames?.[1]] as const;
   /** A troupe member brings their own deck; Eli brings the hero's collection. */
   const memberDeck = performer !== 'eli' && challenge ? (memberBooks?.[performer] ?? PERFORMERS[performer].book) : null;
   const [style, setStyle] = useState<Style>(initialLoadout?.style ?? 'quick');
@@ -489,7 +556,6 @@ export default function ThrowTable({
       ? initialLoadout.layout.map((entry) => ({ ...entry }))
       : packThrowItems(PRESETS.quick.items),
   );
-  const equipped = layout.map((entry) => entry.id);
   const [relic, setRelic] = useState<RelicId | null>(
     initialLoadout ? initialLoadout.relic : PRESETS.quick.relic,
   );
@@ -497,11 +563,63 @@ export default function ThrowTable({
     challenge?.enemyStyle ?? 'guard',
   );
   const [seed, setSeed] = useState(String(challenge?.seed ?? 1024));
-  const [book, setBook] = useState<DeckBook>(() => ({ ...initialLoadout?.book }));
+  const [book, setBook] = useState<DeckBook>(() => {
+    const legal = available?.variants ? new Set([...available.variants, ...(challenge?.playerTeam ?? (challenge?.playerReserve ? [challenge.playerReserve] : [])).flatMap((r) => bookRefs(r.book))]) : null;
+    return Object.fromEntries(Object.entries(initialLoadout?.book ?? {}).filter(([key, id]) => !legal || legal.has(`${key}:${id}`)));
+  });
+  const reserves = challenge?.playerTeam ?? (challenge?.playerReserve ? [challenge.playerReserve] : []);
+  const teamSize = challenge?.playerTeam ? 3 : reserves.length ? 2 : 1;
+  const candidateIds: PerformerId[] = [performer, ...reserves.map((r) => r.performer)];
+  const [teamOrder, setTeamOrder] = useState<PerformerId[]>(() => {
+    const saved = initialLoadout?.order;
+    return saved?.length === teamSize && saved.every((id) => candidateIds.includes(id)) ? [...saved] : candidateIds.slice(0, teamSize);
+  });
+  const teamPool = {
+    items: available?.items ?? ITEMS.map(({ id }) => id), relics: available?.relics ?? RELICS.map(({ id }) => id),
+    ...(available?.variants ? { variants: [...new Set([...available.variants, ...reserves.flatMap((r) => bookRefs(r.book))])] } : {}),
+  };
+  const [editorId, setEditorId] = useState<PerformerId>(teamOrder[0]);
+  const [memberKits, setMemberKits] = useState<Partial<Record<PerformerId, MemberThrowLoadout>>>(() => {
+    const result: Partial<Record<PerformerId, MemberThrowLoadout>> = {};
+    let pool = freeTeamPoolMany(teamPool, [{ style, layout, relic, book }]);
+    for (const r of reserves) {
+      const candidate = initialLoadout?.members?.[r.performer] ?? { style: r.style, layout: r.layout ?? packThrowItems(r.items), relic: r.relic ?? null, book: r.book ?? {} };
+      const kit = fitMemberThrowLoadout(candidate, pool);
+      result[r.performer] = kit;
+      if (teamOrder.includes(r.performer)) pool = freeTeamPoolMany(pool, [kit]);
+    }
+    return result;
+  });
+  const primaryKit: MemberThrowLoadout = { style, layout, relic, book };
+  const kitFor = (id: PerformerId) => id === performer ? primaryKit : memberKits[id]!;
+  const editingPartner = editorId !== performer && Boolean(memberKits[editorId]);
+  const editorPerformer = editingPartner ? editorId : performer;
+  const editorKit = kitFor(editorPerformer);
+  const editorSleight = fighterSleight({ performer: editorPerformer, encore: Boolean(challenge?.stanEncore) });
+  const editorPool = teamSize > 1 ? freeTeamPoolMany(teamPool, teamOrder.filter((id) => id !== editorPerformer).map(kitFor)) : available;
+  const teamReady = teamSize === 1 || teamOrder.length === teamSize && new Set(teamOrder).size === teamSize && validTeamAllocationMany(teamOrder.map(kitFor), teamPool);
+  const updateEditor = (change: Partial<MemberThrowLoadout>) => {
+    if (editingPartner) setMemberKits((old) => ({ ...old, [editorPerformer]: { ...old[editorPerformer]!, ...change } }));
+    else { if (change.layout) setLayout(change.layout); if ('relic' in change) setRelic(change.relic ?? null); if (change.book) setBook(change.book); if (change.style) setStyle(change.style); }
+  };
+  const updateEditorLayout = (next: ItemPlacement[]) => updateEditor({ layout: next.filter(({ id }) => !editorPool || editorPool.items.includes(id)) });
+  const updateEditorRelic = (next: RelicId | null) => { if (!next || !editorPool || editorPool.relics.includes(next)) updateEditor({ relic: next }); };
+  const updateEditorBook = (next: DeckBook) => updateEditor({ book: next });
+  const preparedLoadout = (): PreparedThrowLoadout => ({ ...primaryKit,
+    ...(teamSize > 1 ? { members: { ...initialLoadout?.members, ...memberKits }, order: [...teamOrder] } : initialLoadout?.members ? { members: initialLoadout.members, ...(initialLoadout.order ? {order: initialLoadout.order} : {}) } : {}),
+  });
+  const changeSeat = (seat: number, id: PerformerId) => {
+    const order = [...teamOrder], previous = order[seat], other = order.indexOf(id);
+    order[seat] = id; if (other >= 0) order[other] = previous;
+    // Existing selected kits keep priority; a new member receives only unassigned collection.
+    if (other < 0 && id !== performer) setMemberKits((old) => ({ ...old, [id]: fitMemberThrowLoadout(old[id]!, freeTeamPoolMany(teamPool, order.filter((who) => who !== id).map(kitFor))) }));
+    setTeamOrder(order); setEditorId(id); setDeckOpen(false);
+  };
+  const enemyReserves = challenge?.enemyTeam ?? (challenge?.enemyReserve ? [challenge.enemyReserve] : []);
   const [deckOpen, setDeckOpen] = useState(false);
   const [paused, setPaused] = useState(false);
   const [rules, setRules] = useState(false);
-  const [soundEnabled, setSoundEnabled] = useState(true);
+  const [soundEnabled, setSoundEnabled] = useState(initialSoundEnabled);
   const [audioReady, setAudioReady] = useState(false);
   const sound = useRef<ThrowSound | null>(null);
   const soundCursor = useRef(0);
@@ -517,19 +635,27 @@ export default function ThrowTable({
     width: number;
     height: number;
   } | null>(null);
-  const [tagAnchor, setTagAnchor] = useState(50);
   const handRef = useRef<HTMLDivElement>(null);
   const gesture = useRef<Gesture | null>(null);
   const suppressClick = useRef(false);
   const oldPositions = useRef(new Map<string, { x: number; y: number }>());
   const { duel, selected, flights } = session;
   const [player, enemy] = duel.fighters;
+  const stageHosts: readonly [RigId, RigId] = [
+    player.performer as RigId ?? hosts[0],
+    duel.activeSeats[1] > 0 ? challenge?.enemyTeam ? enemy.performer as RigId : challenge?.enemyReserveCharacter ?? enemy.performer as RigId : hosts[1],
+  ];
+  const stageNames = [
+    player.performer ? PERFORMERS[player.performer].name : performer === 'eli' && hostNames?.[0] ? hostNames[0] : PERFORMERS[performer].name,
+    duel.activeSeats[1] > 0 ? enemyReserves[duel.activeSeats[1] - 1]?.name ?? (enemy.performer ? PERFORMERS[enemy.performer].name : hostNames?.[1]) : hostNames?.[1],
+  ] as const;
   const capacity = handLimit(player.relic),
     enemyCapacity = handLimit(enemy.relic);
   const picked = player.hand.filter((card) => selected.includes(card.uid));
   const preview = previewThrow(picked, player.items, {
     ...player,
     tick: duel.tick,
+    phaseTick: duelRoundTick(duel),
     target: enemy,
   });
   const intentCards = enemy.hand.filter((card) =>
@@ -538,6 +664,7 @@ export default function ThrowTable({
   const enemyPreview = previewThrow(intentCards, enemy.items, {
     ...enemy,
     tick: duel.tick,
+    phaseTick: duelRoundTick(duel),
     target: player,
   });
   const orderCooldown = Math.max(
@@ -547,19 +674,18 @@ export default function ThrowTable({
   const coach = useCoach(coachScript, duel, picked, phase === 'battle' && duel.status === 'playing');
   const clockStopped = paused || rules || coach.holding;
   const termsOk = termsAllow(duel.terms, picked);
+  const throwLockMs = throwLockRemainingMs(duel, 0);
+  const lockProgress = throwLockProgress(duel, 0);
   const launchReady =
     phase === 'battle' &&
-    !paused &&
-    !rules &&
+    !clockStopped &&
+    !duel.autoPlayer.enabled &&
     duel.status === 'playing' &&
+    !duel.intermission &&
     picked.length > 0 &&
     termsOk &&
-    duel.tick >= duel.nextLaunch[0];
+    throwLockMs === 0;
   const orderKey = player.hand.map((card) => card.uid).join('|');
-  const selectionKey = selected.join('|');
-  const effectKey = preview.effects
-    .map((effect) => `${effect.source}:${effect.value}`)
-    .join('|');
   const unlockSound = useCallback(() => {
     const audio = sound.current ?? new ThrowSound();
     sound.current = audio;
@@ -586,7 +712,7 @@ export default function ThrowTable({
       resultSound.current = true;
       sound.current?.finish(duel.winner === 0);
     }
-  }, [duel.events, duel.nextId, duel.status, duel.winner, phase]);
+  }, [duel.events, duel.nextId, duel.status, duel.winner, duel.fighters, phase]);
   useEffect(() => {
     if (phase !== 'battle' || clockStopped || duel.status !== 'playing')
       return;
@@ -623,7 +749,7 @@ export default function ThrowTable({
         event.preventDefault();
         fire();
       }
-      if (event.code === 'KeyQ' && phase === 'battle' && !rules) dispatch({ type: 'sleight' });
+      if (event.code === 'KeyQ' && phase === 'battle' && !clockStopped && !event.repeat) dispatch({ type: 'sleight' });
       if (event.code === 'Escape') {
         setRules(false);
         dispatch({ type: 'clear' });
@@ -631,7 +757,7 @@ export default function ThrowTable({
     };
     window.addEventListener('keydown', handle);
     return () => window.removeEventListener('keydown', handle);
-  }, [fire, phase, rules]);
+  }, [fire, phase, rules, clockStopped]);
   useLayoutEffect(() => {
     const hand = handRef.current;
     if (!hand) return;
@@ -666,65 +792,26 @@ export default function ThrowTable({
     });
     oldPositions.current = nextPositions;
   }, [orderKey, phase]);
-  useLayoutEffect(() => {
-    const hand = handRef.current;
-    if (!hand) return;
-    const measure = () => {
-      const bounds = hand.getBoundingClientRect();
-      const active = [
-        ...hand.querySelectorAll<HTMLElement>('.tp-selected'),
-      ].map((node) => node.getBoundingClientRect());
-      if (active.length) {
-        const center =
-          (Math.min(...active.map((r) => r.left)) +
-            Math.max(...active.map((r) => r.right))) /
-          2;
-        const tagWidth =
-          hand.querySelector('.tp-preview-effects')?.getBoundingClientRect()
-            .width ?? 0;
-        const half = Math.min(bounds.width / 2, tagWidth / 2 + 3);
-        const anchor = Math.max(
-          half,
-          Math.min(bounds.width - half, center - bounds.left),
-        );
-        setTagAnchor((anchor / bounds.width) * 100);
-      }
-    };
-    measure();
-    const observer = new ResizeObserver(measure);
-    observer.observe(hand);
-    return () => observer.disconnect();
-  }, [selectionKey, orderKey, effectKey, phase]);
   const start = () => {
     const value = Number(seed);
-    if (!Number.isSafeInteger(value) || value < 0 || value > 0xffffffff) return;
-    // In the story, only variants the hero owns go into the deck.
-    const owned = available?.variants ? new Set(available.variants) : null;
-    const playerBook = memberDeck
-      ? memberDeck
-      : owned
-        ? Object.fromEntries(Object.entries(book).filter(([key, id]) => owned.has(`${key}:${id}`)))
-        : book;
-    // v6: a house floor is written for the classic 320 and scales with the performer's presence.
-    const playerCap = challenge?.presence?.[performer] ?? MAX_HP;
+    if (!Number.isSafeInteger(value) || value < 0 || value > 0xffffffff || !teamReady) return;
+    const firstId = teamSize > 1 ? teamOrder[0] : performer;
+    const firstKit = teamSize > 1 ? kitFor(firstId) : primaryKit;
+    const owned = available?.variants ? new Set(teamPool.variants ?? []) : null;
+    const playerBook = teamSize > 1 ? firstKit.book : memberDeck ?? (owned ? Object.fromEntries(Object.entries(book).filter(([key, id]) => owned.has(`${key}:${id}`))) : book);
+    const playerCap = challenge?.presence?.[firstId] ?? MAX_HP;
     const terms = challenge?.terms;
-    const houseTerms =
-      terms?.hpFloor !== undefined ? { ...terms, hpFloor: Math.round((terms.hpFloor * playerCap) / MAX_HP) } : terms;
-    const next = createThrowDuel(
-      value,
-      equipped,
-      enemyStyle,
-      relic,
-      challenge?.enemyRelic !== undefined ? challenge.enemyRelic : PRESETS[enemyStyle].relic,
-      layout,
-      { player: playerBook, enemy: challenge?.enemyBook },
-      {
-        enemyItems: challenge?.enemyItems,
-        terms: houseTerms,
-        performers: { player: performer, enemy: challenge?.enemyPerformer ?? null },
-        presence: { player: playerCap, enemy: challenge?.enemyPresence ?? MAX_HP },
-      },
-    );
+    const houseTerms = terms?.hpFloor !== undefined ? { ...terms, hpFloor: Math.round((terms.hpFloor * playerCap) / MAX_HP) } : terms;
+    const initial = createThrowDuel(value, firstKit.layout.map(({ id }) => id), enemyStyle, firstKit.relic,
+      challenge?.enemyRelic !== undefined ? challenge.enemyRelic : PRESETS[enemyStyle].relic, firstKit.layout,
+      { player: playerBook, enemy: challenge?.enemyBook }, {
+        enemyItems: challenge?.enemyItems, terms: houseTerms, performers: { player: firstId, enemy: challenge?.enemyPerformer ?? null },
+        presence: { player: playerCap, enemy: challenge?.enemyPresence ?? MAX_HP }, playerUpgrades: challenge?.playerUpgrades,
+        stanEncore: challenge?.stanEncore,
+        playerReserves: teamSize > 1 ? teamOrder.slice(1).map((id) => { const kit = kitFor(id); return { performer: id, ...kit, items: kit.layout.map(({id}) => id), presence: challenge?.presence?.[id], upgrades: challenge?.playerUpgrades, encore: id === 'stan' && challenge?.stanEncore }; }) : undefined,
+        enemyReserves,
+      });
+    const next = coachScript === 'qualifier' ? applyQualifierOpening(initial) : initial;
     soundCursor.current = next.nextId - 1;
     resultSound.current = false;
     oldPositions.current.clear();
@@ -810,42 +897,53 @@ export default function ThrowTable({
     setBox(null);
   };
   // Curtain call (presentation): countdown, live rate, and how far the drop has fallen.
-  const curtainIn = Math.max(0, (CURTAIN_MS - duel.tick * TICK_MS) / 1000);
-  const curtainNow = curtainDamage(duel.tick);
+  const roundTick = duelRoundTick(duel);
+  const curtainIn = Math.max(0, (CURTAIN_MS - roundTick * TICK_MS) / 1000);
+  const curtainNow = curtainDamage(roundTick);
   /** v6: an unscouted opponent's style stays hidden in the prep screen. */
   const styleHidden = Boolean(challenge?.intel && challenge.intel.fog !== 'open' && !challenge.intel.visible.includes('style'));
-  const stagePhase = battlePhase(duel.tick);
+  const stagePhase = battlePhase(roundTick);
   const advice = throwAdvice(player.items, duel.terms);
   const audienceMoment = duel.events.filter((event) => deservesCheer(event, duel.fighters[1].maxHp) && duel.tick - event.tick < 30).at(-1);
-  const curtainFall = Math.min(1, Math.max(0, (duel.tick * TICK_MS - CURTAIN_MS) / 30000));
-  const lastHits = duel.events.filter(
-    (event) =>
-      (event.type === 'hit' || event.type === 'dot') &&
-      event.value > 0 &&
-      duel.tick - event.tick < 16,
-  );
+  const curtainFall = Math.min(1, Math.max(0, (roundTick * TICK_MS - CURTAIN_MS) / 30000));
+  const tutorialTip = tutorialHints ? tipOverride ?? (coachScript === 'qualifier'
+    ? '米娅的建议：菲利克斯打火，而火怕盾——有盾时新火只着一半，只烧盾不烧血。用守灯小毯和单张黑桃攒护盾，守住再反击。'
+    : coachScript === 'lesson' ? '第一课先练单张：飞牌修缮箱加直伤，穿幕细针帮你穿盾。直接点「开始对战」就好。' : undefined) : undefined;
+  const revealed = (unit: string) => !challenge?.intel || challenge.intel.fog === 'open' || challenge.intel.visible.includes(unit);
+  const recommendations = revealedKitRecommendations({
+    style: !styleHidden || tutorialTip ? enemyStyle : null,
+    items: (challenge?.enemyItems ?? PRESETS[enemyStyle].items).filter((id) => revealed(`item:${id}`)),
+    relic: revealed('relic') ? challenge?.enemyRelic !== undefined ? challenge.enemyRelic : PRESETS[enemyStyle].relic : null,
+  });
   const drawRemaining = (fighter: ThrowFighter) =>
     (
-      ((Math.max(0, drawInterval(fighter.items, duel.tick) - fighter.drawClock) +
+      ((Math.max(0, drawInterval(fighter.items, roundTick) - fighter.drawClock) +
         Math.max(0, fighter.slowUntil - duel.tick)) *
         TICK_MS) /
       1000
     ).toFixed(1);
+  const teamSuits = (side: 0 | 1) => Object.values(duel.stats[side].cards).reduce((suits, card) => {
+    suits[card.suit] += card.count;
+    return suits;
+  }, [0, 0, 0, 0]);
+  const battleTally = () => ({ participants: duel.teamOrder[0].slice(0, duel.activeSeats[0] + 1).filter((id): id is PerformerId => id !== null), suits: teamSuits(1), kinds: [...duel.stats[1].kinds], performer: duel.teamOrder[0][0] ?? performer,
+    playerSuits: teamSuits(0), playerKinds: [...duel.stats[0].kinds] });
   const returnToScene = () =>
     onReturn?.(
       duel.status === 'ended' ? duel.winner : null,
-      {
-        style,
-        relic,
-        layout: layout.map((entry) => ({ ...entry })),
-        book: { ...book },
-      },
+      preparedLoadout(),
       duel.status === 'ended'
-        ? { suits: [...enemy.tally.suits], kinds: [...enemy.tally.kinds], performer: player.performer ?? 'eli' }
+        ? battleTally()
         : undefined,
     );
+  const retryBattle = () => {
+    if (!onRetry) { setPhase('prepare'); return; }
+    onRetry(duel.winner, preparedLoadout(),
+      battleTally());
+  };
   return (
     <main
+      ref={tableRoot}
       className="tp-root"
       data-paused={clockStopped}
       data-coach-target={coach.step?.target ?? undefined}
@@ -860,6 +958,7 @@ export default function ThrowTable({
             onClick={() => {
               const next = !soundEnabled;
               setSoundEnabled(next);
+              onSoundChange?.(next);
               const audio = sound.current ?? new ThrowSound();
               sound.current = audio;
               audio.setEnabled(next);
@@ -876,6 +975,7 @@ export default function ThrowTable({
             {soundEnabled ? '♫ 声音开' : '♫ 声音关'}
           </button>
           <button onClick={() => setRules(true)}>玩法说明</button>
+          {phase === 'battle' && <button className={duel.autoPlayer.enabled ? 'is-active' : ''} aria-pressed={duel.autoPlayer.enabled} onClick={() => dispatch({ type: 'auto', enabled: !duel.autoPlayer.enabled })}>{duel.autoPlayer.enabled ? '自动出牌 · 开' : '自动出牌 · 关'}</button>}
           {phase === 'battle' && (
             <button onClick={() => setPhase('prepare')}>整备</button>
           )}
@@ -899,47 +999,59 @@ export default function ThrowTable({
                   {label}
                   {value === 'enemy' && (
                     <small>
-                      {hostNames?.[1] ?? '练习对手'} ·{' '}
-                      {styleHidden ? '？' : PRESETS[enemyStyle].name}
+                      {teamOrderHidden ? '对方剧团 · 成员配置公开' : <>{hostNames?.[1] ?? '练习对手'} · {styleHidden ? '？' : PRESETS[enemyStyle].name}</>}
                     </small>
                   )}
                 </button>
               ))}
             </div>
-            {prepView === 'enemy' ? (
-              <EnemyPreview
-                name={hostNames?.[1] ?? '练习对手'}
-                character={hosts[1]}
-                style={enemyStyle}
-                items={challenge?.enemyItems ?? PRESETS[enemyStyle].items}
-                relic={challenge?.enemyRelic !== undefined ? challenge.enemyRelic : PRESETS[enemyStyle].relic}
-                book={challenge?.enemyBook}
+            {teamSize > 1 && prepView === 'kit' && <div className="tp-team-preparation" aria-label="队伍成员配置">
+              <div role="tablist" aria-label="选择要配置的队员">
+                {teamOrder.map((id, index) => { const kit = kitFor(id); return <button key={id} role="tab" aria-selected={editorPerformer === id} onClick={() => { setEditorId(id); setDeckOpen(false); }}>
+                  <i className="tp-team-portrait"><Figure character={id} crop="bust" height={50} /></i><span><small>第 {index + 1} 棒 · 独立巡演箱</small><strong>{PERFORMERS[id].name}</strong><em>{kit.layout.length} 件道具 · {kit.relic ? RELICS.find((r) => r.id === kit.relic)?.name : '未配遗物'} · {Object.keys(kit.book ?? {}).length} 张变种</em></span>
+                </button>; })}
+              </div>
+              <div className="tp-team-order-edit">{teamOrder.map((id, index) => <label key={index}>第 {index + 1} 棒 <select aria-label={`第 ${index + 1} 棒成员`} value={id} onChange={(event) => changeSeat(index, event.target.value as PerformerId)}>{candidateIds.map((who) => <option key={who} value={who}>{PERFORMERS[who].name}</option>)}</select></label>)}</div>
+              <p>共用收藏池，每件道具、遗物和变种仅分配给一人。先在原队员箱子取下，再切换队员装备；可调整上场成员与顺序。</p>
+            </div>}
+            {prepView === 'enemy' ? (<>
+              {challenge?.enemyTeam && <div className="tp-team-order-edit" role="tablist" aria-label="对方公开成员配置">
+                {[{ performer: challenge.enemyPerformer!, name: hostNames?.[1] }, ...challenge.enemyTeam].map((r, index) => ({ ...r, index })).sort((a, b) => challenge.enemyOrderKnown ? a.index - b.index : a.performer.localeCompare(b.performer)).map((r) => <button key={r.performer} role="tab" aria-selected={enemySeat === r.index} onClick={() => setEnemySeat(r.index)}>{challenge.enemyOrderKnown ? `第 ${r.index + 1} 棒 · ` : ''}{r.name ?? PERFORMERS[r.performer].name}</button>)}
+                <p>{challenge.enemyOrderKnown ? '已确认出场顺序' : '成员配置公开；出场顺序请向秘书或酒馆打听。'}</p>
+              </div>}
+              <EnemyPreview key={enemySeat}
+                name={enemySeat ? challenge!.enemyTeam![enemySeat - 1].name ?? PERFORMERS[challenge!.enemyTeam![enemySeat - 1].performer].name : hostNames?.[1] ?? '练习对手'}
+                character={enemySeat ? challenge!.enemyTeam![enemySeat - 1].performer : hosts[1]}
+                style={enemySeat ? challenge!.enemyTeam![enemySeat - 1].style : enemyStyle}
+                items={enemySeat ? challenge!.enemyTeam![enemySeat - 1].items : challenge?.enemyItems ?? PRESETS[enemyStyle].items}
+                relic={enemySeat ? challenge!.enemyTeam![enemySeat - 1].relic ?? null : challenge?.enemyRelic !== undefined ? challenge.enemyRelic : PRESETS[enemyStyle].relic}
+                book={enemySeat ? challenge!.enemyTeam![enemySeat - 1].book : challenge?.enemyBook}
                 rule={challenge?.rule}
-                performer={challenge?.enemyPerformer}
-                intel={challenge?.intel}
+                performer={enemySeat ? challenge!.enemyTeam![enemySeat - 1].performer : challenge?.enemyPerformer}
+                intel={enemySeat ? undefined : challenge?.intel}
                 tap={() => unlockSound().tap()}
-              />
+              /></>
             ) : (
             <ThrowWorkbench
-              layout={layout}
-              relic={relic}
-              style={style}
-              onLayout={setLayout}
-              onRelic={setRelic}
-              onStyle={setStyle}
-              available={available}
-              tip={
-                tipOverride ??
-                (coachScript === 'qualifier'
-                  ? '米娅的建议：菲利克斯打火，而火怕盾——有盾时新火只着一半，只烧盾不烧血。把守灯小毯拖进格子（或点它再按「装备」），用单张黑桃攒护盾，守住再反击。'
-                  : coachScript === 'lesson'
-                    ? '第一课先练单张：飞牌修缮箱加直伤，穿幕细针帮你穿盾。直接点「开始对战」就好。'
-                    : undefined)
-              }
+              key={editorPerformer}
+              layout={editorKit.layout}
+              relic={editorKit.relic}
+              style={editorKit.style}
+              onLayout={updateEditorLayout}
+              onRelic={updateEditorRelic}
+              onStyle={(value) => updateEditor({ style: value })}
+              available={editorPool}
+              upgrades={challenge?.playerUpgrades}
+              tip={tutorialTip}
+              recommendations={recommendations}
               tap={() => unlockSound().tap()}
             />
             )}
             <div className="tp-preparation-footer">
+              {teamSize > 1 && <div className="tp-relay-plan"><strong>{teamSize === 3 ? '三人剧团联赛' : '双人团体赛'} · 出场顺序</strong>
+                <span>我方：{teamOrder.map((id) => PERFORMERS[id].name).join(' → ')}</span>
+                <span>对方：{challenge?.enemyTeam && !challenge.enemyOrderKnown ? '阵容公开 · 顺序尚未打听' : [hostNames?.[1], ...enemyReserves.map((r) => r.name)].join(' → ')}</span>
+                <small>换人时报幕休息 5 秒，下一场重新开场；存活者保留气场、状态与手牌。</small></div>}
               {challenge ? (
                 <div className="tp-start-options">
                   {pickable.length > 1 && (
@@ -954,10 +1066,10 @@ export default function ThrowTable({
                       </select>
                     </label>
                   )}
-                  <span className="tp-performer-line" title={`${PERFORMERS[performer].talent.text}　${PERFORMERS[performer].sleight.text}`}>
-                    {PERFORMERS[performer].name.split('·')[0]}：{PERFORMERS[performer].talent.name} · {PERFORMERS[performer].sleight.name}
+                  <span className="tp-performer-line" title={`${PERFORMERS[editorPerformer].talent.text}　${editorSleight.text}`}>
+                    {PERFORMERS[editorPerformer].name.split('·')[0]}：{PERFORMERS[editorPerformer].talent.name} · {editorSleight.name}
                   </span>
-                  {hostNames?.[1]} · {styleHidden ? '打法未知' : PRESETS[enemyStyle].name}
+                  {teamOrderHidden ? '对方剧团 · 顺序尚未打听' : <>{hostNames?.[1]} · {styleHidden ? '打法未知' : PRESETS[enemyStyle].name}</>}
                   {challenge.rule && <em className="tp-house-rule">规矩：{challenge.rule}</em>}
                 </div>
               ) : (
@@ -1008,7 +1120,7 @@ export default function ThrowTable({
                   </label>
                 </div>
               )}
-              {!memberDeck && (!available || Boolean(available.variants?.length)) && (
+              {(!memberDeck || teamSize > 1) && (!available || Boolean(teamPool.variants?.length)) && (
                 <button
                   className="tp-deckcase-open"
                   onClick={() => {
@@ -1017,9 +1129,10 @@ export default function ThrowTable({
                   }}
                 >
                   牌匣
+                  {teamSize > 1 && <span> · {PERFORMERS[editorPerformer].name.split('·')[0]}</span>}
                   <small>
                     {(() => {
-                      const counts = bookCounts(book);
+                      const counts = bookCounts(editorKit.book ?? {});
                       const total = counts.rare + counts.epic + counts.legendary;
                       return total ? `${total} 张变种` : '全白牌';
                     })()}
@@ -1028,9 +1141,9 @@ export default function ThrowTable({
               )}
               {deckOpen && (
                 <DeckCase
-                  book={book}
-                  owned={available?.variants}
-                  onBook={setBook}
+                  book={editorKit.book ?? {}}
+                  owned={editorPool?.variants}
+                  onBook={updateEditorBook}
                   onClose={() => setDeckOpen(false)}
                   tap={() => unlockSound().tap()}
                 />
@@ -1038,7 +1151,7 @@ export default function ThrowTable({
               <button
                 className="tp-primary tp-start"
                 onClick={start}
-                disabled={!/^\d+$/.test(seed) || Number(seed) > 0xffffffff}
+                disabled={!/^\d+$/.test(seed) || Number(seed) > 0xffffffff || !teamReady}
               >
                 开始对战<span>→</span>
               </button>
@@ -1063,7 +1176,7 @@ export default function ThrowTable({
               </span>
               <span className={intentCards.length ? 'tp-warning' : ''}>
                 {intentCards.length
-                  ? `${enemyPreview.name} · ${enemyPreview.damage}伤害 · ${Math.max(0, ((duel.ai.releaseTick - duel.tick) * TICK_MS) / 1000).toFixed(1)}秒后甩出`
+                  ? `${enemyPreview.name} · ${intentCards.length}张 · ${enemyPreview.damage}伤害 · ${Math.max(0, ((Math.max(duel.ai.releaseTick, duel.nextLaunch[1]) - duel.tick) * TICK_MS) / 1000).toFixed(1)}秒后甩出`
                   : enemy.hand.length === enemyCapacity
                     ? '满手，等待出牌'
                     : `下轮发 ${DEAL_SIZE} 张 · ${drawRemaining(enemy)}秒`}
@@ -1082,6 +1195,9 @@ export default function ThrowTable({
                 />
               ))}
             </div>
+            {intentCards.length > 0 && <div className="tp-enemy-intent" aria-label="对手即将甩出的牌">
+              <small>即将甩出</small><strong>{intentCards.map((card) => `${SUITS[card.suit]}${rankText(card.rank)}`).join('　')}</strong>
+            </div>}
           </div>
           <div className="tp-arena">
             <div
@@ -1105,14 +1221,14 @@ export default function ThrowTable({
               />
               <div className="tp-clock">
                 <strong>VS</strong>
-                <span>{((duel.tick * TICK_MS) / 1000).toFixed(1)}s</span>
+                <span>{((roundTick * TICK_MS) / 1000).toFixed(1)}s</span>
                 {curtainNow > 0 ? (
-                  <em className="tp-curtain-live" title="落幕：双方每秒受到递增伤害，护盾可挡，治疗可抵">
-                    落幕 · 每秒 {curtainNow}
+                  <em className="tp-curtain-live" title="落幕：双方每0.5秒受到递增伤害，护盾可挡，治疗可抵">
+                    落幕 · 每 0.5 秒 {curtainNow}
                   </em>
                 ) : (
                   curtainIn <= 15 && (
-                    <em className="tp-curtain-soon" title="落幕：双方每秒受到递增伤害，护盾可挡，治疗可抵">
+                    <em className="tp-curtain-soon" title="落幕：双方每0.5秒受到递增伤害，护盾可挡，治疗可抵">
                       {Math.ceil(curtainIn)} 秒后落幕
                     </em>
                   )
@@ -1128,84 +1244,50 @@ export default function ThrowTable({
                 fighter={enemy}
                 duel={duel}
                 side={1}
-                name={hostNames?.[1]}
+                name={stageNames[1]}
               />
             </div>
             <Host
+              key={`enemy-${duel.activeSeats[1]}`}
               fighter={enemy}
               duel={duel}
               side={1}
-              name={hostNames?.[1]}
-              character={hosts[1]}
+              name={stageNames[1]}
+              character={stageHosts[1]}
+              paused={clockStopped || Boolean(duel.intermission)}
             />
             <Host
+              key={`player-${duel.activeSeats[0]}`}
               fighter={player}
               duel={duel}
               side={0}
               name={stageNames[0]}
               character={stageHosts[0]}
+              paused={clockStopped || Boolean(duel.intermission)}
             />
+            {(teamSize > 1) && <div className="tp-team-roster" aria-label="车轮战出场顺序">
+              <span>{stageNames[0]} · 第 {duel.activeSeats[0] + 1} / {duel.teamOrder[0].length} 位</span>
+              <b>车轮战 · 第 {duel.round} 场</b>
+              <span>{stageNames[1]} · 第 {duel.activeSeats[1] + 1} / {duel.teamOrder[1].length} 位</span>
+            </div>}
+            {player.performer === 'stan' && player.encore && enemy.performer === 'holt' && <output className="tp-stan-return" aria-live="polite"><strong>斯坦：这一次，我会把节目演完。</strong><span>霍尔特：我等了四十年。舞台留给你。</span></output>}
+            {duel.intermission && <output className="tp-intermission" key={duel.intermission.startTick} aria-live="polite">
+              <button className="tp-intermission-pause" onClick={() => setPaused((old) => !old)}>{paused ? '继续报幕' : '暂停报幕'}</button>
+              <div className="tp-intermission-curtain is-left" aria-hidden="true" /><div className="tp-intermission-curtain is-right" aria-hidden="true" />
+              <div className="tp-intermission-announcement"><small>THE SHOW CONTINUES · 第 {duel.round + 1} 场</small><h2>中场休息</h2>
+                {player.performer === 'stan' && player.encore && enemy.performer === 'holt' && <p>「牌掉了，有伙伴帮你捡。这一幕，我们一起演完。」</p>}
+                <p>{duel.intermission.sides.map((side) => `${stageNames[side] ?? '下一位魔术师'} 接棒`).join(' · ')}</p>
+                <div><i className="tp-intermission-portrait"><Figure character={stageHosts[0]} crop="bust" height={105} /></i><b>VS</b><i className="tp-intermission-portrait"><Figure character={stageHosts[1]} crop="bust" height={105} facing={-1} /></i></div>
+                <strong>{Math.ceil((duel.intermission.endTick - duel.tick) * TICK_MS / 1000)}<em>秒后重新开场</em></strong><span>气场与手牌保留 · 战斗阶段重新计时</span>
+              </div>
+            </output>}
             {audienceMoment && (
               <output className="tp-audience-moment" key={audienceMoment.id} data-audience-cheer={audienceMoment.id} aria-live="polite">
                 <span aria-hidden="true">✦</span> 好手！观众喝彩
               </output>
             )}
-            {lastHits.map((event) => (
-              <div
-                className={`tp-impact tp-impact-${event.side === 0 ? 1 : 0} tp-impact-${event.kind ?? 'damage'} ${(event.combo ?? 0) >= 4 ? 'tp-impact-epic' : ''}`}
-                key={event.id}
-              >
-                <b>
-                  −{event.value}
-                  <small>{event.text}</small>
-                </b>
-                <i />
-                <i />
-                <i />
-                <i />
-                <i />
-                <i />
-              </div>
-            ))}
             {paused && duel.status === 'playing' && (
               <div className="tp-pause-label">已暂停</div>
-            )}
-            {duel.status === 'ended' && (
-              <div className="tp-result">
-                <h2>
-                  {duel.winner === 0
-                    ? '胜利'
-                    : duel.winner === 'draw'
-                      ? '平局'
-                      : '失败'}
-                </h2>
-                <p className="tp-result-quip">
-                  {
-                    RESULT_QUIPS[duel.winner === 0 ? 'win' : duel.winner === 'draw' ? 'draw' : 'loss'][
-                      duel.seed % RESULT_QUIPS[duel.winner === 0 ? 'win' : duel.winner === 'draw' ? 'draw' : 'loss'].length
-                    ]
-                  }
-                </p>
-                {duel.endReason === 'deadline' && <p className="tp-house-rule">时间到：没能在规定时间内获胜。</p>}
-                {duel.endReason === 'floor' && <p className="tp-house-rule">气场跌破了规矩定的底线。</p>}
-                <p>
-                  命中 {player.hits} 次 · 用时 {((duel.tick * TICK_MS) / 1000).toFixed(1)} 秒
-                </p>
-                <div>
-                  {onReturn && (
-                    <button className="tp-primary" onClick={returnToScene}>
-                      返回场景
-                    </button>
-                  )}
-                  <button onClick={start}>原样再来一局</button>
-                  <button
-                    className="tp-primary"
-                    onClick={() => setPhase('prepare')}
-                  >
-                    重新整理巡演箱
-                  </button>
-                </div>
-              </div>
             )}
           </div>
           <div className="tp-player-zone">
@@ -1243,21 +1325,8 @@ export default function ThrowTable({
                 )}
               </span>
               <div className="tp-selection-actions">
-                {player.performer && (
-                  <button
-                    className={`tp-sleight ${sleightReady(duel, 0) ? 'is-ready' : ''}`}
-                    disabled={!sleightReady(duel, 0)}
-                    title={`${PERFORMERS[player.performer].sleight.name}：${PERFORMERS[player.performer].sleight.text}（快捷键 Q）`}
-                    onClick={() => {
-                      unlockSound().tap();
-                      dispatch({ type: 'sleight' });
-                    }}
-                  >
-                    {sleightLabel(duel, 0)} <kbd>Q</kbd>
-                  </button>
-                )}
                 <span className="tp-order-status">
-                  {orderCooldown > 0
+                  {duel.autoPlayer.enabled ? '自动出牌中' : duel.intermission ? '中场休息' : orderCooldown > 0
                       ? `理牌冷却 ${orderCooldown.toFixed(1)}s`
                       : '理牌可用'}
                 </span>
@@ -1267,6 +1336,8 @@ export default function ThrowTable({
                       <button
                         key={mode}
                         disabled={
+                          Boolean(duel.intermission) ||
+                          duel.autoPlayer.enabled ||
                           orderCooldown > 0 ||
                           duel.status !== 'playing' ||
                           player.hand.length < 2 ||
@@ -1290,6 +1361,23 @@ export default function ThrowTable({
                 </button>
               </div>
             </div>
+            <div className="tp-sleight-dock">
+              {player.performer && (
+                <button
+                  className={`tp-sleight-orb ${sleightReady(duel, 0) && !clockStopped ? 'is-ready' : ''}`}
+                  disabled={!sleightReady(duel, 0) || clockStopped || duel.autoPlayer.enabled}
+                  aria-label={sleightLabel(duel, 0)}
+                  title={`${fighterSleight(player).name}：${fighterSleight(player).text}（快捷键 Q）`}
+                  style={{ '--sleight-progress': `${Math.max(0, 1 - Math.max(0, player.nextSleight - duel.tick) * TICK_MS / Math.max(1, fighterSleight(player).cooldownMs)) * 360}deg` } as CSSProperties}
+                  onClick={() => { unlockSound().tap(); dispatch({ type: 'sleight' }); }}
+                >
+                  <svg viewBox="0 0 40 36" aria-hidden="true"><g fill="none" stroke="currentColor" strokeWidth="1.5"><rect x="7" y="5" width="18" height="25" rx="2" transform="rotate(-14 16 18)"/><rect x="15" y="5" width="18" height="25" rx="2" transform="rotate(9 24 18)"/><path d="M24 11v13m-4-4 4 4 4-4"/></g></svg>
+                  <strong>{fighterSleight(player).name}</strong>
+                  <span>{player.nextSleight > duel.tick ? `${((player.nextSleight - duel.tick) * TICK_MS / 1000).toFixed(1)}s` : player.performer === 'eli' ? '抽 5 张' : '施展手法'}</span>
+                  <kbd>Q</kbd>
+                </button>
+              )}
+            </div>
             <div
               className="tp-hand"
               ref={handRef}
@@ -1298,20 +1386,24 @@ export default function ThrowTable({
               onPointerUp={pointerEnd}
               onPointerCancel={pointerEnd}
             >
+              {throwLockMs > 0 && duel.status === 'playing' && <div className="tp-hand-recovery" aria-label={`禁手剩余 ${(throwLockMs / 1000).toFixed(1)} 秒`}>
+                <i style={{ top: `${(1 - lockProgress.remainingRatio) * 100}%` }} />
+                <div><small>禁 手</small><strong>{(throwLockMs / 1000).toFixed(1)}<em>s</em></strong><span>仍可选牌，准备下一手</span></div>
+              </div>}
               <div
                 className="tp-preview-effects"
-                style={{ left: `${tagAnchor}%` }}
                 aria-label="选牌触发效果"
+                onPointerDown={(event) => event.stopPropagation()}
               >
                 {picked.length > 0 &&
                   preview.effects.map((effect) => (
                     <span
                       key={effect.source + ':' + effect.kind}
                       data-preview-source={effect.source}
+                      title={`${effect.name}：${effectText(effect)}${EFFECT_LABELS[effect.kind]}`}
                       className={`tp-effect-tag tp-effect-${effect.kind}`}
                     >
-                      {effect.name}
-                      <b>{effectText(effect)}</b>
+                      <b>{effectText(effect)}</b>{EFFECT_LABELS[effect.kind]}
                     </span>
                   ))}
               </div>
@@ -1392,11 +1484,12 @@ export default function ThrowTable({
                 </p>
               )}
               <button
-                className="tp-primary tp-fire"
+                className={`tp-primary tp-fire ${throwLockMs > 0 ? 'is-locked' : ''}`}
                 disabled={!launchReady}
                 onClick={fire}
+                title={duel.intermission ? '报幕结束后可继续出牌。' : throwLockMs > 0 ? '禁手期间可以提前选牌、整理，或使用手法。' : picked.length ? `本次出 ${picked.length} 张，之后禁手 ${(Math.ceil(picked.length * throwLockMsPerCard(roundTick) / TICK_MS) * TICK_MS / 1000).toFixed(2)} 秒。` : '先选好要甩出的牌。'}
               >
-                甩出去<kbd>SPACE</kbd>
+                {duel.intermission ? '中场休息' : throwLockMs > 0 && duel.status === 'playing' ? <><span>禁手</span><b>{(throwLockMs / 1000).toFixed(1)}s</b></> : <>甩出去<kbd>SPACE</kbd></>}
               </button>
             </div>
           </div>
@@ -1417,6 +1510,7 @@ export default function ThrowTable({
           <FlightLayer flights={flights} paused={clockStopped} />
           {duel.status === 'ended' && duel.winner === 0 && <VictoryConfetti />}
           <CoachCard coach={coach} />
+          {duel.status === 'ended' && <BattleReport duel={duel} onExit={onReturn ? returnToScene : () => { window.location.href = '/'; }} onRetry={retryBattle} />}
         </section>
       )}
       {rules && (
@@ -1438,6 +1532,7 @@ export default function ThrowTable({
             <h2>玩法规则</h2>
             <p>开局各 5 张牌，之后按轮发牌：每轮 {DEAL_SIZE} 张，开场每 6 秒一轮，30 秒后（白热）每 4 秒，60 秒后（落幕）每 3 秒。手牌上限 10 张，满了就不再发——不会替你攒着。</p>
             <p>点击选一张，按住拖动可框选一段连续的牌；按空格或「甩出去」出手。电脑也守同样的规矩，它不会作弊，只是不会累。</p>
+            <p><b>禁手时间</b>：开场每张 1 秒，白热每张约 0.67 秒，落幕每张 0.5 秒，与发牌按相同比例加速。整次出手按模拟步长向上取整。期间不能再次出牌，但可以选牌、整理和使用手法，双方规则相同。</p>
             <p>牌型基准倍率（顺子、同花、同花顺按 5 张展示）：</p>
             <div className="tp-rank-table">
               {HAND_NAMES.map((name, index) => (
@@ -1455,10 +1550,10 @@ export default function ThrowTable({
               <li><b>治疗克剧毒</b>：每次治疗顺带净化一半数值的剧毒，满血也有效。</li>
               <li><b>剧毒克护盾</b>：剧毒无视护盾；对手手里每攒 5 张牌，毒发 +1。剧毒每 2 秒退 1 层（浸露药匙：3 秒）。</li>
               <li><b>护盾克灼烧</b>：火落在盾上只点一半；有盾时，灼烧只烧盾、不伤血，熄得更快。</li>
-              <li><b>灼烧克治疗</b>：着火时治疗只剩六成；灼烧 ≥3 层时每次出手烫手，扣 {SCORCH_PER_THROW} 血。</li>
-              <li><b>单张削盾</b>：单张牌被护盾挡下时多耗 10% 护盾，也不会被铜镜反射。</li>
+              <li><b>灼烧克治疗</b>：着火时治疗只剩六成；灼烧持续造成伤害，出牌本身不会让你因灼烧额外受伤。</li>
+              <li><b>单张削盾</b>：单张牌被护盾挡下时多耗 10% 护盾，也不会被铜镜反弹。</li>
               <li><b>压轴</b>：顺子及以上命中会造成重创（5 秒内治疗六成）；一次出 5 张以上会吹灭自身灼烧，6 秒内不被点燃。</li>
-              <li><b>落幕</b>：第 60 秒起剧院开始关门，双方每秒受到 1、2、3……递增的伤害。护盾照挡，治疗照抵——活得久，本身就是一种赢法。</li>
+              <li><b>落幕</b>：第 60 秒起剧院开始关门，每 0.5 秒结算一次；单次伤害仍按每秒 1、2、3……递增，并按气场上限缩放。护盾照挡，治疗照抵。</li>
             </ul>
             <p>道具占 1–3 格，相邻指边缘贴合，增幅向下取整；遗物只能带 1 件。万一撑到 120 秒还没分出胜负，比较剩余气场。对手出手前 1 秒会亮牌预告——这是他的礼貌，不是他的失误。</p>
             <button className="tp-primary" onClick={() => setRules(false)}>

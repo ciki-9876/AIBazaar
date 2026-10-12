@@ -9,7 +9,7 @@ import {
   INTEL_PRICES,
   INTEL_SLOTS,
   intelView,
-  LODGINGS,
+  lodgingsFor,
   lodgingOf,
   MEALS,
   memberBook,
@@ -28,20 +28,25 @@ import {
   type MealTier,
   offerOwned,
   offerStocked,
-  SHOP,
+  shopFor,
   SHOWS,
   type AdventureState,
   type CharacterId,
   type ShowId,
   type ShopOffer,
 } from '../../lib/adventure/magician-world';
-import { ITEMS, RELICS } from '../../lib/cards/throw-loadout';
+import { fighterSleight } from '../../lib/cards/throw-duel';
+import { ITEMS, RELICS, type ItemId, type RelicId } from '../../lib/cards/throw-loadout';
 import { enchantOf, RARITY_NAMES } from '../../lib/cards/throw-enchant';
 import { HAND_NAMES, SUITS } from '../../lib/cards/throw-poker';
 import { ObjectGlyph } from '../stage/glyphs';
 import { CardFace } from '../stage/card-art';
 import { Figure, type RigId } from '../stage/rig';
 import { PERFORMERS, type PerformerId } from '../../lib/cards/throw-performer';
+import { KitTags } from '../wandeng/throw/throw-kit';
+import { KitFilterBar } from '../wandeng/throw/throw-kit-filters';
+import { EMPTY_KIT_FILTERS, matchesKitFilters, type KitFilterSelection, type KitReference } from '../../lib/cards/throw-kit-guide';
+import { DialogueText } from './dialogue-text';
 
 /** Variant reference `${suit}-${rank}:${id}` → a card to draw and its enchantment. */
 export function variantCard(ref: string) {
@@ -83,13 +88,16 @@ export function ShopPanel({
   onBuy: (id: string) => void;
   onClose: () => void;
 }) {
-  const stocked = SHOP.filter((offer) => offerStocked(state, offer.id));
+  const shop = shopFor(state);
+  const stocked = shop.filter((offer) => offerStocked(state, offer.id));
+  const shopName = state.act === 4 ? '纺锤精工铺 · 道具与材料' : state.act === 3 ? '港口修缮工坊 · 货架' : '霍布斯旧货铺';
   const categories: { kind: ShopOffer['kind']; label: string }[] = [
     { kind: 'item', label: '道具' },
     { kind: 'relic', label: '遗物' },
     { kind: 'variant', label: '牌的变种' },
   ];
   const [category, setCategory] = useState<ShopOffer['kind']>('item');
+  const [filters, setFilters] = useState<KitFilterSelection>(EMPTY_KIT_FILTERS);
   const switchTab = (event: KeyboardEvent<HTMLButtonElement>, index: number) => {
     const next = event.key === 'ArrowRight' ? (index + 1) % categories.length
       : event.key === 'ArrowLeft' ? (index + categories.length - 1) % categories.length
@@ -97,28 +105,34 @@ export function ShopPanel({
     if (next < 0) return;
     event.preventDefault();
     setCategory(categories[next].kind);
+    setFilters(EMPTY_KIT_FILTERS);
     event.currentTarget.parentElement?.querySelector<HTMLButtonElement>(`#rg-shop-tab-${categories[next].kind}`)?.focus();
   };
-  const offers = stocked.filter((offer) => offer.kind === category);
+  const categoryOffers = stocked.filter((offer) => offer.kind === category);
+  const catalog: KitReference[] = categoryOffers.flatMap<KitReference>((offer) => offer.kind === 'item'
+    ? [{kind: 'item' as const, id: offer.ref as ItemId}]
+    : offer.kind === 'relic' ? [{kind: 'relic' as const, id: offer.ref as RelicId}] : []);
+  const offers = categoryOffers.filter((offer) => offer.kind === 'variant' || matchesKitFilters(offer.kind, offer.ref as KitReference['id'], filters));
   return (
-    <dialog ref={modalRef} open className="rg-map-modal rg-panel rg-shop" aria-modal="true" aria-label="霍布斯旧货铺">
-      <PanelHeading title="霍布斯旧货铺" eyebrow="旧货不退 · 你赢了谁，这里就有谁的货" onClose={onClose} />
+    <dialog ref={modalRef} open className="rg-map-modal rg-panel rg-shop" aria-modal="true" aria-label={shopName}>
+      <PanelHeading title={shopName} eyebrow={state.act === 4 ? '纺织街的手艺 · 原件与同款材料均有货' : state.act === 3 ? '海风吹不坏好手艺 · 给下一场准备一个新答案' : '旧货不退 · 你赢了谁，这里就有谁的货'} onClose={onClose} />
       <div className="rg-panel-bar">
         <span>口袋里</span>
         <Fee value={state.fee} />
-        <small>{stocked.length < SHOP.length ? `还有 ${SHOP.length - stocked.length} 件货要等你赢了对应的人才上架。` : '货全上齐了。'}</small>
+        <small>{stocked.length < shop.length ? `还有 ${shop.length - stocked.length} 件货要等你赢了对应的人才上架。` : '货全上齐了。'}</small>
       </div>
       <div className="rg-shop-tabs" role="tablist" aria-label="商品类型">
         {categories.map(({ kind, label }, index) => (
           <button key={kind} id={`rg-shop-tab-${kind}`} role="tab" aria-selected={category === kind}
             aria-controls="rg-shop-products" tabIndex={category === kind ? 0 : -1}
-            onClick={() => setCategory(kind)} onKeyDown={(event) => switchTab(event, index)}>
+            onClick={() => { setCategory(kind); setFilters(EMPTY_KIT_FILTERS); }} onKeyDown={(event) => switchTab(event, index)}>
             {label} <small>{stocked.filter((offer) => offer.kind === kind).length}</small>
           </button>
         ))}
       </div>
+      {category !== 'variant' && <KitFilterBar catalog={catalog} value={filters} onChange={setFilters} />}
       <div id="rg-shop-products" role="tabpanel" aria-labelledby={`rg-shop-tab-${category}`}>
-      {!offers.length && <p className="rg-shop-empty">这一类货还没上架。赢下对应的对手，再来看看。</p>}
+      {!offers.length && <p className="rg-shop-empty">{categoryOffers.length ? '没有同时符合所选标签的商品。减少条件，或清空筛选。' : '这一类货还没上架。赢下对应的对手，再来看看。'}</p>}
       <ul className="rg-shop-list">
         {offers.map((offer) => {
           const owned = offerOwned(state, offer.id);
@@ -144,13 +158,15 @@ export function ShopPanel({
                     {item ? '道具' : relic ? '遗物' : `${RARITY_NAMES[variant!.enchant!.rarity]}变种`}
                   </small>
                 </strong>
-                <span>{item?.text ?? relic?.text ?? variant!.enchant!.text}</span>
+                {item && <KitTags kind="item" id={item.id} />}
+                {relic && <KitTags kind="relic" id={relic.id} />}
+                <span><DialogueText text={item?.text ?? relic?.text ?? variant!.enchant!.text} /></span>
                 <em>{offer.note}</em>
               </div>
               <div className="rg-shop-purchase">
                 <div className="rg-shop-price" aria-label={`售价 ${offer.price} 演出费`}><Fee value={offer.price} /></div>
-                <button className="rg-primary" disabled={owned || poor} onClick={() => onBuy(offer.id)}>
-                  {owned ? '已拥有' : poor ? '演出费不足' : '买下'}
+                <button className="rg-primary" disabled={(owned && !(item && state.act >= 3 && (state.spareItems[item.id] ?? 0) < 999)) || poor} onClick={() => onBuy(offer.id)}>
+                  {poor ? '演出费不足' : owned && item && state.act >= 3 ? `购同款材料 · 余 ${state.spareItems[item.id] ?? 0}` : owned ? '已拥有' : '买下'}
                 </button>
               </div>
             </li>
@@ -285,7 +301,7 @@ function IntelSection({ state, onScout }: { state: AdventureState; onScout: (bat
   );
 }
 
-const ORDER: CharacterId[] = ['felix', 'ada', 'bea', 'agnes', 'rosie', 'basil', 'pike', 'juno', 'hobbs', 'stan', 'pettigrew'];
+const ORDER: CharacterId[] = ['holt', 'edith', 'oswald', 'pip', 'felix', 'ada', 'bea', 'agnes', 'rosie', 'basil', 'pike', 'juno', 'hobbs', 'stan', 'pettigrew', 'nora', 'vale', 'molly', 'kit', 'brannigan'];
 export function DossierPanel({
   state,
   modalRef,
@@ -345,7 +361,6 @@ export function DossierPanel({
 
 export type LifeAction =
   | { kind: 'tea' | 'rehearse'; id: PerformerId }
-  | { kind: 'rent'; id: string }
   | { kind: 'meals'; tier: MealTier }
   | { kind: 'pay' | 'help' };
 const STATUS_NAMES = { ready: '', refuses: '罢演中', away: '回家吃饭了', lodged: '住不下，暂住朋友家' } as const;
@@ -363,16 +378,16 @@ export function TroupePanel({
   /** v6 life actions (act two on). */
   onLife?: (action: LifeAction) => void;
 }) {
-  const prospects = (Object.keys(RECRUITS) as Exclude<PerformerId, 'eli'>[]).filter((id) => !state.troupe.includes(id));
+  const prospects = (Object.keys(RECRUITS) as Exclude<PerformerId, 'eli'>[]).filter((id) => !['holt', 'edith', 'oswald'].includes(id) && !state.troupe.includes(id));
   const lodging = lodgingOf(state);
   const life = Boolean(onLife && lodging);
-  const idle = state.mode === 'explore';
+  const idle = state.mode === 'explore' || (state.mode === 'panel' && state.panel === 'troupe');
   const members = state.troupe.filter((id) => id !== 'eli' && state.away[id] === undefined).length;
   return (
     <dialog ref={modalRef} open className="rg-map-modal rg-panel rg-troupe" aria-modal="true" aria-label="剧团">
       <PanelHeading
         title="剧团"
-        eyebrow={life ? `${clockLabel(state)} · 巡演中 ${state.troupe.length} 人` : `巡演中 ${state.troupe.length} 人 · 街头演出可以派任何人上台`}
+        eyebrow={life ? `${clockLabel(state)} · ${lodging?.name ?? '巡演途中'} · ${state.troupe.length} 人` : `巡演中 ${state.troupe.length} 人 · 街头演出可以派任何人上台`}
         onClose={onClose}
       />
       <ul className="rg-troupe-list">
@@ -408,8 +423,8 @@ export function TroupePanel({
                   <b>天赋 · {performer.talent.name}</b>　{performer.talent.text}
                 </span>
                 <span>
-                  <b>手法 · {performer.sleight.name}</b>　{performer.sleight.text}
-                  <small>（冷却 {performer.sleight.cooldownMs / 1000} 秒）</small>
+                  <b>手法 · {fighterSleight({ performer: id, encore: state.flags.stanReturned }).name}</b>　{fighterSleight({ performer: id, encore: state.flags.stanReturned }).text}
+                  <small>（冷却 {fighterSleight({ performer: id, encore: state.flags.stanReturned }).cooldownMs / 1000} 秒）</small>
                 </span>
                 {life && (
                   <div className="rg-life-actions">
@@ -419,7 +434,7 @@ export function TroupePanel({
                         disabled={!idle || state.clock.slot !== 1 || status === 'away' || state.week.includes(`tea:${id}`)}
                         onClick={() => onLife!({ kind: 'tea', id })}
                       >
-                        约下午茶 <em>{state.week.includes(`tea:${id}`) ? '本周喝过了' : state.clock.slot !== 1 ? '下午才行' : '心情 +1，好感 +3'}</em>
+                        约下午茶 <em>{state.week.includes(`tea:${id}`) ? '本周喝过了' : state.clock.slot !== 1 ? '下午才行' : `心情 +${1 + (lodging?.recovery ?? 0)}，好感 +3`}</em>
                       </button>
                     )}
                     <button
@@ -427,7 +442,7 @@ export function TroupePanel({
                       disabled={!idle || state.clock.slot !== 0 || !lodging!.rehearsal || state.arrears >= 2 || status !== 'ready'}
                       onClick={() => onLife!({ kind: 'rehearse', id })}
                     >
-                      排练 <em>{!lodging!.rehearsal ? '住处没有排练室' : state.arrears >= 2 ? '排练室锁了' : state.clock.slot !== 0 ? '上午才行' : '台龄 +2'}</em>
+                      排练 <em>{!lodging!.rehearsal ? '住处没有排练室' : state.arrears >= 2 ? '排练室锁了' : state.clock.slot !== 0 ? '上午才行' : `台龄 +${2 + (lodging?.rehearsalBonus ?? 0)}`}</em>
                     </button>
                   </div>
                 )}
@@ -455,45 +470,42 @@ export function TroupePanel({
             </div>
           )}
           <ul className="rg-lodgings">
-            {LODGINGS.map((entry) => {
+            {lodgingsFor(state).map((entry) => {
               const here = entry.id === state.lodging;
-              const blocked = !idle || (entry.price > 0 && (state.arrears > 0 || state.fee < entry.price));
+              const price = here ? lodging!.price : entry.price;
               return (
                 <li key={entry.id} className={here ? 'is-here' : ''}>
                   <strong>
                     {entry.name}
-                    <small>{entry.price ? `£${entry.price}/周` : '免费'}</small>
+                    <small>{price ? `£${price}/周` : '免费'}</small>
                   </strong>
                   <span>
                     全员气场 <b>{entry.presence ? `+${entry.presence}%` : '+0%'}</b> · 住 {entry.beds} 人（不含伊莱）{entry.rehearsal ? ' · 有排练室' : ''}
                   </span>
-                  <em>{entry.note}</em>
-                  <button className={here ? 'rg-secondary' : 'rg-primary'} disabled={here || blocked} onClick={() => onLife!({ kind: 'rent', id: entry.id })}>
-                    {here ? '住在这里' : entry.price ? `搬进去（先付一周 £${entry.price}）` : '搬过去'}
-                  </button>
+                  <em>{here ? lodging!.note : entry.note}</em>
+                  {here && <small className="rg-lodging-current">当前根据地</small>}
                 </li>
               );
             })}
           </ul>
+          <p className="rg-panel-foot">更换根据地：进入想租的建筑，与管家交谈。确认租用后会自动退租旧址。</p>
           <h3 className="rg-troupe-heading">
             伙食 <small>{1 + members} 人吃饭</small>
           </h3>
           <div className="rg-meals" role="radiogroup" aria-label="伙食">
             {(Object.keys(MEALS) as MealTier[]).map((tier) => (
-              <button
+              <label
                 key={tier}
-                role="radio"
-                aria-checked={state.meals === tier}
                 className={state.meals === tier ? 'is-chosen' : ''}
-                disabled={!idle}
-                onClick={() => onLife!({ kind: 'meals', tier })}
               >
+                <input type="radio" name="troupe-meals" value={tier} checked={state.meals === tier} disabled={!idle}
+                  onChange={() => onLife!({ kind: 'meals', tier })} />
                 <b>{MEALS[tier].name}</b>
                 <small>
                   £{MEALS[tier].perHead}/人/周 · 心情 {MEALS[tier].mood > 0 ? '+1' : MEALS[tier].mood < 0 ? '−1' : '不变'}
                 </small>
                 <em>{MEALS[tier].note}</em>
-              </button>
+              </label>
             ))}
           </div>
         </>

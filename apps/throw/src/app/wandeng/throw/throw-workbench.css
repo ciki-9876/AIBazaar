@@ -169,7 +169,7 @@
   /* Top to bottom: the trunk being packed, what you picked, then the pack you drag from. */
   display: grid;
   grid-template-columns: minmax(0, 1fr);
-  grid-template-rows: auto auto auto auto auto minmax(0, 1fr);
+  grid-template-rows: auto auto auto auto auto minmax(200px, 1fr);
   grid-template-areas:
     'tip'
     'presets'
@@ -179,7 +179,8 @@
     'pack';
   row-gap: 14px;
   min-height: 0;
-  padding: 22px 28px 0;
+  overflow-y: auto;
+  padding: 22px 28px 12px;
 }
 .tp-section-heading {
   grid-area: head;
@@ -405,7 +406,10 @@
   grid-template-columns: 52px minmax(0, 1fr) auto;
   align-items: center;
   gap: 14px;
-  min-height: 74px;
+  height: 140px;
+  min-height: 140px;
+  box-sizing: border-box;
+  overflow: auto;
   padding: 10px 14px;
   border: 0;
   border-left: 3px solid var(--brass);
@@ -424,6 +428,56 @@
 }
 .tp-kit-detail p {
   margin: 0;
+}
+.tp-kit-copy {
+  min-height: 0;
+  max-height: 100%;
+  overflow: auto;
+  padding: 3px 8px 3px 0;
+  scrollbar-width: thin;
+  scrollbar-color: var(--mist) transparent;
+}
+.tp-kit-meta {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.tp-kit-tags {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 3px;
+}
+.tp-kit-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  padding: 1px 3px;
+  border: 1px solid rgba(201, 162, 90, 0.35);
+  border-radius: 3px;
+  background: rgba(201, 162, 90, 0.12);
+  color: var(--limelight);
+  font: 10px/1.5 var(--font-ui);
+  white-space: nowrap;
+  letter-spacing: 0;
+}
+.tp-kit-tag.is-effect {
+  border-color: rgba(109, 171, 174, 0.4);
+  background: rgba(79, 163, 154, 0.12);
+  color: var(--verdigris-light);
+}
+.tp-kit-tag svg {
+  width: 8px;
+  height: 10px;
+  flex: none;
+  fill: rgba(247, 230, 176, 0.12);
+  stroke: currentColor;
+  stroke-width: 1;
+}
+.tp-kit-copy .tp-kit-tags {
+  justify-content: flex-start;
 }
 .tp-kit-copy small {
   font-size: 11px;
@@ -470,9 +524,9 @@
 .tp-pack {
   grid-area: pack;
   display: grid;
-  grid-template-rows: auto minmax(0, 1fr);
+  grid-template-rows: auto auto minmax(140px, 1fr);
   gap: 10px;
-  min-height: 0;
+  min-height: 294px;
   padding: 12px 12px 0;
   border-radius: 10px 10px 0 0;
   background: rgba(5, 14, 19, 0.35);
@@ -482,6 +536,7 @@
   display: flex;
   align-items: center;
   gap: 12px;
+  justify-content: space-between;
 }
 .tp-catalog-filters {
   display: flex;
@@ -511,7 +566,7 @@
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(92px, 1fr));
   grid-auto-flow: row dense;
-  grid-auto-rows: 104px;
+  grid-auto-rows: 130px;
   align-content: start;
   gap: 8px;
   min-height: 0;
@@ -806,6 +861,8 @@
   }
   .tp-kit-detail {
     grid-template-columns: 40px minmax(0, 1fr);
+    grid-template-rows: minmax(0, 1fr) auto;
+    gap: 5px 10px;
   }
   .tp-kit-actions {
     grid-column: 1 / -1;
@@ -894,7 +951,8 @@
 
 /* 牌匣 — 52-slot deck editor */
 .tp-deckcase {
-  width: min(1180px, calc(100% - 24px));
+  width: min(1770px, calc(100% - 32px));
+  height: min(900px, calc(100dvh - 32px));
   max-height: calc(100vh - 24px);
   padding: 20px 22px;
   border: 0;
@@ -907,7 +965,7 @@
 }
 .tp-deckcase[open] {
   display: grid;
-  grid-template-rows: auto minmax(0, 1fr) auto;
+  grid-template-rows: auto auto minmax(0, 1fr) auto;
   gap: 14px;
   animation: tp-pop 0.35s var(--ease-out);
 }
@@ -964,7 +1022,7 @@
 }
 .tp-deckcase-body {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) 340px;
+  grid-template-columns: minmax(0, 1fr) 400px;
   gap: 16px;
   min-height: 0;
 }
@@ -972,18 +1030,52 @@
   display: grid;
   min-width: 0;
   margin: 0;
-  padding: 0;
+  padding: 12px;
   border: 0;
   align-content: start;
-  gap: 8px;
+  gap: 14px;
   overflow: auto;
+  scroll-padding: 12px;
+  scrollbar-gutter: stable;
 }
 .tp-deckcase-row {
   display: grid;
-  grid-template-columns: repeat(13, minmax(36px, 1fr));
-  gap: 5px;
+  grid-template-columns: repeat(13, 84px);
+  gap: 8px;
+  width: max-content;
+}
+.tp-deckcase-grid.is-filtered .tp-deckcase-row {
+  grid-template-columns: repeat(auto-fill, 84px);
+  width: auto;
+  min-width: 0;
+}
+.tp-deckcase-filter {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  color: var(--bone-dim);
+  font-size: 13px;
+}
+.tp-deckcase-filter label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--limelight);
+  cursor: pointer;
+}
+.tp-deckcase-filter input {
+  width: 16px;
+  height: 16px;
+  accent-color: var(--brass);
+}
+.tp-deckcase-no-cards {
+  margin: 10px;
+  color: var(--bone-dim);
+  font-size: 14px;
 }
 .tp-deckcase-slot {
+  min-width: 84px;
   padding: 0;
   border: 0;
   border-radius: 6px;
@@ -1007,7 +1099,7 @@
 .tp-deckcase-detail {
   min-height: 0;
   overflow: auto;
-  padding-right: 4px;
+  padding: 10px 8px;
 }
 .tp-deckcase-detail h3 {
   margin: 0 0 8px;
@@ -1080,8 +1172,20 @@
   .tp-deckcase-body {
     grid-template-columns: 1fr;
   }
-  .tp-deckcase-row {
-    grid-template-columns: repeat(13, 32px);
+  .tp-deckcase-body {
+    overflow: auto;
+    grid-template-rows: minmax(230px, 1fr) minmax(220px, 1fr);
+  }
+  .tp-deckcase header {
+    flex-wrap: wrap;
+  }
+  .tp-deckcase-filter {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+  .tp-deckcase-limits {
+    order: 3;
+    width: 100%;
   }
 }
 .tp-deckcase-open {
@@ -1244,3 +1348,13 @@
 .tp-intel-unknown {
   color: var(--limelight) !important;
 }
+.tp-upgrade-mark { display: inline-block; vertical-align: super; font: 9px var(--font-cjk-serif); margin-left: 3px; padding: 1px 2px; border: 1px solid #b3dbe7; color: #c0e4f2; border-radius: 2px; }
+.tp-upgrade-mark.is-gold { border-color: #e6c265; color: #f5d47c; }
+.tp-kit-icon { position: relative; display: inline-flex; width: 44px; flex: 0 0 auto; }
+.tp-kit-icon > .object-glyph { width: 100%; }
+.tp-bag-item .tp-kit-icon { width: min(64px, 100%); }
+.tp-relic-slot .tp-kit-icon { width: 74px; }
+.tp-relic-choices .tp-kit-icon { width: 54px; }
+.tp-relic-preview .tp-kit-icon { width: 76px; }
+.tp-counter-mark { position: absolute; top: -7px; left: -9px; z-index: 2; display: grid; place-items: center; width: 23px; height: 23px; border-radius: 50%; border: 1px solid #f7e6b0; background: #d9b666; color: #0f2a33; box-shadow: 0 2px 7px #0008; }
+.tp-counter-mark svg { width: 16px; height: 16px; fill: currentColor; stroke: currentColor; stroke-width: 1; stroke-linejoin: round; }
