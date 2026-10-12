@@ -6,7 +6,7 @@ import { deservesCheer } from './throw-audience.ts';
 test('strategy advice follows a custom trunk and honours its show terms', () => {
   assert.deepEqual(throwAdvice(['quick', 'needle']), ['单张连甩']);
   assert.deepEqual(throwAdvice(['pair', 'ward']), ['出对子', '多出黑桃 ♠']);
-  assert.deepEqual(throwAdvice(['sequence', 'suit']), ['凑三张起顺子', '凑三张起同花']);
+  assert.deepEqual(throwAdvice(['sequence', 'suit']), ['凑五张顺子', '凑五张同花']);
   assert.deepEqual(throwAdvice(['focus']), ['攒五张组合爆发']);
   assert.ok(!throwAdvice(['focus'], {maxCards: 3}).includes('攒五张组合爆发'));
   const restricted = throwAdvice(['quick', 'pair', 'ward', 'mend'], { maxCards: 1, suits: [1] });

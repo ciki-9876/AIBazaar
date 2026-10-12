@@ -320,9 +320,9 @@ test('a projectile applies ailments only at impact; the coal ember adds heat and
   state.fighters[0].hand = cards([2], [3]);
   state = launchThrow(state, 0, ['proof:0']);
   assert.equal(state.fighters[1].burn, 0);
-  assert.equal(state.shots[0].burn, 5, 'cinder 3 + ember 2');
+  assert.equal(state.shots[0].burn, 6, 'cinder 3 + ember 3 (v12)');
   state = run(state, 9);
-  assert.equal(state.fighters[1].burn, 5);
+  assert.equal(state.fighters[1].burn, 6);
   const cure = (relic) => {
     const duel = idle([], relic);
     duel.fighters[1].items = ['wash'];
@@ -357,7 +357,7 @@ test('the brass mirror reflects big batches harder and the double letterbox pays
     return MAX_HP - state.fighters[0].hp;
   };
   assert.equal(reflect([5, 5]), 6, 'pair: 40% of 15');
-  assert.equal(reflect([5, 5, 5]), 19, 'three of a kind: 70% of 28');
+  assert.equal(reflect([5, 5, 5]), 18, 'three of a kind: 70% of 27 (three spades are no longer a flush in v12)');
   const state = idle([], 'capacity');
   const full = cards([2, 3, 4, 5, 6, 7, 8, 9, 10]);
   const context = (hand) => ({ ...state.fighters[0], hand, target: state.fighters[1] });

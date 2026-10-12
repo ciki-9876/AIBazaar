@@ -20,6 +20,8 @@ import {
   REORDER_MS,
   TICK_MS,
   RELICS,
+  MAX_THROW,
+  recommendCards,
 } from './throw-duel.ts';
 import { clickThrowSelection } from './throw-selection.ts';
 
@@ -161,29 +163,41 @@ test('recognizes every poker combination, including the Ace-low straight', () =>
     [[10, 11, 12, 13, 14], [2, 2, 2, 2, 2], 8],
   ])
     assert.equal(scorePoker(cards(ranks, suits)).kind, kind);
-  assert.equal(scorePoker(cards([14, 2, 3, 4, 6])).kind, 4);
+  // v12 hold'em: A-2-3-4-6 is not a straight.
+  assert.equal(scorePoker(cards([14, 2, 3, 4, 6])).kind, 0);
 });
-test('straights, flushes and straight flushes start at three cards, including Ace-low runs', () => {
+test("v12 hold'em hands: straights, flushes, full houses and straight flushes need all five cards", () => {
   for (const [ranks, suits, kind, comboLength] of [
-    [[2, 3], [0, 0], 0, 0],
-    [[2, 4], [1, 1], 0, 0],
-    [[2, 3, 4], [0, 1, 2], 4, 3],
-    [[2, 3, 4, 5], [0, 1, 2, 3], 4, 4],
-    [[14, 2, 3], [0, 1, 2], 4, 3],
-    [[14, 2, 3, 4], [0, 1, 2, 3], 4, 4],
-    [[13, 14, 2], [0, 1, 2], 0, 0],
-    [[2, 5, 9], [1, 1, 1], 5, 3],
-    [[3, 7, 9, 12], [2, 2, 2, 2], 5, 4],
-    [[2, 3, 4], [3, 3, 3], 8, 3],
-    [[14, 2, 3], [3, 3, 3], 8, 3],
+    [[2, 3, 4], [0, 1, 2], 0, 0],
+    [[2, 3, 4, 5], [0, 1, 2, 3], 0, 0],
+    [[14, 2, 3, 4], [0, 1, 2, 3], 0, 0],
+    [[2, 5, 9], [1, 1, 1], 0, 0],
+    [[3, 7, 9, 12], [2, 2, 2, 2], 0, 0],
+    [[2, 3, 4, 5], [3, 3, 3, 3], 0, 0],
+    [[2, 2, 5, 5], [0, 1, 2, 3], 2, 4],
+    [[7, 7, 7], [0, 1, 2], 3, 3],
+    [[2, 3, 4, 5, 6], [0, 1, 2, 3, 0], 4, 5],
+    [[14, 2, 3, 4, 5], [3, 3, 3, 3, 3], 8, 5],
+    [[2, 5, 9, 11, 13], [1, 1, 1, 1, 1], 5, 5],
   ]) {
     const score = scorePoker(cards(ranks, suits));
     assert.equal(score.kind, kind, JSON.stringify([ranks, suits]));
     assert.equal(score.comboIds.length, comboLength);
   }
 });
+test('a throw holds at most five cards, for the player, the AI and house rules', () => {
+  assert.equal(MAX_THROW, 5);
+  const state = idle();
+  state.fighters[0].hand = cards([2, 3, 4, 5, 6, 7]);
+  assert.equal(launchThrow(state, 0, state.fighters[0].hand.map((card) => card.uid)), state, 'six cards are refused');
+  assert.notEqual(launchThrow(state, 0, state.fighters[0].hand.slice(0, 5).map((card) => card.uid)), state);
+  assert.throws(() => createThrowDuel(7, [], 'guard', null, undefined, undefined, {}, { terms: { maxCards: 6 } }));
+  const big = cards([2, 3, 4, 5, 6, 7, 8, 9, 10, 11]);
+  for (const style of ['quick', 'guard', 'burn', 'mend', 'poison', 'combo'])
+    assert.ok(recommendCards(big, PRESETS[style].items, style).length <= MAX_THROW, style);
+});
 test('phase boundaries drive deal rounds and carry elapsed progress into the faster interval', () => {
-  assert.equal(RULES_VERSION, 'throw-duel-v11');
+  assert.equal(RULES_VERSION, 'throw-duel-v12');
   assert.equal(DEAL_SIZE, 2);
   assert.equal(battlePhase(600), 'opening');
   assert.equal(battlePhase(601), 'heated');
@@ -211,21 +225,12 @@ test('phase boundaries drive deal rounds and carry elapsed progress into the fas
     assert.equal(state.fighters[0].drawn, 7);
   }
 });
-test('short combinations earn proportional rewards and loose cards do not inflate item rewards', () => {
-  for (const [ranks, multiplier, damage, itemBonus] of [
-    [[2, 3, 4], 172, 15, 21],
-    [[2, 3, 4, 5], 196, 27, 28],
-    [[2, 3, 4, 5, 6], 220, 44, 36],
-  ]) {
-    const hand = cards(ranks);
-    assert.equal(scorePoker(hand).multiplier, multiplier);
-    assert.equal(scorePoker(hand).damage, damage);
-    assert.equal(previewThrow(hand, ['sequence']).itemBonus, itemBonus);
-  }
-  const mixed = cards([2, 3, 4, 9, 10, 13], [0, 1, 2, 3, 1, 2]);
-  assert.equal(previewThrow(mixed, ['sequence']).itemBonus, 21);
-  assert.equal(previewThrow(cards([2, 5, 9], [1, 1, 1]), ['suit']).itemBonus, 18);
-  assert.equal(previewThrow(cards([2, 5, 9, 13], [1, 1, 1, 1]), ['suit']).itemBonus, 24);
+test('v12 combination items pay a flat reward for a full five-card hand only', () => {
+  assert.equal(scorePoker(cards([2, 3, 4, 5, 6])).multiplier, 220);
+  assert.equal(previewThrow(cards([2, 3, 4, 5, 6]), ['sequence']).itemBonus, 36);
+  assert.equal(previewThrow(cards([2, 3, 4]), ['sequence']).itemBonus, 0);
+  assert.equal(previewThrow(cards([2, 5, 9, 11, 13], [1, 1, 1, 1, 1]), ['suit']).itemBonus, 30);
+  assert.equal(previewThrow(cards([2, 5, 9, 13], [1, 1, 1, 1]), ['suit']).itemBonus, 0);
 });
 test('default sort no-ops never consume cooldown or change the seeded draw stream', () => {
   const state = idle();
