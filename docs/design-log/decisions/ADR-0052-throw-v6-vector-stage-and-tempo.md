@@ -3,6 +3,7 @@
 - 状态：已接受／已实装；工程与桌面、窄屏实机检查完成，真人体验待验证。
 - 日期：2026-10-09
 - 影响：A-01 确定性局面、A-05 反制循环、A-06 信息逐步揭示、A-07 原子结算、A-08 可观察战斗。
+- 2026-10-11：「顺子、同花从 3 张起」被 [ADR-0060](./ADR-0060-throw-v12-holdem-hands.md) 取代（v12 改回德州扑克牌型，一手最多 5 张）。
 - 相关迭代：[2026-10-09 · v6 舞台、教学与节奏](../iterations/F9/2026-10-09-throw-v6-stage-and-tempo.md)。
 - 补充 [ADR-0048](./ADR-0048-throw-limelight-vector-art.md) 的正式矢量方向；局部修订 [ADR-0049](./ADR-0049-throw-counter-wheel-and-chapter-one.md)、[ADR-0050](./ADR-0050-throw-curtain-call-and-card-variants.md) 与 [ADR-0051](./ADR-0051-throw-act-two-bridgeport.md)。历史原文保留。
 

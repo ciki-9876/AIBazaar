@@ -1,9 +1,9 @@
 # 《最后一张王牌》内容开发手册
 
 > 适用项目：`apps/throw`（甩牌对决 + 魔术师冒险）
-> 适用版本：对决规则 `throw-duel-v11` · 冒险 `magician-adventure-v6`（气场、日程、住处与伙食、情报：[ADR-0059](../design-log/decisions/ADR-0059-throw-growth-intel-rewards-cities.md)）
+> 适用版本：对决规则 `throw-duel-v12`（德州扑克牌型、一手最多 5 张：[ADR-0060](../design-log/decisions/ADR-0060-throw-v12-holdem-hands.md)） · 冒险 `magician-adventure-v6`（气场、日程、住处与伙食、情报：[ADR-0059](../design-log/decisions/ADR-0059-throw-growth-intel-rewards-cities.md)）
 
-当前修订见 [ADR-0052](../design-log/decisions/ADR-0052-throw-v6-vector-stage-and-tempo.md)：白热／落幕加快补牌、三张组合、默认 20 秒整理、单张入门，以及舞台／任务／对白反馈。旧剪纸与像素版已 [本机归档](../art/archives/README.md)，正式美术统一采用 SVG + CSS。v5 的历史平衡数据不能直接当作 v6 已验证结果。
+当前修订见 [ADR-0052](../design-log/decisions/ADR-0052-throw-v6-vector-stage-and-tempo.md)：白热／落幕加快补牌、默认 20 秒整理、单张入门，以及舞台／任务／对白反馈。旧剪纸与像素版已 [本机归档](../art/archives/README.md)，正式美术统一采用 SVG + CSS。v5 的历史平衡数据不能直接当作 v6 已验证结果。
 > 维护方式：规范变化时直接改这里；**设计取舍**写进 `docs/design-log/`，这里只链接，不复述。
 
 这份手册写给第一次接手《最后一张王牌》的人：策划、程序、美术、文案都适用。读完前两页就能跑起项目、看懂代码分层；之后按要做的事挑章节读。每一章都以「规则 → 做法 → 例子 → 检查清单」组织，例子取自现有代码，可以直接照抄改。

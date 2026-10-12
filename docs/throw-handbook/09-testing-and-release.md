@@ -12,6 +12,7 @@
 | `lib/cards/throw-terms.test.mjs` | 演出规矩：违规整手拒绝、血线、时限、结束原因 |
 | `lib/adventure/magician-world.test.mjs` | 第一幕流程、引擎、存档 |
 | `lib/adventure/bridgeport.test.mjs` | 第二幕：门槛、奖励只发一次、商店原子性、完整通关 |
+| `tools/sim-proxy.test.mjs` | v12 偷懒习惯回归：任何不动脑的习惯都不能让预设超过 80%，也不能比平衡代理高出 20 个百分点（护灯反击 × 甩对子是登记在案的已知例外） |
 | `lib/cards/throw-presence.test.mjs` | v11 气场：每人上限、落幕缩放、护盾不封顶、「半血」规则读自己的上限、血线校验 |
 | `lib/adventure/life.test.mjs` | v6 生活：台龄等级、气场公式、时段与周日结账、欠租三步、伙食与心情、回家吃几顿、下午茶与排练、床位、存档校验与 v5 迁移 |
 | `lib/adventure/intel.test.mjs` | v6 情报：传闻真假对照真实配置、三档迷雾、来源的时段/价格/次数、对决后核对、多德太太的解释、更正启事 |
