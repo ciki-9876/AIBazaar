@@ -289,7 +289,7 @@ export const BRIDGEPORT_BATTLES = {
     reward: { fee: 15, affinity: { rosie: 35 } },
     win: 'rosie-win',
     loss: 'rosie-loss',
-    tip: '火怕盾：补丁旧伞、守灯小毯竖起来，火就只烧盾、熄得更快。一次出 5 张还能吹灭自己身上的火。',
+    tip: '火怕盾：补丁旧伞、守灯小毯竖起来，火就只烧盾、熄得更快。一次出满 5 张还能吹灭自己身上的火。',
   },
   basil: {
     act: 2,
@@ -503,17 +503,17 @@ const paper: Choice = {
 export const BRIDGEPORT_DIALOGUES: Record<string, Dialogue> = {
   'bp-arrival': {
     lines: [
-      { speaker: 'narrator', text: '布里奇波特。一座桥，一个集市，一家只在周四营业的剧院。镇长说这里“非常有活力”，指的是周四。' },
-      { speaker: 'stan', text: '到站。布里奇波特。我在这儿等你，等多久都行。主要是这儿的厕所……算了，你不会懂的。' },
-      { speaker: 'narrator', text: '巡演箱的夹层里有一张米娅的字条，裹着 10 演出费：“应急用。应急的意思是饼干。”' },
-      { speaker: 'narrator', text: '另有一张里德的明信片：“公开赛在周四剧院报名。售票员叫多丽丝。她没有幽默感，这一点请务必尊重。”' },
+      { speaker: 'narrator', text: '【布里奇波特】。一座桥，一个集市，一家只在周四营业的剧院。镇长说这里“非常有活力”，指的是周四。' },
+      { speaker: 'stan', text: '到站。【布里奇波特】。我在这儿等你，等多久都行。主要是这儿的厕所……算了，你不会懂的。' },
+      { speaker: 'narrator', text: '巡演箱的夹层里有一张【米娅】的字条，裹着 10 演出费：“应急用。应急的意思是饼干。”' },
+      { speaker: 'narrator', text: '另有一张【里德】的明信片：“公开赛在【周四剧院】报名。售票员叫【多丽丝】。她没有幽默感，这一点请务必尊重。”' },
       { speaker: 'eli', text: '剧院在街的另一头。先去报名——顺便看看这镇上的人怎么甩牌。' },
     ],
     effect: { set: ['arrived'], reward: { fee: 10 }, once: 'arrived' },
   },
   'stan-first': {
     lines: [
-      { speaker: 'stan', text: '小伙子，帮个忙。我开了二十年车，走遍全国的厕所。布里奇波特的，是我最后的遗憾。' },
+      { speaker: 'stan', text: '小伙子，帮个忙。我开了二十年车，走遍全国的厕所。【布里奇波特】的，是我最后的遗憾。' },
       { speaker: 'stan', text: '我要的不多：一个安静的厕所，和一份好报纸。报纸报刊亭有。安静的厕所……听说剧院后台有一个，钥匙在售票员那儿。' },
       { speaker: 'eli', text: '你是说，你想让我去偷剧院厕所的钥匙。' },
       { speaker: 'stan', text: '“借”。我用词很讲究的。事成之后，我把私藏的好东西给你。' },
@@ -536,7 +536,7 @@ export const BRIDGEPORT_DIALOGUES: Record<string, Dialogue> = {
   },
   'stan-after': {
     lines: [
-      { speaker: 'stan', text: '我已经去过三次了。每次都像第一次。等你拿了冠军，我就开车送你去韦斯特港——如果我出得来的话。' },
+      { speaker: 'stan', text: '我已经去过三次了。每次都像第一次。等你拿了冠军，我就开车送你去【韦斯特港】——如果我出得来的话。' },
     ],
   },
   'bp-bus-locked': {
@@ -549,14 +549,14 @@ export const BRIDGEPORT_DIALOGUES: Record<string, Dialogue> = {
       { speaker: 'juno', text: '伊莱·维尔。我在报纸上看到你名字了，拼对了。恭喜。' },
       { speaker: 'juno', text: '这个镇的观众不等人，可他们今天等你了。下次见面，我会准备新招。' },
       { speaker: 'eli', text: '那我也准备一个。不过我不告诉你是什么。' },
-      { speaker: 'stan', text: '上车上车。下一站韦斯特港——地铁、高架桥、广播塔，以及全国排名第四的公共厕所。' },
-      { speaker: 'narrator', text: '巴士驶过那座桥。车窗外，报刊亭的多德太太正把一张新海报贴上去：“伊莱·维尔，下周四，不在本镇。”' },
+      { speaker: 'stan', text: '上车上车。下一站【韦斯特港】——地铁、高架桥、广播塔，以及全国排名第四的公共厕所。' },
+      { speaker: 'narrator', text: '巴士驶过那座桥。车窗外，报刊亭的【多德太太】正把一张新海报贴上去：“伊莱·维尔，下周四，不在本镇。”' },
     ],
     effect: { set: ['leftBridgeport'], complete: true },
   },
   'dodd-first': {
     lines: [
-      { speaker: 'dodd', text: '新面孔！格雷维克来的，对吧？鞋子上的泥我认得。别紧张，亲爱的，我卖报纸，也卖消息。消息比报纸快。' },
+      { speaker: 'dodd', text: '新面孔！【格雷维克】来的，对吧？鞋子上的泥我认得。别紧张，亲爱的，我卖报纸，也卖消息。消息比报纸快。' },
       { speaker: 'dodd', text: '镇上每个甩牌的，我都有一本账：爱出什么花色、什么牌型、带什么遗物。你跟谁打过，我就给谁记一笔。' },
       { speaker: 'dodd', text: '想看随时来翻。不收钱——但你要是赢了，得接受我的独家采访。' },
     ],
@@ -569,7 +569,7 @@ export const BRIDGEPORT_DIALOGUES: Record<string, Dialogue> = {
   },
   'dodd-paper-offer': {
     lines: [
-      { speaker: 'dodd', text: '买报纸？给斯坦的吧。那个人看报纸只看一个版面，但从不承认是哪个版面。' },
+      { speaker: 'dodd', text: '买报纸？给【斯坦】的吧。那个人看报纸只看一个版面，但从不承认是哪个版面。' },
     ],
     choices: [paper, dossier, close('先不买')],
     effect: { set: ['metDodd'] },
@@ -577,7 +577,7 @@ export const BRIDGEPORT_DIALOGUES: Record<string, Dialogue> = {
   'dodd-paper': {
     lines: [
       { speaker: 'dodd', text: '两块，谢谢。头版是天气，第三版是你——好吧，还不是你。再加把劲。' },
-      { speaker: 'narrator', text: '获得一份《布里奇波特周报》。斯坦会喜欢的。' },
+      { speaker: 'narrator', text: '获得一份《【布里奇波特】周报》。【斯坦】会喜欢的。' },
     ],
   },
   'dodd-correction': {
@@ -596,13 +596,13 @@ export const BRIDGEPORT_DIALOGUES: Record<string, Dialogue> = {
     lines: [
       { speaker: 'doris', text: '报名？姓名。' },
       { speaker: 'eli', text: '伊莱·维尔。' },
-      { speaker: 'doris', text: '格雷维克来的。没有名气，没有经纪人，没有预约。我给你排在早场：上午九点，观众三位，其中一位是来躲雨的。' },
-      { speaker: 'doris', text: '早场对手是普赖斯姐妹，就在台上。赢两场，你就有公开赛资格。规定就是规定。' },
+      { speaker: 'doris', text: '【格雷维克】来的。没有名气，没有经纪人，没有预约。我给你排在早场：上午九点，观众三位，其中一位是来躲雨的。' },
+      { speaker: 'doris', text: '早场对手是【普赖斯姐妹】，就在台上。赢两场，你就有公开赛资格。规定就是规定。' },
     ],
     effect: { set: ['metDoris'] },
   },
   'doris-morning': {
-    lines: [{ speaker: 'doris', text: '早场两场，赢了才算。普赖斯姐妹在台上等你，她们的茶快凉了。' }],
+    lines: [{ speaker: 'doris', text: '早场两场，赢了才算。【普赖斯姐妹】在台上等你，她们的茶快凉了。' }],
   },
   'doris-shows': {
     lines: [
@@ -612,9 +612,9 @@ export const BRIDGEPORT_DIALOGUES: Record<string, Dialogue> = {
   },
   'doris-mainhall': {
     lines: [
-      { speaker: 'doris', text: '……今天有四个人来问“那个格雷维克来的人几点上场”。四个。我在这儿卖了三十年票，从没被问过这种问题。' },
-      { speaker: 'doris', text: '主厅。小组赛四场，四个对手都在台上。全赢了进决赛，对手是朱诺·贝尔。' },
-      { speaker: 'narrator', text: '多丽丝把你的名字从早场名单上划掉，写进了主厅。她写得很慢，好像在确认自己没写错。' },
+      { speaker: 'doris', text: '……今天有四个人来问“那个【格雷维克】来的人几点上场”。四个。我在这儿卖了三十年票，从没被问过这种问题。' },
+      { speaker: 'doris', text: '主厅。小组赛四场，四个对手都在台上。全赢了进决赛，对手是【朱诺·贝尔】。' },
+      { speaker: 'narrator', text: '【多丽丝】把你的名字从早场名单上划掉，写进了主厅。她写得很慢，好像在确认自己没写错。' },
     ],
     effect: { set: ['mainHall'] },
   },
@@ -622,18 +622,18 @@ export const BRIDGEPORT_DIALOGUES: Record<string, Dialogue> = {
     lines: [{ speaker: 'doris', text: '小组赛四场，你自己挑顺序。打完了来告诉我——不，不用告诉我，我会知道的。' }],
   },
   'doris-final': {
-    lines: [{ speaker: 'doris', text: '决赛。朱诺在台上。座位全卖完了，包括我自己的。' }],
+    lines: [{ speaker: 'doris', text: '决赛。【朱诺】在台上。座位全卖完了，包括我自己的。' }],
   },
   'doris-after': {
     lines: [{ speaker: 'doris', text: '冠军先生。下周四的票卖光了，可你不在镇上。规定就是规定，但这一条我有点遗憾。' }],
   },
   'doris-key': {
     lines: [
-      { speaker: 'eli', text: '多丽丝，请问……后台的员工厕所，钥匙能借我一下吗？' },
-      { speaker: 'doris', text: '是斯坦让你来的。' },
+      { speaker: 'eli', text: '【多丽丝】，请问……后台的员工厕所，钥匙能借我一下吗？' },
+      { speaker: 'doris', text: '是【斯坦】让你来的。' },
       { speaker: 'eli', text: '……是的。' },
       { speaker: 'doris', text: '他每年都派人来。你是第一个开口说“请问”的。拿去吧，用完放回钩子上。规定就是规定。' },
-      { speaker: 'narrator', text: '获得剧院后台员工厕所钥匙。斯坦会热泪盈眶的。' },
+      { speaker: 'narrator', text: '获得剧院后台员工厕所钥匙。【斯坦】会热泪盈眶的。' },
     ],
     effect: { set: ['stanKey'] },
   },
@@ -660,7 +660,7 @@ export const BRIDGEPORT_DIALOGUES: Record<string, Dialogue> = {
   'ada-loss': {
     lines: [
       { speaker: 'ada', text: '墙还在。你还年轻，墙不急。' },
-      { speaker: 'narrator', text: '小提示：单张牌打在护盾上会多削 10% 盾，而且不会被反射。多德太太的档案里有艾达的路数。' },
+      { speaker: 'narrator', text: '小提示：单张牌打在护盾上会多削 10% 盾，而且不会被反射。【多德太太】的档案里有【艾达】的路数。' },
     ],
   },
   'bea-first': {
@@ -676,7 +676,7 @@ export const BRIDGEPORT_DIALOGUES: Record<string, Dialogue> = {
   'bea-win': {
     lines: [
       { speaker: 'bea', text: '哎呀。我的茶都凉了。' },
-      { speaker: 'bea', text: '我和姐姐晚上在醉鹅。来坐坐吧——姐姐有个提议，她不好意思自己说。' },
+      { speaker: 'bea', text: '我和姐姐晚上在【醉鹅】。来坐坐吧——姐姐有个提议，她不好意思自己说。' },
     ],
   },
   'bea-loss': {
@@ -689,13 +689,13 @@ export const BRIDGEPORT_DIALOGUES: Record<string, Dialogue> = {
     lines: [
       { speaker: 'ada', text: '坐。妹妹，你说。' },
       { speaker: 'bea', text: '姐姐想打个赌。我们俩合用一只箱子：她砌墙，我泡茶。你赢了，我们把家传的一张牌给你。' },
-      { speaker: 'ada', text: '你输了，你请全店喝一轮。全店。包括罗茜。罗茜喝得很多。' },
+      { speaker: 'ada', text: '你输了，你请全店喝一轮。全店。包括【罗茜】。罗茜喝得很多。' },
     ],
     choices: [fight('sisters', '赌了'), close('今晚先不赌')],
     effect: { set: ['sistersOffered'] },
   },
   'sisters-bet-again': {
-    lines: [{ speaker: 'ada', text: '赌约还算数。妹妹的茶续了第四壶，罗茜已经在看酒单了。' }],
+    lines: [{ speaker: 'ada', text: '赌约还算数。妹妹的茶续了第四壶，【罗茜】已经在看酒单了。' }],
     choices: [fight('sisters', '赌了'), close('改天')],
   },
   'sisters-win': {
@@ -707,8 +707,8 @@ export const BRIDGEPORT_DIALOGUES: Record<string, Dialogue> = {
   },
   'sisters-loss': {
     lines: [
-      { speaker: 'ada', text: '罗茜！这位先生请全店。' },
-      { speaker: 'narrator', text: '你请了全店一轮。好在是赊账——醉鹅的账本上，你的名字是第一次出现在别人后面。' },
+      { speaker: 'ada', text: '【罗茜】！这位先生请全店。' },
+      { speaker: 'narrator', text: '你请了全店一轮。好在是赊账——【醉鹅】的账本上，你的名字是第一次出现在别人后面。' },
     ],
   },
   'sisters-after': {
@@ -716,10 +716,10 @@ export const BRIDGEPORT_DIALOGUES: Record<string, Dialogue> = {
   },
   'pettigrew-first': {
     lines: [
-      { speaker: 'pettigrew', text: '啊，格雷维克的小伙子！佩蒂格鲁，经纪人。名片拿好——拿两张，一张备用。' },
-      { speaker: 'pettigrew', text: '我看了你的情况：没名气，没观众，没合同。我能给你一份工作：给朱诺·贝尔当助演，每天递牌，稳定收入。' },
+      { speaker: 'pettigrew', text: '啊，【格雷维克】的小伙子！【佩蒂格鲁】，经纪人。名片拿好——拿两张，一张备用。' },
+      { speaker: 'pettigrew', text: '我看了你的情况：没名气，没观众，没合同。我能给你一份工作：给【朱诺·贝尔】当助演，每天递牌，稳定收入。' },
       { speaker: 'eli', text: '谢谢。我是来比赛的，不是来递牌的。' },
-      { speaker: 'pettigrew', text: '哈！有骨气。骨气不能当饭吃，但我欣赏。等你想通了，我就在这儿——我一直在这儿，醉鹅的啤酒是全镇最便宜的。' },
+      { speaker: 'pettigrew', text: '哈！有骨气。骨气不能当饭吃，但我欣赏。等你想通了，我就在这儿——我一直在这儿，【醉鹅】的啤酒是全镇最便宜的。' },
     ],
     effect: { set: ['metPettigrew'] },
   },
@@ -735,7 +735,7 @@ export const BRIDGEPORT_DIALOGUES: Record<string, Dialogue> = {
   'juno-market-first': {
     lines: [
       { speaker: 'narrator', text: '集市中央，一个穿短夹克的姑娘正把牌一张一张甩进人群头顶的铁皮罐里。每一张都中。' },
-      { speaker: 'juno', text: '格雷维克来的？我听多丽丝说了。别误会，我不讨厌乡下人，我本身就是。' },
+      { speaker: 'juno', text: '【格雷维克】来的？我听【多丽丝】说了。别误会，我不讨厌乡下人，我本身就是。' },
       { speaker: 'juno', text: '给你个忠告：这里的观众不等人。你的大招还没攒好，他们就去买炸鱼了。' },
       { speaker: 'eli', text: '那我就让他们等。' },
       { speaker: 'juno', text: '……行。决赛见。如果你走得到的话。' },
@@ -759,11 +759,11 @@ export const BRIDGEPORT_DIALOGUES: Record<string, Dialogue> = {
       { speaker: 'juno', text: '拿着，我的牌盒。抖擞披风、换调风铃、穿幕细针，还有接力闹钟——别弄丢了，那是我的全部家当。还有这张黑桃 J，伞兵杰克。' },
       { speaker: 'eli', text: '你把全部家当给我？' },
       { speaker: 'juno', text: '我会准备新招的。你也得准备。下次我不会输。' },
-      { speaker: 'narrator', text: '布里奇波特公开赛冠军。获得 40 演出费、朱诺的牌盒，以及传奇变种「♠J · 伞兵杰克」。斯坦已经在按喇叭了。' },
+      { speaker: 'narrator', text: '【布里奇波特公开赛】冠军。获得 40 演出费、【朱诺】的牌盒，以及传奇变种「♠J · 伞兵杰克」。【斯坦】已经在按喇叭了。' },
       { speaker: 'juno', text: '还有一件事。一个人在街头演了六年，我数过——观众加起来不到一千个。你那个……剧团，还缺不缺一个会削盾的？' },
       { speaker: 'eli', text: '我还没有剧团。' },
-      { speaker: 'juno', text: '那现在有了。两个人也算剧团，斯坦说三个人才算，但斯坦的话不能信。' },
-      { speaker: 'narrator', text: '朱诺加入了剧团。打开「剧团」看看她的天赋与手法；街头演出可以派她上台。' },
+      { speaker: 'juno', text: '那现在有了。两个人也算剧团，【斯坦】说三个人才算，但斯坦的话不能信。' },
+      { speaker: 'narrator', text: '【朱诺】加入了剧团。打开「剧团」看看她的天赋与手法；街头演出可以派她上台。' },
     ],
     effect: { recruit: 'juno' },
   },
@@ -771,7 +771,7 @@ export const BRIDGEPORT_DIALOGUES: Record<string, Dialogue> = {
   'tavern-board': {
     lines: [
       { speaker: 'narrator', text: '告示板上钉满了纸条：寻猫、出租自行车、教钢琴（只教一首）。角落里有一张字迹潦草的：' },
-      { speaker: 'narrator', text: '「本人司机斯坦，会开巴士，会换牌，会等人。可随团巡演。工钱：一镑。厕所时间另计。」' },
+      { speaker: 'narrator', text: '「本人【司机斯坦】，会开巴士，会换牌，会等人。可随团巡演。工钱：一镑。厕所时间另计。」' },
     ],
     choices: [
       { id: 'hire-stan', label: '雇用司机斯坦（£1）', action: { type: 'pay', price: 1, nextDialogue: 'stan-hired', poor: 'tavern-poor' } },
@@ -779,17 +779,17 @@ export const BRIDGEPORT_DIALOGUES: Record<string, Dialogue> = {
     ],
   },
   'tavern-poor': {
-    lines: [{ speaker: 'narrator', text: '你翻遍口袋，连一镑都凑不齐。斯坦要是知道，大概会说「我等你」。' }],
+    lines: [{ speaker: 'narrator', text: '你翻遍口袋，连一镑都凑不齐。【斯坦】要是知道，大概会说「我等你」。' }],
   },
   'stan-hired': {
     lines: [
       { speaker: 'stan', text: '一镑？成交。巴士我照开，牌我照打，厕所我照去。三件事都不耽误——主要是第三件。' },
-      { speaker: 'narrator', text: '司机斯坦加入了剧团。他从没赢过，但他会「换牌」，而且第一次被打掉一半气场时会突然来劲。' },
+      { speaker: 'narrator', text: '【司机斯坦】加入了剧团。他从没赢过，但他会「换牌」，而且第一次被打掉一半气场时会突然来劲。' },
     ],
     effect: { recruit: 'stan' },
   },
   'tavern-board-empty': {
-    lines: [{ speaker: 'narrator', text: '斯坦那张纸条被撕走了，背面写着：「已被录用。勿念。」' }],
+    lines: [{ speaker: 'narrator', text: '【斯坦】那张纸条被撕走了，背面写着：「已被录用。勿念。」' }],
   },
   'rosie-kitchen': {
     lines: [
@@ -804,7 +804,7 @@ export const BRIDGEPORT_DIALOGUES: Record<string, Dialogue> = {
   'rosie-stew': {
     lines: [
       { speaker: 'rosie', text: '……你吃完了？没加盐，也没皱眉。好吧，你可以再来。' },
-      { speaker: 'narrator', text: '罗茜对你的态度好了一点。她把勺子放下的时候，没有用力。' },
+      { speaker: 'narrator', text: '【罗茜】对你的态度好了一点。她把勺子放下的时候，没有用力。' },
     ],
     effect: { affinity: { who: 'rosie', amount: 25, id: 'rosie-stew' } },
   },
@@ -815,13 +815,13 @@ export const BRIDGEPORT_DIALOGUES: Record<string, Dialogue> = {
     lines: [
       { speaker: 'eli', text: '你的火……是在厨房学的？' },
       { speaker: 'rosie', text: '在厨房学的是不怕烫。火是我爸教的，他是锅炉工。他说火不讲道理，所以你得比它更不讲道理。' },
-      { speaker: 'narrator', text: '罗茜难得多说了几句。你记住了：她着火的时候，从来不会烫手。' },
+      { speaker: 'narrator', text: '【罗茜】难得多说了几句。你记住了：她着火的时候，从来不会烫手。' },
     ],
     effect: { affinity: { who: 'rosie', amount: 10, id: 'rosie-fire' } },
   },
   'rosie-invite': {
     lines: [
-      { speaker: 'rosie', text: '听说你在凑一个剧团。朱诺也去了？那个小丫头削盾削得我心烦。' },
+      { speaker: 'rosie', text: '听说你在凑一个剧团。【朱诺】也去了？那个小丫头削盾削得我心烦。' },
       { speaker: 'rosie', text: '……我在这口锅前站了九年。你要是缺一把火，我可以考虑。只是考虑。' },
     ],
     choices: [
@@ -832,7 +832,7 @@ export const BRIDGEPORT_DIALOGUES: Record<string, Dialogue> = {
   'rosie-join': {
     lines: [
       { speaker: 'rosie', text: '行。我带锅，你带观众。锅不离身，这是条件。' },
-      { speaker: 'narrator', text: '罗茜·费恩加入了剧团。她的方块牌全带着火漆。' },
+      { speaker: 'narrator', text: '【罗茜·费恩】加入了剧团。她的方块牌全带着火漆。' },
     ],
     effect: { recruit: 'rosie' },
   },
@@ -841,21 +841,21 @@ export const BRIDGEPORT_DIALOGUES: Record<string, Dialogue> = {
   },
   'juno-loss': {
     lines: [
-      { speaker: 'juno', text: '观众不等人。可是我等你——明天还是周四，多丽丝说的。' },
-      { speaker: 'narrator', text: '小提示：朱诺怕火（灼烧 3 层以上，每次出手都烫手）和攒好的大牌型（织序风扇挡单张）。霍布斯的铺子里有余烬小炉和织序风扇。' },
+      { speaker: 'juno', text: '观众不等人。可是我等你——明天还是周四，【多丽丝】说的。' },
+      { speaker: 'narrator', text: '小提示：【朱诺】怕火（灼烧 3 层以上，每次出手都烫手）和攒好的大牌型（织序风扇挡单张）。【霍布斯】的铺子里有余烬小炉和织序风扇。' },
     ],
   },
   'juno-draw': {
-    lines: [{ speaker: 'juno', text: '平局？多丽丝说规定里没有平局。我们再来一次。' }],
+    lines: [{ speaker: 'juno', text: '平局？【多丽丝】说规定里没有平局。我们再来一次。' }],
   },
   'juno-after': {
-    lines: [{ speaker: 'juno', text: '还不走？斯坦已经把喇叭按坏了。' }],
+    lines: [{ speaker: 'juno', text: '还不走？【斯坦】已经把喇叭按坏了。' }],
   },
   'busk-intro': {
     lines: [
       { speaker: 'narrator', text: '集市广场的木台子，挂着一块写满粉笔字的黑板：今日街头演出。' },
       { speaker: 'narrator', text: '每场演出都有一条附加规矩，比如只用红牌、每次只甩一张。守住规矩赢下来，观众会往帽子里扔演出费，有时还有一张好牌。' },
-      { speaker: 'narrator', text: '多丽丝说过：主厅要留给“有观众的人”。赢下三场，镇上就会有人认得你。' },
+      { speaker: 'narrator', text: '【多丽丝】说过：主厅要留给“有观众的人”。赢下三场，镇上就会有人认得你。' },
     ],
     choices: [shows, close('先逛逛')],
     effect: { set: ['buskIntro'] },
@@ -880,7 +880,7 @@ export const BRIDGEPORT_DIALOGUES: Record<string, Dialogue> = {
   },
   'show-win-single': {
     lines: [
-      { speaker: 'narrator', text: '一张，一张，又一张。艾达的墙一块一块地被削掉，观众开始跟着数数。' },
+      { speaker: 'narrator', text: '一张，一张，又一张。【艾达】的墙一块一块地被削掉，观众开始跟着数数。' },
       { speaker: 'narrator', text: '获得 10 演出费，以及「♠7 · 衬里」。' },
     ],
   },
@@ -905,7 +905,7 @@ export const BRIDGEPORT_DIALOGUES: Record<string, Dialogue> = {
   },
   'show-win-noshield': {
     lines: [
-      { speaker: 'rosie', text: '没带盾还赢了我？今晚醉鹅的炸鱼给你多一块。就一块，别得寸进尺。' },
+      { speaker: 'rosie', text: '没带盾还赢了我？今晚【醉鹅】的炸鱼给你多一块。就一块，别得寸进尺。' },
       { speaker: 'narrator', text: '获得 15 演出费，以及「♥6 · 磨边」。' },
     ],
   },
@@ -914,7 +914,7 @@ export const BRIDGEPORT_DIALOGUES: Record<string, Dialogue> = {
       { speaker: 'hobbs', text: '买东西就买，看就别摸。摸了就得买。旧货不退。' },
       { speaker: 'eli', text: '我是来比赛的魔术师。听说您这儿有道具。' },
       { speaker: 'hobbs', text: '有。全镇甩牌的都把旧东西卖给我。谁输了，谁的东西就到我这儿来——你赢了谁，我这儿就有谁的货。' },
-      { speaker: 'hobbs', text: '还有件事。我年轻时的家伙什儿丢了三件：一根杵，一杆秤，一只药罐。桥头、醉鹅地窖、剧院侧幕，大概在那几个地方。找回来，我教你点老派的东西。' },
+      { speaker: 'hobbs', text: '还有件事。我年轻时的家伙什儿丢了三件：一根杵，一杆秤，一只药罐。桥头、【醉鹅地窖】、剧院侧幕，大概在那几个地方。找回来，我教你点老派的东西。' },
     ],
     choices: [shop, close('先告辞')],
     effect: { set: ['hobbsAsked', 'shopIntro'] },
@@ -953,53 +953,53 @@ export const BRIDGEPORT_DIALOGUES: Record<string, Dialogue> = {
     choices: [shop, close('改天')],
   },
   'found-pestle': {
-    lines: [{ speaker: 'narrator', text: '旧木箱里，一根黄铜杵压在一堆湿报纸下面。杵上有个缺口。是霍布斯的。' }],
+    lines: [{ speaker: 'narrator', text: '旧木箱里，一根黄铜杵压在一堆湿报纸下面。杵上有个缺口。是【霍布斯】的。' }],
     effect: { find: 'pestle' },
   },
   'found-scale': {
-    lines: [{ speaker: 'narrator', text: '地窖口挂着一杆小铜秤，秤盘里装着几颗干豌豆。罗茜大概一直拿它称炸鱼的面粉。' }],
+    lines: [{ speaker: 'narrator', text: '地窖口挂着一杆小铜秤，秤盘里装着几颗干豌豆。【罗茜】大概一直拿它称炸鱼的面粉。' }],
     effect: { find: 'scale' },
   },
   'found-jar': {
-    lines: [{ speaker: 'narrator', text: '侧幕的旧皮箱里有一只贴着骷髅标签的药罐，里面是……薄荷糖。霍布斯显然有一段复杂的人生。' }],
+    lines: [{ speaker: 'narrator', text: '侧幕的旧皮箱里有一只贴着骷髅标签的药罐，里面是……薄荷糖。【霍布斯】显然有一段复杂的人生。' }],
     effect: { find: 'jar' },
   },
 };
 const groupLines: Record<string, { first: string[]; again: string; win: string[]; loss: string[] }> = {
   agnes: {
     first: [
-      '园艺协会会长，艾格尼丝·莫斯。你踩过我们协会的草坪。没关系，青苔会记住你的。',
+      '园艺协会会长，【艾格尼丝·莫斯】。你踩过我们协会的草坪。没关系，青苔会记住你的。',
       '我出梅花。毒不急，慢慢长，长遍你家后院——还有你家前院。',
     ],
     again: '青苔还在长。要再来一回吗？',
-    win: ['……你拔得很干净。协会会给你发一张感谢卡。手写的。字很小。', '获得 15 演出费。霍布斯的铺子里现在有青苔药匣了。'],
+    win: ['……你拔得很干净。协会会给你发一张感谢卡。手写的。字很小。', '获得 15 演出费。【霍布斯】的铺子里现在有青苔药匣了。'],
     loss: ['回去晒晒太阳吧，亲爱的。青苔最怕这个。', '小提示：治疗会净化剧毒；别攒牌，毒发按手牌数加重。'],
   },
   rosie: {
     first: [
-      '醉鹅的厨子，罗茜。我的炸鱼全镇第一，我的火，全镇也第一。',
+      '【醉鹅】的厨子，【罗茜】。我的炸鱼全镇第一，我的火，全镇也第一。',
       '方块点火，烧到你出手都烫手。你最好带把伞——带十把。',
     ],
     again: '炉子又热了。来？',
-    win: ['……你把我的火闷了。我得回去重新生炉子，今晚的炸鱼要晚一点了。', '获得 15 演出费。霍布斯的铺子里现在有余烬小炉了。'],
-    loss: ['熟了。七分熟。', '小提示：火怕盾。有盾时灼烧只烧盾、熄得更快；一次出 5 张能吹灭身上的火。'],
+    win: ['……你把我的火闷了。我得回去重新生炉子，今晚的炸鱼要晚一点了。', '获得 15 演出费。【霍布斯】的铺子里现在有余烬小炉了。'],
+    loss: ['熟了。七分熟。', '小提示：火怕盾。有盾时灼烧只烧盾、熄得更快；一次出满 5 张能吹灭身上的火。'],
   },
   basil: {
     first: [
-      '巴兹尔·怀特，退休数学老师。我算过，你赢我的概率是百分之三十七点五。',
+      '【巴兹尔·怀特】，退休数学老师。我算过，你赢我的概率是百分之三十七点五。',
       '我攒满一手牌，再出顺子或同花。耐心是数学的一部分。另一部分是正确。',
     ],
     again: '我重新算过了。百分之三十八。要验证一下吗？',
-    win: ['……我的模型里漏了一个变量：你。', '获得 15 演出费。霍布斯的铺子里现在有织序风扇了。'],
+    win: ['……我的模型里漏了一个变量：你。', '获得 15 演出费。【霍布斯】的铺子里现在有织序风扇了。'],
     loss: ['正如我所计算的。不过误差范围很大，别灰心。', '小提示：他攒牌时你就打；剧毒的毒发专吃手牌多的人。'],
   },
   pike: {
     first: [
-      '下午好，先生。派克警长，镇上唯一的警察。今天我休假，所以只是一个普通的、盾很厚的市民。',
+      '下午好，先生。【派克警长】，镇上唯一的警察。今天我休假，所以只是一个普通的、盾很厚的市民。',
       '我砌盾，盾会反击。请勿向执法人员投掷大型牌型——铜镜会还给你的。',
     ],
     again: '下午好，先生。还要打吗？我的盾还在。',
-    win: ['……按照规定，我得给自己开一张罚单：防守不力。', '获得 15 演出费。霍布斯的铺子里现在有护心放映机了。'],
+    win: ['……按照规定，我得给自己开一张罚单：防守不力。', '获得 15 演出费。【霍布斯】的铺子里现在有护心放映机了。'],
     loss: ['请出示您的……哦，我们不是在执勤。祝您下午愉快。', '小提示：单张削盾且不被铜镜反射；剧毒直接穿过护盾。'],
   },
 };

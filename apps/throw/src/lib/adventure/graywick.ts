@@ -81,7 +81,7 @@ export const GRAYWICK_DIALOGUES: Record<string, Dialogue> = {
     lines: [
       {
         speaker: 'narrator',
-        text: '格雷维克，曾经的魔术之乡。如今镇上最神奇的事，是巡回赛巴士居然还肯在这儿停五分钟——司机说，主要是为了上厕所。',
+        text: '【格雷维克】，曾经的魔术之乡。如今镇上最神奇的事，是巡回赛巴士居然还肯在这儿停五分钟——司机说，主要是为了上厕所。',
       },
       {
         speaker: 'narrator',
@@ -93,11 +93,11 @@ export const GRAYWICK_DIALOGUES: Record<string, Dialogue> = {
       },
       {
         speaker: 'eli',
-        text: '谢谢，菲利克斯。你也很勇敢——戴着那顶帽子出门。',
+        text: '谢谢，【菲利克斯】。你也很勇敢——戴着那顶帽子出门。',
       },
       {
         speaker: 'eli',
-        text: '（小声）里德先生在等我。今晚，我要拿到第一张参赛证。',
+        text: '（小声）【里德先生】在等我。今晚，我要拿到【第一张参赛证】。',
       },
     ],
   },
@@ -113,7 +113,7 @@ export const GRAYWICK_DIALOGUES: Record<string, Dialogue> = {
       },
       {
         speaker: 'reed',
-        text: '先练单张：飞牌修缮箱加伤，穿幕细针穿盾。顺子、同花从三张起算；能凑出来时再甩一把。',
+        text: '先练单张：飞牌修缮箱加伤，穿幕细针穿盾。一手最多甩五张；顺子、同花要整整五张，凑齐了再甩一把。',
       },
       {
         speaker: 'reed',
@@ -144,7 +144,7 @@ export const GRAYWICK_DIALOGUES: Record<string, Dialogue> = {
       { speaker: 'reed', text: '……你赢了。说实话，这让我的茶都凉了。' },
       {
         speaker: 'reed',
-        text: '拿着：布里奇波特公开赛的邀请函。它在我抽屉里躺了二十年，就等一个值得的人——以及抽屉终于修好。',
+        text: '拿着：【布里奇波特公开赛】的【邀请函】。它在我抽屉里躺了二十年，就等一个值得的人——以及抽屉终于修好。',
       },
       {
         speaker: 'reed',
@@ -152,7 +152,7 @@ export const GRAYWICK_DIALOGUES: Record<string, Dialogue> = {
       },
       {
         speaker: 'reed',
-        text: '去剧院之前，先找米娅聊聊。那姑娘修过菲利克斯的灯，知道他每一个坏习惯——灯的，和人的。',
+        text: '去剧院之前，先找【米娅】聊聊。那姑娘修过【菲利克斯】的灯，知道他每一个坏习惯——灯的，和人的。',
       },
       { speaker: 'eli', text: '谢谢您。下次我要让您在全国转播里看到这一招。' },
       { speaker: 'reed', text: '那我得先买台电视。' },
@@ -163,15 +163,15 @@ export const GRAYWICK_DIALOGUES: Record<string, Dialogue> = {
     lines: [
       {
         speaker: 'reed',
-        text: '嗯。看来乌龟赢了。别难过——你输得非常有风度，这在格雷维克可是稀缺品质。',
+        text: '嗯。看来乌龟赢了。别难过——你输得非常有风度，这在【格雷维克】可是稀缺品质。',
       },
       {
         speaker: 'reed',
-        text: '邀请函拿去，还有换调风铃和清露药包：轮换花色加伤，甩红心就能洗掉身上的火。单张的节奏练稳，大招才有地方落脚。',
+        text: '【邀请函】拿去，还有换调风铃和清露药包：轮换花色加伤，甩红心就能洗掉身上的火。单张的节奏练稳，大招才有地方落脚。',
       },
       {
         speaker: 'reed',
-        text: '然后去找米娅。菲利克斯的弱点，她比菲利克斯本人还清楚。',
+        text: '然后去找【米娅】。【菲利克斯】的弱点，她比菲利克斯本人还清楚。',
       },
     ],
     effect: { set: ['invitation'] },
@@ -184,7 +184,7 @@ export const GRAYWICK_DIALOGUES: Record<string, Dialogue> = {
       },
       {
         speaker: 'reed',
-        text: '邀请函给你，再加换调风铃和清露药包——甩红心能灭身上的火。继续练单张连甩，然后去找米娅——她知道菲利克斯的路数。',
+        text: '【邀请函】给你，再加换调风铃和清露药包——甩红心能灭身上的火。继续练单张连甩，然后去找【米娅】——她知道【菲利克斯】的路数。',
       },
     ],
     effect: { set: ['invitation'] },
@@ -193,7 +193,7 @@ export const GRAYWICK_DIALOGUES: Record<string, Dialogue> = {
     lines: [
       {
         speaker: 'felix',
-        text: '没有邀请函就想上台？亲爱的，这是资格赛，不是社区才艺表演。去找你的老师傅吧，听说他还在用上个世纪的牌。',
+        text: '没有【邀请函】就想上台？亲爱的，这是资格赛，不是社区才艺表演。去找你的老师傅吧，听说他还在用上个世纪的牌。',
       },
     ],
   },
@@ -202,11 +202,11 @@ export const GRAYWICK_DIALOGUES: Record<string, Dialogue> = {
       { speaker: 'felix', text: '哦，你真的来了。我还以为你会被自己的勇气吓跑。' },
       {
         speaker: 'eli',
-        text: '我来拿参赛证。顺便教你输的时候怎么鞠躬。',
+        text: '我来拿【参赛证】。顺便教你输的时候怎么鞠躬。',
       },
       {
         speaker: 'felix',
-        text: '可爱。善意提醒：我的牌会着火，保险公司为此拒绝过我四次。赢了，参赛证就归你。',
+        text: '可爱。善意提醒：我的牌会着火，保险公司为此拒绝过我四次。赢了，【参赛证】就归你。',
       },
     ],
     choices: duelChoices,
@@ -223,10 +223,10 @@ export const GRAYWICK_DIALOGUES: Record<string, Dialogue> = {
   'rival-win': {
     lines: [
       { speaker: 'felix', text: '……不可能。我的火从来没被一条旧毯子挡住过。' },
-      { speaker: 'eli', text: '米娅修过的东西，很少听你的话。' },
+      { speaker: 'eli', text: '【米娅】修过的东西，很少听你的话。' },
       {
         speaker: 'felix',
-        text: '参赛证是你的。下次报幕，我会把你的名字念对——念得非常不情愿。',
+        text: '【参赛证】是你的。下次报幕，我会把你的名字念对——念得非常不情愿。',
       },
       {
         speaker: 'narrator',
@@ -247,7 +247,7 @@ export const GRAYWICK_DIALOGUES: Record<string, Dialogue> = {
       { speaker: 'eli', text: '我会回来的。下次把盾竖得更稳。' },
       {
         speaker: 'narrator',
-        text: '小提示：火怕盾。身上有护盾时，新火只点着一半，火只烧盾不烧血，还灭得更快。把守灯小毯放进巡演箱，用单张黑桃竖盾，再轮换花色连甩。还没见过米娅的话，她就在街上。',
+        text: '小提示：火怕盾。身上有护盾时，新火只点着一半，火只烧盾不烧血，还灭得更快。把守灯小毯放进巡演箱，用单张黑桃竖盾，再轮换花色连甩。还没见过【米娅】的话，她就在街上。',
       },
     ],
   },
@@ -263,7 +263,7 @@ export const GRAYWICK_DIALOGUES: Record<string, Dialogue> = {
     lines: [
       {
         speaker: 'mia',
-        text: '你要去挑战菲利克斯？先去里德那儿学会出牌吧。我修东西很在行，但修不了“上台三秒就被烧成炭”。',
+        text: '你要去挑战【菲利克斯】？先去【里德】那儿学会出牌吧。我修东西很在行，但修不了“上台三秒就被烧成炭”。',
       },
     ],
   },
@@ -271,7 +271,7 @@ export const GRAYWICK_DIALOGUES: Record<string, Dialogue> = {
     lines: [
       {
         speaker: 'mia',
-        text: '你就是要挑战菲利克斯的那位？勇气可嘉。我上次见这么勇的，是只想跟公交车比谁快的鸽子。',
+        text: '你就是要挑战【菲利克斯】的那位？勇气可嘉。我上次见这么勇的，是只想跟公交车比谁快的鸽子。',
       },
       {
         speaker: 'mia',
@@ -297,7 +297,7 @@ export const GRAYWICK_DIALOGUES: Record<string, Dialogue> = {
     lines: [
       {
         speaker: 'mia',
-        text: '记住三件事：火怕盾——有盾时火只烧盾、不烧血；盾在开打前就得摆进巡演箱；以及别盯着菲利克斯的帽子看，会被催眠。',
+        text: '记住三件事：火怕盾——有盾时火只烧盾、不烧血；盾在开打前就得摆进巡演箱；以及别盯着【菲利克斯】的帽子看，会被催眠。',
       },
     ],
   },
@@ -305,11 +305,11 @@ export const GRAYWICK_DIALOGUES: Record<string, Dialogue> = {
     lines: [
       {
         speaker: 'mia',
-        text: '听说菲利克斯的火被一条旧毯子闷灭了？我要把这句话裱起来，挂在后台。',
+        text: '听说【菲利克斯】的火被一条旧毯子闷灭了？我要把这句话裱起来，挂在后台。',
       },
       {
         speaker: 'mia',
-        text: '巴士时刻我写在你邀请函背面了。快去吧，司机说上厕所只要五分钟，我们都知道那是谎言。',
+        text: '巴士时刻我写在你【邀请函】背面了。快去吧，司机说上厕所只要五分钟，我们都知道那是谎言。',
       },
     ],
   },
@@ -317,7 +317,7 @@ export const GRAYWICK_DIALOGUES: Record<string, Dialogue> = {
     lines: [
       {
         speaker: 'narrator',
-        text: '司机看了看你，又看了看你空空的参赛证夹：“小伙子，这车只载选手。还有我。”',
+        text: '司机看了看你，又看了看你空空的【参赛证】夹：“小伙子，这车只载选手。还有我。”',
       },
     ],
   },
@@ -329,12 +329,12 @@ export const GRAYWICK_DIALOGUES: Record<string, Dialogue> = {
       },
       {
         speaker: 'eli',
-        text: '等我捧着世界冠军的奖杯回来，你帮我把抒情剧院重新开起来。',
+        text: '等我捧着世界冠军的奖杯回来，你帮我把【抒情剧院】重新开起来。',
       },
       { speaker: 'mia', text: '成交。不过先说好，得先修屋顶。' },
       {
         speaker: 'narrator',
-        text: '巴士驶离旧剧院街。下一站，布里奇波特。世界还不知道你的名字——不过至少，司机现在知道了。',
+        text: '巴士驶离【旧剧院街】。下一站，【布里奇波特】。世界还不知道你的名字——不过至少，司机现在知道了。',
       },
     ],
     effect: { set: ['departed'], complete: true },

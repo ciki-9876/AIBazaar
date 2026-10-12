@@ -34,8 +34,7 @@ export class ThrowSound {
       const context = this.context;
       this.audienceLoad = Promise.all((['cheer', 'applause'] as const).map(async (kind) => {
         try {
-          const extension = kind === 'cheer' ? 'ogg' : 'wav';
-          const response = await fetch(sitePath(`/audio/throw/audience-${kind}.${extension}`));
+          const response = await fetch(sitePath(`/audio/throw/audience-${kind}.ogg`));
           if (!response.ok) return;
           const decoded = await context.decodeAudioData(await response.arrayBuffer());
           this.audienceBuffers.set(kind, decoded);
